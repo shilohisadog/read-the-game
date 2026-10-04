@@ -238,7 +238,7 @@ __CSS__</style>
        ⚠️ MEASURED AFTERWARDS, NOT REASONED ABOUT: at 568x320 `How we counted`
        needed 112px of text in a 105px box and WRAPPED onto two lines beside a
        neighbour on one. `app.css` clamps the type for that; see the rule. -->
-  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><div class="lxws"><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">How we counted</button><button class="lxw" id="alot" aria-expanded="false" aria-controls="alotPanel">Is that a lot?</button><button class="lxw lxwe" id="sum" aria-expanded="false" aria-controls="sumPanel">What this game was</button></div></div>
+  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><div class="lxws"><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">How we counted</button><button class="lxw" id="alot" aria-expanded="false" aria-controls="alotPanel">Is that a lot?</button></div></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside the band under the ice so it could anchor to that row's top edge,
        which was the bottom of the ice -- correct exactly while the row was
@@ -406,6 +406,23 @@ __CSS__</style>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
+<!-- ⭐⭐⭐ THE SUMMARY'S OWN DOOR, IN THE SIDEBAR — Kevin, 2026-10-04: *"I think I'd
+     rather have a separate button, in the sidebar, so a viewer doesn't have to
+     enable a layer to get to it."*
+
+     ⛔ AND HIS PREMISE WAS RIGHT WHERE MY MEASUREMENT WAS WRONG. The button lived
+     in `.lxws` under the rink, and `#rg .lbox.empty .lxw{visibility:hidden}` hides
+     that whole row until a layer is chosen — so a reader on `Just events`, which
+     is the default, had NO route to the summary at all. I had reported it visible
+     after reading `display` and a bounding box: verifying an ATTRIBUTE is not
+     verifying VISIBILITY, which this repo has logged three times.
+
+     ⭐ ONE CONTROL, NOT TWO. `#sum` MOVED here rather than being copied: two
+     routes to one panel teach a reader that the two are different places, which
+     is the duplicate funnel `_NAV` already names. The door row keeps the two that
+     are ABOUT the ledger beside them; this one is about the whole game and was
+     never about the layer. -->
+<div class="sumrow"><button class="share sumdoor" id="sum" type="button" aria-expanded="false" aria-controls="sumPanel">What this game was</button></div>
 </div>
 <!-- ⏭ THE VERDICT CARD USED TO SIT HERE, after the transport and before the
      video, and the note it carried argued it out of `.rinkbox` because a card

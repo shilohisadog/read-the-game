@@ -45,8 +45,16 @@ function sideChildren(html) {
 test('⭐ the side column holds exactly what §3 rules movable', () => {
   // Derived from the built page, in order, so a block added to the wrapper by
   // hand shows up here rather than shipping unexamined.
+  /* ⭐ `sumrow` JOINED ON 2026-10-04, which is what this ledger is for — it did
+     show up here rather than shipping unexamined. Kevin: *"I'd rather have a
+     separate button, in the sidebar, so a viewer doesn't have to enable a layer
+     to get to it."* The summary's door had lived in `.lxws` under the rink, and
+     `#rg .lbox.empty .lxw{visibility:hidden}` hides that row until a layer is
+     chosen — so a reader on `Just events`, the default, had no route to it at
+     all. It belongs in this column by §3's own test: it acts on the WHOLE GAME
+     rather than on the playhead, exactly like `sharerow` directly above it. */
   assert.deepEqual(sideChildren(page),
-    ['newcomer', 'pickrow', 'lcap', 'zone zcue', 'zone znext', 'sharerow']);
+    ['newcomer', 'pickrow', 'lcap', 'zone zcue', 'zone znext', 'sharerow', 'sumrow']);
 });
 
 test('⛔ …and the transport is NOT in it — CHENG\'s second clause', () => {

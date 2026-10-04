@@ -45,20 +45,24 @@ export const NEEDS_SITE = false;
 export const TOLERANCE = 2;
 
 /**
- * ⭐ THE CANARY IS THE DEFECT ITSELF, restored declaration for declaration.
+ * ⭐ THE CANARY IS A DOOR THAT DIVERGES FROM ITS NEIGHBOUR, which is the defect
+ * this probe exists for: Kevin saw one door's label sitting 5px from its left
+ * edge while the other two were centred.
  *
- * ⛔⛔ AND IT MAY NOT BE A SHORTER VERSION OF IT. Injecting only `display:block`
- * would leave `align-items:center` from the live rule applying to the third door,
- * which is still `display:flex` — so the canary would render CENTRED and pass,
- * and a canary that cannot sing proves the check works when it does not. The
- * alignment properties are returned to their initial values alongside, which is
- * the state the page was actually in.
+ * ⛔⛔⛔ AND IT HAD TO BE REWRITTEN ON 2026-10-04, BECAUSE IT STOPPED SINGING. The
+ * original restored the ORIGINAL defect declaration for declaration — `.lxw` laid
+ * out as a block while `.lxwe`, the only door declaring its own `display`, stayed
+ * flex. The summary's door then moved to the sidebar and `.lxwe` went with it, so
+ * that injection made all remaining doors block TOGETHER: no divergence, probe
+ * green, canary accepted. **A canary written against a defect's INSTANCE dies
+ * with the instance; one written against its SHAPE does not.** The shape is "one
+ * door in this row is laid out differently from its neighbour", and `+ .lxw`
+ * names that without naming any door.
  *
  * ⚠️ INJECTED BEFORE `</body>`, because this page's stylesheet is inside the
  * body: a same-specificity rule placed in the head loses on document order.
  */
-export const CANARY = '#rg .lxw{display:block;align-items:normal;justify-content:normal}'
-                    + '#rg.ended .lxw.lxwe{display:flex}';
+export const CANARY = '#rg .lxw+.lxw{display:block;align-items:normal;justify-content:normal}';
 
 export function probeHtml() {
   return `<!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
@@ -68,12 +72,29 @@ export function probeHtml() {
 <script>
 setTimeout(function () {
   var d = document.getElementById('f').contentDocument;
-  var r = { booted: false, ended: false, doors: [] };
+  var r = { booted: false, ended: false, doors: [], summary: null };
   try {
     /* THE PAGE IS VISIBLE ONLY ONCE IT HAS BOOTED -- \`#rg\` ships hidden and
        \`reveal()\` unhides it, so this is "boot ran" with no prose in the path. */
     var rg = d.getElementById('rg');
     r.booted = !!rg && !rg.hidden;
+    /* \u2b50\u2b50\u2b50 THE SUMMARY'S DOOR, MEASURED BEFORE ANY LAYER IS CHOSEN.
+       This is the state a reader LANDS in -- \`Just events\` is the default -- and
+       on 2026-10-04 the door was invisible in it for a day: it sat in this row,
+       and \`#rg .lbox.empty .lxw{visibility:hidden}\` hides the row until a layer
+       is picked. I reported it visible after reading \`display\` and a bounding
+       box, which are both true of an invisible element. Kevin found it from the
+       live site. So the one thing a DOM check cannot answer is asked here, first,
+       and of the state nobody had been asking about. */
+    var sd = d.getElementById('sum');
+    r.summary = sd ? {
+      vis: d.defaultView.getComputedStyle(sd).visibility,
+      display: d.defaultView.getComputedStyle(sd).display,
+      w: Math.round(sd.getBoundingClientRect().width),
+      h: Math.round(sd.getBoundingClientRect().height),
+      inRow: !!sd.closest('.lxws'),
+      text: (sd.textContent || '').trim(),
+    } : null;
     /* A LAYER, OR THE DOORS ARE INVISIBLE. See the note on \`.lbox.empty\`. */
     var pk = d.querySelector('#rg .pk[data-l="goaltending"]');
     if (pk) pk.click();
@@ -132,8 +153,31 @@ export function judgeDoors(r, { tolerance = TOLERANCE } = {}) {
   if (r.err) return [{ ok: false, why: `door-row: the probe threw — ${r.err}` }];
   ok(r.booted, 'door-row: the replay never booted, so the row measured is not the one a reader sees');
   ok(r.ended, 'door-row: the replay never reached the horn, and the third door does not exist before it');
-  ok(r.doors.length === 3, `door-row: expected three doors under the rink, found ${r.doors.length}`);
-  if (!r.booted || !r.ended || r.doors.length !== 3) return out;
+  /* ⭐⭐⭐ THE SUMMARY'S DOOR, IN THE STATE A READER LANDS IN. Judged BEFORE the
+     count below, because it is the only claim here that a DOM check could not
+     have made — and the one that was wrong for a day while a DOM check said
+     otherwise. `visibility` is the field: `display` and a bounding box are both
+     true of an element nobody can see. */
+  if (r.summary) {
+    ok(r.summary.vis === 'visible',
+      `door-row: the summary's door is \`visibility: ${r.summary.vis}\` with no layer `
+      + 'chosen — which is the state a reader LANDS in, so there is no route to '
+      + '"what this game was" at all');
+    ok(!r.summary.inRow,
+      'door-row: the summary\'s door is back inside `.lxws`, which `.lbox.empty` '
+      + 'hides until a layer is chosen — the exact place it was unreachable from');
+    ok(r.summary.w > 40 && r.summary.h > 20,
+      `door-row: the summary's door rendered ${r.summary.w}x${r.summary.h}px`);
+    ok(r.summary.text === 'What this game was',
+      `door-row: the summary's door reads "${r.summary.text}" before anyone pressed it`);
+  } else {
+    ok(false, 'door-row: there is no #sum on the page at all');
+  }
+  /* ⏹ TWO, NOT THREE, SINCE 2026-10-04. The summary's door moved to the sidebar
+     because this row is hidden until a layer is chosen; the two left are the ones
+     ABOUT the ledger they sit under. */
+  ok(r.doors.length === 2, `door-row: expected two doors under the rink, found ${r.doors.length}`);
+  if (!r.booted || !r.ended || r.doors.length !== 2) return out;
   for (const d of r.doors)
     ok(d.visible, `door-row: "${d.text}" is not visible — a layer must be on, or three hidden buttons agree about nothing`);
   /* ⛔ AND THE LABELS MUST BE THE ONES A READER SEES. Every door reads `Hide`

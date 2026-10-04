@@ -479,7 +479,7 @@ test('⛔ the page opens the newest viewable game even when the window will not 
 });
 
 /* ────────────────────────────────────────────────────────────────────────────
-   `tools/browser/door-row.mjs` — the three doors under the rink.
+   `tools/browser/door-row.mjs` — the doors under the rink, and the one that left.
 
    ⭐ THE JUDGING IS A FUNCTION, SO IT IS TESTED WITH NUMBERS INVENTED HERE
    rather than only by a browser in the release gate. Every case below is a
@@ -490,37 +490,65 @@ import { CANARY, judgeDoors, readDoors, TOLERANCE } from '../tools/browser/door-
 
 const DOOR = (over = {}) => ({ id: 'work', text: 'How we counted', visible: true,
   display: 'flex', align: 'center', justify: 'center', dx: 0, dy: 0, box: '290x44', ...over });
-const ROW = (...doors) => ({ booted: true, ended: true, doors });
+/* ⭐ THE SUMMARY'S DOOR IS SAMPLED SEPARATELY AND IS SOUND BY DEFAULT HERE, so the
+   geometry cases below fail for geometry. It left this row on 2026-10-04 — see
+   `the summary's door is judged where a reader LANDS` further down. */
+const SIDEBAR = (over = {}) => ({ vis: 'visible', display: 'block', w: 230, h: 44,
+  inRow: false, text: 'What this game was', ...over });
+const ROW = (...doors) => ({ booted: true, ended: true, doors, summary: SIDEBAR() });
 const doorRefusals = r => judgeDoors(r).filter(v => !v.ok).map(v => v.why);
 
-test('⛔ THE DEFECT ITSELF: a door laid out differently from the two beside it', () => {
-  /* The real measurement. All three boxes 290x44; the third one's label 5px from
-     its left edge and 7px from its top, so its centre misses by 124x-7. */
-  const bad = ROW(DOOR(), DOOR({ id: 'alot', text: 'Is that a lot?' }),
-    DOOR({ id: 'sum', text: 'What this game was', display: 'flex',
-           align: 'normal', justify: 'normal', dx: -124, dy: -7 }));
+test('⛔ THE DEFECT ITSELF: a door laid out differently from the one beside it', () => {
+  /* The real measurement of 2026-10-02, when this row held three: all boxes
+     290x44, and the odd one's label 5px from its left edge and 7px from its top,
+     so its centre missed by 124x-7. The row holds two now and the SHAPE is
+     unchanged — one door in it laid out unlike its neighbour. */
+  const bad = ROW(DOOR(), DOOR({ id: 'alot', text: 'Is that a lot?', display: 'flex',
+    align: 'normal', justify: 'normal', dx: -124, dy: -7 }));
   const why = doorRefusals(bad);
   assert.ok(why.some(w => /laid out differently/.test(w)),
     'the divergence in computed layout is not reported, which is what the defect WAS');
   assert.ok(why.some(w => /horizontal centre/.test(w)) && why.some(w => /vertical centre/.test(w)),
     'a label 124px off its own centre is not reported on both axes');
-  assert.equal(doorRefusals(ROW(DOOR(), DOOR({ id: 'alot' }), DOOR({ id: 'sum' }))).length, 0,
-    'a row whose three doors agree and whose labels are centred must pass');
+  assert.equal(doorRefusals(ROW(DOOR(), DOOR({ id: 'alot' }))).length, 0,
+    'a row whose doors agree and whose labels are centred must pass');
+});
+
+test('⛔⛔⛔ the summary\u2019s door is judged where a reader LANDS, not where a layer puts it', () => {
+  /* ⛔⛔⛔ KEVIN, FROM THE LIVE SITE, 2026-10-04: *"I'd rather have a separate
+     button, in the sidebar, so a viewer doesn't have to enable a layer to get to
+     it."* His premise was right and my measurement was wrong. The door sat in
+     this row, and `#rg .lbox.empty .lxw{visibility:hidden}` hides the row until a
+     layer is chosen — so a reader on `Just events`, the DEFAULT, had no route to
+     the summary at all. I had reported it visible after reading `display` and a
+     bounding box, both of which are true of an element nobody can see.
+     ⭐ SO THE FIELD IS `visibility`, AND THE STATE IS BEFORE ANY LAYER. */
+  const bad = r => doorRefusals({ ...ROW(DOOR(), DOOR({ id: 'alot' })), summary: r });
+  assert.ok(bad(SIDEBAR({ vis: 'hidden' })).some(w => /visibility: hidden/.test(w)),
+    'an invisible door is not reported — which is the defect, exactly');
+  assert.ok(bad(SIDEBAR({ inRow: true })).some(w => /back inside/.test(w)),
+    'a door returned to the layer-gated row is not reported');
+  assert.ok(bad(SIDEBAR({ w: 0, h: 0 })).some(w => /rendered 0x0/.test(w)),
+    'a door with no box at all is not reported');
+  assert.ok(bad(SIDEBAR({ text: 'Hide' })).some(w => /before anyone pressed it/.test(w)),
+    'a door already reading Hide means a panel is open, so this is not the landing state');
+  assert.ok(bad(null).some(w => /no #sum on the page/.test(w)),
+    'a missing door reads as a tidy pass');
+  assert.equal(bad(SIDEBAR()).length, 0, 'a visible door in the sidebar must pass');
 });
 
 test('⭐ three doors drifting TOGETHER are still caught, because centring is judged separately', () => {
   /* ⛔ THE SHAPE THIS GUARDS: a picture checked only against its neighbour in the
      same picture. All three agree perfectly here and all three are wrong. */
   const together = ROW(DOOR({ align: 'normal', justify: 'normal', dx: -124, dy: -7 }),
-    DOOR({ id: 'alot', align: 'normal', justify: 'normal', dx: -124, dy: -7 }),
-    DOOR({ id: 'sum', align: 'normal', justify: 'normal', dx: -124, dy: -7 }));
+    DOOR({ id: 'alot', align: 'normal', justify: 'normal', dx: -124, dy: -7 }));
   assert.ok(doorRefusals(together).some(w => /off the horizontal centre/.test(w)),
     'a row where every door is equally wrong passes the sameness check and must fail the centring one');
 });
 
 test('a page that did not boot, or never reached the horn, is NOT a tidy pass', () => {
   assert.ok(doorRefusals({ ...ROW(DOOR()), booted: false }).some(w => /never booted/.test(w)));
-  assert.ok(doorRefusals({ ...ROW(DOOR(), DOOR(), DOOR()), ended: false }).some(w => /never reached the horn/.test(w)));
+  assert.ok(doorRefusals({ ...ROW(DOOR(), DOOR()), ended: false }).some(w => /never reached the horn/.test(w)));
   assert.ok(judgeDoors(null).every(v => !v.ok), 'a silent probe is a failure, not a pass');
   assert.ok(judgeDoors({ err: 'boom' }).every(v => !v.ok), 'a probe that threw is a failure');
   /* ⛔ AND IT STOPS THERE. Reporting "the doors do not line up" about a page that
@@ -530,10 +558,10 @@ test('a page that did not boot, or never reached the horn, is NOT a tidy pass', 
 });
 
 test('⛔ hidden doors agree about nothing, and "Hide" is not the row Kevin reported on', () => {
-  assert.ok(doorRefusals(ROW(DOOR({ visible: false }), DOOR(), DOOR())).some(w => /not visible/.test(w)),
-    'a layer must be on — `.lbox.empty .lxw` hides all three, and three hidden buttons measure identical');
-  assert.ok(doorRefusals(ROW(DOOR({ id: 'sum', text: 'Hide' }), DOOR(), DOOR())).some(w => /a panel is open/.test(w)),
-    'the summary opens itself at the horn; measuring its "Hide" label is measuring a different row');
+  assert.ok(doorRefusals(ROW(DOOR({ visible: false }), DOOR())).some(w => /not visible/.test(w)),
+    'a layer must be on — `.lbox.empty .lxw` hides the row, and hidden buttons measure identical');
+  assert.ok(doorRefusals(ROW(DOOR({ id: 'alot', text: 'Hide' }), DOOR())).some(w => /a panel is open/.test(w)),
+    'a door reading Hide means its panel is open; measuring that label is measuring a different row');
 });
 
 test('the canary restores the alignment properties too, or it cannot sing', () => {
@@ -543,7 +571,17 @@ test('the canary restores the alignment properties too, or it cannot sing', () =
      an omission, and an omission is visible in the text. */
   assert.match(CANARY, /align-items:\s*normal/, 'the canary leaves the live centring in place on the flex door');
   assert.match(CANARY, /justify-content:\s*normal/, 'the canary leaves the live main-axis centring in place');
-  assert.match(CANARY, /display:\s*block/, 'the canary no longer restores the UA button display the other two had');
+  assert.match(CANARY, /display:\s*block/, 'the canary no longer restores the UA button display its neighbour had');
+  /* ⛔⛔ AND IT MUST NAME A SHAPE, NOT AN INSTANCE. The first canary restored the
+     ORIGINAL defect declaration for declaration — `.lxw` as a block while `.lxwe`,
+     the only door declaring its own display, stayed flex. When the summary's door
+     moved to the sidebar `.lxwe` went with it, so that injection made every
+     remaining door block TOGETHER: no divergence, probe green, canary accepted. A
+     canary written against an instance dies with the instance. */
+  assert.doesNotMatch(CANARY, /lxwe/,
+    'the canary names a class that no longer exists, so it restores nothing');
+  assert.match(CANARY, /\.lxw\s*\+\s*\.lxw/,
+    'the canary hits every door equally, which is not a divergence and cannot be caught');
 });
 
 test('the probe reads nothing out of a page that never wrote its answer', () => {

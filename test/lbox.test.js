@@ -15,6 +15,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+/** The real published document — the summary panel draws nothing without it. */
+const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
 import { boot, app, PAGE_CSS, rich } from './helpers/page.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { corsi } from '../src/lib/layers/corsi.js';
@@ -1062,6 +1064,77 @@ test('a surprising reason says what it was counted in, not only what it is denie
  * a link lands on the nearest RECORDED moment, and the way to say it is to name
  * which one — checkable by the person who just pressed.
  */
+test('⭐⭐⭐ a link copied with the summary up opens with the summary up', async () => {
+  /* ⛔⛔⛔ KEVIN, 2026-10-04: *"please make sure that once we tap 'Show game
+     summary', I can provide a discrete link to social media at that state of the
+     site."* A link that opens the replay instead of the thing the sharer was
+     looking at is a link to a different page — and the panel is the page's one
+     plain-language answer to what a game was, which is the part worth sending.
+
+     ⭐ THE FLAG IS NOT PART OF `format`, and that is deliberate: `format` emits a
+     MOMENT — a game, a frame, the lens and the strength it was read under — and
+     the panel is not a property of the moment, since its counts are of the whole
+     game and do not move with the playhead. It is a flag beside it, the same
+     shape as `preview`.
+
+     ⛔ AND ONLY WHEN IT IS OPEN. Nothing is added to a link copied over the ice,
+     or this stops being a link to THIS state and becomes a second kind of link. */
+  const a = boot(rich, MEASURES);
+  a.$('scrub').oninput({ target: { value: '120' } });
+
+  a.$('share').onclick();
+  await a.settle();
+  assert.ok(!/summary=/.test(a.copied),
+    `a link copied over the ice carries the panel anyway: ${a.copied}`);
+  assert.doesNotMatch(a.$('sharesaid').innerHTML, /summary showing/,
+    'the confirmation promises a panel the link does not open');
+  /* THE MOMENT THE PAGE ITSELF EMITTED, kept so the second link can be compared
+     against it rather than against a clock reading typed in here — a pinned
+     `1-07:12` would be a second statement of what frame 120 is. */
+  const overTheIce = new URLSearchParams(a.copied.split('?')[1]).get('at');
+  assert.ok(overTheIce, 'the link carries no moment at all');
+
+  a.$('sum').onclick();
+  assert.equal(a.$('sumPanel').hidden, false, 'the door did not open the panel');
+  a.$('share').onclick();
+  await a.settle();
+  const q = new URLSearchParams(a.copied.split('?')[1]);
+  assert.equal(q.get('summary'), '1', `the panel did not travel: ${a.copied}`);
+  assert.equal(q.get('at'), overTheIce, 'the moment stopped travelling alongside it');
+  /* ⭐ AND THE CONFIRMATION SAYS SO, because its whole design is that the sharer
+     can CHECK what they are about to send — a link that also opens a panel is
+     doing something the old sentence did not mention. */
+  assert.match(a.$('sharesaid').innerHTML, /with the summary showing/,
+    `the confirmation does not say the link carries the panel: ${a.$('sharesaid').innerHTML}`);
+
+  /* ⛔⛔ AND THE ROUND TRIP, through a fresh page given that very query — not
+     through the flag we wrote. The read side is what a visitor runs. */
+  const b = boot(rich, MEASURES, '?' + a.copied.split('?')[1]);
+  assert.equal(b.$('sumPanel').hidden, false,
+    'the link opened the replay and not the panel it was copied from');
+  assert.equal(b.$('sum').textContent, 'Hide', 'the door disagrees with the panel beside it');
+  /* AND THE MOMENT CAME WITH IT, so the flag did not cost the link its frame. */
+  assert.equal(b.$('scrub').value, a.$('scrub').value,
+    'the shared link landed on a different frame from the one it was copied at');
+
+  /* ⛔ A LINK WITHOUT THE FLAG OPENS NO PANEL — the paired half, without which
+     this passes on a page that simply always opens it. */
+  const c = boot(rich, MEASURES, `?game=${rich.game.id}&at=${overTheIce}`);
+  assert.equal(c.$('sumPanel').hidden, true, 'the panel opens with nothing asking for it');
+
+  /* ⛔⛔ AND THE FLAG IS READ STRICTLY, which a test that only ever sends `1` and
+     nothing cannot tell. Loosening `=== '1'` to "the key is present" survived both
+     halves above — the easy-state defect, where a check written against the states
+     you thought of approves the one you did not. `summary=0` reads as OFF to
+     anyone who writes it, and a link that opens a panel on it is a link doing the
+     opposite of what it says. */
+  for (const bad of ['0', 'yes', 'true', '']) {
+    const d = boot(rich, MEASURES, `?game=${rich.game.id}&summary=${bad}`);
+    assert.equal(d.$('sumPanel').hidden, true,
+      `\`summary=${bad}\` opened the panel — the flag is not being read strictly`);
+  }
+});
+
 test('the copy control emits a link to this moment, and says which moment', async () => {
   const a = boot();
   a.$('scrub').oninput({ target: { value: '120' } });

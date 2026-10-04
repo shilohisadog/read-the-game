@@ -430,6 +430,10 @@
    would have caught it derives the question from the page -- see
    test/render-preview.test.js, `every control the built page can produce`. */
 #rg.preview .sharerow{display:none!important}
+/* ⭐ AND THE SUMMARY'S DOOR WITH IT. A preview is a game that has not been played;
+   "what this game was" has no answer there, and `render-preview.test.js` requires
+   every control the markup can produce to be inside something this list hides. */
+#rg.preview .sumrow{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
    The homepage sizes the frame by aspect-ratio -- 200x108, the rink's 200x85
@@ -1751,20 +1755,12 @@
    text in this one sat 5px from its left edge while theirs was centred, for as
    long as the door existed. The base rule carries the layout; this names only
    the moment. `test/door-row.test.js` holds them equal. */
-/* ⏹ `#rg .lxw.lxwe{display:none}` AND ITS REVEAL AT `.ended` STOOD HERE UNTIL
-   2026-10-04, and they were an ANTI-SPOILER RULE: the door names the result, so
-   it was hidden until there was one. Kevin: *"having a button available instead
-   of 'forcing' the viewer to scrub to the end of the game might be a reasonable
-   thing to offer."*
-   ⭐ THE POLICY IS UNCHANGED AND THIS IS WHY IT SURVIVES. What is protected is
-   the RESULT — `test/smoke.test.js` still forbids it from first paint, and
-   nothing here reveals anything. The door's LABEL states what lies through it
-   and reveals none of it, so pressing it is the reader ASKING. The old rule
-   conflated being told with being able to ask.
-   ⚠️ AND IT CLOSES ON THE NEXT FRAME, by the same rule in `render` that takes the
-   auto-opened one off at the horn — so a reader who opens it mid-replay and then
-   moves gets the ice back rather than a replay running behind a panel. */
-#rg .lxw.lxwe{display:flex}
+/* ⏹ `.lxwe` AND ITS TWO RULES STOOD HERE. The door was hidden until the horn as
+   an anti-spoiler measure, then shown from the first frame on 2026-10-04 — and
+   then MOVED OUT of this row entirely the same day, because the row itself is
+   hidden until a layer is chosen (`#rg .lbox.empty .lxw`), so a reader on
+   `Just events` had no route to the summary at all. It now lives in the sidebar
+   beside `Copy a link to this moment`; see `.sumrow` below. */
 /* INSIDE THE OVERLAY THE CARD KEEPS ITS TYPE AND DROPS ITS CHROME. `.work`
    already draws a white panel with a border and a shadow; a bordered card inside
    a bordered panel is two frames around one thing. The figures, the kicker and
@@ -1832,6 +1828,14 @@
    nobody states is a picture a reader can only guess at. */
 #rg .sends{display:flex;justify-content:space-between;max-width:34ch;
  font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;margin:2px 0 0}
+/* ⭐ THE SUMMARY'S DOOR IN THE SIDEBAR. It wears `.share`, the same control
+   `Copy a link to this moment` is, because it IS the same kind of thing: a
+   button in the sidebar that acts on the whole game rather than on the moment or
+   the layer. `.sumdoor` carries only what differs — it is the one that opens a
+   panel, so it says so to a screen reader through `aria-expanded`, and it sits
+   directly under its sibling with the row's own gap. */
+#rg .sumrow{display:flex;margin:8px 0 0}
+#rg .sumdoor{width:100%}
 #rg .srecap{display:block;margin:16px 0 0;min-height:44px;padding:0 16px;
  border:1px solid var(--edge);border-radius:999px;background:#fff;
  font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer}

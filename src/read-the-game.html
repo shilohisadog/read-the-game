@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PqtsS1u0A3s4PpE9Iafu9pRw0GiVMXQ8gWTRwHT8XPM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-8s5+EvqX6XUuj1hqE2BfIYWNVddIDPIlmFIsX55jTFk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-x31RPswjMqiq+i8R5xryr5VoIa2zpB75fBUuWOOqvBc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5l0/O/zMdjCPhRf7yeEVJiETC/JwEEiCW69c7LT4CdU='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -476,6 +476,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    would have caught it derives the question from the page -- see
    test/render-preview.test.js, `every control the built page can produce`. */
 #rg.preview .sharerow{display:none!important}
+/* ⭐ AND THE SUMMARY'S DOOR WITH IT. A preview is a game that has not been played;
+   "what this game was" has no answer there, and `render-preview.test.js` requires
+   every control the markup can produce to be inside something this list hides. */
+#rg.preview .sumrow{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
    The homepage sizes the frame by aspect-ratio -- 200x108, the rink's 200x85
@@ -1797,20 +1801,12 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    text in this one sat 5px from its left edge while theirs was centred, for as
    long as the door existed. The base rule carries the layout; this names only
    the moment. `test/door-row.test.js` holds them equal. */
-/* ⏹ `#rg .lxw.lxwe{display:none}` AND ITS REVEAL AT `.ended` STOOD HERE UNTIL
-   2026-10-04, and they were an ANTI-SPOILER RULE: the door names the result, so
-   it was hidden until there was one. Kevin: *"having a button available instead
-   of 'forcing' the viewer to scrub to the end of the game might be a reasonable
-   thing to offer."*
-   ⭐ THE POLICY IS UNCHANGED AND THIS IS WHY IT SURVIVES. What is protected is
-   the RESULT — `test/smoke.test.js` still forbids it from first paint, and
-   nothing here reveals anything. The door's LABEL states what lies through it
-   and reveals none of it, so pressing it is the reader ASKING. The old rule
-   conflated being told with being able to ask.
-   ⚠️ AND IT CLOSES ON THE NEXT FRAME, by the same rule in `render` that takes the
-   auto-opened one off at the horn — so a reader who opens it mid-replay and then
-   moves gets the ice back rather than a replay running behind a panel. */
-#rg .lxw.lxwe{display:flex}
+/* ⏹ `.lxwe` AND ITS TWO RULES STOOD HERE. The door was hidden until the horn as
+   an anti-spoiler measure, then shown from the first frame on 2026-10-04 — and
+   then MOVED OUT of this row entirely the same day, because the row itself is
+   hidden until a layer is chosen (`#rg .lbox.empty .lxw`), so a reader on
+   `Just events` had no route to the summary at all. It now lives in the sidebar
+   beside `Copy a link to this moment`; see `.sumrow` below. */
 /* INSIDE THE OVERLAY THE CARD KEEPS ITS TYPE AND DROPS ITS CHROME. `.work`
    already draws a white panel with a border and a shadow; a bordered card inside
    a bordered panel is two frames around one thing. The figures, the kicker and
@@ -1878,6 +1874,14 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    nobody states is a picture a reader can only guess at. */
 #rg .sends{display:flex;justify-content:space-between;max-width:34ch;
  font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;margin:2px 0 0}
+/* ⭐ THE SUMMARY'S DOOR IN THE SIDEBAR. It wears `.share`, the same control
+   `Copy a link to this moment` is, because it IS the same kind of thing: a
+   button in the sidebar that acts on the whole game rather than on the moment or
+   the layer. `.sumdoor` carries only what differs — it is the one that opens a
+   panel, so it says so to a screen reader through `aria-expanded`, and it sits
+   directly under its sibling with the row's own gap. */
+#rg .sumrow{display:flex;margin:8px 0 0}
+#rg .sumdoor{width:100%}
 #rg .srecap{display:block;margin:16px 0 0;min-height:44px;padding:0 16px;
  border:1px solid var(--edge);border-radius:999px;background:#fff;
  font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer}
@@ -2866,7 +2870,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
        ⚠️ MEASURED AFTERWARDS, NOT REASONED ABOUT: at 568x320 `How we counted`
        needed 112px of text in a 105px box and WRAPPED onto two lines beside a
        neighbour on one. `app.css` clamps the type for that; see the rule. -->
-  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><div class="lxws"><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">How we counted</button><button class="lxw" id="alot" aria-expanded="false" aria-controls="alotPanel">Is that a lot?</button><button class="lxw lxwe" id="sum" aria-expanded="false" aria-controls="sumPanel">What this game was</button></div></div>
+  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><div class="lxws"><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">How we counted</button><button class="lxw" id="alot" aria-expanded="false" aria-controls="alotPanel">Is that a lot?</button></div></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside the band under the ice so it could anchor to that row's top edge,
        which was the bottom of the ice -- correct exactly while the row was
@@ -3034,6 +3038,23 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
+<!-- ⭐⭐⭐ THE SUMMARY'S OWN DOOR, IN THE SIDEBAR — Kevin, 2026-10-04: *"I think I'd
+     rather have a separate button, in the sidebar, so a viewer doesn't have to
+     enable a layer to get to it."*
+
+     ⛔ AND HIS PREMISE WAS RIGHT WHERE MY MEASUREMENT WAS WRONG. The button lived
+     in `.lxws` under the rink, and `#rg .lbox.empty .lxw{visibility:hidden}` hides
+     that whole row until a layer is chosen — so a reader on `Just events`, which
+     is the default, had NO route to the summary at all. I had reported it visible
+     after reading `display` and a bounding box: verifying an ATTRIBUTE is not
+     verifying VISIBILITY, which this repo has logged three times.
+
+     ⭐ ONE CONTROL, NOT TWO. `#sum` MOVED here rather than being copied: two
+     routes to one panel teach a reader that the two are different places, which
+     is the duplicate funnel `_NAV` already names. The door row keeps the two that
+     are ABOUT the ledger beside them; this one is about the whole game and was
+     never about the layer. -->
+<div class="sumrow"><button class="share sumdoor" id="sum" type="button" aria-expanded="false" aria-controls="sumPanel">What this game was</button></div>
 </div>
 <!-- ⏭ THE VERDICT CARD USED TO SIT HERE, after the transport and before the
      video, and the note it carried argued it out of `.rinkbox` because a card
@@ -10495,8 +10516,24 @@ function parse(search) {
     else problems.push(`ends: "${rawEnds}" is not ${ENDS.join(' or ')}`);
   }
 
+  /* ⭐⭐ `summary=1` — THE SUMMARY PANEL, CARRIED BY THE LINK. Kevin, 2026-10-04:
+     *"once we tap 'Show game summary', I can provide a discrete link to social
+     media at that state of the site."* A link that opens the replay and not the
+     thing the sharer was looking at is a link to a different page.
+
+     ⭐ A FLAG, THE SAME SHAPE AS `preview`, and deliberately not part of `format`.
+     `format` emits a MOMENT — a game, a frame, the lens and the strength it was
+     read under — and the panel is not a property of the moment: the counts in it
+     are of the whole game and do not move with the playhead. Putting it in the
+     moment's grammar would make every round-trip assertion in this file carry a
+     field the moment does not have.
+
+     ⚠️ AND IT IS READ STRICTLY. Anything other than `1` is absent rather than
+     truthy, so `summary=0` and `summary=yes` both open nothing — the same rule
+     `preview` has followed since it was written. */
   return { game, at, layers, strength, ends,
-           preview: once('preview') === '1', problems };
+           preview: once('preview') === '1',
+           summary: once('summary') === '1', problems };
 }
 
 /**
@@ -15683,6 +15720,12 @@ $('atnote').textContent=AT.why?AT.why.text
    and is asserted there instead. */
 const OPEN=LINK.at?frameOf(AT.index):-1;
 set(OPEN,OPEN<0?'':'jump');
+/* ⭐⭐ AND THE SUMMARY IF THE LINK ASKED FOR IT — see `shareUrl`. AFTER `set`,
+   because `render` takes the panel back off at any frame that is not the horn and
+   the opening frame is a render: opened before it, a shared link would close its
+   own panel before anyone saw it. The reader's first move still closes it, which
+   is the same rule and the right one — the ice is underneath. */
+if(LINK.summary)setOverlay('sum');
 
 /**
  * ⭐ COPY A LINK TO THIS MOMENT — the write side of a seam that has only ever
@@ -15730,7 +15773,15 @@ function shareUrl(){
             layers:pick==='none'?[]:[pick],strength:evenOnly?'even':'all'});
  // The ends mode is appended rather than passed, because `format` does not carry
  // it and only a non-default is worth the noise. See the note above.
- return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'');}
+ /* ⭐⭐ AND THE SUMMARY TRAVELS WHEN IT IS OPEN. Kevin, 2026-10-04: *"once we tap
+    'Show game summary', I can provide a discrete link to social media at that
+    state of the site."* The panel is the page's one plain-language answer to what
+    a game was, so a link copied while it is up has to arrive with it up — a link
+    that lands on the replay instead is a link to a different page.
+    ⛔ ONLY WHEN IT IS OPEN, which is what makes this a link to THIS moment rather
+    than a second kind of link: nothing is added to a share taken over the ice. */
+ return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'')
+         +(sumOpen?'&summary=1':'');}
 
 const shareBtn=$('share'),shareSaid=$('sharesaid');
 if(shareBtn)shareBtn.onclick=()=>{
@@ -15744,8 +15795,15 @@ if(shareBtn)shareBtn.onclick=()=>{
  const e=back.at?G.events[r.index]:null;
  const where=e?`<b>P${e.per} ${e.rem}</b> · ${ESC(playSaid(e))}`
              :'<b>the start of the game</b>';
+ /* ⭐ AND IT SAYS WHAT ELSE THE LINK CARRIES. The confirmation's whole design is
+    that the sharer can CHECK what they are about to send — "it opens at P3 00:00"
+    is that for the moment, and a link that also opens a panel is doing something
+    the sentence did not mention. `back.summary` rather than `sumOpen`, for the
+    reason the moment is reported from `parse` too: what is named is what the LINK
+    does, never what we meant it to do. */
+ const also=back.summary?', with the summary showing':'';
  const done=ok=>{shareSaid.innerHTML=ok
-   ?`Copied — it opens at ${where}.`
+   ?`Copied — it opens at ${where}${also}.`
    // ⚠️ A REFUSED CLIPBOARD IS NOT A FAILED FEATURE. Permission can be denied
    // and there is nothing to retry, so the link itself goes on screen where it
    // can be selected by hand — the same move as naming the game we could not

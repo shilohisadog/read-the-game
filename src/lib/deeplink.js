@@ -171,8 +171,24 @@ export function parse(search) {
     else problems.push(`ends: "${rawEnds}" is not ${ENDS.join(' or ')}`);
   }
 
+  /* ⭐⭐ `summary=1` — THE SUMMARY PANEL, CARRIED BY THE LINK. Kevin, 2026-10-04:
+     *"once we tap 'Show game summary', I can provide a discrete link to social
+     media at that state of the site."* A link that opens the replay and not the
+     thing the sharer was looking at is a link to a different page.
+
+     ⭐ A FLAG, THE SAME SHAPE AS `preview`, and deliberately not part of `format`.
+     `format` emits a MOMENT — a game, a frame, the lens and the strength it was
+     read under — and the panel is not a property of the moment: the counts in it
+     are of the whole game and do not move with the playhead. Putting it in the
+     moment's grammar would make every round-trip assertion in this file carry a
+     field the moment does not have.
+
+     ⚠️ AND IT IS READ STRICTLY. Anything other than `1` is absent rather than
+     truthy, so `summary=0` and `summary=yes` both open nothing — the same rule
+     `preview` has followed since it was written. */
   return { game, at, layers, strength, ends,
-           preview: once('preview') === '1', problems };
+           preview: once('preview') === '1',
+           summary: once('summary') === '1', problems };
 }
 
 /**

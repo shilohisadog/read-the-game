@@ -4660,6 +4660,12 @@ $('atnote').textContent=AT.why?AT.why.text
    and is asserted there instead. */
 const OPEN=LINK.at?frameOf(AT.index):-1;
 set(OPEN,OPEN<0?'':'jump');
+/* ⭐⭐ AND THE SUMMARY IF THE LINK ASKED FOR IT — see `shareUrl`. AFTER `set`,
+   because `render` takes the panel back off at any frame that is not the horn and
+   the opening frame is a render: opened before it, a shared link would close its
+   own panel before anyone saw it. The reader's first move still closes it, which
+   is the same rule and the right one — the ice is underneath. */
+if(LINK.summary)setOverlay('sum');
 
 /**
  * ⭐ COPY A LINK TO THIS MOMENT — the write side of a seam that has only ever
@@ -4707,7 +4713,15 @@ function shareUrl(){
             layers:pick==='none'?[]:[pick],strength:evenOnly?'even':'all'});
  // The ends mode is appended rather than passed, because `format` does not carry
  // it and only a non-default is worth the noise. See the note above.
- return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'');}
+ /* ⭐⭐ AND THE SUMMARY TRAVELS WHEN IT IS OPEN. Kevin, 2026-10-04: *"once we tap
+    'Show game summary', I can provide a discrete link to social media at that
+    state of the site."* The panel is the page's one plain-language answer to what
+    a game was, so a link copied while it is up has to arrive with it up — a link
+    that lands on the replay instead is a link to a different page.
+    ⛔ ONLY WHEN IT IS OPEN, which is what makes this a link to THIS moment rather
+    than a second kind of link: nothing is added to a share taken over the ice. */
+ return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'')
+         +(sumOpen?'&summary=1':'');}
 
 const shareBtn=$('share'),shareSaid=$('sharesaid');
 if(shareBtn)shareBtn.onclick=()=>{
@@ -4721,8 +4735,15 @@ if(shareBtn)shareBtn.onclick=()=>{
  const e=back.at?G.events[r.index]:null;
  const where=e?`<b>P${e.per} ${e.rem}</b> · ${ESC(playSaid(e))}`
              :'<b>the start of the game</b>';
+ /* ⭐ AND IT SAYS WHAT ELSE THE LINK CARRIES. The confirmation's whole design is
+    that the sharer can CHECK what they are about to send — "it opens at P3 00:00"
+    is that for the moment, and a link that also opens a panel is doing something
+    the sentence did not mention. `back.summary` rather than `sumOpen`, for the
+    reason the moment is reported from `parse` too: what is named is what the LINK
+    does, never what we meant it to do. */
+ const also=back.summary?', with the summary showing':'';
  const done=ok=>{shareSaid.innerHTML=ok
-   ?`Copied — it opens at ${where}.`
+   ?`Copied — it opens at ${where}${also}.`
    // ⚠️ A REFUSED CLIPBOARD IS NOT A FAILED FEATURE. Permission can be denied
    // and there is nothing to retry, so the link itself goes on screen where it
    // can be selected by hand — the same move as naming the game we could not
