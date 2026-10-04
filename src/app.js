@@ -1676,7 +1676,12 @@ function renderSum(){
  const host=$('sumBody');
  host.innerHTML='';
  const h=document.createElement('h2');
- h.textContent='Every count in this game ';
+ /* ⚠️ `the whole game`, NOT `this game`, SINCE 2026-10-04. These counts were only
+    ever readable at the horn, where "this game" and "the whole game" are the same
+    phrase; the door is now open from the first frame, and "every count in this
+    game" over a replay in its second period reads as every count SO FAR. The
+    figures did not change — the moment they can be read did. */
+ h.textContent='Every count in the whole game ';
  const sub=document.createElement('span');
  sub.className='wsub';
  h.appendChild(sub);

@@ -1751,8 +1751,20 @@
    text in this one sat 5px from its left edge while theirs was centred, for as
    long as the door existed. The base rule carries the layout; this names only
    the moment. `test/door-row.test.js` holds them equal. */
-#rg .lxw.lxwe{display:none}
-#rg.ended .lxw.lxwe{display:flex}
+/* ⏹ `#rg .lxw.lxwe{display:none}` AND ITS REVEAL AT `.ended` STOOD HERE UNTIL
+   2026-10-04, and they were an ANTI-SPOILER RULE: the door names the result, so
+   it was hidden until there was one. Kevin: *"having a button available instead
+   of 'forcing' the viewer to scrub to the end of the game might be a reasonable
+   thing to offer."*
+   ⭐ THE POLICY IS UNCHANGED AND THIS IS WHY IT SURVIVES. What is protected is
+   the RESULT — `test/smoke.test.js` still forbids it from first paint, and
+   nothing here reveals anything. The door's LABEL states what lies through it
+   and reveals none of it, so pressing it is the reader ASKING. The old rule
+   conflated being told with being able to ask.
+   ⚠️ AND IT CLOSES ON THE NEXT FRAME, by the same rule in `render` that takes the
+   auto-opened one off at the horn — so a reader who opens it mid-replay and then
+   moves gets the ice back rather than a replay running behind a panel. */
+#rg .lxw.lxwe{display:flex}
 /* INSIDE THE OVERLAY THE CARD KEEPS ITS TYPE AND DROPS ITS CHROME. `.work`
    already draws a white panel with a border and a shadow; a bordered card inside
    a bordered panel is two frames around one thing. The figures, the kicker and

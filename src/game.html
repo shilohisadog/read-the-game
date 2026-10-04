@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5T2qYR6Q1jRIdqZFTYMcGozk26SKF9wEGCaOisC5axc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-CO1KyxUplQ0C6jWK9rYIP5uf3Hq5dNHaBRT6/3darw0='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-y891JSJIXeO5Wfm+PhYJ7fp5qM4iXuZk92OUewqmuyU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-Wj9dbz3aXKsq5as84F5nmCTwud/J/79kcuZzrxlCI78='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -1798,8 +1798,20 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    text in this one sat 5px from its left edge while theirs was centred, for as
    long as the door existed. The base rule carries the layout; this names only
    the moment. `test/door-row.test.js` holds them equal. */
-#rg .lxw.lxwe{display:none}
-#rg.ended .lxw.lxwe{display:flex}
+/* ⏹ `#rg .lxw.lxwe{display:none}` AND ITS REVEAL AT `.ended` STOOD HERE UNTIL
+   2026-10-04, and they were an ANTI-SPOILER RULE: the door names the result, so
+   it was hidden until there was one. Kevin: *"having a button available instead
+   of 'forcing' the viewer to scrub to the end of the game might be a reasonable
+   thing to offer."*
+   ⭐ THE POLICY IS UNCHANGED AND THIS IS WHY IT SURVIVES. What is protected is
+   the RESULT — `test/smoke.test.js` still forbids it from first paint, and
+   nothing here reveals anything. The door's LABEL states what lies through it
+   and reveals none of it, so pressing it is the reader ASKING. The old rule
+   conflated being told with being able to ask.
+   ⚠️ AND IT CLOSES ON THE NEXT FRAME, by the same rule in `render` that takes the
+   auto-opened one off at the horn — so a reader who opens it mid-replay and then
+   moves gets the ice back rather than a replay running behind a panel. */
+#rg .lxw.lxwe{display:flex}
 /* INSIDE THE OVERLAY THE CARD KEEPS ITS TYPE AND DROPS ITS CHROME. `.work`
    already draws a white panel with a border and a shadow; a bordered card inside
    a bordered panel is two frames around one thing. The figures, the kicker and
@@ -12646,7 +12658,12 @@ function renderSum(){
  const host=$('sumBody');
  host.innerHTML='';
  const h=document.createElement('h2');
- h.textContent='Every count in this game ';
+ /* ⚠️ `the whole game`, NOT `this game`, SINCE 2026-10-04. These counts were only
+    ever readable at the horn, where "this game" and "the whole game" are the same
+    phrase; the door is now open from the first frame, and "every count in this
+    game" over a replay in its second period reads as every count SO FAR. The
+    figures did not change — the moment they can be read did. */
+ h.textContent='Every count in the whole game ';
  const sub=document.createElement('span');
  sub.className='wsub';
  h.appendChild(sub);

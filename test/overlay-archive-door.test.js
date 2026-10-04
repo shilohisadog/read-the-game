@@ -663,18 +663,69 @@ test('the horn does not snatch an overlay the reader already opened', () => {
 });
 
 /**
- * ⭐ THE DOOR THAT NAMES THE RESULT IS HIDDEN UNTIL THERE IS ONE, and it is the
- * SAME `.ended` class the card uses rather than a second rule naming the same
- * moment. The fake document has no CSS, so what is checkable here is the rule and
- * the class that spends it — exactly how the card's own spoiler test is written.
+ * ⭐⭐⭐ THE DOOR IS OPEN FROM THE FIRST FRAME, AND THE RESULT IS STILL PROTECTED.
+ *
+ * It was hidden until `.ended` as an anti-spoiler rule: the panel names the
+ * winner, so the door was withheld until there was one. Kevin, 2026-10-04:
+ * *"having a button available instead of 'forcing' the viewer to scrub to the end
+ * of the game might be a reasonable thing to offer."*
+ *
+ * ⭐ THE POLICY DID NOT CHANGE — the old rule conflated BEING TOLD with BEING
+ * ABLE TO ASK. `test/smoke.test.js` still forbids the result from first paint and
+ * still passes; the door's label states what lies through it and reveals none of
+ * it, so pressing it is the reader asking. That is the same principle app.js
+ * already applies to its controls: *"a button has to be predictable before the
+ * click or it is a dare."*
+ *
+ * ⛔ SO WHAT IS ASSERTED IS THE PAIR: reachable, and silent until pressed.
  */
-test('the summary door is not a spoiler mid-replay', () => {
-  assert.match(PAGE_CSS, /#rg \.lxw\.lxwe\{display:none\}/,
-    'the "What this game was" door is visible before the game has a result');
-  assert.match(PAGE_CSS, /#rg\.ended \.lxw\.lxwe\{display:/,
-    'nothing reveals the door once the game HAS a result');
+test('the summary door is reachable from the first frame, and tells nobody anything until it is pressed', () => {
+  /* ⛔⛔⛔ COMMENTS STRIPPED, AND THIS WENT RED WITHOUT IT — the FIFTH
+     monitor-armed-against-itself in this repo. The stylesheet records why the
+     old rule went and quotes it to do so, so a check reading the raw text found
+     `display:none` in the explanation of its own removal and reported the door
+     as hidden. A stylesheet comment is not a rule; what the browser parses is.
+     ⭐ AND STRIPPING IS THE FIX, NOT REWORDING. The alternative — never quoting a
+     rule you deleted — makes the file worse to read to keep a test working, which
+     is the tail wagging the dog. The same lesson as `tools/jslex.mjs`, one
+     language over: ask the question of the code, never of the prose about it. */
+  const CSS = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.doesNotMatch(CSS, /#rg \.lxw\.lxwe\{display:none\}/,
+    'the "What this game was" door is hidden again, so the only way to the summary '
+    + 'is to scrub 270 frames to the horn');
+  assert.match(CSS, /#rg \.lxw\.lxwe\{display:flex\}/,
+    'the door has no display of its own — the layout rule its two siblings share '
+    + 'is stated here and nowhere else');
   assert.ok(app.includes('class="lxw lxwe" id="sum"'),
-    'the door does not carry the class the two rules above key on');
+    'the door no longer carries the class its layout rule keys on');
+
+  const a = page();
+  /* ① ITS LABEL REVEALS NOTHING. The one thing the old rule actually protected. */
+  assert.equal(a.$('sum').textContent, 'What this game was');
+  const goals = rich.events.filter(e => e.type === 'goal' && e.pt !== 'SO');
+  const hs = goals.filter(e => e.own === rich.teams.home.id).length;
+  const as = goals.length - hs;
+  assert.ok(hs !== as, 'the fixture must have a decided game or this proves nothing');
+  for (const tell of [`${as}–${hs}`, `${as}-${hs}`, `${hs}–${as}`, `${hs}-${as}`])
+    assert.ok(!a.$('sum').textContent.includes(tell),
+      `the door itself states the result (${tell})`);
+
+  /* ② AND IT IS CLOSED UNTIL PRESSED, mid-replay. */
+  const s = a.$('scrub');
+  s.oninput({ target: { value: '50' } });
+  assert.equal(a.$('sumPanel').hidden, true, 'the summary is open without anyone asking');
+  a.$('sum').onclick();
+  assert.equal(a.$('sumPanel').hidden, false, 'pressing the door did not open the summary');
+  assert.equal(a.$('sum').textContent, 'Hide');
+
+  /* ③ AND MOVING ON TAKES IT AWAY — otherwise the replay runs behind a panel.
+     This is the SAME rule in `render` that takes the auto-opened one off when a
+     reader scrubs back from the horn; it needed no second statement, and a second
+     one would be free to drift from it. */
+  s.oninput({ target: { value: '51' } });
+  assert.equal(a.$('sumPanel').hidden, true,
+    'the summary stayed open over a replay that moved on without it');
+  assert.equal(a.$('sum').textContent, 'What this game was');
 });
 
 /**
