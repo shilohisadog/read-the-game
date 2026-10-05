@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hOc3cQhULeTP/6ttOYfYjHpXU5yHbmVexyuOvQfvaAE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-jQUTDO4bqWuv0b4ZyArtwtKbqqRG/ZWrY6NPsn2h0Ak='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ATu/80mBE+c4T4+jB9y5Tkfe4hniwKiioZroKYe39QU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-jQUTDO4bqWuv0b4ZyArtwtKbqqRG/ZWrY6NPsn2h0Ak='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -5488,6 +5488,52 @@ const X0=(d,v)=>v*d;
    pages for weeks. ⏭ IF THE GOALIE VIEW COMES BACK, so does its figure:
    `git log -S figTabletop` finds both, and `git show <this commit>^:src/lib/figures.js`
    is the whole module with both styles in it. See docs/status.md. */
+/* ⭐⭐⭐ HOW TALL A PERSON IS ON THIS RINK, AND IT IS A DECLARED POLICY.
+   The rink is drawn 200x85 units for 200x85 feet, so ONE UNIT IS ONE FOOT and a
+   figure's `size` is its height in feet. That made every figure here checkable
+   for the first time, and all of them were wrong: a skater was NINE FEET tall and
+   a goaltender FOUR, a 2.25x mismatch between two men standing on one sheet.
+
+   ⛔ IT WAS NOT A DRAWING BUG, IT WAS A MISSING SOURCE. The skater's 9 came from
+   "a ~6 ft player is ~6 units, goals get a little more presence" — an exaggeration
+   nobody had re-examined — and the goaltender's 4 came from fitting him inside the
+   six-foot goal mouth, which is a rule about EQUIPMENT standing in for a rule
+   about people. Kevin, 2026-10-05: *"is the net size scaled accurately to the rink
+   size? Since the goalie is scaled to the net, the players appear quite a bit
+   larger than the goalie, let's ensure the net scale is accurate, then work
+   backwards to the size of the skaters."* The net was accurate but for its depth;
+   the people were not, and this is the number they now come from.
+
+   ⚠️ IT IS A POLICY, NOT A MEASUREMENT: the archive records no heights, so this is
+   our declared choice — an NHL skater averages about 6'1", and on blades stands a
+   little over six feet. Every surface derives from it so there is one place to
+   argue with. */
+const PLAYER_FT = 6.2;
+/* ⛔⛔ `size` IS NOT THE DRAWN HEIGHT, AND ASSUMING IT WAS PUT A 7.4-FOOT
+   GOALTENDER ON THE ICE. The figures are laid out on a grid of `u = size/10` and
+   reach about 11.9 of those units from the shadow under the skates to the crown
+   of the head, so a figure asked for 6.2 draws 7.4. Measured, not guessed —
+   mascot 1.197, goaltender 1.190 — and the two agree closely enough to share one
+   number. **A PARAMETER NAMED FOR A QUANTITY IS NOT THE QUANTITY**, which is the
+   same shape as `own` meaning four things: the only fix is to measure it once and
+   convert in one place.
+   ⚠️ THE RAISED-ARM POSES ARE LEGITIMATELY TALLER — the goal celebration reaches
+   1.365 and the official 1.288 — because a person with his arms up IS taller.
+   They are not corrected back down; that would draw a man who shrinks to
+   celebrate. */
+const FIG_RISE = 1.19;
+/** The `size` to ask for when a figure should stand `ft` feet tall. */
+const sizeFor = ft => ft / FIG_RISE;
+/* ⏭ A GOAL USED TO BE DRAWN 28% LARGER — "goals get a little more presence" —
+   and that exaggeration is now 1.0, because the scale it was measured against
+   turned out to be wrong by half again and a bonus on top of a wrong number is
+   not a decision anybody made. The goal figure is still unmistakable without it:
+   the pose raises both arms, which makes it 14% taller on its own, and it carries
+   the goal colour and glow. ⚠️ KEVIN CAN HAVE THE PRESENCE BACK WITH THIS ONE
+   NUMBER, now that it would be an emphasis on an honest height rather than a
+   second exaggeration hiding inside a first. */
+const GOAL_SCALE = 1;
+
 const FIG = { mascot: figMascot, goalie: figGoalie, official: figOfficial };
 
 /* --- src/lib/period.js --- */
@@ -11226,7 +11272,15 @@ const netGlyph=(id,gx,col,label)=>{
   // Which way is "behind" is read from where the goal line sits on screen, so a
   // reflection of SX carries the whole net with it and cannot leave one end
   // pointing the wrong way.
-  const dir=gx<100?1:-1, back=gx-4*dir, top=42.5-3, bot=42.5+3;
+  /* ⛔ THE DEPTH WAS 4 FEET AND THE RULEBOOK SAYS 44 INCHES. Everything else
+     about this net is exact — the mouth is 6 ft (42.5±3) and the goal line sits
+     11 ft off the end boards — because the rink is 200x85 units for 200x85 feet,
+     so one unit IS one foot and there is no scale to get wrong. The depth was the
+     one number typed by eye, 9% over, found when Kevin asked the obvious question
+     nobody had: *"is the net size scaled accurately to the rink size?"* It is
+     written as the rule writes it, in inches, so the next reader can check it
+     against the book rather than against us. */
+  const dir=gx<100?1:-1, back=gx-NET_DEEP_FT*dir, top=42.5-NET_WIDE_FT/2, bot=42.5+NET_WIDE_FT/2;
   const body=`M ${gx} ${top} L ${back} ${top+0.8} L ${back} ${bot-0.8} L ${gx} ${bot} Z`;
   // NETTING, NOT A BLOCK. Filled with the club's colour the host's net rendered as
   // a solid slab -- the visitor's, being white inside its own frame, read far
@@ -11301,6 +11355,10 @@ const netGlyph=(id,gx,col,label)=>{
 // the test pins the relationship -- figure inside the mouth, centred on it,
 // measured from the rendered markup against the rendered post -- rather than
 // pinning these digits, which would only re-state what the code already says.
+/* THE NET, FROM THE RULEBOOK. NHL Rule 1.6: the goal is six feet wide and the
+   frame is forty-four inches deep. One rink unit is one foot, so these are the
+   measurements themselves rather than a drawing of them. */
+const NET_WIDE_FT=6, NET_DEEP_FT=44/12;
 const GK_H=4.6;                                    // full height, inside the 6ft mouth
 const goalieGlyph=(gx,col,fill,cls='gk')=>{
  const dir=gx<100?1:-1, x=gx+2.2*dir;
@@ -11464,23 +11522,22 @@ const ASPLAYED=LINK.ends!=='fixed';
 const ENDSMODE=ASPLAYED?'as-played':'fixed';
 const DIR=per=>(ASPLAYED&&SIDES[per]==='right')?-1:1;
 const AX=(x,per)=>SX(x*DIR(per)), AY=(y,per)=>SY(y*DIR(per));
-// Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
-// is ~6 units. Goals get a little more presence.
-// Only one figure is on the ice at a time, so it can afford presence and detail.
-const FIG_SZ=9, FIG_BIG=11.5;
-/* ⛔⛔⛔ HE IS SIZED TO THE NET, NOT TO THE SKATER, AND THAT IS KEVIN'S RULING.
-   Replacing the glyph with a figure, I first drew him 8.2 units — a person beside
-   a 9-unit skater, which is what "consistent with the replay figures" sounds like
-   it means. `render-board` went red with a rule written from a screen capture
-   Kevin sent earlier: *"the goalie figures are bigger than the net."* The glyph
-   had been 8.1 units in front of a 6-foot mouth, 135% of the thing it defends,
-   and was shrunk to fit. I had reintroduced the exact defect, in new clothes.
-   ⭐ SO CONSISTENCY HERE IS OF HAND, NOT OF SCALE. He is the same drawing as the
-   shooter — same grid, same ink, same face — at the size the net allows: under
-   80% of the mouth, centred on it. ⏭ If the two should also match in SIZE, the
-   net-fit rule is what has to be reopened, and that is Kevin's call, not a thing
-   to settle by quietly growing the figure. */
-const GK_SZ=4.0, GK_PX=4.3, GK_STANDOFF=0.34;
+/* ⭐⭐ EVERY PERSON ON THIS ICE IS THE SAME HEIGHT, AND IT IS A REAL ONE. The rink
+   is 200 units for 200 feet, so a figure's size IS its height in feet — and until
+   2026-10-05 a skater was 9 of them and a goaltender 4, which nothing had ever
+   had to justify because nothing read the two numbers together. Kevin did, from
+   the live rink. Both now come from `PLAYER_FT`, so a skater cannot drift from a
+   goaltender without someone changing the one declared height they share. */
+const FIG_SZ=sizeFor(PLAYER_FT), FIG_BIG=sizeFor(PLAYER_FT*GOAL_SCALE);
+/* ⛔⛔ AND HE IS NO LONGER SIZED TO THE NET. He used to be 4 units so that he fit
+   inside a six-foot goal mouth — a rule written when the figure was 8.1 units and
+   genuinely dwarfed it (Kevin: *"the goalie figures are bigger than the net"*).
+   Fitting a PERSON to a piece of EQUIPMENT is what made him two thirds of life
+   size beside a skater half again over it; with both at the real height the
+   complaint that rule existed to answer cannot recur, because neither figure is
+   exaggerated at all. `render-board` asserts the heights against the rulebook
+   net now rather than asserting a ratio to it. */
+const GK_SZ=sizeFor(PLAYER_FT), GK_PX=4.3, GK_STANDOFF=0.26;
 /* ⚠️ WHERE THE FIGURE'S MIDDLE IS, measured, per unit of `size`. It is NOT half
    the head height: the figure stands on its feet, so its drawn extent runs from
    the crown of the mask down past the SHADOW on the ice, and the shadow is what

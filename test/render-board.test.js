@@ -226,7 +226,13 @@ test('the trails summary says which setting is on, in the button\'s own words', 
    goaltender poke through the crossbar and pass. */
 function drawnExtent(svg) {
   let top = Infinity, bot = -Infinity;
-  const parts = svg.split(/<g transform="translate\(([-\d.]+),([-\d.]+)\)"[^>]*>/);
+  /* ⚠️ THE TRANSFORM MAY CARRY MORE THAN THE TRANSLATE. A skater leans, so his
+     group reads `translate(x,y) rotate(r)` and a pattern demanding the closing
+     quote straight after the translate simply never matched — the group was
+     treated as unplaced and the figure measured 48 feet. The goaltender does NOT
+     lean, so he measured correctly throughout and the bug looked like a defect in
+     the skater\'s SIZE rather than in the ruler. */
+  const parts = svg.split(/<g transform="translate\(([-\d.]+),([-\d.]+)\)[^"]*"[^>]*>/);
   let ty = 0;
   for (let i = 0; i < parts.length; i++) {
     if (i > 0 && i % 3 === 1) continue;                       // the x of a translate
@@ -711,45 +717,76 @@ test('a whistle mark lands ON a painted spot, not on blank ice', () => {
     'no mark landed in the neutral zone, so this test never covered the spots that were missing');
 });
 
-test('the goaltender FITS INSIDE the net it defends, and is centred on the mouth', () => {
-  // Kevin, from one screen capture: "the goalie figures are bigger than the net."
-  // Measured, they were — 8.1 units tall in front of a 6-foot mouth, 135% of the
-  // thing they defend, and centred at 41.8 against the mouth's 42.5, so high as
-  // well as large. THIS IS THE THIRD TIME PIXELS FOUND WHAT THE SUITE COULD NOT.
-  //
-  // The size of a glyph has no source in the feed, so there is no number here to
-  // assert as correct. The RELATIONSHIP is assertable: a goaltender defending a
-  // net fits in it. Both sides of the comparison are read out of the rendered
-  // markup — the mouth from the POST, the figure from its own parts — so this
-  // cannot pass by agreeing with a constant it copied from the code.
+test('every person on the ice is a person\'s height, measured against the net', () => {
+  /* ⭐⭐⭐ KEVIN, 2026-10-05: *"is the net size scaled accurately to the rink size?
+     Since the goalie is scaled to the net, the players appear quite a bit larger
+     than the goalie, let\'s ensure the net scale is accurate, then work backwards
+     to the size of the skaters."*
+
+     MEASURED: the rink is 200x85 units for 200x85 feet, so ONE UNIT IS ONE FOOT
+     and every figure\'s height is readable in feet. The net was right — a 6 ft
+     mouth, a goal line 11 ft off the boards — but its depth was 4 ft against the
+     rulebook\'s 44 inches, and THE PEOPLE WERE BADLY WRONG: a skater stood NINE
+     FEET and a goaltender FOUR, on the same sheet.
+
+     ⛔ WHAT THIS TEST USED TO SAY, AND WHY IT IS GONE. It required the goaltender
+     to fill under 90% of the goal mouth — written in good faith when the figure
+     was 8.1 units and genuinely dwarfed the net (Kevin, from a screen capture:
+     *"the goalie figures are bigger than the net"*). But fitting a PERSON to a
+     piece of EQUIPMENT is what made him two thirds of life size, and the rule
+     could not see the skater beside him at half again over it. **A RATIO TO THE
+     NEAREST OBJECT IS NOT A SCALE.** The replacement is an absolute one, and the
+     net is still the yardstick — only now because six feet of goal mouth and six
+     feet of goaltender are THE SAME MEASUREMENT, both out of the rulebook.
+
+     ⚠️ AND IT IS NOT CIRCULAR: the heights come out of the rendered markup and
+     the yardstick out of the drawn POSTS, so `PLAYER_FT` moving on its own cannot
+     keep this green. */
   const a = boot();
   const posts = [...a.$('rink').innerHTML.matchAll(
     /class="post"[^>]*y1="([\d.]+)" x2="[\d.]+" y2="([\d.]+)"/g)]
     .map(m => ({ top: +m[1], bot: +m[2] }));
   assert.equal(posts.length, 2, 'two nets to be measured against');
+  const mouthFt = posts[0].bot - posts[0].top;
+  assert.ok(Math.abs(mouthFt - 6) < 0.01,
+    `the goal mouth is ${mouthFt} units where the rulebook says 6 feet — the `
+    + 'yardstick this test measures people with has itself drifted');
 
   const men = netmen(a.every(d => d.$('netmen').innerHTML)[0]);
   assert.equal(men.length, 2, 'both goaltenders present at the opening faceoff');
-  assert.ok(men.every(m => Number.isFinite(m.top) && Number.isFinite(m.bot)),
-    'a goaltender drew nothing this could measure — the extent reader lost its subject');
 
-  for (let i = 0; i < 2; i++) {
-    const mouth = posts[i];
+  for (let i = 0; i < men.length; i++) {
     const { top, bot } = men[i];
-    assert.ok(top >= mouth.top,
-      `goaltender ${i} reaches ${top}, above the crossbar at ${mouth.top}`);
-    assert.ok(bot <= mouth.bot,
-      `goaltender ${i} reaches ${bot}, past the post at ${mouth.bot}`);
-    // And it must be CLEARLY smaller, not merely non-overflowing — a figure that
-    // exactly filled the mouth would pass the two checks above and still read as
-    // a goaltender wearing the net.
-    const fill = (bot - top) / (mouth.bot - mouth.top);
-    assert.ok(fill < 0.9, `goaltender ${i} fills ${(fill * 100).toFixed(0)}% of the mouth`);
-    // CENTRED. The old figure sat 0.68 high, which is what made it read as
-    // standing above the net rather than in it.
-    const off = Math.abs((top + bot) / 2 - (mouth.top + mouth.bot) / 2);
-    assert.ok(off <= 0.2, `goaltender ${i} sits ${off.toFixed(2)} off the mouth's centre`);
+    const tall = bot - top;
+    /* A six-foot man and a six-foot goal mouth are the same number of feet, so
+       the two are compared directly. The 15% band is slack for the shadow under
+       his skates and the crown of his mask, not room for a policy to move in. */
+    assert.ok(Math.abs(tall - mouthFt) / mouthFt < 0.15,
+      `goaltender ${i} stands ${tall.toFixed(2)} ft beside a ${mouthFt} ft goal mouth `
+      + '— he is not a person\'s height on a rink drawn one unit to the foot');
+    // CENTRED on the mouth, which is what keeps him in the net rather than above it.
+    const off = Math.abs((top + bot) / 2 - (posts[i].top + posts[i].bot) / 2);
+    assert.ok(off <= 0.35, `goaltender ${i} sits ${off.toFixed(2)} off the mouth's centre`);
   }
+
+  /* ⭐⭐ AND THE HALF THE OLD RULE COULD NOT SEE: the skater. This is the actual
+     defect Kevin reported — not that either figure was wrong on its own, but that
+     two men on one sheet were 2.25x apart. Both are measured from the page.
+     MUTATION: give `FIG_SZ` and `GK_SZ` different values and this fires. */
+  const withFigures = a.every(d => d.$('events').innerHTML).find(h => /class="ev fig/.test(h));
+  assert.ok(withFigures, 'no frame of this game drew a shot figure to measure');
+  /* ⚠️ ONE FIGURE, NOT THE FRAME. A lazy `</g>` stops inside the figure\'s own
+     nested transform groups and a greedy one swallows every mark on the ice — the
+     first attempt measured a skater 48 feet tall, which is what a regex reporting
+     the whole events layer looks like. Split on the marks themselves. */
+  const one = withFigures.split(/<g class="ev fig/)[1] || '';
+  const skater = drawnExtent(one.split(/<(?:g|circle|path|line) class="ev /)[0]);
+  assert.ok(Number.isFinite(skater.top), 'the skater drew nothing this could measure');
+  const skaterTall = skater.bot - skater.top;
+  const gkTall = men[0].bot - men[0].top;
+  assert.ok(Math.abs(skaterTall - gkTall) / gkTall < 0.2,
+    `a skater stands ${skaterTall.toFixed(2)} ft and a goaltender ${gkTall.toFixed(2)} ft — `
+    + 'two people on one sheet are different heights');
 });
 
 test('the net is equipment: behind the goal line, six feet across, with netting', () => {

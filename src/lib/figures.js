@@ -319,4 +319,50 @@ const X0=(d,v)=>v*d;
    pages for weeks. ⏭ IF THE GOALIE VIEW COMES BACK, so does its figure:
    `git log -S figTabletop` finds both, and `git show <this commit>^:src/lib/figures.js`
    is the whole module with both styles in it. See docs/status.md. */
+/* ⭐⭐⭐ HOW TALL A PERSON IS ON THIS RINK, AND IT IS A DECLARED POLICY.
+   The rink is drawn 200x85 units for 200x85 feet, so ONE UNIT IS ONE FOOT and a
+   figure's `size` is its height in feet. That made every figure here checkable
+   for the first time, and all of them were wrong: a skater was NINE FEET tall and
+   a goaltender FOUR, a 2.25x mismatch between two men standing on one sheet.
+
+   ⛔ IT WAS NOT A DRAWING BUG, IT WAS A MISSING SOURCE. The skater's 9 came from
+   "a ~6 ft player is ~6 units, goals get a little more presence" — an exaggeration
+   nobody had re-examined — and the goaltender's 4 came from fitting him inside the
+   six-foot goal mouth, which is a rule about EQUIPMENT standing in for a rule
+   about people. Kevin, 2026-10-05: *"is the net size scaled accurately to the rink
+   size? Since the goalie is scaled to the net, the players appear quite a bit
+   larger than the goalie, let's ensure the net scale is accurate, then work
+   backwards to the size of the skaters."* The net was accurate but for its depth;
+   the people were not, and this is the number they now come from.
+
+   ⚠️ IT IS A POLICY, NOT A MEASUREMENT: the archive records no heights, so this is
+   our declared choice — an NHL skater averages about 6'1", and on blades stands a
+   little over six feet. Every surface derives from it so there is one place to
+   argue with. */
+export const PLAYER_FT = 6.2;
+/* ⛔⛔ `size` IS NOT THE DRAWN HEIGHT, AND ASSUMING IT WAS PUT A 7.4-FOOT
+   GOALTENDER ON THE ICE. The figures are laid out on a grid of `u = size/10` and
+   reach about 11.9 of those units from the shadow under the skates to the crown
+   of the head, so a figure asked for 6.2 draws 7.4. Measured, not guessed —
+   mascot 1.197, goaltender 1.190 — and the two agree closely enough to share one
+   number. **A PARAMETER NAMED FOR A QUANTITY IS NOT THE QUANTITY**, which is the
+   same shape as `own` meaning four things: the only fix is to measure it once and
+   convert in one place.
+   ⚠️ THE RAISED-ARM POSES ARE LEGITIMATELY TALLER — the goal celebration reaches
+   1.365 and the official 1.288 — because a person with his arms up IS taller.
+   They are not corrected back down; that would draw a man who shrinks to
+   celebrate. */
+export const FIG_RISE = 1.19;
+/** The `size` to ask for when a figure should stand `ft` feet tall. */
+export const sizeFor = ft => ft / FIG_RISE;
+/* ⏭ A GOAL USED TO BE DRAWN 28% LARGER — "goals get a little more presence" —
+   and that exaggeration is now 1.0, because the scale it was measured against
+   turned out to be wrong by half again and a bonus on top of a wrong number is
+   not a decision anybody made. The goal figure is still unmistakable without it:
+   the pose raises both arms, which makes it 14% taller on its own, and it carries
+   the goal colour and glow. ⚠️ KEVIN CAN HAVE THE PRESENCE BACK WITH THIS ONE
+   NUMBER, now that it would be an emphasis on an honest height rather than a
+   second exaggeration hiding inside a first. */
+export const GOAL_SCALE = 1;
+
 export const FIG = { mascot: figMascot, goalie: figGoalie, official: figOfficial };

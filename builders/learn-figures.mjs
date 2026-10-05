@@ -50,7 +50,7 @@ import { furniture, netGlyph, goalieGlyph, skaterGlyph, officialGlyph, GK_H,
 import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X, HIGH_DANGER_FT } from '../src/lib/rink.js';
 import { NEUTRAL } from '../src/lib/teams.js';
 import { SvgPen } from '../src/lib/svgpen.js';
-import { FIG } from '../src/lib/figures.js';
+import { FIG, PLAYER_FT, sizeFor } from '../src/lib/figures.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -267,14 +267,13 @@ const SHOWN_PX = 4.3;
 /* Where a figure's middle sits above its feet, per unit of size — measured, and
    it includes the SHADOW, which is why it is not half the head height. */
 const MID = 0.48;
-/* ⛔⛔ THE GOALTENDER IS SIZED TO THE NET AND THE SKATER IS NOT, which looks like
-   an inconsistency and is Kevin's ruling: *"the goalie figures are bigger than
-   the net."* A net mouth is six feet and a drawn goaltender has to sit inside the
-   thing he defends, so he is the one figure on this rink whose size is set by
-   equipment rather than by the person. `app.js` applies exactly the same numbers
-   on the replay; the two surfaces cannot drift because both state the rule the
-   same way and `render-board` measures the drawn result. */
-const GK_SZ = 4.0, SK_SZ = 6.7, GK_STANDOFF = 0.34;
+/* ⭐⭐ ONE HEIGHT FOR EVERY PERSON, and it is the replay's. These diagrams draw
+   the same rink the replay draws, at the same one-unit-is-one-foot scale, so a
+   figure on a rule page and a figure on the ice are the same size as well as the
+   same drawing — which is the whole of what "consistent with the replay figures"
+   can mean once the scale is honest. The goaltender used to be 4 units here
+   because he was fitted to the goal mouth; see `figures.js::PLAYER_FT`. */
+const GK_SZ = sizeFor(PLAYER_FT), SK_SZ = sizeFor(PLAYER_FT), GK_STANDOFF = 0.26;
 const gk = (gx, x, y, k = 1, cls = '', _dash = false) =>
   person('goalie', x, y, k, `dggk ${cls}`.trim(), x < 100 ? 1 : -1, GK_SZ);
 /** An official, placed and weighted exactly as `gk` places a goaltender. */

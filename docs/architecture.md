@@ -41,12 +41,12 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 789 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 1,196 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 814 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (49 modules) | 11,585 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (49 modules) | 11,643 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 836 |
 | **presentation** | generates the pages | `build_*.py` (8) | 7,448 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 5,048 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 5,047 |
 
-<sub>Counted 2026-10-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **49 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 35 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,048 lines **3,675 are comment-only and 1204 are code**, and **407 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-10-05 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **49 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 35 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,047 lines **3,674 are comment-only and 1204 are code**, and **407 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---

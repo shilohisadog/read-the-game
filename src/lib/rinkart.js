@@ -326,7 +326,15 @@ export const netGlyph=(id,gx,col,label)=>{
   // Which way is "behind" is read from where the goal line sits on screen, so a
   // reflection of SX carries the whole net with it and cannot leave one end
   // pointing the wrong way.
-  const dir=gx<100?1:-1, back=gx-4*dir, top=42.5-3, bot=42.5+3;
+  /* ⛔ THE DEPTH WAS 4 FEET AND THE RULEBOOK SAYS 44 INCHES. Everything else
+     about this net is exact — the mouth is 6 ft (42.5±3) and the goal line sits
+     11 ft off the end boards — because the rink is 200x85 units for 200x85 feet,
+     so one unit IS one foot and there is no scale to get wrong. The depth was the
+     one number typed by eye, 9% over, found when Kevin asked the obvious question
+     nobody had: *"is the net size scaled accurately to the rink size?"* It is
+     written as the rule writes it, in inches, so the next reader can check it
+     against the book rather than against us. */
+  const dir=gx<100?1:-1, back=gx-NET_DEEP_FT*dir, top=42.5-NET_WIDE_FT/2, bot=42.5+NET_WIDE_FT/2;
   const body=`M ${gx} ${top} L ${back} ${top+0.8} L ${back} ${bot-0.8} L ${gx} ${bot} Z`;
   // NETTING, NOT A BLOCK. Filled with the club's colour the host's net rendered as
   // a solid slab -- the visitor's, being white inside its own frame, read far
@@ -401,6 +409,10 @@ export const netGlyph=(id,gx,col,label)=>{
 // the test pins the relationship -- figure inside the mouth, centred on it,
 // measured from the rendered markup against the rendered post -- rather than
 // pinning these digits, which would only re-state what the code already says.
+/* THE NET, FROM THE RULEBOOK. NHL Rule 1.6: the goal is six feet wide and the
+   frame is forty-four inches deep. One rink unit is one foot, so these are the
+   measurements themselves rather than a drawing of them. */
+export const NET_WIDE_FT=6, NET_DEEP_FT=44/12;
 export const GK_H=4.6;                                    // full height, inside the 6ft mouth
 export const goalieGlyph=(gx,col,fill,cls='gk')=>{
  const dir=gx<100?1:-1, x=gx+2.2*dir;
