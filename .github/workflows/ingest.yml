@@ -98,6 +98,8 @@ jobs:
     outputs:
       code: ${{ steps.fetch.outputs.code }}
       synced: ${{ steps.sync.outputs.done }}
+      # Whether this run actually derived anything — see the sync step.
+      changed: ${{ steps.sync.outputs.changed }}
     steps:
       - uses: actions/checkout@v5
 
@@ -546,6 +548,51 @@ jobs:
           # was never published. The flag is set by the step that does the
           # publishing, so it cannot be true for a run that did not.
           echo "done=1" >> "$GITHUB_OUTPUT"
+          # ⭐⭐⭐ AND WHETHER THIS RUN DERIVED ANYTHING, which is a different
+          # question and was not being asked. `done` means THE SYNC STEP RAN; it
+          # is 1 on a run that walked the window, found every game already
+          # current and rewrote nothing. `measure` pulls the whole extract
+          # archive and remeasures it, so on such a run it produces a file
+          # identical to the one in the repo and commits nothing.
+          #
+          # ⛔⛔⛔ THE SIGNAL IS THE DERIVED COUNT, AND MY FIRST TWO GUESSES AT IT
+          # WERE BOTH WRONG. I reached for `ingest/index.json` existing, because
+          # the ledger step gates on exactly that — but derive writes the index on
+          # EVERY run, including one that derived nothing, so the condition could
+          # never be false and the change would have shipped inert. Before that I
+          # had read `nothing new this run — no index written` out of a run log and
+          # believed it: **a GitHub log contains the SHELL SOURCE of every step, so
+          # I had matched the text of an `echo` in a branch that never executed.**
+          # A string in a log is not a thing that happened.
+          #
+          # ⚠️ IT DOES NOT PREVENT THE FAILURE THAT PROMPTED IT. On 2026-10-05 the
+          # 19:18 run derived ONE game and its `measure` job sat fifteen minutes
+          # without ever being given a runner, then was cancelled by GitHub, which
+          # took the run red. That job had real work; nothing here would have saved
+          # it. What this removes is the OTHER kind: two of that day's six runs
+          # derived nothing at all and still spawned a job that pulled 373 MB,
+          # ran `npm run gates` and committed nothing.
+          #
+          # ⭐ AND THE COST OF THOSE IS NOT THE MINUTES. Every pointless job is a
+          # fresh chance for an infrastructure cancellation to paint the ingest
+          # red for no reason, and a red ingest that means nothing teaches us to
+          # stop reading red ingests. This repo has already paid for that: a
+          # publish halt went unquestioned for 31 hours in September because the
+          # failure looked familiar. See `ingest-delivery-target`.
+          # ⚠️ UNKNOWN MEANS MEASURE. If the index is missing, malformed or has no
+          # `derived` key, this falls back to 1 and the job runs — skipping on a
+          # question we could not answer would trade a wasted job for a silently
+          # unmeasured amendment, and only one of those two is recoverable by the
+          # next run noticing nothing wrong.
+          DERIVED=$(python3 -c "import json;print(json.load(open('ingest/index.json'))['run'].get('derived',1))" 2>/dev/null) || DERIVED=1
+          [ -n "$DERIVED" ] || DERIVED=1
+          if [ "$DERIVED" -gt 0 ] 2>/dev/null; then
+            echo "changed=1" >> "$GITHUB_OUTPUT"
+            echo "  derived ${DERIVED} game(s) — the archive moved, so it is worth measuring"
+          else
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+            echo "  derived nothing — the archive did not move, so there is nothing to measure"
+          fi
 
       # Syncing and assuming it landed is not verification -- the same lesson the
       # deploy gate learned. Read the index back out of the bucket and confirm it
@@ -772,7 +819,17 @@ jobs:
     # `code == 2` is a deliberate HALT in `fetch_nhl.py`, and nothing downstream
     # of a halt should run — the same condition and the same spelling the derive
     # step above uses.
-    if: ${{ !cancelled() && needs.ingest.outputs.synced == '1' && needs.ingest.outputs.code != '2' }}
+    # ⭐ AND ON THIS RUN HAVING DERIVED SOMETHING. `synced` only says the sync step
+    # ran, which is true of a run that walked the window and found every game
+    # already current; `changed` comes from the derive report's own count, so it
+    # is false exactly when there is nothing new to measure. Two of the six runs
+    # on 2026-10-05 derived nothing and still pulled 373 MB, ran `npm run gates`
+    # and committed an identical file.
+    # ⚠️ THIS DOES NOT PREVENT THE FAILURE THAT PROMPTED IT — that run derived one
+    # game and its job was cancelled for want of a runner. The sync step carries
+    # the whole reasoning, including the two wrong signals I tried first.
+    if: ${{ !cancelled() && needs.ingest.outputs.synced == '1'
+            && needs.ingest.outputs.changed == '1' && needs.ingest.outputs.code != '2' }}
     permissions:
       contents: write      # data/measures.json, the learn pages' build input
       actions: write       # dispatch the deploy; a GITHUB_TOKEN push cannot

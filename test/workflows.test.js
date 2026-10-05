@@ -669,3 +669,69 @@ test('⛔⛔⛔ no job writes the health block before building the pages it coun
     'no workflow runs both `npm run build` and the health writer, so this rule is '
     + 'guarding nothing — check the command names have not moved');
 });
+
+test('⭐⭐⭐ the measure job runs only when the run derived something', () => {
+  /* ⛔⛔ KEVIN, 2026-10-05: *"there was a failed ingest at 3:18 eastern this
+     afternoon, can you look into that please."* The `ingest` job was green through
+     all seventeen steps; the `measure` job behind it never got a runner from
+     GitHub, sat fifteen minutes to the second, and was cancelled, which takes the
+     run red. **NOTHING HERE WOULD HAVE PREVENTED THAT** — that run derived a game
+     and the job had real work. What this rule removes is the other kind: two of
+     that day's six runs derived NOTHING and still pulled 373 MB of extracts, ran
+     `npm run gates` and committed a file identical to the one already in the repo.
+
+     ⭐ THE COST OF THOSE IS NOT THE MINUTES. Every pointless job is a fresh chance
+     for an infrastructure cancellation to paint the ingest red for no reason, and
+     a red ingest that means nothing teaches us to stop reading red ingests. This
+     repo has already paid for that: a publish halt went unquestioned for 31 hours
+     in September because the failure looked familiar.
+
+     ⛔⛔⛔ AND I GOT THE SIGNAL WRONG TWICE BEFORE THIS, WHICH IS THE PART TO KEEP.
+     First I read `nothing new this run — no index written` out of a run log and
+     believed it: **a GitHub log contains the SHELL SOURCE of every step, so I had
+     matched the text of an `echo` in a branch that never ran.** A string in a log
+     is not a thing that happened. Then I gated on `ingest/index.json` existing,
+     copying the ledger step above — but derive writes that index on EVERY run,
+     including one that derived nothing, so the condition could never be false and
+     would have shipped INERT. The only honest signal is the derive report's own
+     count, and it is checked here against the shape that actually appears in the
+     published document (`run.derived`).
+
+     MUTATION: gate on the index file again, or drop `changed` from the `if`, and
+     this fires. */
+  const yml = readFileSync(new URL('ingest.yml', DIR), 'utf8');
+
+  const outputs = /^\s*outputs:\s*$([\s\S]*?)^\s{4}steps:/m.exec(yml);
+  assert.ok(outputs, 'the ingest job declares no outputs block any more');
+  assert.match(outputs[1], /changed:\s*\$\{\{\s*steps\.sync\.outputs\.changed\s*\}\}/,
+    'the ingest job no longer publishes a `changed` output');
+
+  /* ⚠️ PINNED TO THE SOURCE, NOT THE NAME. Setting `changed` to `done`, or to the
+     existence of a file written every run, would satisfy a check that only looked
+     for the word — and both are mistakes already made here. */
+  assert.match(yml, /\['run'\]\.get\('derived'/,
+    '`changed` is no longer read from the derive report\'s own `run.derived` count');
+  assert.doesNotMatch(yml, /if \[ -f ingest\/index\.json \]; then\s*\n\s*echo "changed=1"/,
+    '`changed` is back to keying on the index file, which is written on every run '
+    + 'including one that derived nothing — the condition could never be false');
+
+  /* ⚠️ UNKNOWN MUST MEAN MEASURE. Skipping on a question we could not answer
+     trades a wasted job for a silently unmeasured amendment, and only one of
+     those is caught by anything downstream. */
+  assert.match(yml, /\.get\('derived',\s*1\)/,
+    'a missing `derived` key now defaults to skipping the measurement');
+  assert.match(yml, /\|\| DERIVED=1/,
+    'a failure to read the count no longer falls back to measuring');
+
+  const cond = (/^\s{4}if:\s*\$\{\{([\s\S]*?)\}\}/m.exec(
+    yml.slice(yml.indexOf('\n  measure:'))) || [])[1];
+  assert.ok(cond, 'the measure job has no `if` at all, so it runs on every ingest');
+  const flat = cond.replace(/\s+/g, ' ');
+  for (const need of ["needs.ingest.outputs.changed == '1'",
+                      "needs.ingest.outputs.synced == '1'",
+                      "needs.ingest.outputs.code != '2'",
+                      '!cancelled()']) {
+    assert.ok(flat.includes(need),
+      `the measure job's condition dropped \`${need}\`: ${flat}`);
+  }
+});
