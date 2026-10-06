@@ -132,14 +132,30 @@ class WorkDoors(unittest.TestCase):
                          "both doors on the slot page lead to the same derivation, "
                          "and the page prints two different measurements")
 
-        # ⛔ AND THE FIVE RULE PAGES THAT PRINT NOTHING CARRY NOTHING. A door on
-        # a page with no figure sends a reader to work that explains nothing
-        # they just read.
+        # ⛔⛔ AND EVERY RULE PAGE CARRIES EXACTLY THE DOORS ITS OWN COPY EARNS,
+        # DERIVED PER PAGE. This used to read "every page except `slot` carries
+        # none", with `slot` skipped by name -- which is not the rule, it is a
+        # fact about the six figures that existed when it was written. The
+        # control diagram's note prints the archive's attempt split, so it earns
+        # a door, and the check called that a defect.
+        #
+        # ⭐ THE DERIVED FORM IS STRICTLY STRONGER, and that is the reason to
+        # prefer it over adding a second name to the skip list: an exemption list
+        # can only ever catch a door that should not be there, and this also
+        # catches one that SHOULD be and is not -- a page that starts printing a
+        # figure and never grows a door is the naked number this whole gate
+        # exists to forbid, and the old form was blind to it.
         for cid in sorted(B._fig_json()):
-            if cid == "slot":
-                continue
-            self.assertNotIn('class="cw"', page(f"{cid}.html"),
-                             f"{cid}.html prints no figure and carries a work door")
+            blurb = next(b for _, c, _, b in B.LEARN_CARDS if c == cid)
+            note = B._fig_json()[cid].get("note", "")
+            # THE LEDE'S DOOR FIRST, then the figure's: `build_rule` renders
+            # `__RULE_WORK_LEDE__` above `__RULE_WORK_FIG__`, and a door under
+            # the wrong paragraph is a door whose "this" points at nothing.
+            want = [d for d in (B._how_door(blurb, cid), B._how_door(note, cid)) if d]
+            self.assertEqual(
+                re.findall(r'<p class="cw"><a href="([^"]+)">', page(f"{cid}.html")),
+                want,
+                f"{cid}.html's work doors are not what its own copy prints")
 
     def test_a_card_printing_two_measurements_stops_the_build(self):
         """One card cannot carry one door to two derivations.
