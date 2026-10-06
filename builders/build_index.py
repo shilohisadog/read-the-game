@@ -2099,6 +2099,16 @@ def _archive():
         "__SLOT_ATT_PCT__": pct(s["attempts"]),
         "__SLOT_ATT_IN__": num(s["attempts"]["count"]),
         "__SLOT_ATT_N__": num(s["attempts"]["n"]),
+        # ⭐ WHERE AN ATTEMPT ENDED, for the control figure's note. Two
+        # PUBLISHED rates and their shared n; the third share is deliberately
+        # not here -- `attemptMix` publishes `blocked` and `reachedTheGoalie`
+        # as rates and the note says "the rest" for what is left, which is
+        # `derivation.js::attempts.why`'s own device. Computing the third would
+        # be `count / n` arithmetic repeated out of archive.js, which is the
+        # one thing `pct` above exists to avoid.
+        "__ATT_N__": num(m["attemptMix"]["reachedTheGoalie"]["n"]),
+        "__ATT_REACH_PCT__": pct(m["attemptMix"]["reachedTheGoalie"]),
+        "__ATT_BLOCK_PCT__": pct(m["attemptMix"]["blocked"]),
         "__ARCHIVE_GAMES__": num(m["measured"]),
         # ⭐⭐ WHAT THE MEASUREMENT IS CURRENT TO — Kevin's ruling 8, 2026-10-03:
         # *"the surfaces print what they are measured through."* These pages are
@@ -2641,6 +2651,14 @@ FIGURE_DERIVATION = {
     # arrives by a different route is the one a token-based gate would miss.
     "__UNREACHED__":          "attempts",
     "__ATTEMPTS__":           "attempts",
+    # ⭐ THE SAME DERIVATION FROM THE OTHER DIRECTION. The two above are ONE
+    # GAME's unreached attempts, printed on the `blocked` card; these three are
+    # the ARCHIVE's three-way split, printed in the `control` figure's note.
+    # Different populations of one question -- "where does an attempt end" --
+    # so they open the same door, which is what `attempts` is.
+    "__ATT_N__":              "attempts",
+    "__ATT_REACH_PCT__":      "attempts",
+    "__ATT_BLOCK_PCT__":      "attempts",
 }
 
 # ⚠️ THE ANCHOR PREFIX, WRITTEN IN PYTHON AND ASSERTED AGAINST THE JAVASCRIPT.
@@ -2973,12 +2991,21 @@ LEARN_CARDS = [
     ("rules", "empty-net", "The empty net",
      "Losing late, a team trades its goaltender for a sixth skater. Nothing is "
      "toggled here &mdash; the goalie is simply no longer on the ice."),
+    # ⚠️⚠️ THESE TWO BLURBS WERE A PAIR POINTING AT ONE MOMENT, and the control
+    # diagram broke the pair. The doors are consecutive events in one second of
+    # one game -- `at=1-18:40.1` and `at=1-18:40.2` -- so control's copy said
+    # "this is the FIRST one of the game" and blocked's opened "one event after
+    # THAT SHOT". Both only parse if the reader arrives at the first card, reads
+    # it, and then reads the second; and control's card now opens a DIAGRAM, so
+    # neither referent survives. ⭐ A CARD IS READ ON ITS OWN, exactly as a step
+    # beside a badge is -- the same shape as the pronoun with no antecedent that
+    # Kevin found on the penalties page. Each one now carries its own subject.
     ("ours", "control", "Control",
-     "Every shot attempt, counted for both teams as it happens. This is the "
-     "first one of the game."),
+     "Every shot attempt, counted for both teams as it happens &mdash; whether it "
+     "reached the goaltender, missed the net, or a body blocked it on the way."),
     ("ours", "blocked", "The attempt that never arrived",
-     "One event after that shot and at the same second, blocked. Both are "
-     "attempts; only one is a shot on goal &mdash; __UNREACHED__ of __ATTEMPTS__ "
+     "A body got in front of this one before it reached the goaltender, and it "
+     "counts as an attempt all the same &mdash; __UNREACHED__ of __ATTEMPTS__ "
      "attempts in this game never reached the goaltender at all."),
     # ⭐⭐ THE PILOT FOR THE MEASUREMENT CARDS, and what it changes is the ORDER.
     # This read "A geometric rule of ours, not a model: close in, and between the

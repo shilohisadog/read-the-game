@@ -749,18 +749,53 @@ test('⭐⭐⭐ a door that promises a term lands on a page that USES that term'
     `only ${checked} promises were checkable; the doors stopped opening lesson pages`);
 });
 
-test('⛔ the CF% row leads to an attempt being counted, not to a page that explains it', async () => {
-  /* There is no Corsi rule page and there does not need to be: `control` is a
-     door onto the exact frame where the Control layer counts an attempt. A
-     diagram would explain the metric; the replay shows it happening.
-     MUTATION: send it to a static page and the layer assertion fires. */
+test('⛔ the CF% row reaches the Control layer — now through the diagram', async () => {
+  /* ⚠️⚠️ THIS TEST USED TO ASSERT THE OPPOSITE, AND ITS PREMISE WAS MINE AND IS
+     NOW FALSE. It read: *"There is no Corsi rule page and there does not need to
+     be: `control` is a door onto the exact frame where the Control layer counts
+     an attempt. A diagram would explain the metric; the replay shows it
+     happening."* `_preview_doors` made the same argument in a comment.
+
+     ⭐ KEVIN REOPENED IT, 2026-10-04: *"let's brainstorm if we can figure out how
+     to diagram the control rows … I'd like everything to be consistent, if at all
+     possible."* The Control rows were the last doors on this card still opening a
+     replay frame while the other six opened lessons. The answer was that a
+     diagram of the RATIO is impossible and a diagram of the DEFINITION is not —
+     what counts as an attempt — so `control.html` exists now and this row leads
+     to it. The old test went red exactly as its own mutation note predicted,
+     which is the only reason the argument got re-read instead of re-asserted.
+
+     ⭐⭐ AND IT IS REPLACED RATHER THAN DELETED, because the half of it that was
+     load-bearing survives the change: a reader who follows this row must still
+     end up on the ice WITH THE CONTROL LAYER ON. That guarantee has simply moved
+     one hop further out, so the test follows the whole chain instead of stopping
+     at the first link — which makes it strictly stronger than what it replaces.
+     The same move as the goaltender's net-fit rule in `render-board.test.js`: a
+     rule whose premise expires is rewritten against the thing it was protecting.
+
+     MUTATION: point the row anywhere else, or drop `layer=corsi` from the rule
+     page's own door, and one of the two halves fires. */
   const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
   const rows = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvm'));
   const cf = rows.find(r => /CF%/.test(textOf(r)));
   const door = walk(cf).find(x => (x.className || '').split(' ').includes('pvlearn'));
   assert.ok(door, 'the CF% row has no door at all');
-  assert.match(door.href, /layer=corsi/, 'the door must arrive with the Control layer on');
+  assert.equal(door.href, '/control.html',
+    `the CF% row opens ${door.href} — the lesson behind it is what counts as an attempt`);
+
+  /* ⛔ AND THE SECOND HOP IS READ OFF THE BUILT PAGE, not from the door table
+     the first hop came from. Asserting both ends against one document is the
+     circularity this project keeps catching: `learn-doors.json` writes the href
+     AND would be the thing under test. The page on disk is what a reader gets. */
+  const page = readFileSync(new URL('../src/control.html', import.meta.url), 'utf8');
+  const onward = [...page.matchAll(/href="(\/game\.html\?[^"]+)"/g)].map(m => m[1]);
+  assert.equal(onward.length, 1,
+    `control.html offers ${onward.length} ways into the replay — "then a real `
+    + 'example" is one example, and two would need a sentence saying which is which');
+  assert.match(onward[0], /layer=corsi/,
+    `the diagram sends the reader to ${onward[0]}, which does not turn the Control `
+    + 'layer on — the page explains what an attempt is and then shows one being missed');
 });
 
 /* ---------------------------------------------- THE FRAME KEVIN ASKED TO GROW */

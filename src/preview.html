@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-L8pf7x/9dqcFMl1nA7rg+PTF72QNSb49azHauk/xjfs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-kPVlTsYD4fmWGdgQJ4Nkd2e6m8wjnKHEd0nEpShSBrQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RUpH+TipH8dvXtYN/WfZ8qf+LQPhzqz8HiDED3mWurs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-kPVlTsYD4fmWGdgQJ4Nkd2e6m8wjnKHEd0nEpShSBrQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1694,7 +1694,7 @@ function anchorFor(rowKey) {
   var q = (/[?&]game=(\d+)/.exec(location.search) || [])[1];
   /* WHERE EACH ROW LEADS. Resolved at build time by `_card_href`, the same
      function the front door and the learn strip use — see `_preview_doors`. */
-  var DOORS = {"dmen": "/game.html?game=2023020204&at=1-18:40.1&layer=corsi&strength=all", "icing": "/icing.html", "level5": "/game.html?game=2023020204&at=1-18:40.1&layer=corsi&strength=all", "missed": "/game.html?game=2023020204&at=1-18:40.1&layer=corsi&strength=all", "offside": "/offside.html", "penalties": "/penalties.html", "powerplay": "/penalties.html", "slot": "/slot.html"};
+  var DOORS = {"dmen": "/control.html", "icing": "/icing.html", "level5": "/control.html", "missed": "/control.html", "offside": "/offside.html", "penalties": "/penalties.html", "powerplay": "/penalties.html", "slot": "/slot.html"};
 
   /* THE FIVE DOCUMENTS, IN PARALLEL, AND A NULL FROM ANY OF THEM IS A STATE.
      `grab` answers null for a 404 or a failed fetch, and `preview()` degrades

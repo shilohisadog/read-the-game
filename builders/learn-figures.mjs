@@ -255,9 +255,33 @@ const person = (kind, x, y, k, cls, dir, size) => {
      because a figure centred on the line is half inside the net. He is nudged
      into the ice by a third of his height, in the direction he is already
      facing, which is the one number here that both surfaces must share. */
-  const intoIce = kind === 'goalie' ? dir * size * k * GK_STANDOFF : 0;
-  FIG[kind](pen, x + intoIce, y + size * k * MID, size * k, NEUTRAL, '',
-            { motion: false, glow: false, dir, px: size * k * SHOWN_PX });
+  /* ⭐⭐⭐ A PERSON IS GEOMETRY NOW, SO THE CROP DOES NOT SHRINK HIM. `k` is the
+     figure's units-per-200 and everything ANNOTATIVE is multiplied by it, so one
+     badge is the same number of PIXELS however tightly a figure is framed. A
+     token standing for a player used to belong in that family -- its size was a
+     legibility choice, and the header above `tok` still says so about dots. It
+     stopped belonging on 2026-10-05: a figure is drawn 6.2 units for 6.2 FEET,
+     checked against the rulebook, which makes him exactly as much a real thing
+     as the blue line and the goal mouth are.
+
+     ⛔ THE BUG WAS LATENT AND COULD ONLY FIRE ON A FIGURE NOBODY HAD DRAWN YET.
+     Every figure that crops drew no people (offside 123 wide, slot 99) and every
+     figure with people was full-width, so `k` was 1 at all six call sites and
+     the multiplication never did anything. The control diagram is the first
+     cropped figure with a person on it, and at `k = 0.425` it drew a 2.6-FOOT
+     man beside a 6-foot goal -- the same class of error as the goaltender fitted
+     to the goal mouth, arriving from the opposite direction.
+
+     ⚠️ `px` IS THE ONE THING THAT STILL DEPENDS ON THE CROP, and it moves the
+     OTHER WAY. It is how large the figure APPEARS, which decides whether a face
+     is drawn at all; a tighter crop MAGNIFIES the same man, so apparent pixels
+     go UP as `k` goes down. It was `size * k * SHOWN_PX`, which silently assumed
+     every figure renders at 200 units wide -- true of all six, and wrong for any
+     crop. Both forms agree exactly at `k = 1`, which is why `data/learn-figures.json`
+     is byte-identical across this change for every figure that existed before it. */
+  const intoIce = kind === 'goalie' ? dir * size * GK_STANDOFF : 0;
+  FIG[kind](pen, x + intoIce, y + size * MID, size, NEUTRAL, '',
+            { motion: false, glow: false, dir, px: size * SHOWN_PX / k });
   return pen.toSvg(`class="${cls}"`);
 };
 /* How big the figure APPEARS once the page has scaled the diagram, which decides
@@ -1067,7 +1091,141 @@ function penalties() {
   };
 }
 
-const FIGURES = { 'empty-net': emptyNet(), faceoffs: faceoffs(), icing: icing(),
+
+/* ── CONTROL (SHOT ATTEMPTS) ────────────────────────────────────────────────
+   ⭐ THE SEVENTH FIGURE, AND THE PREVIEW CARD ASKED FOR IT. Kevin, 2026-10-04:
+   *"let's brainstorm if we can figure out how to diagram the control rows … I'd
+   like everything to be consistent, if at all possible."* The Control rows were
+   the last doors on that card still opening a replay frame rather than a lesson,
+   because `control` owned no drawing. See `_preview_doors`.
+
+   ⭐⭐ IT DRAWS THE DEFINITION, NOT THE RATIO. A share of attempts has no
+   geometry, and `docs/rule-diagrams.md` is explicit that a diagram is not a
+   measurement -- so the subject is the one thing about this measure that IS
+   drawable: WHAT COUNTS AS AN ATTEMPT. The number stays on the card.
+
+   ⛔⛔⛔ AND NO STEP SAYS "AN ATTEMPT ENDS ONE OF THREE WAYS", WHICH IS THE
+   SENTENCE KEVIN ALREADY KILLED ONCE. On the Attempts door, 2026-09-30: *"the
+   shot could be deflected by a teammate, the shot could hit a teammate too,
+   there are (at least) 5 ways a shot attempt could end."* He is right, and
+   `derivation.js::attempts.why` was rewritten to claim a fact about THE RECORD
+   -- every attempt is FILED under one of three headings, which is checkable and
+   survives the ice being messier than three words. A drawing on a rink is a
+   taxonomy of the ICE, which is exactly the thing that was false, so the three
+   headings are stated in the NOTE where they can be said about the record. The
+   steps describe three particular attempts and claim nothing about all of them.
+
+   ⭐ ALL THREE SHOOTERS STAND THE SAME DISTANCE OUT, which is what makes this a
+   comparison rather than three unrelated marks: the ONE thing that differs
+   between them is how each attempt ended. ⚠️ THE DISTANCES ARE A DRAWING CHOICE
+   AND CLAIM NO MEASUREMENT -- they are stated in feet below so a reader can
+   check they are plausible, not so anyone can read a finding off them. The
+   published shares are in the note, with their n, where a figure belongs.
+
+   ⭐ AND IT DOES NOT MOVE. The face-off figure set that rule: a figure animates
+   iff it has something to animate, and "which heading does this attempt get
+   filed under" is a taxonomy, not a sequence. Three pucks sliding at once would
+   be motion added because the other figures have it -- the decoration this
+   project refuses everywhere else. */
+function control() {
+  const id = 'co-';
+  const NET = SX(-NET_X);
+  /* ⭐ THE ATTACKING HALF, which is the slot figure's crop and for its reason: a
+     wider frame spends the page on ice this lesson says nothing about. ⛔ THE
+     FIRST BUILD WAS THE FULL SHEET AND IT WAS ONLY WRONG WHEN LOOKED AT — the
+     whole play sat in the right quarter, the blocked attempt collapsed into one
+     clump, and the miss ended close enough to the post to read as a goal. None
+     of that is visible in the numbers; `docs/looking-at-pixels.md` again. */
+  const K = 99 / 200;   // see `badge`: annotation is screen-sized, geometry is not
+  /* ALL THREE SHOOTERS STAND 36 FT FROM THE NET, on a fan of ±35°, so the ONE
+     thing that differs between the three attempts is how each one ended. In
+     FEET, checkable by hand against the goal at rink −89:
+       ①   −53,     0  -> 36 ft out, straight on ..... reached the goaltender
+       ②   −59.5,  20.6 -> 36 ft out, 35° off ........ missed the net
+       ③   −59.5, −20.6 -> 36 ft out, 35° off ........ blocked by a body
+     ⚠️ THEY CLAIM NO MEASUREMENT. The distances are chosen so the drawing is a
+     comparison; the published shares are in the note, with their n. */
+  const S1 = { x: SX(-53), y: SY(0) };
+  const S2 = { x: SX(-59.5), y: SY(20.6) };
+  const S3 = { x: SX(-59.5), y: SY(-20.6) };
+  /* THE BLOCKER STANDS IN ③'S LANE, 22 FT OUT — between that shooter and the
+     net, which is the only place on the ice a body can block anything. The
+     14-foot gap is what makes "got in front of it" visible at all: at 4 ft he
+     merged with the shooter into a single smudge. */
+  const BLK = { x: SX(-71), y: SY(-12.6) };
+  /* Where each attempt finished. ① in front of the goaltender; ② past the goal
+     line AND 17 ft off centre. ⛔⛔ IT TOOK FOUR GOES AND ONLY LOOKING SETTLED IT:
+     at 8, 11 and 16 ft the puck came to rest BESIDE a net whose posts are 3 ft
+     from the middle, and at the size this renders that reads as a goal in the top
+     corner — the exact opposite of the step beside it. Wide was not enough on its
+     own: a puck level with the goal line is ambiguous however far out it is, so
+     it has to finish PAST the net as well, which is what a miss does.
+     ③ stops 26 ft out, four feet short of the man — at two feet the puck was
+     drawn on top of him and there was nothing to see. */
+  const E1 = { x: SX(-84), y: SY(0) };
+  const E2 = { x: SX(-94), y: SY(17) };
+  const E3 = { x: SX(-67.7), y: SY(-14.9) };
+  return {
+    viewBox: '100 0 99 85',
+    group: 'ours',
+    label: 'Diagram: three shot attempts taken from the same distance \u2014 one '
+         + 'reaches the goaltender, one misses the net, and a body blocks one '
+         + 'before it arrives. All three are counted.',
+    door: 'See an attempt counted in our replay',
+    svg: defs(id)
+      // NO TINTS. The slot is a measurement of ours and it is not this one's
+      // subject; only the figure that IS the slot paints it.
+      + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
+      + `<g class="dgplay">`
+      + gk(NET, NET, 42.5, K)
+      + sk(S1.x, S1.x, S1.y, K, '', 1) + sk(S2.x, S2.x, S2.y, K, '', 1)
+      + sk(S3.x, S3.x, S3.y, K, '', 1)
+      // FACING THE SHOOTER, which is what a man stepping into a shot is doing.
+      + sk(BLK.x, BLK.x, BLK.y, K, '', -1)
+      + arrow(id, S1.x + 3, S1.y, E1.x, E1.y, 3)
+      + arrow(id, S2.x + 3, S2.y, E2.x, E2.y, 3)
+      + arrow(id, S3.x + 3, S3.y, E3.x, E3.y, 3)
+      + puck(E1.x, E1.y, K) + puck(E2.x, E2.y, K) + puck(E3.x, E3.y, K)
+      /* CLEAR OF BOTH NETS -- see the empty-net figure, where ② sat inside one.
+         ⛔ AND TIGHT TO ITS OWN SHOOTER. At an offset of 7 units badge ① came to
+         rest halfway between shooters ① and ③ and nearer the wrong one, which is
+         a label pointing at somebody else's attempt. Each one now sits off the
+         shooting shoulder, on the side the attempt does NOT travel. */
+      + badge(1, S1.x - 5, S1.y - 4.5, K) + badge(2, S2.x - 5, S2.y - 4.5, K)
+      + badge(3, S3.x - 5, S3.y + 4.5, K)
+      + stamp(SX(-15), SY(30), K)
+      + `</g>`,
+    /* ⭐ THE FILING, WHICH IS THE CLAIM THAT IS ACTUALLY TRUE, and a base rate
+       under it for the same reason the slot figure carries one: without it the
+       lesson invites *"so you count shots that never got there?"* and the honest
+       answer is a number rather than an argument.
+       ⛔ THE THIRD SHARE IS DESCRIBED RATHER THAN PRINTED, which is deliberate
+       and is `derivation.js::attempts.why`'s own device: a published rate can
+       move, and "the rest" is whatever the two printed figures are not. */
+    note: 'Our archive files every shot attempt under one of these three headings, '
+        + 'and between them they account for all of them with none left over. Of '
+        + '__ATT_N__ attempts, __ATT_REACH_PCT__% reached the goaltender and '
+        + '__ATT_BLOCK_PCT__% were stopped by a body; the rest missed the net.',
+    steps: [
+      'A <b>shot attempt</b> is a team putting the puck at the net, and it counts '
+      + 'for whichever side took it. This one <b>reached the goaltender</b> '
+      + '&mdash; a shot on goal.',
+      'This one <b>missed the net</b>. It counts just the same: the puck was still '
+      + 'that team&rsquo;s, and it still went at the goal.',
+      /* ⛔ THE RATIONALE IS THE LAYER'S OWN SENTENCE, not a second one. `corsi.js`
+         says *"because all three are the team moving the puck at the net"* and it
+         is live on the replay; a fresh phrasing here would be one claim in two
+         wordings, free to drift -- the defect `methods.js` exists to prevent, and
+         one already caught live on the hits caveat. */
+      'And a body got in front of this one before it arrived &mdash; <b>blocked</b>. '
+      + 'It counts too: all three are the team moving the puck at the net.',
+    ],
+    css: '',
+  };
+}
+
+const FIGURES = { control: control(), 'empty-net': emptyNet(),
+  faceoffs: faceoffs(), icing: icing(),
                   offside: offside(), penalties: penalties(), slot: slot() };
 
 /* ── the artifact ───────────────────────────────────────────────────────── */
