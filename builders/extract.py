@@ -70,13 +70,21 @@ GAME = "2023020204"
 #      changed rather than a key, which is the case this number exists for at
 #      least as much as a new field: nothing about the document's shape would
 #      have told anybody.
+#   4  2026-10-06, plus `quoted.team` — the league's OWN per-team totals for
+#      hits, giveaways, takeaways, faceoff wins, penalty minutes and blocked
+#      shots, from `right-rail.teamGameStats`. ⭐ THE BUMP IS THE WHOLE POINT
+#      HERE rather than bookkeeping: `derive` re-reads a game only when its raw
+#      digest OR this number has moved, so without it the second witness would
+#      exist for games fetched from today and for no other — a feature that
+#      ships INERT over 4,661 games while every gate stays green. Bumping it
+#      re-derives the archive, which is what makes the figures real.
 #   2  2026-09-30, plus `recap` — the league's whole-game video, from the
 #      `right-rail` feed. ⚠️ THE BUMP IS NOT WHAT MAKES IT REACH THE ARCHIVE, and
 #      saying so matters: `recap` can only appear on a game whose RAW gained a
 #      fourth payload, and a new raw changes `src`, which re-derives that game by
 #      itself. The bump is here because the emitted shape changed and this number
 #      exists so that judgement is never made by forgetting.
-SCHEMA = 3
+SCHEMA = 4
 
 # ⭐ WHAT IS NOT PLAY — one statement, and `derive.py` reads it from here.
 #
@@ -460,7 +468,78 @@ def extract(pbp, shifts, box=None, rail=None):
             "home": {"score": box["homeTeam"]["score"], "sog": box["homeTeam"]["sog"]},
             "away": {"score": box["awayTeam"]["score"], "sog": box["awayTeam"]["sog"]},
         }
+    # ⭐⭐⭐ AND THE LEAGUE'S OWN PER-TEAM TOTALS, WHICH ARE A SECOND WITNESS TO
+    # FIGURES WE DERIVE OURSELVES. Measured 2026-10-06 over 40 published games,
+    # ten from each season: `hits`, `giveaways`, `takeaways`, `faceoffWins` and
+    # `pim` reproduce from our event log EXACTLY -- 80 of 80 team-sides, every
+    # one -- and `blockedShots` does too once it is read the way the league
+    # credits it. On a site whose whole pitch is CHECK OUR WORK, a number is
+    # worth far more with the league's own figure beside it.
+    #
+    # ⚠️ A SECOND DOCUMENT, SO IT CARRIES ITS OWN `src`. These come from
+    # `right-rail.teamGameStats` and the two above come from the boxscore;
+    # one `src` over both would be a label that is false about half of what it
+    # names. Nested rather than merged for the same reason the sentence on the
+    # page names which document disagreed: a reader asking "says who?" has to be
+    # able to get an answer, and so does a check.
+    #
+    # ⛔ NESTED UNDER `quoted` RATHER THAN BESIDE IT, so there is still exactly
+    # one place in this system where a number of the league's enters -- which is
+    # what the block above exists to be. `measure.mjs` reads `quoted.home.score`
+    # and `quoted.away.sog`; adding a key beside them changes nothing it reads.
+    team = _quoted_team(rail)
+    if team:
+        out.setdefault("quoted", {"src": "boxscore"})["team"] = team
     return out
+
+
+def _count(v):
+    """One of the league's team figures as an integer, or None.
+
+    ⚠️ THE TABLE MIXES TYPES IN ONE COLUMN. `hits` arrives as an int and
+    `faceoffWins` as the string `'43/62'` -- won over total -- in the same list
+    of the same shape. A reader that assumed one of them would have thrown on
+    the other, which is how the first pass of the measurement behind this block
+    died. Anything this does not recognise is None and is simply not quoted:
+    a figure we cannot read is not a figure we may guess at.
+    """
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, int):
+        return v
+    if isinstance(v, str) and "/" in v:
+        won = v.split("/")[0].strip()
+        return int(won) if won.isdigit() else None
+    return None
+
+
+# What we quote, and the league's name for it. The KEY is ours and is the one a
+# page shows; the VALUE is the league's category in `teamGameStats`.
+# ⛔ `powerPlay` IS NOT HERE. It arrives as `'1/3'` -- goals over opportunities --
+# and we derive neither of those as a pair, so quoting it would put a number on
+# the artifact that nothing checks. A witness nobody cross-examines is decoration.
+QUOTED_TEAM = {
+    "hits": "hits", "giveaways": "giveaways", "takeaways": "takeaways",
+    "pim": "pim", "faceoffWins": "faceoffWins", "blocked": "blockedShots",
+}
+
+
+def _quoted_team(rail):
+    """The league's per-team totals, copied and not computed."""
+    st = {s.get("category"): s for s in ((rail or {}).get("teamGameStats") or [])}
+    out = {"src": "right-rail.teamGameStats", "home": {}, "away": {}}
+    for ours, theirs in QUOTED_TEAM.items():
+        s = st.get(theirs)
+        if not s:
+            continue
+        for side in ("home", "away"):
+            v = _count(s.get(f"{side}Value"))
+            if v is not None:
+                out[side][ours] = v
+    # BOTH SIDES OR NEITHER. A half-quoted game would give a page one team's
+    # figure to print beside ours and nothing for the other, which reads as a
+    # claim about the team that is missing.
+    return out if out["home"] and out["home"].keys() == out["away"].keys() else None
 
 # ---------------------------------------------------------------- vocabulary
 
@@ -796,7 +875,7 @@ def vocabulary(pbp):
 
 # ---------------------------------------------------------------- validation
 
-def validate(rich, pbp, shifts, box):
+def validate(rich, pbp, shifts, box, rail=None):
     """Independent checks, against the raw feed and the boxscore -- never against
     our own extract. Byte-identity cannot catch anything in here."""
     fails, notes = [], []
@@ -934,7 +1013,7 @@ def validate(rich, pbp, shifts, box):
           f"against a boxscore of home {bx[hid]}, away {bx[aid]}")
     note(agrees,
          f"SOG reproduces boxscore: home {sog[hid]}=={bx[hid]}, away {sog[aid]}=={bx[aid]}",
-         {"kind": "sog",
+         {"kind": "sog", "src": "boxscore",
           "home": {"ours": sog[hid], "league": bx[hid]},
           "away": {"ours": sog[aid], "league": bx[aid]}})
 
@@ -1070,6 +1149,72 @@ def validate(rich, pbp, shifts, box):
     check(not missed,
           f"every published highlight id is carried ({len(missed)} dropped"
           f"{': ' + '; '.join(missed[:2]) if missed else ''})")
+
+    # ⭐⭐⭐ THE SECOND WITNESS, ON SIX FIGURES RATHER THAN ONE.
+    #
+    # Kevin, 2026-10-06: *"it looks we can 'check our work' against league
+    # published information, we'll need to figure that out and integrate it into
+    # our 'check our work'."* Then, on whether a disagreement is shown to the
+    # reader or kept to ourselves: *"concur, full transparency always."*
+    #
+    # ⚠️ RECORDED, NOT REFUSED, and that is this file's own rule rather than a
+    # soft option: REFUSE ON WHAT WE COULD HAVE GOT WRONG; RECORD WHAT THE
+    # LEAGUE GOT WRONG. A team total in the summary document disagreeing with
+    # the event log is a disagreement between two of the league's own documents,
+    # exactly like the shot counts above it -- and we replay the event log, so
+    # withholding the game would hide one we can show faithfully. Whether OUR
+    # parse is wrong is a different question and is already answered above, by
+    # the lossless check and by the `own` attributions tested against
+    # `rosterSpots`.
+    #
+    # ⛔⛔ AND BLOCKED SHOTS NEEDED A DEFINITION BEFORE THEY AGREED AT ALL.
+    # Measured over 40 games: counting every blocked-shot event to the blocking
+    # player's team matches the league in 3 of 40; counting to the SHOOTER's
+    # team matches in 0. The league credits a block only to an OPPONENT, and a
+    # puck that hits one of the shooter's own men is a blocked-shot event in
+    # nobody's total -- 125 of them in those 40 games, about three a night. With
+    # that one rule it is 79 of 80 team-sides.
+    #
+    # ⭐ WHICH IS KEVIN'S OWN OBJECTION, MEASURED. On the Attempts door,
+    # 2026-09-30: *"the shot could be deflected by a teammate, the shot could hit
+    # a teammate too, there are (at least) 5 ways a shot attempt could end."* He
+    # was arguing about a sentence; it turns out to be the exact reason our count
+    # and the league's differ, and it is worth three events a game.
+    team = _quoted_team(rail)
+    if team:
+        tid = {int(pid): r["tid"] for pid, r in (rich.get("roster") or {}).items()}
+        ours = {s: dict.fromkeys(QUOTED_TEAM, 0) for s in ("home", "away")}
+        side = {hid: "home", aid: "away"}
+        for e in rich["events"]:
+            own = side.get(e.get("own"))
+            if own is None:
+                continue
+            t = e["type"]
+            if t == "hit":
+                ours[own]["hits"] += 1
+            elif t == "giveaway":
+                ours[own]["giveaways"] += 1
+            elif t == "takeaway":
+                ours[own]["takeaways"] += 1
+            elif t == "faceoff":
+                ours[own]["faceoffWins"] += 1
+            elif t == "penalty":
+                ours[own]["pim"] += e.get("min") or 0
+            elif t == "blocked-shot":
+                b = side.get(tid.get(e.get("blk")))
+                if b is not None and b != own:
+                    ours[b]["blocked"] += 1
+        for key in QUOTED_TEAM:
+            if key not in team["home"]:
+                continue
+            agree = all(ours[s][key] == team[s][key] for s in ("home", "away"))
+            note(agree,
+                 f"{key} reproduces the league's own total: "
+                 + ", ".join(f"{s} {ours[s][key]}=={team[s][key]}"
+                             for s in ("home", "away")),
+                 {"kind": key, "src": team["src"],
+                  "home": {"ours": ours["home"][key], "league": team["home"][key]},
+                  "away": {"ours": ours["away"][key], "league": team["away"][key]}})
     return fails, notes
 
 # ---------------------------------------------------------------- main
@@ -1086,8 +1231,16 @@ def main():
     pbp = json.loads((DATA / f"pbp_{GAME}.json").read_text())
     shifts = json.loads((DATA / "shifts.json").read_text())
     boxfile = DATA / f"box_{GAME}.json"
+    # ⚠️ OPTIONAL, EXACTLY LIKE THE BOXSCORE. The reference game predates the
+    # `right-rail` feed and no rail is committed for it, so the second witness
+    # simply does not run here -- which is the same degradation every archived
+    # game gets, and is why `--verify` stays byte-identical across its arrival.
+    # Commit a `rail_{GAME}.json` beside the others and it starts running.
+    railfile = DATA / f"rail_{GAME}.json"
+    rail = json.loads(railfile.read_text()) if railfile.exists() else None
     rich = extract(pbp, shifts,
-                   json.loads(boxfile.read_text()) if boxfile.exists() else None)
+                   json.loads(boxfile.read_text()) if boxfile.exists() else None,
+                   rail)
     out = json.dumps(rich, separators=(",", ":"))
 
     if args.vocab:
@@ -1110,7 +1263,7 @@ def main():
         if box is None:
             print("  SKIP  boxscore not committed; fetch it to enable SOG/score checks")
             return 2
-        fails, unreconciled = validate(rich, pbp, shifts, box)
+        fails, unreconciled = validate(rich, pbp, shifts, box, rail)
         # A NOTE IS NOT A PASS AND IT IS NOT A FAILURE. Printing only the
         # failure count would let a human reading one game conclude the two
         # documents agreed, when what happened is that we decided the

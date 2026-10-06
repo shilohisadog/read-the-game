@@ -1424,8 +1424,13 @@ test('each half of the greeting names the thing it is about', () => {
 
 const UNREC = {
   ...rich,
+  // ⚠️ `src` IS ON THE NOTE BECAUSE `validate()` PUTS IT THERE, since 2026-10-06.
+  // The sentence names the document the figure came from, and with six figures
+  // now arriving from TWO of the league's documents it can no longer be a word
+  // typed into the renderer. A note without one is a legacy artifact and has a
+  // test of its own below rather than being covered by silence here.
   unreconciled: [{ check: 'SOG reproduces boxscore: home 37==36, away 31==31',
-                   kind: 'sog',
+                   kind: 'sog', src: 'boxscore',
                    home: { ours: 37, league: 36 },
                    away: { ours: 31, league: 31 } }],
 };
@@ -1481,6 +1486,72 @@ test('the shots note is found wherever it sits in the list', () => {
   ] }, CURVE_AND_MIX);
   assert.ok(a.$('rg').classList.contains('unrec'), 'a later note must still be found');
   assert.match(a.$('unrecKey').textContent, /36 shots on goal for BUF/);
+});
+
+test('⭐ a team-total disagreement says its own noun and its own document', () => {
+  /* ⭐⭐⭐ THE SECOND WITNESS REACHES THE READER — 2026-10-06. Kevin, asked
+     whether a disagreement with the league should be shown or kept to
+     ourselves: *"concur, full transparency always."*
+
+     Measured over 40 published games, the league's own per-team totals for
+     hits, giveaways, takeaways, faceoff wins and penalty minutes reproduce from
+     our event log EXACTLY -- 80 of 80 team-sides -- so a note here is rare and
+     carries real information. ⚠️ IT COMES FROM A DIFFERENT DOCUMENT than the
+     shots note, which is why `src` exists: calling `right-rail` a "boxscore"
+     would be a sentence that is false about which two things disagree. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'blocked reproduces the league\u2019s own total: home 23==24, away 17==17',
+      kind: 'blocked', src: 'right-rail.teamGameStats',
+      home: { ours: 23, league: 24 }, away: { ours: 17, league: 17 } },
+  ] }, CURVE_AND_MIX);
+  const t = a.$('unrecKey').textContent;
+  assert.ok(a.$('rg').classList.contains('unrec'));
+  assert.match(t, /game summary/, 'it must name the document the figure came from');
+  assert.doesNotMatch(t, /boxscore/, 'and not the one it did not come from');
+  assert.match(t, /24 blocked shots for BUF/, "the league's number, with the right noun");
+  assert.match(t, /event log says 23/);
+  assert.doesNotMatch(t, /MIN|17/, 'the agreeing side stays out of it');
+});
+
+test('⛔ two figures disagreeing are BOTH said, not just the first', () => {
+  /* The `[0]` failure one level up. With six figures able to disagree, a
+     renderer that stops at the first would silently drop the rest -- and the
+     dropped one is invisible, because the sentence still appears and still
+     reads correctly. MUTATION: take only the first note and the second pair
+     of assertions fires. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'SOG', kind: 'sog', src: 'boxscore',
+      home: { ours: 37, league: 36 }, away: { ours: 31, league: 31 } },
+    { check: 'hits', kind: 'hits', src: 'right-rail.teamGameStats',
+      home: { ours: 20, league: 20 }, away: { ours: 29, league: 30 } },
+  ] }, CURVE_AND_MIX);
+  const t = a.$('unrecKey').textContent;
+  assert.match(t, /36 shots on goal for BUF/);
+  assert.match(t, /30 hits for MIN/);
+  assert.match(t, /event log says 37 and 29/, 'both of ours, in the order they were named');
+  // ⚠️ AND NEITHER DOCUMENT IS NAMED WHEN TWO DISAGREE. "the league's boxscore
+  // and its game summary say" is a longer lead for a case that has never
+  // occurred; the neutral form is true of both and shorter in every other case.
+  assert.match(t, /the league\u2019s own figures say/);
+});
+
+test('a note whose document is unknown names no document, and still says the figures', () => {
+  /* ⛔ THE MIGRATION CASE, AND IT IS REAL FOR EXACTLY ONE NIGHT. Every artifact
+     derived before `src` existed carries a shots note without one, and they are
+     live until the archive re-derives on the schema bump. Inventing "boxscore"
+     for them would be right by luck -- it is where every shots note has ever
+     come from -- and would be the renderer stating a provenance the artifact
+     does not carry, which is the one thing `quoted.src` exists to prevent. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'SOG reproduces boxscore: home 37==36, away 31==31', kind: 'sog',
+      home: { ours: 37, league: 36 }, away: { ours: 31, league: 31 } },
+  ] }, CURVE_AND_MIX);
+  const t = a.$('unrecKey').textContent;
+  assert.ok(a.$('rg').classList.contains('unrec'), 'it is still a disclosure');
+  assert.match(t, /36 shots on goal for BUF/, 'every fact but the document survives');
+  assert.match(t, /event log says 37/);
+  assert.doesNotMatch(t, /boxscore|game summary/,
+    'the renderer named a document the artifact never claimed');
 });
 
 test('a shots note whose sides all AGREE prints nothing', () => {

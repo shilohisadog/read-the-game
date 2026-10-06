@@ -519,7 +519,7 @@ def judge(pbp_raw, box_raw, shifts_raw, rail_raw=None):
     # validate() reports to stdout for a human reading one game. Here it runs
     # fifteen hundred times and only its verdict is wanted.
     with contextlib.redirect_stdout(io.StringIO()):
-        fails, unreconciled = E.validate(rich, pbp, shifts, box)
+        fails, unreconciled = E.validate(rich, pbp, shifts, box, rail)
     if fails:
         return None, _refuse("validation", fails), noted
 

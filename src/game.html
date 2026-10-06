@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ub9mQKA0guHBGPimIqWD4cM00pZtm0DZYzvd0AzlAJE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-jQUTDO4bqWuv0b4ZyArtwtKbqqRG/ZWrY6NPsn2h0Ak='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XcodkFJE8kDsHO5ZgbFVDN+K2HvxRGhFAPwsSdwT97g=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-jQUTDO4bqWuv0b4ZyArtwtKbqqRG/ZWrY6NPsn2h0Ak='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -14344,19 +14344,49 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    ABSENT WHEN THERE IS NOTHING TO SAY -- the verdict card's rule. `unreconciled`
    is only on the artifact when derive.py found a disagreement, so this is not a
    sentence a reader learns to skip. */
+/* ⭐⭐⭐ AND IT SPEAKS FOR SIX FIGURES NOW, NOT ONE — 2026-10-06. Kevin, on
+   whether a disagreement with the league should reach the reader or stop with
+   us: *"concur, full transparency always."*
+
+   `extract.py::validate` now reads the league's own per-team totals for hits,
+   giveaways, takeaways, faceoff wins, penalty minutes and blocked shots, and
+   notes any that our event log does not reproduce. Measured over 40 games they
+   all reproduce exactly, so a note here is genuinely rare and genuinely worth a
+   reader's attention — which is the condition this sentence was built under.
+
+   ⚠️ THE NOUN AND THE DOCUMENT COME FROM THE NOTE, not from a branch per kind.
+   A `kind` this page has no word for is SKIPPED rather than guessed at, which
+   is the same rule that keeps a `clock` note from opening the shots sentence. */
 (()=>{const k=$('unrecKey');if(!k)return;
- const n=(G.unreconciled||[]).find(x=>x&&x.kind==='sog');if(!n)return;
- // Name the side that actually disagrees. Both are carried; usually one differs.
- const sides=[[HAB,n.home],[AAB,n.away]].filter(([,v])=>v&&v.ours!==v.league);
- if(!sides.length)return;
- // SHORT, BECAUSE THE READER IS ON A PHONE. The first wording ran to 75px at
- // 390px wide and pushed the legend from 173px to 248px -- the same mistake as
- // the ends disclosure, which shipped at 176px and had to come back to 78px.
- // Every fact survives the trim: which two documents, both numbers, whose, and
- // which one we chose.
- k.textContent='the league\u2019s boxscore says '
-  +sides.map(([ab,v])=>`${v.league} shots on goal for ${ab}`).join(' and ')
-  +'; its event log says '+sides.map(([,v])=>v.ours).join(' and ')
+ const NOUN={sog:'shots on goal',hits:'hits',giveaways:'giveaways',
+  takeaways:'takeaways',faceoffWins:'faceoffs won',pim:'penalty minutes',
+  blocked:'blocked shots'};
+ // WHICH DOCUMENT OF THE LEAGUE'S. Shots come from the boxscore and the team
+ // totals from the game summary; the note says which, and a note that does not
+ // say is not given a name it never claimed.
+ const DOC={'boxscore':'boxscore','right-rail.teamGameStats':'game summary'};
+ const lg=[],us=[],docs=[];
+ for(const n of (G.unreconciled||[])){
+  if(!n||!NOUN[n.kind])continue;
+  // Name the side that actually disagrees. Both are carried; usually one differs.
+  const sides=[[HAB,n.home],[AAB,n.away]].filter(([,v])=>v&&v.ours!==v.league);
+  if(!sides.length)continue;
+  for(const [ab,v] of sides){lg.push(`${v.league} ${NOUN[n.kind]} for ${ab}`);us.push(String(v.ours));}
+  const d=DOC[n.src];if(d&&docs.indexOf(d)<0)docs.push(d);}
+ if(!lg.length)return;
+ /* SHORT, BECAUSE THE READER IS ON A PHONE. The first wording ran to 75px at
+    390px wide and pushed the legend from 173px to 248px -- the same mistake as
+    the ends disclosure, which shipped at 176px and had to come back to 78px.
+    Every fact survives the trim: which document, both numbers, whose, and which
+    one we chose.
+    ⚠️ ONE DOCUMENT IS NAMED; TWO ARE NOT. "the league's boxscore and its game
+    summary say" is a longer lead for a case that has never occurred, and a
+    sentence tuned for the rare case is longer than it needs to be in every
+    other. With none named -- an artifact derived before notes carried `src` --
+    it says the same true thing and claims no document. */
+ k.textContent=(docs.length===1?`the league\u2019s ${docs[0]} says `
+                               :'the league\u2019s own figures say ')
+  +lg.join(' and ')+'; its event log says '+us.join(' and ')
   +' \u2014 we show the event log';
  document.getElementById('rg').classList.add('unrec');})();
 /* AND THE BUTTON SAYS WHAT IT DOES. "Keep every mark" is false under as-played,

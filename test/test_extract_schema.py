@@ -57,7 +57,7 @@ EXPECTED_EVENT = {
     "sit", "srv", "type", "x", "y", "zone",
 }
 # The number that must move when either set above does.
-EXPECTED_SCHEMA = 3
+EXPECTED_SCHEMA = 4
 
 
 def _rich():
@@ -293,3 +293,164 @@ class ExtractSchema(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# ⭐⭐⭐ THE SECOND WITNESS — the league's own per-team totals, 2026-10-06.
+#
+# Kevin: *"it looks we can 'check our work' against league published
+# information, we'll need to figure that out and integrate it into our 'check
+# our work'"*, and then, on whether a disagreement reaches the reader:
+# *"concur, full transparency always."*
+#
+# Measured first, over 40 published games (ten from each season): `hits`,
+# `giveaways`, `takeaways`, `faceoffWins` and `pim` reproduce from our event log
+# EXACTLY -- 80 of 80 team-sides -- and `blockedShots` does too, but only once it
+# is read the way the league credits it.
+# ---------------------------------------------------------------------------
+
+HOME, AWAY = 1, 2
+RAIL = {"teamGameStats": [
+    {"category": "hits", "awayValue": 1, "homeValue": 1},
+    {"category": "giveaways", "awayValue": 0, "homeValue": 1},
+    {"category": "takeaways", "awayValue": 1, "homeValue": 0},
+    {"category": "pim", "awayValue": 2, "homeValue": 0},
+    # ⚠️ THE LEAGUE MIXES TYPES IN ONE COLUMN: an int for hits, `won/total` for
+    # faceoffs, in the same list of the same shape.
+    {"category": "faceoffWins", "awayValue": "1/3", "homeValue": "2/3"},
+    {"category": "blockedShots", "awayValue": 1, "homeValue": 0},
+    # Published and deliberately NOT quoted — see `QUOTED_TEAM`.
+    {"category": "powerPlay", "awayValue": "0/1", "homeValue": "1/2"},
+    {"category": "faceoffWinningPctg", "awayValue": 0.333, "homeValue": 0.667},
+]}
+
+
+def _play(t, own, clock, **d):
+    mm, ss = clock.split(":")
+    left = f"{19 - int(mm):02d}:{(60 - int(ss)) % 60:02d}"
+    return {"typeDescKey": t, "periodDescriptor": {"number": 1, "periodType": "REG"},
+            "timeInPeriod": clock, "timeRemaining": left,
+            "details": {"eventOwnerTeamId": own, **d}}
+
+
+def _game(plays, roster):
+    return {"id": 2026020001, "gameDate": "2026-10-06",
+            "awayTeam": {"id": AWAY, "abbrev": "AAA"},
+            "homeTeam": {"id": HOME, "abbrev": "HHH"},
+            "rosterSpots": [{"playerId": pid, "teamId": tid, "sweaterNumber": pid,
+                             "firstName": {"default": "A"}, "lastName": {"default": f"P{pid}"},
+                             "positionCode": "C"} for pid, tid in roster.items()],
+            "plays": plays}
+
+
+# 10 and 11 play at home, 20 and 21 away.
+ROSTER = {10: HOME, 11: HOME, 20: AWAY, 21: AWAY}
+PLAYS = [
+    _play("hit", HOME, "01:00", hittingPlayerId=10),
+    _play("hit", AWAY, "02:00", hittingPlayerId=20),
+    _play("giveaway", HOME, "03:00", playerId=10),
+    _play("takeaway", AWAY, "04:00", playerId=20),
+    _play("faceoff", HOME, "05:00", winningPlayerId=10, losingPlayerId=20),
+    _play("faceoff", HOME, "06:00", winningPlayerId=11, losingPlayerId=21),
+    _play("faceoff", AWAY, "07:00", winningPlayerId=20, losingPlayerId=10),
+    # A HOME shot an AWAY body stopped: the league credits AWAY with the block.
+    _play("blocked-shot", HOME, "08:00", shootingPlayerId=10, blockingPlayerId=20),
+    # ⭐ AND A HOME shot stopped by a HOME man. The league credits NOBODY, which
+    # is the whole reason this figure needed a definition before it agreed.
+    _play("blocked-shot", HOME, "09:00", shootingPlayerId=10, blockingPlayerId=11),
+    _play("penalty", AWAY, "10:00", committedByPlayerId=20, duration=2,
+          descKey="tripping", typeCode="MIN"),
+]
+BOX = {"homeTeam": {"id": HOME, "score": 0, "sog": 0},
+       "awayTeam": {"id": AWAY, "score": 0, "sog": 0}}
+
+
+class SecondWitness(unittest.TestCase):
+
+    def _run(self, rail=RAIL, plays=PLAYS):
+        pbp = _game(plays, ROSTER)
+        rich = E.extract(pbp, {"data": []}, BOX, rail)
+        fails, notes = E.validate(rich, pbp, {"data": []}, BOX, rail)
+        return rich, fails, notes
+
+    def test_the_leagues_team_totals_are_copied_and_not_computed(self):
+        """⭐ `quoted` gains them under their OWN `src`, because they come from a
+        different document than the score and the shots. One `src` over both
+        would be a label that is false about half of what it names."""
+        rich, _, _ = self._run()
+        team = rich["quoted"]["team"]
+        self.assertEqual(team["src"], "right-rail.teamGameStats")
+        self.assertEqual(rich["quoted"]["src"], "boxscore",
+                         "the boxscore block must keep saying where IT came from")
+        self.assertEqual(team["home"],
+                         {"hits": 1, "giveaways": 1, "takeaways": 0, "pim": 0,
+                          "faceoffWins": 2, "blocked": 0})
+        self.assertEqual(team["away"]["faceoffWins"], 1,
+                         "'1/3' is one faceoff won, not the string and not three")
+
+    def test_a_figure_we_do_not_derive_is_not_quoted(self):
+        """⛔ A WITNESS NOBODY CROSS-EXAMINES IS DECORATION. `powerPlay` arrives
+        as goals-over-opportunities and we derive neither as a pair, so quoting
+        it would put a number on the artifact that nothing ever checks."""
+        rich, _, _ = self._run()
+        for absent in ("powerPlay", "faceoffWinningPctg"):
+            self.assertNotIn(absent, rich["quoted"]["team"]["home"])
+
+    def test_agreement_is_silent(self):
+        """The fixture is built to agree, so nothing is recorded. A note that
+        appears on a game where the two documents agree is a sentence a reader
+        learns to skip."""
+        _, _, notes = self._run()
+        self.assertEqual([n for n in notes if n["kind"] != "sog"], [])
+
+    def test_a_blocked_shot_is_credited_to_the_OPPONENT_who_stopped_it(self):
+        """⛔⛔ THE DEFINITION THE MEASUREMENT FOUND. Over 40 games, counting every
+        blocked-shot event to the blocking player's team matches the league in 3
+        of 40; counting to the SHOOTER's team matches in 0. The league credits a
+        block only to an opponent, and a puck that hits one of the shooter's own
+        men is in nobody's total -- 125 of those in 40 games, about three a night.
+
+        The fixture holds exactly that pair: one HOME shot blocked by AWAY, and
+        one HOME shot blocked by HOME. The league says away 1, home 0.
+        MUTATION: count the teammate block to either side and this fires."""
+        _, _, notes = self._run()
+        self.assertEqual([n for n in notes if n["kind"] == "blocked"], [],
+                         "the teammate block was credited to somebody")
+
+    def test_a_disagreement_is_RECORDED_and_never_refuses_the_game(self):
+        """⚠️ THIS FILE'S OWN RULE: refuse on what WE could have got wrong, record
+        what the LEAGUE got wrong. A team total disagreeing with the event log is
+        a disagreement between two of the league's documents -- and we replay the
+        event log, so withholding the game would hide one we can show faithfully.
+        """
+        bent = json.loads(json.dumps(RAIL))
+        for st in bent["teamGameStats"]:
+            if st["category"] == "hits":
+                st["homeValue"] = 9
+        _, fails, notes = self._run(rail=bent)
+        hits = [n for n in notes if n["kind"] == "hits"]
+        self.assertEqual(len(hits), 1, "the disagreement was not recorded")
+        self.assertEqual(hits[0]["home"], {"ours": 1, "league": 9})
+        self.assertEqual(hits[0]["away"], {"ours": 1, "league": 1},
+                         "the agreeing side is carried too, so a page can say which differs")
+        self.assertEqual(hits[0]["src"], "right-rail.teamGameStats",
+                         "the note says which document, so no renderer has to guess")
+        self.assertEqual([f for f in fails if "hits" in f], [],
+                         "a league disagreement must never refuse the game")
+
+    def test_no_rail_means_no_witness_rather_than_a_false_one(self):
+        """⛔ EVERY GAME IN THE ARCHIVE BEFORE THE RAIL FEED HAS NONE, and a
+        missing witness must leave the key off -- `clip`'s rule, for `clip`'s
+        reason: a placeholder cannot be told from a read that failed."""
+        for rail in (None, {}, {"teamGameStats": []}):
+            rich, _, notes = self._run(rail=rail)
+            self.assertNotIn("team", rich["quoted"], f"{rail!r} invented a witness")
+            self.assertEqual([n for n in notes if n["kind"] != "sog"], [])
+
+    def test_half_a_document_is_not_quoted_at_all(self):
+        """A game quoted for one side only would give a page the league's figure
+        for one team and nothing for the other, which reads as a claim about the
+        team that is missing."""
+        half = {"teamGameStats": [{"category": "hits", "homeValue": 1}]}
+        rich, _, _ = self._run(rail=half)
+        self.assertNotIn("team", rich["quoted"])
