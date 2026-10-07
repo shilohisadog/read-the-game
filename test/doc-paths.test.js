@@ -75,6 +75,10 @@ const GONE = {
   'index.json': 'same',
   'schedule.json': 'same',
   'teams.json': 'same',
+  // ⛔ ADDED 2026-10-07 AFTER THIS GATE CAUGHT IT. `players.json` is the fourth
+  // published document and the status note about it shipping INERT names it by
+  // the only name a reader has for it — the one the site fetches.
+  'players.json': 'same — written by builders/measure.mjs, published 2026-10-07',
   // Written by `measure.mjs --slate`. Not published yet, deliberately: the
   // nightly line waits on a reader, front-door.md §6.1.2.
   'recent.json': 'same — written by builders/measure.mjs --slate',
