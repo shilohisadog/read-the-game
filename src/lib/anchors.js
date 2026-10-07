@@ -44,6 +44,14 @@ const EXPLAINS = {
   level5: 'level5', dmen: 'dmen', slot: 'slotShare',
   powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
   icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
+  /* ⭐ FOUR ROWS, ONE DERIVATION, and that is the honest grouping rather than a
+     saving: all four are the SAME DIVISION -- a count of a player's events over
+     the games he dressed for -- differing only in which events are counted. The
+     methods page is organised by division, so four sections would be one
+     explanation printed four times with a word changed, which is the drift
+     `methods.js` exists to prevent. The numerators are named inside it. */
+  playerGoals: 'playerRate', playerAssists: 'playerRate',
+  playerShots: 'playerRate', playerAttempts: 'playerRate',
 };
 
 /** The derivation that explains a row, or undefined if none is declared. */

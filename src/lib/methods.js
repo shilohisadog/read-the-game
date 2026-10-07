@@ -29,7 +29,7 @@
  * already conceded internally and did not print is a criticism a reader is
  * entitled to think we were hiding.
  */
-import { CLUB_ROWS, POSSESSION_FAMILY, leagueRows } from './preview.js';
+import { CLUB_ROWS, PLAYER_ROWS, POSSESSION_FAMILY, leagueRows } from './preview.js';
 import { anchorOf, anchorFor, explains, EXPLAINED_ROWS } from './anchors.js';
 /* ⭐ RE-EXPORTED, NOT RE-STATED. The prose table and the league join moved to
    `derivation.js` so the replay's overlay can carry them without this file; see
@@ -61,7 +61,13 @@ export { PRINTED, PRINTED_KEYS, printed };
  * hand-written list is that failure with extra steps.
  */
 export function keysOf(measures) {
-  return [...CLUB_ROWS.map(r => r.key), ...leagueRows(measures).map(r => r.key)];
+  /* ⭐ THE PLAYER ROWS ARE UNCONDITIONAL, unlike the league rows. A league row is
+     emitted only when the census carries its counter, so an older document draws
+     fewer; the four player rows are a fixed set the card either draws or does
+     not, and a document with no `players.json` means no BLOCK rather than fewer
+     rows inside one. */
+  return [...CLUB_ROWS.map(r => r.key), ...PLAYER_ROWS.map(r => r.key),
+          ...leagueRows(measures).map(r => r.key)];
 }
 
 
@@ -132,6 +138,17 @@ export function methods(measures) {
              evidence: (EVIDENCE[r.key] || []).length ? EVIDENCE[r.key] : null };
   });
 
+  /* ⭐⭐⭐ ONE SECTION FOR FOUR ROWS, AND THAT IS WHY `EXPLAINS` MAPS THEM ALL TO
+     `playerRate`. Goals, assists, shots on goal and shot attempts per player are
+     the SAME DIVISION with four numerators, so four sections would be one
+     explanation printed four times with a word changed -- and, since the anchor
+     is derived from the DERIVATION key, four sections would also share one id.
+     The numerators are named inside the section instead. */
+  const player = DERIVATION.playerRate
+    ? [{ key: 'playerRate', anchor: anchorOf('playerRate'), ...DERIVATION.playerRate,
+         numerators: PLAYER_ROWS.map(r => r.noun) }]
+    : [];
+
   const frame = leagueFigures(measures);
 
   /* ⭐⭐ WHY THERE IS ONE POSSESSION ROW, AS A RANGE RATHER THAN AN ASSERTION.
@@ -151,7 +168,7 @@ export function methods(measures) {
     max: Math.max(...fam.pairs.map(p => Math.abs(p.r))),
   } : null;
 
-  return { policy, club, league: frame, family,
+  return { policy, club, player, league: frame, family,
            /* ⭐ THE THIRD SECTION RIDES ALONG rather than being a second fetch.
               The page grabs one document and calls one function; a surface that
               had to remember to call two would eventually call one. */

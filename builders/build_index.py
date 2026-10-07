@@ -3939,7 +3939,13 @@ PREVCSS = r"""<style>
 .pvfine{margin:8px 0 0;font-size:.74rem;color:var(--muted);line-height:1.45}
 
 /* ---- the two clubs: one track per measure ---------------------------- */
-.pvm{margin:0 0 20px;padding:14px 15px 12px;background:#fff;
+/* ⭐ A PLAYER ROW LOOKS EXACTLY LIKE A CLUB ROW AND IS NOT ONE. It shares every
+   rule here on purpose — same instrument, one level down — and carries its own
+   class so the two populations can be told apart by anything that counts them.
+   ⛔ SHARING `pvm` MADE SEVEN CLUB-ROW TESTS COUNT SEVEN ROWS WHERE THEY MEAN
+   THREE, which is the quiet version of this: nothing would have failed, the
+   numbers would simply have been about a different set. */
+.pvm,.pvp{margin:0 0 20px;padding:14px 15px 12px;background:#fff;
  border:1px solid var(--edge);border-radius:11px}
 .pvmh{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;
  justify-content:space-between;margin:0 0 10px}
@@ -4003,7 +4009,7 @@ PREVCSS = r"""<style>
 .pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
 @media (max-width:430px){
  .pvbig{font-size:1.8rem}
- .pvm{padding:12px 12px 10px}
+ .pvm,.pvp{padding:12px 12px 10px}
 }
 </style>"""
 
@@ -4027,11 +4033,16 @@ __HELPERS__
      that renders less is not a page that breaks. */
   function boot() {
     if (!q) { $('pv').appendChild(el('p', 'note', 'No game was named in the link.')); return; }
+    /* ⚠️ A SIXTH DOCUMENT, AND ITS ABSENCE IS NOT A FAILURE. `grab` answers null
+       on any error, and `watchFor` answers null without it, so a reader on a day
+       the archive has no `players.json` gets the card without the player block
+       rather than a card that does not draw. */
     Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
-                 grab('recent.json'), grab('catalog.json')])
+                 grab('recent.json'), grab('catalog.json'), grab('players.json')])
       .then(function (r) {
         draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
-                          recent: r[3], catalog: r[4] }, new Date().toISOString()));
+                          recent: r[3], catalog: r[4], players: r[5] },
+                     new Date().toISOString()));
       });
   }
 
@@ -4068,6 +4079,17 @@ __HELPERS__
      CHENG's P1. The outline is what keeps a faint bar from reading as absent —
      it is a presentation floor with no number in it. */
   function trackFor(row, sides) {
+    /* ⭐ HOW A VALUE ON THIS AXIS IS SPELLED, from the ROW. Every club row is a
+       share and reads as `48%`; a player row is a RATE and reads as `0.39`, and
+       running "39%" under a heading that says "goals a game" would be a number
+       that is wrong by a factor of a hundred and looks fine. The default is the
+       share, so no existing caller changed. */
+    var fmt = row.fmt || function (v) { return pct(v) + '%'; };
+    /* ⛔ AND WHAT THE TICK IS, which is not always the league. On a club row it is
+       the league figure and the word is right; on a player row it is the MEDIAN
+       SKATER, and labelling that "league" tells a reader the mark beside it is a
+       comparison with something it is not. */
+    var tickSays = row.tick || 'league';
     var range = row.range;
     var vals = sides.map(function (s) { return s.value; })
       .filter(function (v) { return v != null; });
@@ -4170,7 +4192,7 @@ __HELPERS__
          same card — the one figure a reader's eye lands on, with nothing saying
          what it was. */
       var v = el('span', s.value == null ? 'pvv none' : 'pvv',
-        s.value == null ? 'no games yet' : pct(s.value) + '%');
+        s.value == null ? 'no games yet' : fmt(s.value));
       wrap.appendChild(v);
     });
     /* The scale, under the last club's bar. Column 2 of the grid, so it lines up
@@ -4178,8 +4200,8 @@ __HELPERS__
     wrap.appendChild(el('span'));
     var ends = el('div', 'pvends');
     /* The axis names its own ends, WITH the unit — the same repair as the value. */
-    ends.appendChild(el('span', 'pvlo', pct(lo) + '%'));
-    ends.appendChild(el('span', 'pvhi', pct(hi) + '%'));
+    ends.appendChild(el('span', 'pvlo', fmt(lo)));
+    ends.appendChild(el('span', 'pvhi', fmt(hi)));
     /* ⭐ AND THE TICK NAMES ITSELF. It is placed by the same `at()` the tick is
        placed by, so the label cannot drift from the thing it names.
        ⛔ SUPPRESSED NEAR EITHER END, because the label is centred on the tick and
@@ -4190,7 +4212,7 @@ __HELPERS__
     if (lg != null) {
       var lx = at(lg);
       if (lx >= 14 && lx <= 86) {
-        var tag = el('span', 'pvlg', 'league');
+        var tag = el('span', 'pvlg', tickSays);
         tag.style.left = lx.toFixed(2) + '%';
         ends.appendChild(tag);
       }
@@ -4319,6 +4341,12 @@ __HELPERS__
            + 'half a season, before it did' : '')
         + ', so one season cannot tell two teams apart on them.'));
     }
+
+    /* FIRST ON THE PAGE. A named human is the most concrete thing this card can
+       offer a newcomer -- you can look for a number on a sweater in a way you
+       cannot look for a CF%. */
+    var watchers = watchBlock(p);
+    if (watchers) $('pv').appendChild(watchers);
 
     var sect = el('section', 'pvclubs');
     sect.appendChild(el('p', 'pvkick', 'The two teams'));
@@ -4502,6 +4530,109 @@ __HELPERS__
     t.appendChild(doors(r.key, learn));
     return t;
   }
+
+  /* ⭐⭐⭐ SOMEONE TO WATCH — the player block, 2026-10-07.
+
+     Kevin: *"we need to brainstorm the per-player stats and the game preview
+     'Players to watch' type of information. There's something good there"*, then
+     *"let's try to put a line graph or two in those cards, walls of text just
+     aren't my thing … we need to make sure we make it easy for a novice to
+     understand (which I think a graph does better than text) and the data
+     clearly answers the headline."*
+
+     ⭐⭐ SO IT IS THE CLUB ROWS' OWN INSTRUMENT, ONE LEVEL DOWN, and not a new
+     kind of picture: one row per figure with BOTH players on one axis, exactly
+     as the club rows put both clubs on one. The axis is what skaters do over a
+     full season, the tick is the median skater, and the ink is `games / need`.
+     Nothing here is a second way of drawing a number.
+
+     ⭐ AND THE DATA ANSWERS THE HEADLINE, which is measurable rather than hoped
+     for: over 2024-25, a club's leading scorer ran 0.32 to 0.73 goals a game
+     against a median skater at 0.13. The mark lands in the right third of the
+     axis, so "this is the man who scores for this team" is what the picture
+     says, not something the caption has to assert. */
+  function watchBlock(p) {
+    var w = p.watch;
+    if (!w) return null;
+    var sect = el('section', 'pvwatchers');
+    sect.appendChild(el('p', 'pvkick', 'Someone to watch'));
+    /* ⛔ "Los Angeles Kings\u2019s #10" — a club whose name ENDS IN S takes the
+       bare apostrophe, and more than half of them do (Kings, Panthers, Bruins,
+       Oilers…). Found by reading the rendered card; nothing in the suite could
+       see it, because every assertion about this line is about the player. */
+    var poss = function (name) {
+      return name + (/s$/i.test(name) ? '\u2019' : '\u2019s');
+    };
+    var who = function (side, club) {
+      return poss(nameOf(club.ab)) + ' #' + side.n + ' ' + side.nm;
+    };
+    /* ⛔ THE RULE THAT CHOSE THEM IS ON THE CARD, not only in the code. This is
+       the one judgement the block makes, and a card that names a player without
+       saying why it named him is asking to be trusted. */
+    sect.appendChild(el('p', 'pvsays',
+      who(w.away, p.clubs.away) + ' and ' + who(w.home, p.clubs.home)
+      /* ⛔ "his club\u2019s" WAS CAUGHT BY `no page calls a team a club`. The house
+         word for a reader is TEAM; club is what we say to each other and in the
+         code. A gate for a vocabulary rule is worth more than the rule, because
+         the rule is the thing everybody forgets while writing a sentence. */
+      + ' \u2014 each his team\u2019s leading goalscorer so far this season.'));
+    w.rows.forEach(function (r) { sect.appendChild(playerRow(r, p)); });
+    return sect;
+  }
+
+  /** A player figure, drawn as a club row is drawn: both marks on one axis. */
+  function playerRow(r, p) {
+    var box = el('div', 'pvp');
+    var head = el('div', 'pvmh');
+    head.appendChild(el('p', 'pvlab', r.label));
+    head.appendChild(el('span', 'pvref', r.range
+      ? 'a typical skater ' + dec(r.range.median)
+      : 'no skater range yet'));
+    box.appendChild(head);
+    box.appendChild(el('p', 'pvsays', r.says));
+
+    var sides = ['away', 'home'].map(function (side) {
+      var v = r[side];
+      /* ⭐ THE SAME TRUST RULE AS A CLUB ROW: ink is `games / need`, capped and
+         never floored, so a figure with few games behind it is faint rather than
+         hidden. ⛔ A NULL `need` MEANS NO INK AT ALL -- `gamesToTarget` answers
+         null when a measure does not repeat, and drawing that at full strength
+         would be the card asserting exactly what the measurement declined to. */
+      var trust = (r.need && v && v.n) ? Math.min(1, v.n / r.need) : 0;
+      return { ab: p.clubs[side].ab, value: v ? v.value : null,
+               league: r.range ? r.range.median : null, trust: trust };
+    });
+    var track = trackFor({ range: r.range, fmt: dec, tick: 'typical skater' }, sides);
+    if (track) box.appendChild(track.node);
+
+    /* THE COUNTS THAT MADE THE RATE, said once with both players on the line —
+       the shape Kevin asked the club rows into: *"we have this wall of text that
+       isn't very inviting to a novice."* */
+    var foot = [];
+    var live = ['away', 'home'].map(function (side) {
+      return { ab: p.clubs[side].ab, v: r[side] };
+    }).filter(function (x) { return x.v; });
+    if (live.length) {
+      foot.push('Of ' + r.noun + ': ' + live.map(function (x) {
+        return x.ab + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
+      }).join(' \u00b7 ') + '.');
+    }
+    if (r.need) foot.push('This figure needs ' + r.need + ' games before it holds steady.');
+    if (r.range) {
+      foot.push('Across a full season skaters ranged from ' + dec(r.range.min) + ' to '
+        + dec(r.range.max) + ', measured over ' + num(r.range.n) + ' skater-seasons.');
+    }
+    var fp = el('p', 'pvfoot');
+    foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });
+    box.appendChild(fp);
+    box.appendChild(doors(r.key, null));
+    return box;
+  }
+
+  /* A RATE, NOT A SHARE. Two decimals because the gap between a leading scorer
+     and a typical skater is tenths, and one decimal rounds several of the four
+     figures into each other. */
+  function dec(v) { return v == null ? '\u2014' : v.toFixed(2); }
 
   function measureFor(ar, hr, p) {
     var box = el('div', 'pvm');
@@ -5074,6 +5205,21 @@ __HELPERS__
     if (m.club.length) {
       host.appendChild(kick('The numbers we show beside a team'));
       m.club.forEach(function (c) { host.appendChild(figureSection(c, clubNums(c, m.policy), { layerFor: LAYER_FOR })); });
+    }
+
+    /* ⭐ THE PLAYER BLOCK'S ONE SECTION. Four rows on the card, one division
+       here, because they differ only in what is counted on top. The numerators
+       are listed rather than given a section each — see `methods.js`. */
+    if (m.player && m.player.length) {
+      host.appendChild(kick('The numbers we show beside a player'));
+      m.player.forEach(function (r) {
+        // ⚠️ `cellList(cls, cells)` — the second argument is the list and the
+        // first is the class. `figureSection` appends ONE node, never an array.
+        var cells = cellList('hmnums', [
+          cell(String(r.numerators.length), 'figures share this division'),
+          cell(r.numerators.join(', '), 'are what the card counts')]);
+        host.appendChild(figureSection(r, cells, { layerFor: LAYER_FOR }));
+      });
     }
 
     if (m.league.length) {

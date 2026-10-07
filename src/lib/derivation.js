@@ -204,6 +204,35 @@ const DERIVATION = {
           + 'person\u2019s call, and rinks do not all make it the same way. We '
           + 'measured how far apart they are, which is why we never put a number '
           + 'beside a team when that judgement is what the number rests on.' },
+  playerRate: {
+    unit: 'a game, for one skater',
+    label: 'What a player does in a game',
+    count: 'that player\u2019s goals, assists, shots on goal or shot attempts',
+    of: 'the games he dressed for this season',
+    /* ⚠️ THE DENOMINATOR IS GAMES DRESSED, NOT GAMES HE DID SOMETHING IN, and
+       the difference is the whole honesty of the figure: dividing by the games a
+       player recorded something would divide by the games he was good in, which
+       flatters exactly the players this card is most likely to name. */
+    /* ⚠️ IT SAID "the totals are printed beside it" AND THAT WAS CAUGHT BY THE
+       GATE WRITTEN FOR EXACTLY THIS. A `why` travels with its figure to every
+       surface that draws it -- the card, the methods page, the work overlay --
+       so a sentence about what sits next to it is true in at most one of them.
+       The same defect `attempts.why` had, in the same week. */
+    why: 'The preview names one skater on each side so a newcomer has somebody to '
+       + 'follow, and shows what he does rather than how good he is. A rate rather '
+       + 'than a total, because two players have not played the same number of '
+       + 'games.',
+    /* ⛔⛔ THE CAVEAT IS THE ONE THAT MATTERS AND IT IS NOT A HEDGE. The split-half
+       measurement that admitted these four rows says they REPEAT; it says nothing
+       about whether the player is good. Most of the distance between two skaters
+       on any of them is role and ice time -- a centre takes the draws, a first-line
+       winger gets the minutes. A card that let "does this often" be read as "is
+       good at this" would be making a claim nothing here supports. */
+    caveat: 'This says what a player does, not how well he does it. Most of the '
+          + 'difference between two skaters is the job they are given and the '
+          + 'minutes they get \u2014 a player on the first line and the power play '
+          + 'will out-shoot a fourth-liner who is doing exactly what he is asked. '
+          + 'We show it so you know who to watch, not to rank anybody.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',

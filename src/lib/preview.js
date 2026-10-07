@@ -216,6 +216,80 @@ const WITHHELD = [
  * agreement figure is computed over the shown row and the withheld ones together
  * and nobody has to compose that pairing at the call site.
  */
+/**
+ * ⭐⭐⭐ THE ONE JUDGEMENT ON THE PLAYER BLOCK, DECLARED SO IT CAN BE ARGUED WITH.
+ *
+ * **Each team's leading goalscorer this season.** Kevin, 2026-10-07, on which
+ * figures a novice engages with: *"attempts, shots on goal, assists and goals …
+ * I would lean toward those."*
+ *
+ * ⭐ IT IS A FACT, NOT A FORECAST, and that is what makes it publishable at all.
+ * "He has scored the most goals for this team this season" is true of games
+ * already played; it predicts nothing about tonight, so none of the
+ * regression-to-the-mean trouble that comes with picking an extreme applies to
+ * the CLAIM. What the reliability work governs is whether the FIGURES beside him
+ * mean anything, and all four clear the 0.7 target inside the club admission.
+ *
+ * ⛔ NOTHING ABOUT THE PREVIEWED GAME IS USED. `players.json` is built from games
+ * already in the archive, so a preview of a game not yet played cannot leak it,
+ * and a preview of one already played does not quietly become a report on it.
+ *
+ * ⚠️ TIES GO TO THE LOWER PLAYER ID, which is arbitrary and is stated: it is a
+ * tiebreak, not a second opinion about who is better. Early in a season several
+ * players share the lead and something has to be stable across renders.
+ */
+export function watchFor(players, awayAb, homeAb) {
+  if (!players || !players.clubs) return null;
+  const pick = ab => {
+    const roster = players.clubs[ab];
+    if (!roster || !roster.length) return null;
+    return roster.slice().sort((x, y) => y.g - x.g || x.p - y.p)[0];
+  };
+  const away = pick(awayAb), home = pick(homeAb);
+  if (!away || !home) return null;          // one side missing is no comparison
+  return { season: players.season, range: players.range, need: players.need,
+           away, home,
+           rows: PLAYER_ROWS.map(r => ({
+             ...r,
+             range: players.range ? players.range[r.fig] : null,
+             need: players.need ? players.need[r.fig] : null,
+             away: rate(away, r.fig), home: rate(home, r.fig) })) };
+}
+
+/** One player's per-game rate for one figure, with the counts that made it. */
+function rate(p, fig) {
+  return p.gp ? { value: p[fig] / p.gp, count: p[fig], n: p.gp } : null;
+}
+
+/**
+ * ⭐⭐⭐ THE FOUR PLAYER ROWS — Kevin, 2026-10-07: *"for a novice, I think they
+ * would be most engaged with the 'standard' metrics: attempts, shots on goal,
+ * assists and goals."*
+ *
+ * ⭐ ALL FOUR WERE MEASURED BEFORE THEY WERE DRAWN, by the instrument the club
+ * rows are admitted under (`reliability.js`, at the declared TARGET of 0.7):
+ * attempts repeat at 6 games, shots on goal at 10, assists at 24, goals at 33 --
+ * every one inside the 41-game admission, and three of the four faster than any
+ * club row we publish. The published `need` is recomputed from the archive by
+ * `archive.js::playerSeasons`; these numbers are the reason the rows exist, not
+ * the source of anything drawn.
+ *
+ * ⚠️ `fig` IS THE KEY IN THE PUBLISHED DOCUMENT and `key` is the row's own, for
+ * the reason `EXPLAINS` exists at all: a row key and a storage key are not the
+ * same namespace, and the day they diverge a string match would silently pair a
+ * row with the wrong derivation.
+ */
+export const PLAYER_ROWS = [
+  { key: 'playerGoals', fig: 'g', label: 'goals a game', noun: 'goals',
+    says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
+  { key: 'playerAssists', fig: 'a', label: 'assists a game', noun: 'assists',
+    says: 'The passes the league credited to him on somebody else\u2019s goal.' },
+  { key: 'playerShots', fig: 's', label: 'shots on goal a game', noun: 'shots on goal',
+    says: 'Pucks he put on net that the goaltender had to deal with.' },
+  { key: 'playerAttempts', fig: 'c', label: 'shot attempts a game', noun: 'shot attempts',
+    says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
+];
+
 export const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
 
 /** The season a game id belongs to, the way every other reader of an id reads it. */
@@ -420,5 +494,9 @@ export function preview(id, docs, now) {
     settles: settles == null ? null : settles,
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
-    league: leagueRows(d.measures) };
+    league: leagueRows(d.measures),
+    /* ⭐ WHO TO WATCH, OR NULL. Built here rather than in the renderer so the
+       SELECTION -- the one judgement on this block -- is a function of published
+       data that a test can drive, not a branch inside a DOM builder. */
+    watch: watchFor(d.players, away, home) };
 }

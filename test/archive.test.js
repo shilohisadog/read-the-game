@@ -19,7 +19,11 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inScope, summarise, levelCurve, rowFor } from '../src/lib/archive.js';
+import { inScope, summarise, levelCurve, rowFor, playerSeasons } from '../src/lib/archive.js';
+/* ⚠️ THE TARGET IS READ FROM THE MODULE THAT DECLARES IT. Pinning 0.7 here would
+   be a second statement of the one policy in `reliability.js`, and a test holding
+   its own copy of a constant is how a rename passes. */
+import { TARGET } from '../src/lib/reliability.js';
 
 /** A per-game measurement, as builders/measure.mjs produces it. */
 const rec = (id, o = {}) => ({
@@ -214,4 +218,83 @@ test('the curve is empty when nothing is measurable, rather than absent', () => 
   const curve = summarise([lvl(0, true)]).levelCurve;
   assert.deepEqual(curve, []);
   assert.equal(rowFor(curve, 3), null);
+});
+
+/* ---------------------------------------------------------------------------
+ * PER-PLAYER SEASONS — the preview's player block, 2026-10-07.
+ *
+ * Kevin asked for a "Player to watch" card and for the four standard figures.
+ * What settled the design was the MEASUREMENT: split-half over 706 skaters, by
+ * `reliability.js` at the declared 0.7, put attempts at 6 games, shots on goal
+ * at 10, assists at 24 and goals at 33 — all inside the 41 the club rows are
+ * admitted under. The same measurement said NO to goaltenders.
+ * ------------------------------------------------------------------------- */
+
+/** One game's worth of player rows, in the shape `measureGame` emits. */
+const pg = (id, rows) => ({ id, players: rows });
+const sk = (p, over) => ({ p, t: 'AAA', nm: `P${p}`, n: p, pos: 'C',
+                           g: 0, a: 0, s: 0, c: 0, ...over });
+
+test('⭐ a season is the sum of the games, and games played is the denominator', () => {
+  const recs = [
+    pg(2023020001, [sk(1, { g: 1, a: 0, s: 3, c: 5 }), sk(2, {})]),
+    pg(2023020002, [sk(1, { g: 0, a: 2, s: 1, c: 4 })]),
+    pg(2023030001, [sk(1, { g: 1, a: 0, s: 2, c: 2 })]),
+  ];
+  const out = playerSeasons(recs, 1);
+  const one = out.clubs.AAA.find(r => r.p === 1);
+  assert.deepEqual([one.gp, one.g, one.a, one.s, one.c], [3, 2, 2, 6, 11]);
+  /* ⛔ THE PLAYER WHO DID NOTHING STILL PLAYED, and his row is the reason the
+     rates are honest: a denominator of "games he recorded something in" would
+     divide by the games a player was good in, which flatters exactly the player
+     this card is most likely to name. */
+  const two = out.clubs.AAA.find(r => r.p === 2);
+  assert.equal(two.gp, 1, 'a dressed skater with no events is still a game played');
+  assert.equal(two.g + two.a + two.s + two.c, 0);
+});
+
+test('⛔ the per-game sequence never reaches the published document', () => {
+  /* `each` exists only so the split-half below can run. It is one object per
+     player per GAME — tens of thousands of rows over the archive — and the whole
+     point of this document is that it is a few hundred. */
+  const recs = [pg(2023020001, [sk(1, { g: 1 })]), pg(2023030001, [sk(1, { g: 2 })])];
+  const out = playerSeasons(recs, 1);
+  assert.ok(!JSON.stringify(out).includes('"each"'), '`each` was published');
+  assert.ok(out.clubs.AAA[0].gp, 'and the row that carried it is still here');
+});
+
+test('⛔⛔ the AXIS is measured over FINISHED seasons only', () => {
+  /* ⚠️ `reliability.js`'s rule, reused rather than restated: a season is complete
+     when the archive holds a PLAYOFF game for it. "What a skater does over a full
+     season" is not a question October can answer, and an axis built from it would
+     put every player at an extreme in week one.
+     MUTATION: let the unfinished season into the pool and `n` moves. */
+  const finished = [pg(2023020001, [sk(1, { g: 4 })]), pg(2023030001, [sk(1, { g: 0 })])];
+  const open = [pg(2026020001, [sk(9, { g: 9 })]), pg(2026020002, [sk(9, { g: 9 })])];
+  const out = playerSeasons([...finished, ...open], 1);
+  assert.equal(out.season, '2026', 'the clubs block is the season being previewed');
+  assert.equal(out.range.g.n, 1, 'only the finished season may enter the axis');
+  assert.equal(out.range.g.max, 2, '4 goals in 2 games — the open season is not in here');
+});
+
+test('⛔ a figure that does not repeat gets no `need`, and the card draws no ink', () => {
+  /* `gamesToTarget` answers null when a measure has no signal, and that answer is
+     carried rather than softened: a null need means the bar is drawn at zero ink.
+     A number invented here would be the card asserting what the measurement
+     declined to. */
+  const recs = [];
+  for (let i = 0; i < 40; i++) {
+    // every player identical, so nothing can correlate with anything
+    recs.push(pg(2023020000 + i, [sk(1, { g: 1 }), sk(2, { g: 1 }), sk(3, { g: 1 })]));
+  }
+  recs.push(pg(2023030001, [sk(1, {}), sk(2, {}), sk(3, {})]));
+  const out = playerSeasons(recs, 4);
+  assert.equal(out.need.g, null, 'a measure with no spread cannot settle at any n');
+});
+
+test('⭐ the published policy is carried, never re-chosen', () => {
+  const out = playerSeasons([pg(2023020001, [sk(1, { g: 1 })]),
+                             pg(2023030001, [sk(1, {})])], 7);
+  assert.equal(out.qualify, 7, 'the admission handed in is the one published');
+  assert.equal(out.target, TARGET, 'and the target is reliability.js’s, not a second one');
 });

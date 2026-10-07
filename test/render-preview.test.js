@@ -820,8 +820,22 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
     'the renderer no longer draws the sentence, so every string above is dead weight');
   /* THE UNIT, ON THE NUMBER AND ON THE AXIS. It read `35` beside a `league 31%`
      in the same card — the one figure a reader's eye lands on, unlabelled. */
-  assert.match(html, /pct\(s\.value\) \+ '%'/, 'the club figure lost its unit again');
-  assert.match(html, /pct\(lo\) \+ '%'/, 'the axis lost its unit again');
+  /* ⚠️ THE RULE MOVED AND THE ASSERTION MOVED WITH IT, which is the whole reason
+     to say so here. `trackFor` draws TWO kinds of row now: a club row is a SHARE
+     and reads `48%`, a player row is a RATE and reads `0.39`. So the spelling
+     comes from the row, with the share as the DEFAULT -- and a player row running
+     "39%" under a heading that says "goals a game" would be wrong by a factor of
+     a hundred while looking entirely normal.
+     ⛔ WHAT IS PINNED IS STILL THE UNIT, in both places it is printed: the value
+     beside the bar and the ends of the axis. A row that forgot to spell its own
+     values would fall back to the share, which is the safe direction for a club
+     row and is why the player row's override is pinned separately below. */
+  assert.match(html, /var fmt = row\.fmt \|\| function \(v\) \{ return pct\(v\) \+ '%'; \}/,
+    'the club figure lost its unit again — the default spelling is the share');
+  assert.match(html, /fmt\(s\.value\)/, 'the value beside the bar is no longer spelled by the row');
+  assert.match(html, /fmt\(lo\)/, 'the axis lost its unit again');
+  assert.match(html, /trackFor\(\{ range: r\.range, fmt: dec, tick: 'typical skater' \}/,
+    'the player row no longer overrides the share spelling, so its rates read as percentages');
   /* ⭐⭐ AND THE PICTURE SAYS WHAT IT IS — IN THE PICTURE. Nothing in it has a
      length any more: the mark is a POSITION, because the axis starts at the
      lowest team-season rather than at zero, and a length on a truncated axis is a
@@ -833,9 +847,19 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
      axis, because Kevin asked for the text to move INTO the graph. So this
      asserts the label, not the sentence — chart-reading instruction belongs to
      the chart. If the label ever goes, the sentence has to come back. */
-  assert.match(html, /el\('span', 'pvlg', 'league'\)/,
-    'the axis no longer names its own league tick, so nothing on the card says '
+  /* ⚠️ THE LABEL IS NOW THE ROW'S, for the same reason the spelling is: on a club
+     row the tick IS the league figure and "league" is right; on a player row it
+     is the MEDIAN SKATER, and calling that "league" would tell a reader the mark
+     beside it is a comparison with something it is not. The claim this test makes
+     is unchanged -- the axis names its own tick -- and both spellings are pinned
+     so neither can quietly become the other's. */
+  assert.match(html, /el\('span', 'pvlg', tickSays\)/,
+    'the axis no longer names its own tick, so nothing on the card says '
     + 'what the dark mark is — and the sentence that used to say it is gone');
+  assert.match(html, /var tickSays = row\.tick \|\| 'league'/,
+    'a row that does not name its tick must still fall back to the league');
+  assert.match(html, /tick: 'typical skater'/,
+    'the player row no longer names its tick, so its median skater reads as a league figure');
   assert.match(html, /tag\.style\.left = lx/,
     'the league label is drawn but not placed at the tick it names');
   assert.doesNotMatch(html, /foot\.push\('Each bar runs from/,

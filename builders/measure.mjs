@@ -35,7 +35,7 @@ import { situation, DECLINED } from '../src/lib/strength.js';
 // The SAME two functions danger.js calls at line 118 — a distance measured here
 // cannot disagree with a distance measured by the layer.
 import { attackDirection, distanceToNet } from '../src/lib/rink.js';
-import { inScope, summarise, dataThrough } from '../src/lib/archive.js';
+import { inScope, summarise, dataThrough, playerSeasons } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 import { reliability, agreement } from '../src/lib/reliability.js';
 import { CLUB_ROWS, POSSESSION_FAMILY } from '../src/lib/preview.js';
@@ -284,7 +284,79 @@ export function measureGame(g) {
     level: level.diff,
     // The preview card's two club rows that nothing else needed. See above.
     dAtt, lvl5,
+    /* ⭐⭐⭐ WHO DID WHAT, FOR THE PREVIEW'S PLAYER BLOCK — 2026-10-07.
+       Kevin: *"per player game stats sounds interesting, maybe a 'Player to
+       watch' card on the preview card?"*
+
+       ⚠️ IT IS NOT PUBLISHED PER GAME. `slateOf` names the ten fields
+       `recent.json` carries and this is not one of them, so nothing here reaches
+       the archive a reader downloads; `archive.js::playerSeasons` folds it into
+       one row per player per season and THAT is published. A per-game player
+       table over 4,600 games would be tens of megabytes to say what a few
+       hundred rows say.
+
+       ⛔ EVERY DRESSED SKATER GETS A ROW, INCLUDING ONE WHO DID NOTHING, because
+       the denominator of every rate on that card is GAMES PLAYED. Counting only
+       players who recorded something would divide by the games a player was
+       good in, which flatters exactly the players the card is most likely to
+       name. `roster` is the dressed roster -- the league's `rosterSpots` -- so
+       appearing in it is the honest definition of having played.
+
+       ⚠️ GOALTENDERS ARE OUT. The measurement behind this card found their rates
+       do not settle -- save fraction needs 254 games at r=0.8, against 82 in a
+       season -- so a goaltender row would be a number the card cannot stand
+       behind. Excluded here rather than filtered later, so nothing downstream
+       can print one by accident. */
+    players: playersIn(g),
   };
+}
+
+/**
+ * One row per dressed skater: who he is, and what he did in THIS game.
+ *
+ * ⭐ THE ACTORS ARE READ THROUGH THE SAME FIELDS THE REPLAY READS. `actor` is
+ * what `attribution.js` resolves for every event type and `a1`/`a2` are the
+ * assists -- so a goal counted here is the same goal the page writes a name
+ * beside. Counting from raw `details` would be a second reading of the feed.
+ */
+function playersIn(g) {
+  const out = new Map();
+  // ⚠️ THE CLUB IS THE ABBREVIATION, NOT THE LEAGUE'S TEAM ID. Everything
+  // downstream -- the catalog, the preview, `teams.js` -- names a club by its
+  // three letters, and carrying the id here would make `playerSeasons` the one
+  // place that has to translate, from a table it would have to be handed.
+  const ab = { [g.teams.home.id]: g.teams.home.ab, [g.teams.away.id]: g.teams.away.ab };
+  for (const [pid, r] of Object.entries(g.roster || {})) {
+    if (r.pos === 'G') continue;
+    out.set(Number(pid), { p: Number(pid), t: ab[r.tid], nm: r.nm, n: r.n, pos: r.pos,
+                           g: 0, a: 0, s: 0, c: 0 });
+  }
+  const bump = (id, k, by) => { const r = out.get(id); if (r) r[k] += by; };
+  for (const e of g.events) {
+    switch (e.type) {
+      case 'goal':
+        // ⚠️ A SHOOTOUT GOAL IS NOT A GOAL IN THE RUN OF PLAY, and the league's
+        // own boxscore does not count it as one. `pt` is the period type.
+        if (e.pt === 'SO') break;
+        bump(e.actor, 'g', 1); bump(e.actor, 's', 1); bump(e.actor, 'c', 1);
+        bump(e.a1, 'a', 1); bump(e.a2, 'a', 1);
+        break;
+      case 'shot-on-goal':
+        if (e.pt === 'SO') break;
+        bump(e.actor, 's', 1); bump(e.actor, 'c', 1);
+        break;
+      // AN ATTEMPT IS ALL THREE. `blocked-shot` credits `actor` to the SHOOTER,
+      // which is the field attribution.js resolves and validate() checks against
+      // rosterSpots every night -- see the second witness.
+      case 'missed-shot':
+      case 'blocked-shot':
+        if (e.pt === 'SO') break;
+        bump(e.actor, 'c', 1);
+        break;
+      default: break;
+    }
+  }
+  return [...out.values()];
 }
 
 /**
@@ -680,6 +752,22 @@ function main(argv) {
   // job here too — no timestamp, keys sorted, same extracts in, same bytes out.
   const teams = teamSeasons(records);
   writeFileSync(join(out, 'teams.json'), stable(teams));
+  /* ⭐ AND A THIRD, FOR THE SAME REASON AS THE SECOND. The preview's player block
+     is read by ONE page; folding a few hundred player rows into `measures.json`
+     would put them on the home page and on every game page, which fetch it and
+     draw none of it.
+
+     ⚠️ `settle.admission` IS PASSED IN RATHER THAN CHOSEN HERE. It is the games a
+     figure needs before the card will show it as a club row, already declared and
+     already published, and "enough games to enter the axis" is the same question.
+     A second number meaning "enough games" would be a second policy nobody voted
+     for -- `feedback-no-hardcoded-values`, in the form it usually arrives in. */
+  const players = playerSeasons(records, doc.settle.admission);
+  if (players) writeFileSync(join(out, 'players.json'), stable(players));
+  console.log(players
+    ? `  players.json: ${Object.keys(players.clubs).length} clubs for ${players.season}, `
+      + `axis over ${players.range.g ? players.range.g.n : 0} skater-seasons`
+    : '  players.json: not written — no record carries a player table');
   /* LOUD, AND AFTER EVERYTHING IS WRITTEN. A club with no entry cannot change a
      number — the rates are computed from ids, not abbreviations — so this is a
      naming gap and not a data fault, and withholding the archive over one would

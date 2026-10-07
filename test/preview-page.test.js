@@ -80,9 +80,36 @@ const club = (o = {}) => ({ games: 12, attempts: { for: 600, against: 590 },
   slot: { count: 140, n: 300 }, dmen: { count: 190, n: 600 },
   level5: { for: 240, against: 230 }, ...o });
 
+/* THE PLAYER BLOCK'S DOCUMENT, in the shape `archive.js::playerSeasons` writes.
+   ⚠️ BUF's leader is deliberately NOT the first row, and a second BUF player
+   out-assists him: selection is by GOALS and nothing else, and a fixture whose
+   leader is also first in the list would pass a renderer that ignored the rule. */
+const PLAYERS = {
+  season: '2026', qualify: 41, target: 0.7,
+  range: { g: { min: 0, max: 0.8, median: 0.13, n: 600 },
+           a: { min: 0, max: 1.1, median: 0.22, n: 600 },
+           s: { min: 0, max: 4.2, median: 1.33, n: 600 },
+           c: { min: 0, max: 7.9, median: 2.88, n: 600 } },
+  need: { g: 33, a: 24, s: 10, c: 6 },
+  clubs: {
+    BUF: [{ p: 20, nm: 'Playmaker', n: 20, pos: 'C', gp: 10, g: 2, a: 9, s: 18, c: 30 },
+          { p: 11, nm: 'Scorer', n: 11, pos: 'L', gp: 10, g: 7, a: 3, s: 25, c: 44 }],
+    PIT: [{ p: 30, nm: 'Captain', n: 87, pos: 'C', gp: 11, g: 5, a: 8, s: 29, c: 51 }],
+  },
+};
+
+/* ⚠️ THE CLUBS SECTION, NOT THE WHOLE CARD. The player block draws the same
+   furniture — tracks, axis ends, opacity — because it is the same instrument one
+   level down, so a walk of `ids.pv` counting bars or scales now answers about
+   SEVEN rows where the test means THREE. Every assertion about a CLUB row is
+   scoped through here; the player block has its own tests below. */
+const clubsIn = ids => walk(ids.pv).find(
+  x => (x.className || '').split(' ').includes('pvclubs')) || ids.pv;
+
 const DOCS = {
   'schedule.json': { asOf: '2026-10-01T12:00:00Z', upcoming: [FIXTURE],
     season: { preSeasonStartDate: '2026-09-19', regularSeasonStartDate: OPENER } },
+  'players.json': PLAYERS,
   'teams.json': { through: '2026-10-01',
     seasons: { 2026: { BUF: club(), PIT: club({ games: 11 }) } } },
   'measures.json': {
@@ -312,7 +339,7 @@ test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself
     'the caption names the span AND what it was measured over');
   // ⛔ AND NO BAR IS DRAWN FOR A CLUB WITH NO FIGURE. The row is a template, and a
   // template that draws a club's bar at zero would be inventing a measurement.
-  const filled = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null);
+  const filled = rectsIn(clubsIn(ids)).filter(r => r['fill-opacity'] != null);
   assert.equal(filled.length, 0, 'a club with no games was given a bar');
 });
 
@@ -335,7 +362,7 @@ test('⭐⭐ the bar\'s ink is games over need, so twelve games cannot look like
      typed minimum and the exact ratios do. */
   const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
-  const op = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null)
+  const op = rectsIn(clubsIn(ids)).filter(r => r['fill-opacity'] != null)
     .map(r => Number(r['fill-opacity']));
   /* FOUR, not six, and the missing pair is the degradation working: the fixture
      gives `slot` no `clubRange`, and both clubs hold the identical slot figure, so
@@ -357,7 +384,7 @@ test('a settled row is drawn at full strength and never past it', async () => {
   const { ids, settle } = run({ 'teams.json': { through: '2026-12-01',
     seasons: { 2026: { BUF: many, PIT: many } } } }, `?game=${GID}`, '2026-12-02T12:00:00Z');
   await settle();
-  const op = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null)
+  const op = rectsIn(clubsIn(ids)).filter(r => r['fill-opacity'] != null)
     .map(r => Number(r['fill-opacity']));
   assert.ok(op.length > 0, 'no bars were drawn at all');
   assert.ok(op.every(v => v === 1), `an opacity above 1 is not a stronger claim: ${op}`);
@@ -475,7 +502,7 @@ test('⛔ the axis names its own ends, so a full-width band is not an empty mete
   const { ids, settle } = run({ 'teams.json': { through: '2026-09-18', seasons: {} } },
     `?game=${GID}`, '2026-09-23T12:00:00Z');
   await settle();
-  const ends = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvends'));
+  const ends = walk(clubsIn(ids)).filter(x => (x.className || '').split(' ').includes('pvends'));
   assert.equal(ends.length, 2, 'one scale under each drawable measure');
   /* level5's fixture range is .44–.57, dmen's is .26–.38 — the labels are the
      axis's own endpoints, so they differ per row and cannot be typed once.
@@ -529,7 +556,7 @@ test('⛔ nothing is painted across the track but the rail itself', () => {
        tracks. And filtering by TAG picks up the attempt-mix tile in the league
        strip, which is also an `svg` and legitimately draws three stacked
        segments. The club rows are the `.pvm` cards, which are plain divs. */
-    const tracks = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvm'));
+    const tracks = walk(clubsIn(ids)).filter(x => (x.className || '').split(' ').includes('pvm'));
     assert.ok(tracks.length >= 2, `only ${tracks.length} club tracks drawn — nothing to check`);
     const notRail = tracks.flatMap(t => rectsIn(t))
       .filter(r => Number(r.width) > 5)
@@ -916,4 +943,109 @@ test('a census missing a counter drops that tile rather than drawing a figure fr
   const said = textOf(off.ids.pv);
   assert.ok(!/times a team ices the puck/.test(said), said.slice(0, 200));
   assert.match(said, /times a team is offside/, 'the rest of the frame still draws');
+});
+
+
+/* ---------------------------------------------------------------------------
+ * SOMEONE TO WATCH — the player block, 2026-10-07.
+ * ------------------------------------------------------------------------- */
+
+const hasCls = (x, c) => (x.className || '').split(' ').includes(c);
+
+test('⭐⭐ the block names each team\u2019s LEADING GOALSCORER, and says that is the rule', async () => {
+  /* ⛔ THE SELECTION IS THE ONLY JUDGEMENT ON THIS BLOCK, so it is pinned and it
+     is printed. BUF's leading scorer is the SECOND row in the fixture and has
+     fewer assists than the first — a renderer that took `clubs[ab][0]`, or that
+     sorted on points, names Playmaker and this fires.
+     ⭐ AND THE RULE IS ON THE CARD. A card that names a player without saying why
+     is asking to be trusted; this one says it in the sentence under the kicker. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(ids.pv);
+  assert.match(said, /Someone to watch/);
+  assert.match(said, /#11 Scorer/, 'BUF\u2019s leading goalscorer');
+  assert.match(said, /#87 Captain/, 'and PIT\u2019s');
+  assert.doesNotMatch(said, /Playmaker/, 'the assists leader is not the goals leader');
+  assert.match(said, /leading goalscorer/, 'the rule that chose them is not stated');
+  // ⛔ THE HOUSE WORD IS TEAM. `club` is what we say in the code.
+  assert.doesNotMatch(said, /his club\u2019s/, 'a reader is told team, never club');
+});
+
+test('⭐ four figures, each drawn as a GRAPH with both players on one axis', async () => {
+  /* Kevin, 2026-10-07: *"let's try to put a line graph or two in those cards,
+     walls of text just aren't my thing … a graph does better than text."* So the
+     claim is the picture, not the prose: one track per figure, two marks on it.
+     MUTATION: drop `trackFor` from the player row and the track count goes to 0. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  assert.ok(block, 'no player block was drawn');
+  /* ⚠️ `pvp`, NOT `pvm`. A player row wears the club row's clothes and is a
+     different population; sharing the class made seven club-row tests silently
+     count seven rows where they mean three. */
+  const rows = walk(block).filter(x => hasCls(x, 'pvp'));
+  assert.equal(rows.length, 4, 'goals, assists, shots on goal, shot attempts');
+  for (const r of rows) {
+    assert.ok(walk(r).some(x => hasCls(x, 'pvtrack')), 'a player figure with no graph');
+    const marks = walk(r).filter(x => x.tag === 'svg');
+    assert.equal(marks.length, 2, 'both players must sit on the same axis');
+    assert.ok(walk(r).some(x => hasCls(x, 'pvwork')), 'a figure with no door to its work');
+  }
+});
+
+test('⛔ a player rate is spelled as a RATE, and its tick is not called the league', async () => {
+  /* Two numbers that would be wrong by a factor of a hundred while looking
+     entirely normal: `0.70 goals a game` rendered as `70%`, and the median
+     SKATER labelled `league`. Both come from the row now — see `trackFor`. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  const said = textOf(block);
+  assert.match(said, /0\.70/, '7 goals in 10 games is 0.70 a game');
+  assert.doesNotMatch(said, /%/, 'a per-game rate is not a percentage');
+  /* ⛔ THE ASSERTION IS ON THE TICK'S OWN LABEL, not on the word anywhere in the
+     block. The first version forbade "league" in the whole text and caught the
+     assists row's sentence — *"the passes the LEAGUE credited to him"* — which is
+     correct prose about who records an assist. A check wide enough to catch the
+     right defect and the right prose is a check that will be weakened later. */
+  const ticks = walk(block).filter(x => hasCls(x, 'pvlg')).map(x => x.textContent);
+  assert.ok(ticks.length >= 4, `only ${ticks.length} tick labels in the block`);
+  assert.deepEqual([...new Set(ticks)], ['typical skater'],
+    'a player row\u2019s tick is the median skater and must not be called the league');
+});
+
+test('⛔ the counts that made the rate are printed, with games played', async () => {
+  // A rate with no counts is the naked number this whole card refuses.
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(walk(ids.pv).find(x => hasCls(x, 'pvwatchers')));
+  assert.match(said, /BUF 7 in 10 games/, 'the goals that made the rate');
+  assert.match(said, /PIT 5 in 11 games/);
+  assert.match(said, /needs 33 games before it holds steady/, 'and what it still needs');
+  assert.match(said, /600 skater-seasons/, 'and what the axis is measured over');
+});
+
+test('⛔⛔ no players.json means NO BLOCK, not a block with no numbers', async () => {
+  /* The archive had no `players.json` until 2026-10-07 and any older copy still
+     does. `grab` answers null on any error, so this is the state a reader gets
+     on a bad day — and a half-drawn block naming nobody would be worse than none.
+     ⭐ The rest of the card must still draw, or this passes on a page that broke. */
+  const { ids, settle } = run({ 'players.json': null }, `?game=${GID}`,
+                              '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(ids.pv);
+  assert.ok(!walk(ids.pv).some(x => hasCls(x, 'pvwatchers')), 'a block was drawn anyway');
+  assert.doesNotMatch(said, /Someone to watch/);
+  assert.match(said, /5-on-5 CF% while the score was level/, 'the rest of the card still draws');
+});
+
+test('⛔ one side with no players is no comparison, so no block', async () => {
+  // The block puts two players on one axis. With one of them missing it would be
+  // a graph of one mark against an axis — a different claim, drawn in the same
+  // shape, which is the kind of thing a reader cannot be expected to notice.
+  const { ids, settle } = run({ 'players.json': { ...PLAYERS,
+    clubs: { BUF: PLAYERS.clubs.BUF } } }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  assert.ok(!walk(ids.pv).some(x => hasCls(x, 'pvwatchers')),
+    'a one-sided player block was drawn');
 });

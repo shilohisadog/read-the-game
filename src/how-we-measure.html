@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-s5S455Ob8D1etut+F61rmfXNUN5xXOW8s3O4SGoUhe8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SjX0WEoOc7DQBwhDfiORoo1BNoiyMtDkQPRFtdwQjI8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1552,6 +1552,80 @@ const WITHHELD = [
  * agreement figure is computed over the shown row and the withheld ones together
  * and nobody has to compose that pairing at the call site.
  */
+/**
+ * ⭐⭐⭐ THE ONE JUDGEMENT ON THE PLAYER BLOCK, DECLARED SO IT CAN BE ARGUED WITH.
+ *
+ * **Each team's leading goalscorer this season.** Kevin, 2026-10-07, on which
+ * figures a novice engages with: *"attempts, shots on goal, assists and goals …
+ * I would lean toward those."*
+ *
+ * ⭐ IT IS A FACT, NOT A FORECAST, and that is what makes it publishable at all.
+ * "He has scored the most goals for this team this season" is true of games
+ * already played; it predicts nothing about tonight, so none of the
+ * regression-to-the-mean trouble that comes with picking an extreme applies to
+ * the CLAIM. What the reliability work governs is whether the FIGURES beside him
+ * mean anything, and all four clear the 0.7 target inside the club admission.
+ *
+ * ⛔ NOTHING ABOUT THE PREVIEWED GAME IS USED. `players.json` is built from games
+ * already in the archive, so a preview of a game not yet played cannot leak it,
+ * and a preview of one already played does not quietly become a report on it.
+ *
+ * ⚠️ TIES GO TO THE LOWER PLAYER ID, which is arbitrary and is stated: it is a
+ * tiebreak, not a second opinion about who is better. Early in a season several
+ * players share the lead and something has to be stable across renders.
+ */
+function watchFor(players, awayAb, homeAb) {
+  if (!players || !players.clubs) return null;
+  const pick = ab => {
+    const roster = players.clubs[ab];
+    if (!roster || !roster.length) return null;
+    return roster.slice().sort((x, y) => y.g - x.g || x.p - y.p)[0];
+  };
+  const away = pick(awayAb), home = pick(homeAb);
+  if (!away || !home) return null;          // one side missing is no comparison
+  return { season: players.season, range: players.range, need: players.need,
+           away, home,
+           rows: PLAYER_ROWS.map(r => ({
+             ...r,
+             range: players.range ? players.range[r.fig] : null,
+             need: players.need ? players.need[r.fig] : null,
+             away: rate(away, r.fig), home: rate(home, r.fig) })) };
+}
+
+/** One player's per-game rate for one figure, with the counts that made it. */
+function rate(p, fig) {
+  return p.gp ? { value: p[fig] / p.gp, count: p[fig], n: p.gp } : null;
+}
+
+/**
+ * ⭐⭐⭐ THE FOUR PLAYER ROWS — Kevin, 2026-10-07: *"for a novice, I think they
+ * would be most engaged with the 'standard' metrics: attempts, shots on goal,
+ * assists and goals."*
+ *
+ * ⭐ ALL FOUR WERE MEASURED BEFORE THEY WERE DRAWN, by the instrument the club
+ * rows are admitted under (`reliability.js`, at the declared TARGET of 0.7):
+ * attempts repeat at 6 games, shots on goal at 10, assists at 24, goals at 33 --
+ * every one inside the 41-game admission, and three of the four faster than any
+ * club row we publish. The published `need` is recomputed from the archive by
+ * `archive.js::playerSeasons`; these numbers are the reason the rows exist, not
+ * the source of anything drawn.
+ *
+ * ⚠️ `fig` IS THE KEY IN THE PUBLISHED DOCUMENT and `key` is the row's own, for
+ * the reason `EXPLAINS` exists at all: a row key and a storage key are not the
+ * same namespace, and the day they diverge a string match would silently pair a
+ * row with the wrong derivation.
+ */
+const PLAYER_ROWS = [
+  { key: 'playerGoals', fig: 'g', label: 'goals a game', noun: 'goals',
+    says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
+  { key: 'playerAssists', fig: 'a', label: 'assists a game', noun: 'assists',
+    says: 'The passes the league credited to him on somebody else\u2019s goal.' },
+  { key: 'playerShots', fig: 's', label: 'shots on goal a game', noun: 'shots on goal',
+    says: 'Pucks he put on net that the goaltender had to deal with.' },
+  { key: 'playerAttempts', fig: 'c', label: 'shot attempts a game', noun: 'shot attempts',
+    says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
+];
+
 const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
 
 /** The season a game id belongs to, the way every other reader of an id reads it. */
@@ -1756,7 +1830,11 @@ function preview(id, docs, now) {
     settles: settles == null ? null : settles,
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
-    league: leagueRows(d.measures) };
+    league: leagueRows(d.measures),
+    /* ⭐ WHO TO WATCH, OR NULL. Built here rather than in the renderer so the
+       SELECTION -- the one judgement on this block -- is a function of published
+       data that a test can drive, not a branch inside a DOM builder. */
+    watch: watchFor(d.players, away, home) };
 }
 
 /**
@@ -1805,6 +1883,14 @@ const EXPLAINS = {
   level5: 'level5', dmen: 'dmen', slot: 'slotShare',
   powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
   icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
+  /* ⭐ FOUR ROWS, ONE DERIVATION, and that is the honest grouping rather than a
+     saving: all four are the SAME DIVISION -- a count of a player's events over
+     the games he dressed for -- differing only in which events are counted. The
+     methods page is organised by division, so four sections would be one
+     explanation printed four times with a word changed, which is the drift
+     `methods.js` exists to prevent. The numerators are named inside it. */
+  playerGoals: 'playerRate', playerAssists: 'playerRate',
+  playerShots: 'playerRate', playerAttempts: 'playerRate',
 };
 
 /** The derivation that explains a row, or undefined if none is declared. */
@@ -2419,6 +2505,35 @@ const DERIVATION = {
           + 'person\u2019s call, and rinks do not all make it the same way. We '
           + 'measured how far apart they are, which is why we never put a number '
           + 'beside a team when that judgement is what the number rests on.' },
+  playerRate: {
+    unit: 'a game, for one skater',
+    label: 'What a player does in a game',
+    count: 'that player\u2019s goals, assists, shots on goal or shot attempts',
+    of: 'the games he dressed for this season',
+    /* ⚠️ THE DENOMINATOR IS GAMES DRESSED, NOT GAMES HE DID SOMETHING IN, and
+       the difference is the whole honesty of the figure: dividing by the games a
+       player recorded something would divide by the games he was good in, which
+       flatters exactly the players this card is most likely to name. */
+    /* ⚠️ IT SAID "the totals are printed beside it" AND THAT WAS CAUGHT BY THE
+       GATE WRITTEN FOR EXACTLY THIS. A `why` travels with its figure to every
+       surface that draws it -- the card, the methods page, the work overlay --
+       so a sentence about what sits next to it is true in at most one of them.
+       The same defect `attempts.why` had, in the same week. */
+    why: 'The preview names one skater on each side so a newcomer has somebody to '
+       + 'follow, and shows what he does rather than how good he is. A rate rather '
+       + 'than a total, because two players have not played the same number of '
+       + 'games.',
+    /* ⛔⛔ THE CAVEAT IS THE ONE THAT MATTERS AND IT IS NOT A HEDGE. The split-half
+       measurement that admitted these four rows says they REPEAT; it says nothing
+       about whether the player is good. Most of the distance between two skaters
+       on any of them is role and ice time -- a centre takes the draws, a first-line
+       winger gets the minutes. A card that let "does this often" be read as "is
+       good at this" would be making a claim nothing here supports. */
+    caveat: 'This says what a player does, not how well he does it. Most of the '
+          + 'difference between two skaters is the job they are given and the '
+          + 'minutes they get \u2014 a player on the first line and the power play '
+          + 'will out-shoot a fourth-liner who is doing exactly what he is asked. '
+          + 'We show it so you know who to watch, not to rank anybody.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',
@@ -2562,7 +2677,13 @@ function explainedLabel(key) {
  * hand-written list is that failure with extra steps.
  */
 function keysOf(measures) {
-  return [...CLUB_ROWS.map(r => r.key), ...leagueRows(measures).map(r => r.key)];
+  /* ⭐ THE PLAYER ROWS ARE UNCONDITIONAL, unlike the league rows. A league row is
+     emitted only when the census carries its counter, so an older document draws
+     fewer; the four player rows are a fixed set the card either draws or does
+     not, and a document with no `players.json` means no BLOCK rather than fewer
+     rows inside one. */
+  return [...CLUB_ROWS.map(r => r.key), ...PLAYER_ROWS.map(r => r.key),
+          ...leagueRows(measures).map(r => r.key)];
 }
 
 
@@ -2633,6 +2754,17 @@ function methods(measures) {
              evidence: (EVIDENCE[r.key] || []).length ? EVIDENCE[r.key] : null };
   });
 
+  /* ⭐⭐⭐ ONE SECTION FOR FOUR ROWS, AND THAT IS WHY `EXPLAINS` MAPS THEM ALL TO
+     `playerRate`. Goals, assists, shots on goal and shot attempts per player are
+     the SAME DIVISION with four numerators, so four sections would be one
+     explanation printed four times with a word changed -- and, since the anchor
+     is derived from the DERIVATION key, four sections would also share one id.
+     The numerators are named inside the section instead. */
+  const player = DERIVATION.playerRate
+    ? [{ key: 'playerRate', anchor: anchorOf('playerRate'), ...DERIVATION.playerRate,
+         numerators: PLAYER_ROWS.map(r => r.noun) }]
+    : [];
+
   const frame = leagueFigures(measures);
 
   /* ⭐⭐ WHY THERE IS ONE POSSESSION ROW, AS A RANGE RATHER THAN AN ASSERTION.
@@ -2652,7 +2784,7 @@ function methods(measures) {
     max: Math.max(...fam.pairs.map(p => Math.abs(p.r))),
   } : null;
 
-  return { policy, club, league: frame, family,
+  return { policy, club, player, league: frame, family,
            /* ⭐ THE THIRD SECTION RIDES ALONG rather than being a second fetch.
               The page grabs one document and calls one function; a surface that
               had to remember to call two would eventually call one. */
@@ -3313,6 +3445,21 @@ function sections(create) {
     if (m.club.length) {
       host.appendChild(kick('The numbers we show beside a team'));
       m.club.forEach(function (c) { host.appendChild(figureSection(c, clubNums(c, m.policy), { layerFor: LAYER_FOR })); });
+    }
+
+    /* ⭐ THE PLAYER BLOCK'S ONE SECTION. Four rows on the card, one division
+       here, because they differ only in what is counted on top. The numerators
+       are listed rather than given a section each — see `methods.js`. */
+    if (m.player && m.player.length) {
+      host.appendChild(kick('The numbers we show beside a player'));
+      m.player.forEach(function (r) {
+        // ⚠️ `cellList(cls, cells)` — the second argument is the list and the
+        // first is the class. `figureSection` appends ONE node, never an array.
+        var cells = cellList('hmnums', [
+          cell(String(r.numerators.length), 'figures share this division'),
+          cell(r.numerators.join(', '), 'are what the card counts')]);
+        host.appendChild(figureSection(r, cells, { layerFor: LAYER_FOR }));
+      });
     }
 
     if (m.league.length) {

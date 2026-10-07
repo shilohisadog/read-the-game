@@ -18,6 +18,11 @@
  */
 
 import { typeOf, isLeague } from './competitions.js';
+/* ⚠️ THE SPREAD IS `reliability.js`'s, not a second one. `clubRange` on the
+   preview card is built by exactly this function, and the player axis has to
+   mean the same thing the club axis means -- min..max over a real population,
+   never a quantile band somebody chose. See `playerSeasons`. */
+import { spreadOf, gamesToTarget, TARGET } from './reliability.js';
 import { distribution } from './distribution.js';
 /* ⭐ THE SLOT'S GEOMETRY IS QUOTED HERE IN WORDS, so it is IMPORTED here rather
    than typed. `GEOM` below is published inside `measures.json`'s `what` strings,
@@ -716,3 +721,176 @@ export function summarise(records) {
   };
 }
 
+
+/* ---------------------------------------------------------------- players */
+
+/** The season a game id belongs to — the league's own first four digits. */
+const seasonOfId = id => String(id).slice(0, 4);
+
+/** The four figures the preview's player block draws, and where each is counted. */
+export const PLAYER_FIGURES = [
+  { key: 'g', unit: 'goals' },
+  { key: 'a', unit: 'assists' },
+  { key: 's', unit: 'shots on goal' },
+  { key: 'c', unit: 'shot attempts' },
+];
+
+/**
+ * ⭐⭐⭐ WHAT EACH SKATER DID, BY SEASON — the preview's player block.
+ *
+ * Kevin, 2026-10-06: *"per player game stats sounds interesting, maybe a 'Player
+ * to watch' card on the preview card?"* and, on which figures: *"for a novice, I
+ * think they would be most engaged with the 'standard' metrics: attempts, shots
+ * on goal, assists and goals."*
+ *
+ * ⭐⭐ ALL FOUR SETTLE, AND THAT WAS MEASURED BEFORE ANY OF THIS WAS BUILT. Split
+ * half over 706 skaters with 20+ games in 2024-25, by the same instrument the
+ * club rows use (`reliability.js::gamesToTarget`, at the declared `TARGET` of
+ * 0.7): shot attempts repeat at **6** games, shots on goal at **10**, assists at
+ * **24**, goals at **33**. Every one is inside the 41-game admission the club
+ * rows are held to, and three of the four settle faster than any club row we
+ * publish (`dmen` 23, `level5` 35, `slot` 38).
+ *
+ * ⛔ GOALTENDERS ARE NOT HERE, and that is the same measurement answering no.
+ * Save fraction repeats at r=0.23 across halves — 254 games to reach 0.8, against
+ * 82 in a season — and shots faced per game at r=0.08, because that is a property
+ * of the team in front of him on the night. I had recommended STARTING with
+ * goaltenders, on the argument that they face 30 shots a night where a skater
+ * takes two. The argument is true and the conclusion was wrong, which is the
+ * whole reason the measurement came first.
+ *
+ * ⚠️ IT MEASURES WHAT A PLAYER DOES, NOT HOW WELL. Much of the spread between
+ * players is role and ice time, and a card built on this must not imply skill.
+ * What survives that caveat is the thing a novice actually needs: *this is the
+ * man who shoots for this team, and here is how far from a typical skater he is.*
+ *
+ * @param records  every measured game, each carrying `players` from `measureGame`
+ * @param qualify  games a skater needs before he enters the AXIS population.
+ *                 ⭐ Passed in rather than chosen here: it is `settle.admission`,
+ *                 the same declared policy the club rows are admitted under, and
+ *                 a second number meaning "enough games" is a second policy.
+ */
+export function playerSeasons(records, qualify) {
+  const games = records.filter(g => inScope(g.id) && g.players);
+  if (!games.length) return null;
+
+  // season -> playerId -> the running row
+  const bySeason = new Map();
+  for (const g of games) {
+    const yr = seasonOfId(g.id);
+    if (!bySeason.has(yr)) bySeason.set(yr, new Map());
+    const season = bySeason.get(yr);
+    for (const r of g.players) {
+      const was = season.get(r.p);
+      // ⚠️ THE LATEST APPEARANCE WINS THE IDENTITY. A player traded mid-season
+      // appears for two clubs and changes number; the card is about tonight, so
+      // the club and sweater it prints are the most recent ones we hold.
+      // `each` is the per-game sequence the split-half above needs, and it is
+      // DROPPED before publication — see the `clubs` block below.
+      const row = was || { p: r.p, gp: 0, g: 0, a: 0, s: 0, c: 0, each: [] };
+      row.each.push({ g: r.g, a: r.a, s: r.s, c: r.c });
+      row.nm = r.nm; row.n = r.n; row.pos = r.pos; row.t = r.t;
+      row.gp += 1; row.g += r.g; row.a += r.a; row.s += r.s; row.c += r.c;
+      season.set(r.p, row);
+    }
+  }
+
+  /* ⚠️ A SEASON IS COMPLETE WHEN THE ARCHIVE HOLDS A PLAYOFF GAME FOR IT, which
+     is `reliability.js`'s rule and is reused rather than restated: it needs no
+     date arithmetic and nothing to maintain. The AXIS is measured over complete
+     seasons only, because "what a skater does over a full season" is not a
+     question this season can answer in October. */
+  const complete = new Set(games.filter(g => String(g.id).slice(4, 6) === '03')
+                                .map(g => seasonOfId(g.id)));
+  const pool = [];
+  for (const [yr, season] of bySeason) {
+    if (!complete.has(yr)) continue;
+    for (const row of season.values()) if (row.gp >= qualify) pool.push(row);
+  }
+  const range = {}, need = {};
+  for (const { key, unit } of PLAYER_FIGURES) {
+    range[key] = withWhat(spreadOf(pool.map(r => r[key] / r.gp)),
+      `${unit} per game, over skaters with at least ${qualify} games in a completed `
+      + 'season (n counts SKATER-SEASONS, not players)');
+    /* ⭐⭐⭐ HOW MANY GAMES THE FIGURE NEEDS, BY THE INSTRUMENT THE CLUB ROWS USE.
+       The card draws a bar at `games / need` ink, and without a measured `need`
+       that opacity would be a number somebody picked -- which is the one thing
+       this card refuses everywhere else. `gamesToTarget` and `TARGET` are
+       imported from `reliability.js`: the same Spearman-Brown inversion, at the
+       same declared 0.7, that publishes `dmen 23`, `level5 35` and `slot 38`.
+       ⚠️ ALTERNATE GAMES, NOT CHRONOLOGICAL HALVES. A player's role changes
+       within a season -- promoted to the first line, moved off the power play --
+       and a chronological split reads that drift as unreliability. `alternate`
+       hands each half the same schedule, which is `reliability.js`'s own reason
+       for carrying both. */
+    need[key] = needFor(pool, key);
+  }
+
+  /* THE CURRENT SEASON, PER CLUB — the only one the preview asks about. Publishing
+     every player of every season would be a document of tens of thousands of rows
+     to answer a question about two clubs tonight. */
+  const latest = [...bySeason.keys()].sort().pop();
+  const clubs = {};
+  for (const row of (bySeason.get(latest) || new Map()).values()) {
+    (clubs[row.t] ||= []).push(row);
+  }
+  /* ⭐ THE TOP THREE ON EACH FIGURE, NOT THE TOP THREE OVERALL. The card leads on
+     goals today and the figure it leads on is a product decision that can change;
+     publishing only one measure's leaders would make that change a re-derive of
+     the whole archive. Deduplicated, so a player who leads on three costs one row. */
+  for (const ab of Object.keys(clubs)) {
+    const keep = new Map();
+    for (const { key } of PLAYER_FIGURES) {
+      clubs[ab].slice().sort((x, y) => y[key] - x[key] || x.p - y.p)
+        .slice(0, 3).forEach(r => keep.set(r.p, r));
+    }
+    // ⛔ `each` NEVER REACHES THE ARCHIVE. It is one object per game per player —
+    // the thing this document exists not to publish — and it is only here because
+    // the reliability split needs the sequence.
+    clubs[ab] = [...keep.values()].sort((x, y) => y.g - x.g || x.p - y.p)
+      .map(({ each, ...rest }) => rest);
+  }
+  return { season: latest, qualify, target: TARGET, range, need, clubs };
+}
+
+/**
+ * Games a skater's per-game rate needs before it repeats — split half, alternate.
+ *
+ * ⛔ IT RETURNS NULL WHEN THERE IS NO SIGNAL, which is `gamesToTarget`'s own
+ * answer and the honest one: no number of games settles a measure that does not
+ * repeat at all. A card handed null must draw no ink rather than full ink.
+ */
+function needFor(pool, key) {
+  const a = [], b = [], halves = [];
+  for (const r of pool) {
+    if (!r.each || r.each.length < 4) continue;
+    const odd = r.each.filter((_, i) => i % 2 === 0);
+    const even = r.each.filter((_, i) => i % 2 === 1);
+    if (!odd.length || !even.length) continue;
+    a.push(odd.reduce((t, x) => t + x[key], 0) / odd.length);
+    b.push(even.reduce((t, x) => t + x[key], 0) / even.length);
+    halves.push(odd.length);
+  }
+  const r = pearson(a, b);
+  halves.sort((x, y) => x - y);
+  return gamesToTarget(r, halves[halves.length >> 1] || 0);
+}
+
+/** ⚠️ `reliability.js` keeps its own copy private; this is the same formula and
+ *  the same name, over a different population. Eight lines, and exporting one
+ *  module's internals to save them would couple two files over arithmetic. */
+function pearson(x, y) {
+  const n = x.length;
+  if (n < 3) return null;
+  const mx = x.reduce((s, v) => s + v, 0) / n, my = y.reduce((s, v) => s + v, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) {
+    sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; syy += (y[i] - my) ** 2;
+  }
+  return sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : null;
+}
+
+/** A spread with the sentence that says what it is of — `share`'s rule, one level on. */
+function withWhat(spread, what) {
+  return spread ? { ...spread, what, population: POPULATION } : null;
+}

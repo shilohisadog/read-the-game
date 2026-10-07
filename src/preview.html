@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Bdp91MIkyjLLr4ZLRrPA4rCMdr84yqADBYztjBt19EE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-lM5zKQ+t28mAqD6yfPbgruoNpZajEnWMicIsKCfmoVg='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-isDx1nV+uQ7agBe5H7RP1CL/E6NItJgQztQ1w2WgY+o=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-Jyjb4RiVdNVO8+PZ/M8b0RvpRA4wYjt2swtWztlUvag='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -652,7 +652,13 @@ footer p{margin:0 0 8px}
 .pvfine{margin:8px 0 0;font-size:.74rem;color:var(--muted);line-height:1.45}
 
 /* ---- the two clubs: one track per measure ---------------------------- */
-.pvm{margin:0 0 20px;padding:14px 15px 12px;background:#fff;
+/* ⭐ A PLAYER ROW LOOKS EXACTLY LIKE A CLUB ROW AND IS NOT ONE. It shares every
+   rule here on purpose — same instrument, one level down — and carries its own
+   class so the two populations can be told apart by anything that counts them.
+   ⛔ SHARING `pvm` MADE SEVEN CLUB-ROW TESTS COUNT SEVEN ROWS WHERE THEY MEAN
+   THREE, which is the quiet version of this: nothing would have failed, the
+   numbers would simply have been about a different set. */
+.pvm,.pvp{margin:0 0 20px;padding:14px 15px 12px;background:#fff;
  border:1px solid var(--edge);border-radius:11px}
 .pvmh{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;
  justify-content:space-between;margin:0 0 10px}
@@ -716,7 +722,7 @@ footer p{margin:0 0 8px}
 .pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
 @media (max-width:430px){
  .pvbig{font-size:1.8rem}
- .pvm{padding:12px 12px 10px}
+ .pvm,.pvp{padding:12px 12px 10px}
 }
 </style>
 </head>
@@ -1402,6 +1408,80 @@ const WITHHELD = [
  * agreement figure is computed over the shown row and the withheld ones together
  * and nobody has to compose that pairing at the call site.
  */
+/**
+ * ⭐⭐⭐ THE ONE JUDGEMENT ON THE PLAYER BLOCK, DECLARED SO IT CAN BE ARGUED WITH.
+ *
+ * **Each team's leading goalscorer this season.** Kevin, 2026-10-07, on which
+ * figures a novice engages with: *"attempts, shots on goal, assists and goals …
+ * I would lean toward those."*
+ *
+ * ⭐ IT IS A FACT, NOT A FORECAST, and that is what makes it publishable at all.
+ * "He has scored the most goals for this team this season" is true of games
+ * already played; it predicts nothing about tonight, so none of the
+ * regression-to-the-mean trouble that comes with picking an extreme applies to
+ * the CLAIM. What the reliability work governs is whether the FIGURES beside him
+ * mean anything, and all four clear the 0.7 target inside the club admission.
+ *
+ * ⛔ NOTHING ABOUT THE PREVIEWED GAME IS USED. `players.json` is built from games
+ * already in the archive, so a preview of a game not yet played cannot leak it,
+ * and a preview of one already played does not quietly become a report on it.
+ *
+ * ⚠️ TIES GO TO THE LOWER PLAYER ID, which is arbitrary and is stated: it is a
+ * tiebreak, not a second opinion about who is better. Early in a season several
+ * players share the lead and something has to be stable across renders.
+ */
+function watchFor(players, awayAb, homeAb) {
+  if (!players || !players.clubs) return null;
+  const pick = ab => {
+    const roster = players.clubs[ab];
+    if (!roster || !roster.length) return null;
+    return roster.slice().sort((x, y) => y.g - x.g || x.p - y.p)[0];
+  };
+  const away = pick(awayAb), home = pick(homeAb);
+  if (!away || !home) return null;          // one side missing is no comparison
+  return { season: players.season, range: players.range, need: players.need,
+           away, home,
+           rows: PLAYER_ROWS.map(r => ({
+             ...r,
+             range: players.range ? players.range[r.fig] : null,
+             need: players.need ? players.need[r.fig] : null,
+             away: rate(away, r.fig), home: rate(home, r.fig) })) };
+}
+
+/** One player's per-game rate for one figure, with the counts that made it. */
+function rate(p, fig) {
+  return p.gp ? { value: p[fig] / p.gp, count: p[fig], n: p.gp } : null;
+}
+
+/**
+ * ⭐⭐⭐ THE FOUR PLAYER ROWS — Kevin, 2026-10-07: *"for a novice, I think they
+ * would be most engaged with the 'standard' metrics: attempts, shots on goal,
+ * assists and goals."*
+ *
+ * ⭐ ALL FOUR WERE MEASURED BEFORE THEY WERE DRAWN, by the instrument the club
+ * rows are admitted under (`reliability.js`, at the declared TARGET of 0.7):
+ * attempts repeat at 6 games, shots on goal at 10, assists at 24, goals at 33 --
+ * every one inside the 41-game admission, and three of the four faster than any
+ * club row we publish. The published `need` is recomputed from the archive by
+ * `archive.js::playerSeasons`; these numbers are the reason the rows exist, not
+ * the source of anything drawn.
+ *
+ * ⚠️ `fig` IS THE KEY IN THE PUBLISHED DOCUMENT and `key` is the row's own, for
+ * the reason `EXPLAINS` exists at all: a row key and a storage key are not the
+ * same namespace, and the day they diverge a string match would silently pair a
+ * row with the wrong derivation.
+ */
+const PLAYER_ROWS = [
+  { key: 'playerGoals', fig: 'g', label: 'goals a game', noun: 'goals',
+    says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
+  { key: 'playerAssists', fig: 'a', label: 'assists a game', noun: 'assists',
+    says: 'The passes the league credited to him on somebody else\u2019s goal.' },
+  { key: 'playerShots', fig: 's', label: 'shots on goal a game', noun: 'shots on goal',
+    says: 'Pucks he put on net that the goaltender had to deal with.' },
+  { key: 'playerAttempts', fig: 'c', label: 'shot attempts a game', noun: 'shot attempts',
+    says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
+];
+
 const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
 
 /** The season a game id belongs to, the way every other reader of an id reads it. */
@@ -1606,7 +1686,11 @@ function preview(id, docs, now) {
     settles: settles == null ? null : settles,
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
-    league: leagueRows(d.measures) };
+    league: leagueRows(d.measures),
+    /* ⭐ WHO TO WATCH, OR NULL. Built here rather than in the renderer so the
+       SELECTION -- the one judgement on this block -- is a function of published
+       data that a test can drive, not a branch inside a DOM builder. */
+    watch: watchFor(d.players, away, home) };
 }
 
 /**
@@ -1655,6 +1739,14 @@ const EXPLAINS = {
   level5: 'level5', dmen: 'dmen', slot: 'slotShare',
   powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
   icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
+  /* ⭐ FOUR ROWS, ONE DERIVATION, and that is the honest grouping rather than a
+     saving: all four are the SAME DIVISION -- a count of a player's events over
+     the games he dressed for -- differing only in which events are counted. The
+     methods page is organised by division, so four sections would be one
+     explanation printed four times with a word changed, which is the drift
+     `methods.js` exists to prevent. The numerators are named inside it. */
+  playerGoals: 'playerRate', playerAssists: 'playerRate',
+  playerShots: 'playerRate', playerAttempts: 'playerRate',
 };
 
 /** The derivation that explains a row, or undefined if none is declared. */
@@ -1716,11 +1808,16 @@ function anchorFor(rowKey) {
      that renders less is not a page that breaks. */
   function boot() {
     if (!q) { $('pv').appendChild(el('p', 'note', 'No game was named in the link.')); return; }
+    /* ⚠️ A SIXTH DOCUMENT, AND ITS ABSENCE IS NOT A FAILURE. `grab` answers null
+       on any error, and `watchFor` answers null without it, so a reader on a day
+       the archive has no `players.json` gets the card without the player block
+       rather than a card that does not draw. */
     Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
-                 grab('recent.json'), grab('catalog.json')])
+                 grab('recent.json'), grab('catalog.json'), grab('players.json')])
       .then(function (r) {
         draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
-                          recent: r[3], catalog: r[4] }, new Date().toISOString()));
+                          recent: r[3], catalog: r[4], players: r[5] },
+                     new Date().toISOString()));
       });
   }
 
@@ -1757,6 +1854,17 @@ function anchorFor(rowKey) {
      CHENG's P1. The outline is what keeps a faint bar from reading as absent —
      it is a presentation floor with no number in it. */
   function trackFor(row, sides) {
+    /* ⭐ HOW A VALUE ON THIS AXIS IS SPELLED, from the ROW. Every club row is a
+       share and reads as `48%`; a player row is a RATE and reads as `0.39`, and
+       running "39%" under a heading that says "goals a game" would be a number
+       that is wrong by a factor of a hundred and looks fine. The default is the
+       share, so no existing caller changed. */
+    var fmt = row.fmt || function (v) { return pct(v) + '%'; };
+    /* ⛔ AND WHAT THE TICK IS, which is not always the league. On a club row it is
+       the league figure and the word is right; on a player row it is the MEDIAN
+       SKATER, and labelling that "league" tells a reader the mark beside it is a
+       comparison with something it is not. */
+    var tickSays = row.tick || 'league';
     var range = row.range;
     var vals = sides.map(function (s) { return s.value; })
       .filter(function (v) { return v != null; });
@@ -1859,7 +1967,7 @@ function anchorFor(rowKey) {
          same card — the one figure a reader's eye lands on, with nothing saying
          what it was. */
       var v = el('span', s.value == null ? 'pvv none' : 'pvv',
-        s.value == null ? 'no games yet' : pct(s.value) + '%');
+        s.value == null ? 'no games yet' : fmt(s.value));
       wrap.appendChild(v);
     });
     /* The scale, under the last club's bar. Column 2 of the grid, so it lines up
@@ -1867,8 +1975,8 @@ function anchorFor(rowKey) {
     wrap.appendChild(el('span'));
     var ends = el('div', 'pvends');
     /* The axis names its own ends, WITH the unit — the same repair as the value. */
-    ends.appendChild(el('span', 'pvlo', pct(lo) + '%'));
-    ends.appendChild(el('span', 'pvhi', pct(hi) + '%'));
+    ends.appendChild(el('span', 'pvlo', fmt(lo)));
+    ends.appendChild(el('span', 'pvhi', fmt(hi)));
     /* ⭐ AND THE TICK NAMES ITSELF. It is placed by the same `at()` the tick is
        placed by, so the label cannot drift from the thing it names.
        ⛔ SUPPRESSED NEAR EITHER END, because the label is centred on the tick and
@@ -1879,7 +1987,7 @@ function anchorFor(rowKey) {
     if (lg != null) {
       var lx = at(lg);
       if (lx >= 14 && lx <= 86) {
-        var tag = el('span', 'pvlg', 'league');
+        var tag = el('span', 'pvlg', tickSays);
         tag.style.left = lx.toFixed(2) + '%';
         ends.appendChild(tag);
       }
@@ -2008,6 +2116,12 @@ function anchorFor(rowKey) {
            + 'half a season, before it did' : '')
         + ', so one season cannot tell two teams apart on them.'));
     }
+
+    /* FIRST ON THE PAGE. A named human is the most concrete thing this card can
+       offer a newcomer -- you can look for a number on a sweater in a way you
+       cannot look for a CF%. */
+    var watchers = watchBlock(p);
+    if (watchers) $('pv').appendChild(watchers);
 
     var sect = el('section', 'pvclubs');
     sect.appendChild(el('p', 'pvkick', 'The two teams'));
@@ -2191,6 +2305,109 @@ function anchorFor(rowKey) {
     t.appendChild(doors(r.key, learn));
     return t;
   }
+
+  /* ⭐⭐⭐ SOMEONE TO WATCH — the player block, 2026-10-07.
+
+     Kevin: *"we need to brainstorm the per-player stats and the game preview
+     'Players to watch' type of information. There's something good there"*, then
+     *"let's try to put a line graph or two in those cards, walls of text just
+     aren't my thing … we need to make sure we make it easy for a novice to
+     understand (which I think a graph does better than text) and the data
+     clearly answers the headline."*
+
+     ⭐⭐ SO IT IS THE CLUB ROWS' OWN INSTRUMENT, ONE LEVEL DOWN, and not a new
+     kind of picture: one row per figure with BOTH players on one axis, exactly
+     as the club rows put both clubs on one. The axis is what skaters do over a
+     full season, the tick is the median skater, and the ink is `games / need`.
+     Nothing here is a second way of drawing a number.
+
+     ⭐ AND THE DATA ANSWERS THE HEADLINE, which is measurable rather than hoped
+     for: over 2024-25, a club's leading scorer ran 0.32 to 0.73 goals a game
+     against a median skater at 0.13. The mark lands in the right third of the
+     axis, so "this is the man who scores for this team" is what the picture
+     says, not something the caption has to assert. */
+  function watchBlock(p) {
+    var w = p.watch;
+    if (!w) return null;
+    var sect = el('section', 'pvwatchers');
+    sect.appendChild(el('p', 'pvkick', 'Someone to watch'));
+    /* ⛔ "Los Angeles Kings\u2019s #10" — a club whose name ENDS IN S takes the
+       bare apostrophe, and more than half of them do (Kings, Panthers, Bruins,
+       Oilers…). Found by reading the rendered card; nothing in the suite could
+       see it, because every assertion about this line is about the player. */
+    var poss = function (name) {
+      return name + (/s$/i.test(name) ? '\u2019' : '\u2019s');
+    };
+    var who = function (side, club) {
+      return poss(nameOf(club.ab)) + ' #' + side.n + ' ' + side.nm;
+    };
+    /* ⛔ THE RULE THAT CHOSE THEM IS ON THE CARD, not only in the code. This is
+       the one judgement the block makes, and a card that names a player without
+       saying why it named him is asking to be trusted. */
+    sect.appendChild(el('p', 'pvsays',
+      who(w.away, p.clubs.away) + ' and ' + who(w.home, p.clubs.home)
+      /* ⛔ "his club\u2019s" WAS CAUGHT BY `no page calls a team a club`. The house
+         word for a reader is TEAM; club is what we say to each other and in the
+         code. A gate for a vocabulary rule is worth more than the rule, because
+         the rule is the thing everybody forgets while writing a sentence. */
+      + ' \u2014 each his team\u2019s leading goalscorer so far this season.'));
+    w.rows.forEach(function (r) { sect.appendChild(playerRow(r, p)); });
+    return sect;
+  }
+
+  /** A player figure, drawn as a club row is drawn: both marks on one axis. */
+  function playerRow(r, p) {
+    var box = el('div', 'pvp');
+    var head = el('div', 'pvmh');
+    head.appendChild(el('p', 'pvlab', r.label));
+    head.appendChild(el('span', 'pvref', r.range
+      ? 'a typical skater ' + dec(r.range.median)
+      : 'no skater range yet'));
+    box.appendChild(head);
+    box.appendChild(el('p', 'pvsays', r.says));
+
+    var sides = ['away', 'home'].map(function (side) {
+      var v = r[side];
+      /* ⭐ THE SAME TRUST RULE AS A CLUB ROW: ink is `games / need`, capped and
+         never floored, so a figure with few games behind it is faint rather than
+         hidden. ⛔ A NULL `need` MEANS NO INK AT ALL -- `gamesToTarget` answers
+         null when a measure does not repeat, and drawing that at full strength
+         would be the card asserting exactly what the measurement declined to. */
+      var trust = (r.need && v && v.n) ? Math.min(1, v.n / r.need) : 0;
+      return { ab: p.clubs[side].ab, value: v ? v.value : null,
+               league: r.range ? r.range.median : null, trust: trust };
+    });
+    var track = trackFor({ range: r.range, fmt: dec, tick: 'typical skater' }, sides);
+    if (track) box.appendChild(track.node);
+
+    /* THE COUNTS THAT MADE THE RATE, said once with both players on the line —
+       the shape Kevin asked the club rows into: *"we have this wall of text that
+       isn't very inviting to a novice."* */
+    var foot = [];
+    var live = ['away', 'home'].map(function (side) {
+      return { ab: p.clubs[side].ab, v: r[side] };
+    }).filter(function (x) { return x.v; });
+    if (live.length) {
+      foot.push('Of ' + r.noun + ': ' + live.map(function (x) {
+        return x.ab + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
+      }).join(' \u00b7 ') + '.');
+    }
+    if (r.need) foot.push('This figure needs ' + r.need + ' games before it holds steady.');
+    if (r.range) {
+      foot.push('Across a full season skaters ranged from ' + dec(r.range.min) + ' to '
+        + dec(r.range.max) + ', measured over ' + num(r.range.n) + ' skater-seasons.');
+    }
+    var fp = el('p', 'pvfoot');
+    foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });
+    box.appendChild(fp);
+    box.appendChild(doors(r.key, null));
+    return box;
+  }
+
+  /* A RATE, NOT A SHARE. Two decimals because the gap between a leading scorer
+     and a typical skater is tenths, and one decimal rounds several of the four
+     figures into each other. */
+  function dec(v) { return v == null ? '\u2014' : v.toFixed(2); }
 
   function measureFor(ar, hr, p) {
     var box = el('div', 'pvm');
