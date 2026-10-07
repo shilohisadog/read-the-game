@@ -39,7 +39,8 @@ every design decision in them was settled by MEASURING rather than arguing.
 
 `af66174` the control diagram · `0b1f5ba` the work-door rule derived ·
 `0aae53c` the second witness · `04c6335` the preview rebuilt ·
-`39c3881` the preview renderer · `d966014` the player block.
+`39c3881` the preview renderer · `d966014` the player block ·
+`1f10290` the publish list derived.
 Suite **1,688 JS + 244 Python**, gates green, every claim below verified on
 readthegame.co or against a published document rather than inferred.
 
@@ -114,7 +115,41 @@ read one.
   `checkout … || cp backup` makes it worse: the fallback runs only when the
   destruction fails.
 
-### ⏭ OPEN
+### ⛔⛔⛔ AND THE PLAYER BLOCK SHIPPED INERT THE FIRST TIME
+
+The first full derive after the build ran for an hour, reported **success**, and
+`players.json` answered **404**. `derive.yml`'s upload step is a shell
+`for f in catalog.json measures.json teams.json index.json` — a typed list of the
+documents that existed when somebody wrote it, so a new archive document is
+invisible by default and the only symptom is a feature that does nothing.
+
+⭐ **THREE TIMES NOW THE PIPELINE HAS REPORTED SUCCESS OVER SOMETHING THAT NEVER
+REACHED A READER** — a green deploy, a green ingest, a green derive. The habit
+that works: name the artifact the change was for, and go and fetch it. ✅ The gate
+now DERIVES the publish set from what `measure.mjs` writes (`1f10290`).
+
+⚠️ And GitHub delivered a scheduled ingest **four hours late** (the 10:23 UTC run
+arrived at 14:35) while a manual derive was running. No harm — `group: ingest`
+with `cancel-in-progress: false` queued it. **"The crons have passed" is a weaker
+guarantee than it sounds; the concurrency group is the real protection.**
+
+### ⏭ OPEN — AND TWO ARE FROM THE FIRST OUTSIDE REVIEW
+
+Kevin had Grok review the site on 2026-10-07. **I verified its two factual claims
+and both were real** (the rest is in `memory/outside-review-grok.md`):
+
+- ⛔ **ONE MEASUREMENT, TWO VINTAGES.** The front door FETCHES `measures.json`
+  while `what-you-can-see.html` and `slot.html` BAKE the figure at build time, so
+  the slot count printed two different numbers with nothing checking they agree.
+  The static pages carry `__MEASURED_UP_TO__`; the front door does not.
+- ⛔ **THE FIXTURE CLOCK IS IN THE READER'S ZONE, UNLABELLED**, under a heading
+  that says *Tonight*. Reproduced: `TZ=UTC` on the live front door gives
+  `EDM at ANA · 2:00 AM` — tomorrow, for that reader. Also `7:30 PM` and
+  `10:30pm` formatted two ways on one page.
+- ⭐⭐ And its best structural point, which is not a defect: **the first screen is
+  two products** — one teaches offside, one is a counting tool for people who
+  already know Corsi. ⚠️ Worth reconciling deliberately with the player block we
+  just added to the TOP of the preview.
 
 - **The hits premium rule needs a home.** *A figure we know is scorer-dependent
   may not be printed as though it were clean* lived on the hits tile, which is
