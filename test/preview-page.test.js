@@ -1165,27 +1165,43 @@ test('⭐⭐ the two men get FACES, from our own origin and never the league\u20
   assert.deepEqual(faces.map(f => f.alt), ['Scorer', 'Captain']);
 });
 
-test('⛔ a player the league has no headshot for still gets his name, and the block still draws', async () => {
-  /* `mug` is ABSENT for a rookie or a callup. ⭐ `builders/mugs.py` exists to make
-     that state knowable at all: a missing headshot answers 302 to a generic
-     silhouette that then answers 200, so following redirects would put a
-     stranger's outline under a named player with every gate green. */
+test('⛔⛔ a man with no headshot gets a FRAME TOO, or the row stops lining up', async () => {
+  /* ⛔ KEVIN FOUND THIS ON THE SECOND PREVIEW HE OPENED, 2026-10-07: *"the
+     attached also doesn't have a headshot of Knies … but his name appears above
+     where the image will go, which isn't correct."* Exactly right — a cell with
+     no frame is shorter than one with a frame, and two different heights in a
+     flex row do not line up, so the shorter one reads as a layout fault rather
+     than a missing picture.
+
+     ⭐ WHAT FILLS THE FRAME IS THE SWEATER NUMBER, which is a fact about the man
+     and not an apology for the gap — and it is THE fact this block exists to
+     give a newcomer, who cannot look for a face from the stands.
+
+     ⚠️ THE ASSERTION IS THAT BOTH CELLS CARRY THE SAME BOX. Checking only that
+     the number appears would pass the very layout Kevin is pointing at. */
   const docs = playersWith(d => { delete d.clubs.PIT[0].mug; });
   const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`,
                               '2026-10-01T12:00:00Z');
   await settle();
   const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
   assert.equal(walk(block).filter(x => hasCls(x, 'pvface')).length, 1,
-    'only the man with a headshot gets one');
+    'only the man with a headshot gets a photograph');
+  const cells = walk(block).filter(x => hasCls(x, 'pvfc'));
+  assert.equal(cells.length, 2, 'both men need a cell');
+  for (const c of cells)
+    assert.ok(walk(c).some(x => hasCls(x, 'pvfr')),
+      'every cell carries the same frame, or the two do not line up');
+  assert.match(textOf(block), /#87/, 'the frame with no photograph carries the number');
   assert.deepEqual(walk(block).filter(x => hasCls(x, 'pvfn')).map(x => x.textContent),
     ['Scorer', 'Captain'], 'both men are still named under the row');
-  assert.match(textOf(block), /#87 Captain/, 'and the sentence is untouched');
 });
 
-test('⛔ no headshots at all means NO face row, not a row of empty boxes', async () => {
-  /* Two bare surnames above a sentence that already names both men is furniture.
-     ⭐ And without this the pair above is not a claim — a face row drawn
-     unconditionally passes both of them. */
+test('⭐ neither man photographed is still two numbered discs, not an empty row', async () => {
+  /* ⚠️ THIS REVERSES A RULE I WROTE THIS MORNING. It read *"no headshots at all
+     means NO face row"*, on the argument that two bare surnames above a sentence
+     naming both men is furniture — true of two bare NAMES, and false the moment
+     the fallback became a sweater number. *Look for #11 and #87* is worth saying
+     on its own. The old test was correct about the card it was written for. */
   const docs = playersWith(d => {
     delete d.clubs.BUF.find(r => r.nm === 'Scorer').mug;
     delete d.clubs.PIT[0].mug;
@@ -1194,10 +1210,11 @@ test('⛔ no headshots at all means NO face row, not a row of empty boxes', asyn
                               '2026-10-01T12:00:00Z');
   await settle();
   const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
-  assert.ok(block, 'the block itself must still draw');
-  assert.equal(walk(block).filter(x => hasCls(x, 'pvfaces')).length, 0,
-    'an empty face row was drawn');
-  assert.match(textOf(block), /#11 Scorer/, 'the names are still on the card');
+  assert.equal(walk(block).filter(x => hasCls(x, 'pvface')).length, 0, 'no photographs');
+  const discs = walk(block).filter(x => hasCls(x, 'pvfnum'));
+  assert.equal(discs.length, 2, 'both men need a disc');
+  assert.deepEqual(discs.map(d => textOf(d)), ['#11', '#87'],
+    'the disc carries the number a newcomer would look for on the ice');
 });
 
 test('⛔ a player rate is spelled as a RATE, and its tick is not called the league', async () => {
