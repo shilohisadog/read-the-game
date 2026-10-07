@@ -38,7 +38,7 @@ def _module(name):
     body = re.sub(r"^[ \t]*import(?=[\s{'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
     return body.replace("export ", "")
 
-def _csp(html, *, connect=DATA_ORIGIN):
+def _csp(html, *, connect=DATA_ORIGIN, images=None):
     """Delegates to page.csp — see there for why there is only one copy.
 
     `connect` defaults to the data origin because the two pages that fetch are
@@ -46,7 +46,7 @@ def _csp(html, *, connect=DATA_ORIGIN):
     None: they read nothing, and a policy naming a reach a page does not use is
     what the deploy gate now reads as permission to call out.
     """
-    return P.csp(html, connect=connect)
+    return P.csp(html, connect=connect, images=images)
 
 # THE PAGE NAMES NO GAME AND NO TEAM.
 #
@@ -4007,6 +4007,14 @@ PREVCSS = r"""<style>
    label makes `Malkin` read as a logo, and the grid's `auto` column sizes to the
    longer of the two names so both rows still line up. */
 .pvnm{letter-spacing:0;font-weight:700}
+/* THE TWO FACES. ⚠️ The headshots are TRANSPARENT cut-outs, so they sit on the
+   card's own tint with no white box behind them — checked by reading the alpha
+   channel, not by looking at one composite on a white page. A fixed box keeps the
+   row from reflowing when one man has a picture and the other does not. */
+.pvfaces{display:flex;gap:20px;margin:6px 0 10px}
+.pvfc{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px}
+.pvface{width:64px;height:64px;object-fit:contain;object-position:bottom}
+.pvfn{font-size:.78rem;font-weight:700;color:var(--muted)}
 .pvv{font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums;
  text-align:right;min-width:2.1em}
 .pvv.none{font-weight:500;color:var(--muted);font-size:.8rem;min-width:0}
@@ -4605,6 +4613,44 @@ __HELPERS__
     if (!w) return null;
     var sect = el('section', 'pvwatchers');
     sect.appendChild(el('p', 'pvkick', 'Someone to watch'));
+    /* ⭐⭐ THE FACES — Kevin, 2026-10-07: *"what do you think about adding the
+       players head shot image? That would bring quite a bit of 'realism' to the
+       page."* They sit ONCE at the top rather than on each of the four figure
+       cards: the cards are about numbers, and four repeated faces would be
+       decoration where this is identification. `builders/mugs.py` carries why
+       they are served from our own origin and never hotlinked.
+       ⛔ ONLY WHEN AT LEAST ONE MAN HAS ONE. `mug` is published per player and is
+       absent for a rookie or a callup the league has not shot yet — two bare
+       surnames above a sentence that already names both men would be furniture.
+       The alt text is the name, so a browser that cannot draw WebP shows exactly
+       what this card showed yesterday.
+       ⛔ AND THEY GO ABOVE THE SENTENCE, WHICH ONLY LOOKING SETTLED. Rendered
+       below it they sat under two paragraphs, so a reader met the names, the
+       clubs, the rule and the measurement date before meeting the men — the one
+       ordering that wastes a photograph. See them, then read who they are. */
+    var faces = ['away', 'home'].map(function (side) { return w[side]; });
+    if (faces.some(function (m) { return m && m.mug; })) {
+      var fr = el('div', 'pvfaces');
+      faces.forEach(function (m) {
+        if (!m) return;
+        var cell = el('div', 'pvfc');
+        if (m.mug) {
+          var img = el('img', 'pvface');
+          img.src = ORIGIN + '/mug/' + m.p + '.webp';
+          img.alt = m.nm;
+          img.width = 64; img.height = 64;
+          /* ⚠️ `loading` AND `decoding` ARE NOT OPTIMISATIONS HERE. This block is
+             the first thing on the card, so an undecoded image is a reflow under
+             the reader's eyes on the one surface we ask them to read closely. */
+          img.setAttribute('decoding', 'async');
+          cell.appendChild(img);
+        }
+        cell.appendChild(el('span', 'pvfn', m.nm));
+        fr.appendChild(cell);
+      });
+      sect.appendChild(fr);
+    }
+
     /* ⛔ "Los Angeles Kings\u2019s #10" — a club whose name ENDS IN S takes the
        bare apostrophe, and more than half of them do (Kings, Panthers, Bruins,
        Oilers…). Found by reading the rendered card; nothing in the suite could
@@ -4694,8 +4740,42 @@ __HELPERS__
     }
     if (r.need) foot.push('This figure needs ' + r.need + ' games before it holds steady.');
     if (r.range) {
-      foot.push('Across a full season skaters ranged from ' + dec(r.range.min) + ' to '
-        + dec(r.range.max) + ', measured over ' + num(r.range.n) + ' skater-seasons.');
+      /* ⛔⛔⛔ THE AXIS AND THIS SENTENCE PRINTED TWO DIFFERENT MAXIMA. `trackFor`
+         stretches `lo`/`hi` to hold the marks — Kevin's own ruling, 2026-10-03:
+         *"the game in question should be included, hence it's the top of the
+         scale, not outside of it."* So a player two games into a season at 1.00
+         goals becomes the END of the axis, while this line went on saying the
+         full-season range stopped at 0.81. Both true, and a reader cannot hold
+         both; it is the exact clash that took the shaded band off the club rows,
+         reappearing in the words after the picture was fixed.
+
+         ⭐ SO THE CLAUSE NAMES WHO, WHICH WAY, AND ON HOW MANY GAMES — the three
+         facts that turn the contradiction into the point. The games are what make
+         it safe to read: *above the best full season* means nothing until you know
+         it rests on two games. */
+      var said = 'Across a full season skaters ranged from ' + dec(r.range.min)
+        + ' to ' + dec(r.range.max) + ', measured over ' + num(r.range.n)
+        + ' skater-seasons';
+      var out = ['away', 'home'].map(function (side) {
+        var man = p.watch && p.watch[side], v = r[side];
+        if (!man || !v || v.value == null) return null;
+        if (v.value > r.range.max) return { nm: man.nm, way: 'above', n: v.n };
+        if (v.value < r.range.min) return { nm: man.nm, way: 'below', n: v.n };
+        return null;
+      }).filter(function (x) { return x; });
+      var games = function (n) { return n + (n === 1 ? ' game' : ' games'); };
+      if (out.length === 1) {
+        said += ' \u2014 ' + out[0].nm + ' is ' + out[0].way + ' that, on '
+             + games(out[0].n);
+      } else if (out.length === 2 && out[0].way === out[1].way) {
+        said += ' \u2014 ' + out[0].nm + ' and ' + out[1].nm + ' are both '
+             + out[0].way + ' that, on ' + games(out[0].n) + ' and ' + games(out[1].n);
+      } else if (out.length === 2) {
+        said += ' \u2014 ' + out[0].nm + ' is ' + out[0].way + ' that on '
+             + games(out[0].n) + ', and ' + out[1].nm + ' is ' + out[1].way
+             + ' it on ' + games(out[1].n);
+      }
+      foot.push(said + '.');
     }
     var fp = el('p', 'pvfoot');
     foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });
@@ -5504,7 +5584,7 @@ def build_methods():
                       current="/how-we-measure.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE + _section_css(HOWCSS))
-    return html.replace("__CSP__", _csp(html))
+    return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 
 def _preview_doors():
@@ -5575,7 +5655,11 @@ def build_preview():
                       current="/preview.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE + PREVCSS)
-    return html.replace("__CSP__", _csp(html))
+    # ⭐ THE ONLY PAGE THAT NAMES AN IMAGE SOURCE, and it names OUR origin, never
+    # the league's. `builders/mugs.py` says at length why the headshots are
+    # copied rather than hotlinked; the short version is that the sentence on
+    # this site reads *"Nothing is fetched from the league while you watch"*.
+    return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 
 def build_calendar():
@@ -5594,7 +5678,7 @@ def build_calendar():
                       current="/calendar.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
-    return html.replace("__CSP__", _csp(html))
+    return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 def build():
     html = (BODY.replace("__LIB__", _lib())
@@ -5610,7 +5694,7 @@ def build():
                       url="https://readthegame.co/", current="/",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
-    return html.replace("__CSP__", _csp(html))
+    return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 def main():
     # THREE PAGES, ONE BUILDER, AND THE VERIFY COVERS ALL OF THEM. Two sections

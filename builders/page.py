@@ -49,7 +49,7 @@ def competitions():
     return json.dumps(names, sort_keys=True, separators=(",", ":"))
 
 
-def csp(html, *, connect=None):
+def csp(html, *, connect=None, images=None):
     """A Content-Security-Policy the BROWSER enforces, replacing a grep we wrote.
 
     ONE COPY, AND THE BUG IS THE ARGUMENT FOR IT. This lived in `build_main.py`
@@ -149,6 +149,13 @@ def csp(html, *, connect=None):
         # `'self'` stays for every page, because the Cloudflare RUM beacon POSTs
         # same-origin to /cdn-cgi/rum.
         f"connect-src 'self' {connect}".strip() if connect else "connect-src 'self'",
+        # ⛔ `img-src` IS ABSENT UNLESS A PAGE SHOWS AN IMAGE, by the same least
+        # privilege rule `connect` is governed by two lines above — and it was
+        # absent from EVERY page until 2026-10-07, which is why the headshots had
+        # to arrive with a policy change rather than an `<img>` tag. `default-src
+        # 'none'` blocks images outright, so a page that declares nothing here is
+        # a page on which no image can load, deliberately.
+        *( [f"img-src {images}"] if images else [] ),
         # The homepage frames the game page for its five-second preview, and
         # `frame-src` has no fallback to default-src -- 'none' would block it.
         #

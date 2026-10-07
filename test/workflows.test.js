@@ -736,6 +736,43 @@ test('⭐⭐⭐ the measure job runs only when the run derived something', () =>
   }
 });
 
+test('⛔⛔⛔ …and so is every DIRECTORY a builder writes — the same defect one layer out', () => {
+  /* ⭐ THE GATE BELOW ONLY KNOWS ABOUT `measure.mjs`'s `.json` FILES. The
+     headshots are written by `builders/mugs.py` into a directory, so they sit in
+     exactly the blind spot that let `players.json` ship inert on 2026-10-07:
+     written, green, and 404 for every reader. A new WRITER is as invisible by
+     default as a new document was.
+
+     ⚠️ The directory name is read out of the builder rather than typed here, for
+     the same reason the document list is: a second copy of the name agrees with
+     the first until one of them is changed.
+
+     MUTATION: delete the `aws s3 sync ingest/mug/` block from derive.yml and
+     this fires. */
+  const mugs = readFileSync(new URL('../builders/mugs.py', import.meta.url), 'utf8');
+  const dir = /out = root \/ "([a-z]+)"/.exec(mugs);
+  assert.ok(dir, 'builders/mugs.py no longer names the directory it writes into');
+
+  const yml = ['derive.yml', 'ingest.yml']
+    .map(f => readFileSync(new URL(`../.github/workflows/${f}`, import.meta.url), 'utf8'))
+    .join('\n');
+  /* ⚠️ A SYNC, NOT A MENTION. The name appears in comments and in the fetch step;
+     only an `aws s3 sync` of that directory puts it in front of a reader. */
+  const synced = new RegExp(`aws s3 sync ingest/${dir[1]}/ "s3://\\\${BUCKET}/${dir[1]}/"`);
+  assert.match(yml, synced,
+    `builders/mugs.py writes ingest/${dir[1]}/ and no workflow syncs it — `
+    + 'the images are built, committed to nothing, and 404 for every reader');
+
+  /* ⛔ AND THE PAGE THAT SHOWS THEM MUST BE ALLOWED TO. `default-src 'none'`
+     blocks images outright, so a headshot with no `img-src` is a silent blank on
+     the reader's machine and nothing in this suite can see it. */
+  const page = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8');
+  assert.match(page, /img-src https:\/\/data\.readthegame\.co/,
+    'the preview shows headshots and its policy permits no image at all');
+  assert.doesNotMatch(page, /img-src[^;"]*nhle\.com/,
+    'the league\u2019s asset host must never be in a policy here');
+});
+
 test('⛔⛔⛔ every document the measure step WRITES is published by some workflow', () => {
   /* ⛔ `players.json` SHIPPED INERT ON 2026-10-07 AND EVERY GATE WAS GREEN.
      `measure.mjs` wrote it, the suite passed, `derive.yml` reported success — and

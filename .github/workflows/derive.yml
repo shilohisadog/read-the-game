@@ -196,6 +196,28 @@ jobs:
       # different hockey. `measure.mjs` already refuses at write time; this reads
       # the two documents as a pair, which is the half a write-time check cannot
       # do. `test/measure.test.js` requires it in every job that measures.
+      # ⭐⭐ THE HEADSHOTS, FETCHED ONCE AND SERVED FROM OUR OWN ORIGIN. Kevin,
+      # 2026-10-07: *"what do you think about adding the players head shot
+      # image?"* `builders/mugs.py` carries the whole argument for copying rather
+      # than hotlinking; the short version is that this site's own sentence reads
+      # *"Nothing is fetched from the league while you watch"*, and that a
+      # hotlink is one request per READER PER PAGE VIEW on a free service where
+      # this is ~228 once and then only on a change.
+      #
+      # ⚠️ IT RUNS HERE AND NOT IN THE NIGHTLY because `players.json` is this
+      # workflow's document — the nightly writes a slate and returns before it.
+      # ⚠️ IT MUTATES `ingest/players.json`, adding `mug` to the rows it found a
+      # headshot for, so it must run BEFORE the publish step below.
+      # ⛔ A FAILURE HERE DOES NOT STOP THE DERIVE. A headshot is decoration on a
+      # card whose numbers are the point; refusing to publish a corrected archive
+      # over a CDN hiccup would be the tail wagging the dog. It is loud and the
+      # run goes on, and the cache means the next run simply tries again.
+      - name: the players' headshots
+        continue-on-error: true
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check 'pillow>=10,<13'
+          python3 builders/mugs.py ingest
+
       - name: the measurement describes the archive — before the sync
         run: node tools/measured-through.mjs --dir ingest
 
@@ -325,6 +347,25 @@ jobs:
           if [ -z "$ok" ]; then
             echo "::error::the extracts could not be pushed in three attempts"
             exit 1
+          fi
+          # ⭐ THE HEADSHOTS RIDE WITH THE EXTRACTS, in the pass BEFORE the
+          # documents that advertise them — `players.json` carries the `mug`
+          # flags and goes up below, so an image is in the bucket before anything
+          # claims it is. The same ordering catalog.json and recent.json have,
+          # and for the same reason.
+          # ⚠️ AN EMPTY `mug/` IS NOT AN ERROR: a warm cache writes nothing, and
+          # the step above is allowed to fail without stopping the archive.
+          if [ -d ingest/mug ] && [ -n "$(ls -A ingest/mug)" ]; then
+            ok=
+            for attempt in 1 2 3; do
+              if aws s3 sync ingest/mug/ "s3://${BUCKET}/mug/" \
+                   --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress; then ok=1; break; fi
+              echo "::warning::mug push attempt $attempt hit a transient R2 error; retrying" >&2
+              sleep $(( attempt * 20 ))
+            done
+            [ -z "$ok" ] && echo "::warning::the headshots could not be pushed; the cards fall back to names"
+          else
+            echo "  no headshots to push this run"
           fi
           # THE CATALOG NEVER SHRINKS. Nothing is ever removed from it -- a
           # refused game keeps its row and says which gate stopped it -- so a

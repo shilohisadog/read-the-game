@@ -99,8 +99,11 @@ const PLAYERS = {
   need: { g: 33, a: 24, s: 10, c: 6 },
   clubs: {
     BUF: [{ p: 20, nm: 'Playmaker', n: 20, pos: 'C', gp: 10, g: 2, a: 9, s: 18, c: 30 },
-          { p: 11, nm: 'Scorer', n: 11, pos: 'L', gp: 10, g: 7, a: 3, s: 25, c: 44 }],
-    PIT: [{ p: 30, nm: 'Captain', n: 87, pos: 'C', gp: 11, g: 5, a: 8, s: 29, c: 51 }],
+          /* `mug: 1` is written by `builders/mugs.py` onto the players it found a
+             headshot for. It is ABSENT, never false, for a man the league has not
+             shot — a rookie or a mid-season callup. */
+          { p: 11, nm: 'Scorer', n: 11, pos: 'L', gp: 10, g: 7, a: 3, s: 25, c: 44, mug: 1 }],
+    PIT: [{ p: 30, nm: 'Captain', n: 87, pos: 'C', gp: 11, g: 5, a: 8, s: 29, c: 51, mug: 1 }],
   },
 };
 
@@ -1079,6 +1082,122 @@ test('⭐ a player figure is headed "per game", the phrasing its own sentence al
   assert.deepEqual(heads, ['goals per game', 'assists per game',
                            'shots on goal per game', 'shot attempts per game']);
   assert.doesNotMatch(heads.join(' '), / a game/, 'the old phrasing is gone');
+});
+
+/* A players document with one figure moved, so the axis has to stretch past the
+   full-season range. ⚠️ DEEP-COPIED — a shallow spread would mutate the shared
+   fixture and the test order would start to matter. */
+const playersWith = edit => {
+  const d = JSON.parse(JSON.stringify(PLAYERS));
+  edit(d);
+  return d;
+};
+
+test('⛔⛔⛔ a mark past the full-season range is NAMED, because the axis moved to hold it', async () => {
+  /* THE CLASH, FROM KEVIN'S SCREENSHOT OF THE LIVE CARD: the goals axis ended at
+     1.00 while the sentence under it said skaters ranged to 0.81. Both true.
+     `trackFor` stretches the axis to hold every mark — Kevin's own 2026-10-03
+     ruling, *"the game in question should be included, hence it's the top of the
+     scale"* — so a hot start BECOMES the end of the scale and the words went on
+     describing a different maximum. ⭐ The games are the half that makes it safe
+     to read: "above the best full season" means nothing until you know it rests
+     on two games. */
+  const docs = playersWith(d => {
+    const scorer = d.clubs.BUF.find(r => r.nm === 'Scorer');
+    scorer.gp = 2; scorer.g = 2;            // 1.00 against a season max of 0.80
+  });
+  const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`,
+                              '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(walk(ids.pv).find(x => hasCls(x, 'pvwatchers')));
+  assert.match(said, /ranged from 0\.00 to 0\.80, measured over 600 skater-seasons — Scorer is above that, on 2 games\./);
+  assert.doesNotMatch(said, /Captain is (above|below)/, 'only the man who is outside is named');
+});
+
+test('⛔ and a mark BELOW the lowest full season is named the same way', async () => {
+  /* The axis is truncated at the bottom too — shots on goal start at 0.21 live —
+     so the stretch happens in both directions and a clause that only knew about
+     `max` would be silently half a check. */
+  const docs = playersWith(d => {
+    d.range.s.min = 1.0;
+    const scorer = d.clubs.BUF.find(r => r.nm === 'Scorer');
+    scorer.gp = 10; scorer.s = 2;           // 0.20 against a season floor of 1.00
+  });
+  const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`,
+                              '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(walk(ids.pv).find(x => hasCls(x, 'pvwatchers')));
+  assert.match(said, /Scorer is below that, on 10 games\./);
+});
+
+test('⭐ and it says NOTHING when both men are inside the range', async () => {
+  /* ⛔ WITHOUT THIS THE PAIR ABOVE IS NOT A CLAIM — a clause appended
+     unconditionally passes both of them, and the card would carry a permanent
+     disclaimer that means nothing. This is the same quiet-case rule the clock's
+     day-note needed. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(walk(ids.pv).find(x => hasCls(x, 'pvwatchers')));
+  assert.match(said, /600 skater-seasons\./, 'the sentence still ends cleanly');
+  assert.doesNotMatch(said, /is (above|below) that/, 'nobody is outside the range here');
+});
+
+test('⭐⭐ the two men get FACES, from our own origin and never the league\u2019s', async () => {
+  /* Kevin, 2026-10-07: *"that would bring quite a bit of 'realism' to the page."*
+     ⛔ THE ORIGIN IS THE ASSERTION THAT MATTERS. Hotlinking `assets.nhle.com`
+     would be three lines of work and would make this site's own sentence —
+     *"Nothing is fetched from the league while you watch"* — false on this page,
+     besides putting one request per reader per page view on a free service. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  const faces = walk(block).filter(x => hasCls(x, 'pvface'));
+  assert.equal(faces.length, 2, 'both men should have a headshot in this fixture');
+  for (const f of faces) {
+    assert.match(f.src, /^https:\/\/data\.readthegame\.co\/mug\/\d+\.webp$/,
+      `a headshot is served from ${f.src}`);
+    assert.doesNotMatch(f.src, /nhle\.com/, 'the league\u2019s host must not appear');
+  }
+  assert.deepEqual(faces.map(f => f.src.replace(/.*\/(\d+)\.webp/, '$1')), ['11', '30'],
+    'away first, then home — the order the sentence below names them in');
+  /* ⚠️ THE ALT TEXT IS THE NAME, which is what a browser without WebP shows —
+     exactly what this card showed yesterday, so nobody is worse off. */
+  assert.deepEqual(faces.map(f => f.alt), ['Scorer', 'Captain']);
+});
+
+test('⛔ a player the league has no headshot for still gets his name, and the block still draws', async () => {
+  /* `mug` is ABSENT for a rookie or a callup. ⭐ `builders/mugs.py` exists to make
+     that state knowable at all: a missing headshot answers 302 to a generic
+     silhouette that then answers 200, so following redirects would put a
+     stranger's outline under a named player with every gate green. */
+  const docs = playersWith(d => { delete d.clubs.PIT[0].mug; });
+  const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`,
+                              '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  assert.equal(walk(block).filter(x => hasCls(x, 'pvface')).length, 1,
+    'only the man with a headshot gets one');
+  assert.deepEqual(walk(block).filter(x => hasCls(x, 'pvfn')).map(x => x.textContent),
+    ['Scorer', 'Captain'], 'both men are still named under the row');
+  assert.match(textOf(block), /#87 Captain/, 'and the sentence is untouched');
+});
+
+test('⛔ no headshots at all means NO face row, not a row of empty boxes', async () => {
+  /* Two bare surnames above a sentence that already names both men is furniture.
+     ⭐ And without this the pair above is not a claim — a face row drawn
+     unconditionally passes both of them. */
+  const docs = playersWith(d => {
+    delete d.clubs.BUF.find(r => r.nm === 'Scorer').mug;
+    delete d.clubs.PIT[0].mug;
+  });
+  const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`,
+                              '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  assert.ok(block, 'the block itself must still draw');
+  assert.equal(walk(block).filter(x => hasCls(x, 'pvfaces')).length, 0,
+    'an empty face row was drawn');
+  assert.match(textOf(block), /#11 Scorer/, 'the names are still on the card');
 });
 
 test('⛔ a player rate is spelled as a RATE, and its tick is not called the league', async () => {
