@@ -238,8 +238,10 @@ seam. The reviewer was reading the HTML source, not the page.
   archive-wide for nothing and the backfill shrinks to faceoffs and recaps only.
 - **Player reliability is measured on ONE season** (2024-25) and not pooled; the
   club work ran over 96 club-seasons and had to centre them.
-- ⏭ **THE DATE IS BUILT BUT NOT YET VISIBLE**: the live `players.json` carries no
-  `through`, so the card correctly prints nothing until a derive republishes it.
+- ✅ **THE DATE IS LIVE**, confirmed by reading the rendered block on
+  readthegame.co rather than by a green derive: *"Counted through 6 October 2026,
+  and refreshed weekly."* The derive that published it took 17 minutes and its own
+  post-publish freshness check passed, so repo and origin agree.
 
 ---
 
