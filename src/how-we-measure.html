@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SjX0WEoOc7DQBwhDfiORoo1BNoiyMtDkQPRFtdwQjI8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qNvY85ZHnWwnjwMNIZcb4SKBtQ6mSwLqjF01p+jQOBU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1583,7 +1583,15 @@ function watchFor(players, awayAb, homeAb) {
   };
   const away = pick(awayAb), home = pick(homeAb);
   if (!away || !home) return null;          // one side missing is no comparison
-  return { season: players.season, range: players.range, need: players.need,
+  /* ⛔ THE DATE TRAVELS WITH THE FIGURES. Every other surface on this site that
+     quotes an archive figure says what it counted through -- the static pages in
+     a banner, the front door in its own sentence -- and this block did not,
+     which made it the only dateless number on the site. It matters more here
+     than anywhere: these rows are rebuilt WEEKLY by `derive.yml`, never by the
+     nightly, so they are the figures most able to be days behind the scoreboard
+     a reader just looked at. */
+  return { season: players.season, through: players.through || null,
+           range: players.range, need: players.need,
            away, home,
            rows: PLAYER_ROWS.map(r => ({
              ...r,

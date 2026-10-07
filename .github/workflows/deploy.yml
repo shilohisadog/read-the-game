@@ -229,6 +229,22 @@ jobs:
       # answer 200 with the home page, so fetching a door and seeing 200 is not
       # evidence -- the check has to be that the id is in the catalog with a
       # publishable verdict, and that its extract parses as the game we named.
+      # ⛔⛔⛔ THE LOAD-BEARING HALF OF THE 2026-10-07 DRIFT, AND THE REASON IT
+      # IS HERE RATHER THAN IN `npm run gates`. The pages in `src/` BAKE archive
+      # figures at build time, because a learn page carries no scripts and
+      # `connect-src 'self'` forbids it fetching them. The front door FETCHES the
+      # same measurement at runtime. So a repo one publish behind the origin
+      # deploys pages that contradict the document the front door reads — and on
+      # 2026-10-07 it did: 171,027 baked against 171,026 published, with gates
+      # green, because nothing in `gates` reads the origin and nothing should
+      # (`tools/box-witness.mjs` states that policy).
+      #
+      # ⭐ A DEPLOY ALREADY NEEDS THE NETWORK, so the check that needs the network
+      # belongs in the deploy. A failed FETCH exits 2 with its own sentence and is
+      # never reported as a pass — the distinction Shape 10 is about.
+      - name: no page may bake a figure the published archive contradicts
+        run: python3 tools/measures_fresh.py
+
       - name: the game the learn page opens is still published
         run: |
           id=$(python3 -c "import json;print(json.load(open('data/learn-doors.json'))['game']['id'])")

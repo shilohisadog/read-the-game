@@ -1555,19 +1555,51 @@ __HELPERS__
        ⚠️ THE LOCAL DATE IS BUILT FROM PARTS, never parsed. `new Date('2026-01-16')`
        is UTC midnight, which in every western timezone renders as the 15th — the
        off-by-one this whole feature exists to avoid, one line lower. */
-    function nightWord(date) {
-      var t = new Date();
+    /* THE READER'S OWN CALENDAR DAY FOR AN INSTANT. Built from parts for the
+       reason stated above — `new Date('2026-01-16')` is UTC midnight and renders
+       as the 15th west of Greenwich — and shared by the three callers below so
+       there is one spelling of "which day is this, for this reader". */
+    function ymd(t) {
       var pad = function (n) { return (n < 10 ? '0' : '') + n; };
-      var today = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
-      if (date === today) return 'Tonight';
+      return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
+    }
+    function nightWord(date) {
+      if (date === ymd(new Date())) return 'Tonight';
       var p = date.split('-');
       return new Date(+p[0], +p[1] - 1, +p[2])
         .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
     }
+    /* ⛔⛔ THE TIME WAS THE READER'S AND DID NOT SAY SO, which the first outside
+       review caught (2026-10-07): it read `11:30 PM` and `2:00 AM` and had no way
+       to know whose clock that was. `toLocaleTimeString(undefined, …)` renders in
+       the viewer's zone by design — that is the right choice and the whole reason
+       `daily` hands back an instant — but an unlabelled time under a heading that
+       names a DAY is a figure with no units.
+       ⚠️ `timeZoneName: 'short'` IS THE READER'S OWN ZONE, NOT EASTERN. That is
+       deliberate: printing the league's zone would make every reader do the
+       arithmetic this function exists to do for them. */
     function clockOf(iso) {
-      return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      return new Date(iso).toLocaleTimeString(undefined,
+        { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     }
-    function fixtureRow(g) {
+    /* ⛔⛔⛔ AND A LABEL ALONE DOES NOT FIX IT, WHICH IS THE HALF WORTH WRITING
+       DOWN. `nightWord` already earns the word "Tonight" against the READER's
+       calendar, so the heading is right. But a single night's slate spans the
+       league's evening, and west of the Atlantic that crosses midnight: under
+       `TZ=UTC` the heading said *Tonight · 3 games* and a row said `2:00 AM`,
+       which for that reader is TOMORROW. The heading and the row were each
+       correct and together they were false — the shape this project logs as *the
+       gap between two correct things*.
+       ⭐ SO THE ROW CARRIES THE DAY ONLY WHEN IT DISAGREES WITH THE NIGHT. Saying
+       it on every row would be noise for the Eastern reader it is already right
+       for, and a reader who needs it is told exactly once, where the confusion
+       is. */
+    function dayNote(iso, nightDate) {
+      if (!nightDate || ymd(new Date(iso)) === nightDate) return '';
+      return ' \u00b7 ' + new Date(iso).toLocaleDateString(undefined, { weekday: 'long' })
+             + ' where you are';
+    }
+    function fixtureRow(g, nightDate) {
       /* ⭐ NOW A DOOR, AND IT WAS TEXT FOR EIGHT HOURS ON PURPOSE. A fixture had
          nothing to open — `game.html` is a replay and there is nothing to replay —
          so `docs/front-door-tonight.md` §4 Q1 ruled it text "until the preview
@@ -1578,6 +1610,7 @@ __HELPERS__
          nothing here learns that a game has ENDED, so a status claim goes false
          by itself and a fact about the clock cannot. */
       var row = el('a', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
+        + dayNote(g.startTimeUTC, nightDate)
         + (g.started ? ' \u00b7 started' : ''));
       row.href = '/preview.html?game=' + g.id;
       return row;
@@ -1602,9 +1635,12 @@ __HELPERS__
          every dark night. Calling the formatter here is a TypeError that takes
          `$('daily').hidden = false` down with it and renders NOTHING, silently.
          Found by adding the door below and watching the block vanish. */
+      /* ⚠️ THIS ONE ALREADY NAMED THE WEEKDAY, so it was never ambiguous about
+         the DAY — but it was about the clock, and one page may not label two of
+         its own times differently. */
       var startsAt = new Date(d.next.startTimeUTC).toLocaleString(undefined,
         { weekday: 'long', month: 'long', day: 'numeric',
-          hour: 'numeric', minute: '2-digit' });
+          hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
       lines.push(d.next.away + ' at ' + d.next.home + ', ' + startsAt + '.');
     }
     $('dailysay').textContent = lines.join(' ');
@@ -1626,7 +1662,7 @@ __HELPERS__
       list.appendChild(row);
     });
     if (night && d.state !== 'slate') {
-      night.fixtures.forEach(function (g) { list.appendChild(fixtureRow(g)); });
+      night.fixtures.forEach(function (g) { list.appendChild(fixtureRow(g, night.date)); });
       /* ⭐ THE REST OPENS IN PLACE, because there is nowhere to send it. The
          slate's tail links to `calendar.html?date=`, which renders a night we
          HOLD; a night still to be played is by definition games we do not hold,
@@ -1637,7 +1673,7 @@ __HELPERS__
       if (night.rest.length) {
         var det = el('details', 'dmoretonight');
         det.appendChild(el('summary', null, night.rest.length + ' more tonight'));
-        night.rest.forEach(function (g) { det.appendChild(fixtureRow(g)); });
+        night.rest.forEach(function (g) { det.appendChild(fixtureRow(g, night.date)); });
         list.appendChild(det);
       }
     }
@@ -1651,7 +1687,8 @@ __HELPERS__
     if (night && d.state === 'slate') {
       list.appendChild(el('p', 'dtonight', nightWord(night.date) + ' \u00b7 ' + night.count
         + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games')
-        + ' from ' + clockOf(night.fixtures[0].startTimeUTC) + '.'));
+        + ' from ' + clockOf(night.fixtures[0].startTimeUTC)
+        + dayNote(night.fixtures[0].startTimeUTC, night.date) + '.'));
     }
 
     /* ⭐ THE REST OF THE NIGHT, AND IT IS A BETTER DOOR THAN THE ROWS IT
@@ -4576,6 +4613,25 @@ __HELPERS__
          code. A gate for a vocabulary rule is worth more than the rule, because
          the rule is the thing everybody forgets while writing a sentence. */
       + ' \u2014 each his team\u2019s leading goalscorer so far this season.'));
+    /* ⛔⛔ THE DATE, BECAUSE THIS WAS THE ONLY DATELESS FIGURE ON THE SITE. Found
+       by fetching the live card rather than by a failing test: the static pages
+       carry a snapshot banner and the front door states what it counted, and
+       this block said "so far this season" over numbers with no asOf at all.
+       ⭐ AND IT IS THE FIGURE THAT NEEDS IT MOST, which is why the sentence names
+       the cadence instead of only the date. These rows are rebuilt by
+       `derive.yml` -- WEEKLY, `47 15 * * 1` -- while the slate above them is
+       rehydrated nightly, so the card can legitimately show a scorer who has
+       played four games since. A reader comparing the two needs to be told.
+       ⚠️ ABSENT, NOT GUESSED, when the document carries no date: an older
+       players.json has no `through` and inventing one from today's clock would
+       say when we LOOKED, which is the distinction the stamp exists to make. */
+    var through = w.through ? formatDate(w.through) : null;
+    if (through) {
+      sect.appendChild(el('p', 'pvwatch',
+        'Counted through ' + through + ', and refreshed weekly — so a game '
+        + 'played since tonight’s slate was listed is not in these numbers '
+        + 'yet.'));
+    }
     w.rows.forEach(function (r) { sect.appendChild(playerRow(r, p)); });
     return sect;
   }
@@ -5484,9 +5540,14 @@ def build_preview():
     # `ReferenceError` at RENDER time rather than a build failure — which is how
     # this page broke the moment `leagueRows` moved into a file of its own.
     # `test/lib-closure.test.js` now makes that a build-time question.
+    # ⭐ `day.js` FOR ONE FUNCTION, AND IT IS THE ONE THE REST OF THE SITE USES.
+    # The player block has to say what it is measured through, and ~400 bytes of
+    # the single date spelling beats a second month table on this page — which is
+    # this build's own subject matter. `_when()` in this file is the Python twin
+    # and `test/learn-figures.test.js` asserts they agree.
     html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
                                               "league-rows.js", "preview.js",
-                                              "anchors.js"))
+                                              "anchors.js", "day.js"))
                      .replace("__HELPERS__", HELPERS)
                      .replace("__DOORS__", _preview_doors())
                      .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))

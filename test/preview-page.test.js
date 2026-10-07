@@ -86,6 +86,12 @@ const club = (o = {}) => ({ games: 12, attempts: { for: 600, against: 590 },
    leader is also first in the list would pass a renderer that ignored the rule. */
 const PLAYERS = {
   season: '2026', qualify: 41, target: 0.7,
+  /* ⚠️ A DATE THAT IS NOT THE FIXTURE GAME'S DATE, deliberately. If both were
+     the same string, a renderer printing the GAME's date instead of the
+     measurement's would pass — and those are different facts: the slate is
+     rehydrated nightly and these rows weekly, which is the whole reason the
+     line exists. */
+  through: '2026-09-28',
   range: { g: { min: 0, max: 0.8, median: 0.13, n: 600 },
            a: { min: 0, max: 1.1, median: 0.22, n: 600 },
            s: { min: 0, max: 4.2, median: 1.33, n: 600 },
@@ -991,6 +997,47 @@ test('⭐ four figures, each drawn as a GRAPH with both players on one axis', as
     assert.equal(marks.length, 2, 'both players must sit on the same axis');
     assert.ok(walk(r).some(x => hasCls(x, 'pvwork')), 'a figure with no door to its work');
   }
+});
+
+test('⛔⛔ the player figures say what they are COUNTED THROUGH, and name the cadence', async () => {
+  /* ⛔ FOUND BY FETCHING THE LIVE CARD, not by a red test: this block was the
+     only figure on the site with no asOf on it. The static pages carry a
+     snapshot banner, the front door states what it counted, and this said
+     "so far this season" over numbers that could be a week old.
+     ⭐ THE CADENCE IS PART OF THE CLAIM. `players.json` is rebuilt by
+     `derive.yml` WEEKLY while the slate above it is rehydrated nightly, so
+     "counted through <date>" alone would still leave a reader thinking the two
+     numbers on one screen were taken at the same moment. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  const said = textOf(block);
+  assert.match(said, /Counted through 28 September 2026/,
+    'the player figures must say what they are measured through');
+  assert.match(said, /weekly/, 'and that they do not move with the nightly slate');
+  /* ⛔ THE DATE IS THE DOCUMENT'S, NOT THE GAME'S. The fixture game is in
+     October; printing its date here would be a plausible-looking lie. */
+  assert.doesNotMatch(said, /Counted through \d+ October/,
+    'the date printed is the measurement\u2019s, never the fixture\u2019s');
+});
+
+test('⚠️ a players document with no date prints NO date rather than today\u2019s', async () => {
+  /* ⭐ THE ABSENT CASE IS THE ONE THAT SHIPS FIRST. `players.json` was published
+     before it carried `through`, so the live document has none for one derive —
+     and a renderer reaching for `new Date()` there would stamp the card with
+     when we LOOKED, which is the exact distinction the stamp exists to make.
+     The rest of the block must still draw. */
+  const { through, ...dateless } = PLAYERS;
+  const { ids, settle } = run({ 'players.json': dateless },
+                              `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  assert.ok(block, 'the block must still draw without a date');
+  const said = textOf(block);
+  assert.doesNotMatch(said, /Counted through/, 'no date may be invented');
+  assert.match(said, /#11 Scorer/, 'and the players are still named');
+  assert.equal(walk(block).filter(x => hasCls(x, 'pvp')).length, 4,
+    'all four figures still draw');
 });
 
 test('⛔ a player rate is spelled as a RATE, and its tick is not called the league', async () => {

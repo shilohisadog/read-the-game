@@ -850,7 +850,17 @@ export function playerSeasons(records, qualify) {
     clubs[ab] = [...keep.values()].sort((x, y) => y.g - x.g || x.p - y.p)
       .map(({ each, ...rest }) => rest);
   }
-  return { season: latest, qualify, target: TARGET, range, need, clubs };
+  /* ⭐⭐ THE DATE THE CLUB ROWS ARE MEASURED THROUGH, AND IT IS THE LATEST
+     SEASON'S, NOT THE ARCHIVE'S. `clubs` describes THIS season only, so the
+     archive's last date would be the right number for the wrong population in
+     every month but the first -- and the two coincide today, which is exactly
+     how a figure like this ships wrong and looks right.
+     ⛔ IT IS HERE BECAUSE THE CARD WAS THE ONE SURFACE QUOTING A FIGURE WITH NO
+     DATE. The static pages carry a snapshot banner; the front door states what
+     it counted. These rows move WEEKLY -- `derive.yml`, not the nightly -- so
+     they are the figures on the site most able to be a week behind. */
+  const through = dataThrough(games.filter(g => seasonOfId(g.id) === latest));
+  return { season: latest, through, qualify, target: TARGET, range, need, clubs };
 }
 
 /**

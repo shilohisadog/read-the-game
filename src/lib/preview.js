@@ -247,7 +247,15 @@ export function watchFor(players, awayAb, homeAb) {
   };
   const away = pick(awayAb), home = pick(homeAb);
   if (!away || !home) return null;          // one side missing is no comparison
-  return { season: players.season, range: players.range, need: players.need,
+  /* ⛔ THE DATE TRAVELS WITH THE FIGURES. Every other surface on this site that
+     quotes an archive figure says what it counted through -- the static pages in
+     a banner, the front door in its own sentence -- and this block did not,
+     which made it the only dateless number on the site. It matters more here
+     than anywhere: these rows are rebuilt WEEKLY by `derive.yml`, never by the
+     nightly, so they are the figures most able to be days behind the scoreboard
+     a reader just looked at. */
+  return { season: players.season, through: players.through || null,
+           range: players.range, need: players.need,
            away, home,
            rows: PLAYER_ROWS.map(r => ({
              ...r,

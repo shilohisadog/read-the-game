@@ -2099,6 +2099,81 @@ test('⭐ a night of eight is a night of eight, and the kicker says whose night 
   assert.match(rows[0].textContent, /\d{1,2}:\d{2}/, 'the start, in the reader\'s own clock');
 });
 
+/* ------------------------------------------------- WHOSE CLOCK IS THAT */
+
+/** The reader's own short zone name for an instant, as Intl reports it.
+ *  ⚠️ DERIVED, NEVER TYPED. `EDT` is right on this machine in October and wrong
+ *  in January and wrong in Berlin, and a test carrying a literal zone would be
+ *  a test about the runner. `clock-sweep.sh` re-runs this suite with the zone
+ *  moved, so a typed one would fail there by design. */
+const zoneOf = iso => new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' })
+  .formatToParts(new Date(iso)).find(p => p.type === 'timeZoneName').value;
+
+test('⛔⛔ a fixture time says WHOSE clock it is', async () => {
+  /* THE FIRST OUTSIDE REVIEW, 2026-10-07: it read `11:30 PM` and `2:00 AM` off
+     the front door and had no way to know whose clock those were.
+     `toLocaleTimeString(undefined, …)` renders in the VIEWER's zone, which is the
+     right choice and the reason `daily` hands back an instant rather than a
+     string — but an unlabelled time under a heading that names a day is a figure
+     with no units.
+     ⭐ THE LABEL IS THE READER'S ZONE, NOT THE LEAGUE'S. Printing Eastern would
+     make every reader do the arithmetic this rendering exists to do for them.
+     MUTATION: drop `timeZoneName: 'short'` from `clockOf` and this fires. */
+  const sched = tonight(8);
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': sched } });
+  await r.settle(); await r.settle();
+  const rows = r.ids.dailylist.kids.filter(k => k.className === 'dfix');
+  assert.ok(rows.length, 'no fixture rows to read a clock off');
+  const zone = zoneOf(sched.upcoming[0].startTimeUTC);
+  assert.ok(rows[0].textContent.includes(zone),
+    `the row read "${rows[0].textContent}" and names no zone — expected ${zone}`);
+});
+
+test('⛔⛔⛔ a row whose local day is NOT the night says so, under a heading that says Tonight', async () => {
+  /* ⭐⭐ THE HALF A LABEL DOES NOT FIX, and the reason this is two tests. Under
+     `TZ=UTC` the live front door said *Tonight · 3 games* with a row reading
+     `EDM at ANA · 2:00 AM` — which for that reader is TOMORROW. The heading was
+     right (`nightWord` earns "Tonight" against the READER's calendar) and the row
+     was right, and together they were false: *the gap between two correct
+     things*.
+
+     ⚠️ CONSTRUCTED TO HOLD IN EVERY ZONE, which is the only way this is a test of
+     the page. The night's date is the reader's today, so the heading must say
+     Tonight; the fixture's instant is 00:30 on the reader's NEXT local day, so
+     its local day can never equal the night's date whatever zone the runner is
+     in. Nothing here is typed from this machine. */
+  const nextLocal = new Date(AT.getFullYear(), AT.getMonth(), AT.getDate() + 1, 0, 30);
+  const sched = { asOf: AT.toISOString(), season: SCHEDULE.season,
+    upcoming: [{ id: 950, date: localDate(AT), gameType: 2, state: 'FUT',
+                 away: 'EDM', home: 'ANA',
+                 startTimeUTC: nextLocal.toISOString() }] };
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': sched } });
+  await r.settle(); await r.settle();
+  assert.match(r.ids.dailykick.textContent, /^Tonight/,
+    `the heading read "${r.ids.dailykick.textContent}" — this test is about the clash`);
+  const rows = r.ids.dailylist.kids.filter(k => k.className === 'dfix');
+  assert.equal(rows.length, 1, 'the one fixture must render');
+  const want = nextLocal.toLocaleDateString(undefined, { weekday: 'long' });
+  assert.match(rows[0].textContent, new RegExp(want + ' where you are'),
+    `the row read "${rows[0].textContent}" — a time on another day must name it`);
+});
+
+test('⭐ and it stays QUIET for the reader it is already right for', async () => {
+  /* ⛔ A NOTE ON EVERY ROW IS NOISE, AND NOISE IS HOW A WARNING STOPS WORKING.
+     `tonight()` dates the night by the LOCAL day of the fixture instant, so for
+     this reader the row and the heading agree and nothing should be said. This is
+     the assertion that keeps the fix from becoming a permanent disclaimer —
+     without it, `dayNote` returning a constant would pass the test above. */
+  const sched = tonight(3);
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': sched } });
+  await r.settle(); await r.settle();
+  const rows = r.ids.dailylist.kids.filter(k => k.className === 'dfix');
+  assert.ok(rows.length, 'no rows to check');
+  for (const row of rows)
+    assert.doesNotMatch(row.textContent, /where you are/,
+      `"${row.textContent}" carries a day note the reader does not need`);
+});
+
 test('⭐ EVERY ROW IN THE UPCOMING STATE OPENS ITS OWN PREVIEW — and none opens a replay', async () => {
   /* ⭐ THE PROPERTY, NOT THE INSTANCE — CHENG's §5.3, kept when the premise
      changed under it. It read "no row produces an href", because a fixture had

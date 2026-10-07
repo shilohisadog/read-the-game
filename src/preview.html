@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-isDx1nV+uQ7agBe5H7RP1CL/E6NItJgQztQ1w2WgY+o=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-Jyjb4RiVdNVO8+PZ/M8b0RvpRA4wYjt2swtWztlUvag='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QoL25F+KouOD38gwl6bAQVI12hnHT43bMIh05i86sZM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-Jyjb4RiVdNVO8+PZ/M8b0RvpRA4wYjt2swtWztlUvag='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1439,7 +1439,15 @@ function watchFor(players, awayAb, homeAb) {
   };
   const away = pick(awayAb), home = pick(homeAb);
   if (!away || !home) return null;          // one side missing is no comparison
-  return { season: players.season, range: players.range, need: players.need,
+  /* ⛔ THE DATE TRAVELS WITH THE FIGURES. Every other surface on this site that
+     quotes an archive figure says what it counted through -- the static pages in
+     a banner, the front door in its own sentence -- and this block did not,
+     which made it the only dateless number on the site. It matters more here
+     than anywhere: these rows are rebuilt WEEKLY by `derive.yml`, never by the
+     nightly, so they are the figures most able to be days behind the scoreboard
+     a reader just looked at. */
+  return { season: players.season, through: players.through || null,
+           range: players.range, need: players.need,
            away, home,
            rows: PLAYER_ROWS.map(r => ({
              ...r,
@@ -1775,6 +1783,29 @@ function anchorOf(key) {
  */
 function anchorFor(rowKey) {
   return anchorOf(explains(rowKey));
+}
+
+/**
+ * A DATE, AS A READER WOULD WRITE IT. "2023-11-10" -> "10 November 2023".
+ *
+ * ⭐ ITS OWN FILE SO THE REPLAY CAN HAVE IT WITHOUT THE FRONT DOOR'S STATE
+ * MODEL. This lived in `ingest-state.js`, which is 10 KB of pipeline-state prose
+ * the replay page has no use for, and the replay now has to date its own
+ * measurements (ruling 8, 2026-10-03). The alternatives were both worse: inline
+ * the 10 KB into `game.html` for one function, or write a second month table
+ * beside the first — and a second spelling of a date is this build's own subject
+ * matter. ~400 bytes, one implementation, both bundles.
+ */
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+
+/** "2023-11-10" -> "10 November 2023", or null for anything that is not one.
+ *  PARSED BY HAND rather than with `Date`, which would apply the viewer's
+ *  timezone to a date that has none and can slip a day westward. */
+function formatDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  if (!m) return null;
+  return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
 }
 
   var $ = function (id) { return document.getElementById(id); };
@@ -2351,6 +2382,25 @@ function anchorFor(rowKey) {
          code. A gate for a vocabulary rule is worth more than the rule, because
          the rule is the thing everybody forgets while writing a sentence. */
       + ' \u2014 each his team\u2019s leading goalscorer so far this season.'));
+    /* ⛔⛔ THE DATE, BECAUSE THIS WAS THE ONLY DATELESS FIGURE ON THE SITE. Found
+       by fetching the live card rather than by a failing test: the static pages
+       carry a snapshot banner and the front door states what it counted, and
+       this block said "so far this season" over numbers with no asOf at all.
+       ⭐ AND IT IS THE FIGURE THAT NEEDS IT MOST, which is why the sentence names
+       the cadence instead of only the date. These rows are rebuilt by
+       `derive.yml` -- WEEKLY, `47 15 * * 1` -- while the slate above them is
+       rehydrated nightly, so the card can legitimately show a scorer who has
+       played four games since. A reader comparing the two needs to be told.
+       ⚠️ ABSENT, NOT GUESSED, when the document carries no date: an older
+       players.json has no `through` and inventing one from today's clock would
+       say when we LOOKED, which is the distinction the stamp exists to make. */
+    var through = w.through ? formatDate(w.through) : null;
+    if (through) {
+      sect.appendChild(el('p', 'pvwatch',
+        'Counted through ' + through + ', and refreshed weekly — so a game '
+        + 'played since tonight’s slate was listed is not in these numbers '
+        + 'yet.'));
+    }
     w.rows.forEach(function (r) { sect.appendChild(playerRow(r, p)); });
     return sect;
   }

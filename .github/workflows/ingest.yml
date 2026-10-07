@@ -967,11 +967,22 @@ jobs:
       - name: refresh the learn pages' build input
         id: commit
         run: |
+          # ⛔⛔ THIS CHECK USED TO SIT BELOW THE `cp` AND COULD NOT ANSWER THERE.
+          # It compared a file this step had just overwritten against the
+          # document it was copied from, so it reported agreement on 2026-10-07
+          # while the repo was six figures behind the origin. Asked BEFORE the
+          # copy it is about the repo as it arrived, which is the question.
+          # `--report`, never a hard fail: the lines below are what FIXES this,
+          # and a gate in front of a repair that stops the repair is not a gate.
+          python3 tools/measures_fresh.py --report
           cp ingest/measures.json data/measures.json
           if git diff --quiet -- data/measures.json; then
             echo "  data/measures.json is unchanged — nothing to commit"
             exit 0
           fi
+          # AND AGAIN AFTER THE COPY, where it is a different question: did the
+          # document we just PUBLISHED arrive intact? That is the only thing the
+          # post-copy position can tell you, and it is worth knowing.
           python3 tools/measures_fresh.py
           # THE FIGURES src/lib ARGUES FROM, WRITTEN FROM THE DOCUMENT. First,
           # because the build inlines these files and the CSP hashes the result.

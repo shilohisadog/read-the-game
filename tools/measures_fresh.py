@@ -17,6 +17,38 @@ So this is the instrument, and it runs where the archive is: `derive.yml`, after
 the measurement is published. A weekly derive that changes a rate now fails loud
 instead of leaving a card quoting last month's number for a month.
 
+⛔⛔⛔ AND FOR A WEEK IT RAN IN ONE PLACE WHERE IT COULD NOT ANSWER. `ingest.yml`
+called it from the refresh step, immediately AFTER
+`cp ingest/measures.json data/measures.json` -- so it compared a file the step
+had just overwritten against the document that file came from. It could only
+ever catch a failed PUBLISH, never a stale repo, which is the single case its own
+error message tells a human to fix. It printed *every quoted figure already
+matches* on 2026-10-07 while the repo was six figures behind.
+
+⭐⭐ THE HOLE IT LEFT IS A GAP BETWEEN TWO WRITES, NOT A STALE FILE. That step
+publishes to R2 and commits to git as two acts in one step, in that order. The
+15:49 ingest published the amended measurement, then died at the health block
+before the commit -- so the origin moved, the repo did not, and `npm run gates`
+was GREEN on the difference, because nothing in `gates` reads the origin. The
+front door FETCHED 171,026 while `slot.html`, built from the repo, BAKED 171,027.
+
+So it now runs in three places and means something different in each:
+
+  deploy.yml   HARD FAIL, before anything reaches a reader. This is the
+               load-bearing one: a page about to be deployed may not print a
+               figure the published archive contradicts.
+  ingest.yml   `--report`, BEFORE the copy. The step's job is to fix the drift,
+               so it must not be stopped -- but the run that inherits a stale
+               repo is the only run that can say so.
+  derive.yml   HARD FAIL, after publishing. derive never commits the file, so
+               here a drift is a true alarm: a human has to refresh it.
+
+⚠️ IT IS NOT IN `npm run gates`, DELIBERATELY. `gates` must run with no network
+-- `tools/box-witness.mjs` states that policy for the same reason -- and a check
+that silently passes when it cannot fetch is Shape 10, a check that cannot fail
+in the conditions you run it under. `deploy.yml` already needs the network to
+deploy, so the hard fail lives there and `--report` never stands in for a pass.
+
 ⛔ IT COMPARES THE FIELDS THE BUILD ACTUALLY READS, not the whole document.
 `featured` reorders whenever a new game lands and `perGame` grows every night;
 diffing those would cry wolf weekly and the alarm would be turned off. What must
@@ -89,9 +121,35 @@ def dig(doc, path):
     return doc
 
 
+def drift_against(local, live):
+    """Every watched figure on which the two copies disagree, as sentences.
+
+    Split out of `main` so a test can put two documents in front of it. The
+    previous version could only be exercised by standing up an HTTP server,
+    which is why the one behaviour that mattered -- what it says when it cannot
+    FETCH -- had never been checked.
+    """
+    out = []
+    for path in WATCHED:
+        a, b = dig(local, path), dig(live, path)
+        if a != b:
+            out.append(f"{'.'.join(path)}: committed {a!r}, published {b!r}")
+    for path in WATCHED:
+        if dig(live, path) is None:
+            out.append(f"{'.'.join(path)}: the published archive no longer carries it")
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default=URL)
+    # ⭐⭐ REPORT MODE EXISTS BECAUSE THE NIGHTLY CANNOT HARD-FAIL ON THIS AND
+    # STILL DO ITS JOB. `ingest.yml`'s refresh step is the thing that FIXES the
+    # drift, so a check in front of it that exits 1 would stop the repair. But
+    # the drift was still worth printing: the run that inherits a stale repo is
+    # the only run in a position to say when it went stale.
+    ap.add_argument("--report", action="store_true",
+                    help="print the drift and exit 0 — for a step whose job is to fix it")
     args = ap.parse_args()
 
     if not LOCAL.exists():
@@ -104,21 +162,36 @@ def main():
     # fetch is a gate that fails for a reason unrelated to the thing it checks.
     req = urllib.request.Request(args.url, headers={
         "User-Agent": "read-the-game-measures-fresh (+https://readthegame.co)"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        live = json.loads(r.read().decode())
+    # ⛔⛔ A FAILED FETCH IS NOT A FRESH FILE, AND IT IS NOT A DRIFT EITHER. The
+    # previous version let the exception out, so an origin hiccup aborted with a
+    # Python traceback in a step named for staleness -- unreadable, and on the
+    # wrong side of the only distinction that matters here. Exit 2, said plainly:
+    # the question was not answered, so nothing may conclude that it was.
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            live = json.loads(r.read().decode())
+    except Exception as e:
+        print(f"::error::could not read {args.url}: {e}")
+        # ⚠️ EXIT 2 BY NUMBER. `sys.exit("a string")` prints it and exits 1, so a
+        # comment promising a distinct code next to that call is a claim the code
+        # does not keep — caught by `test/test_measures_fresh.py`, which asserted
+        # the 2 this comment had already promised.
+        print("::error::the published measurement was not readable, so this check "
+              "answered NOTHING. It is not a pass. Re-run it; a stale "
+              "data/measures.json would look exactly like this.")
+        sys.exit(2)
 
-    drift = []
-    for path in WATCHED:
-        a, b = dig(local, path), dig(live, path)
-        if a != b:
-            drift.append(f"{'.'.join(path)}: committed {a!r}, published {b!r}")
-
-    for path in WATCHED:
-        if dig(live, path) is None:
-            drift.append(f"{'.'.join(path)}: the published archive no longer carries it")
+    drift = drift_against(local, live)
 
     if drift:
         print("\n".join("  " + d for d in drift))
+        if args.report:
+            # ⚠️ NOT A PASS, AND IT MUST NOT READ AS ONE IN A GREEN LOG.
+            print(f"::warning::data/measures.json is {len(drift)} figures behind the "
+                  "published archive. The next step refreshes it; if that step does "
+                  "not finish, the repo and the origin stay apart and the pages "
+                  "built from the repo print the older number.")
+            return
         sys.exit("::error::data/measures.json has drifted from the published archive. "
                  "A learn page is printing a figure the archive no longer says. "
                  "Refresh it: curl -sS --fail " + URL + " -o data/measures.json")
