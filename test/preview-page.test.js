@@ -1040,6 +1040,47 @@ test('⚠️ a players document with no date prints NO date rather than today\u2
     'all four figures still draw');
 });
 
+test('⛔⛔ a player row names the PLAYER, not his club — and the club rows still name clubs', async () => {
+  /* Kevin, 2026-10-07, reading the live card: *"in the card details it says the
+     team (PIT or WSH) when it should name the player."*
+     ⭐⭐ THE THIRD TIME *a player row wears the club row's clothes and is not one*
+     has cost something: `ab` was the colour key AND the printed label, so the row
+     about a named human was labelled with a three-letter code the header line had
+     already given twice. `ab` still picks the colour; `label` is what is read.
+     ⛔ AND THE CLUB ROWS MUST BE UNTOUCHED — a default that silently renamed them
+     would be the same defect pointed the other way, which is why this test
+     asserts BOTH populations. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  const labels = walk(block).filter(x => hasCls(x, 'pvab')).map(x => x.textContent);
+  assert.ok(labels.length >= 8, `only ${labels.length} side labels across four rows`);
+  assert.deepEqual([...new Set(labels)].sort(), ['Captain', 'Scorer'],
+    'every player-row side label must be the player, never his club');
+  // THE COUNTS UNDER THE TRACK SAY IT TOO — same sentence, same subject.
+  assert.match(textOf(block), /Of goals: Scorer 7 in 10 games · Captain 5 in 11 games/);
+
+  /* ⛔ THE CLUB ROWS, SCOPED — they are a different population and must still be
+     named by their clubs. `clubsIn` exists for exactly this. */
+  const clubLabels = walk(clubsIn(ids)).filter(x => hasCls(x, 'pvab')).map(x => x.textContent);
+  assert.ok(clubLabels.length, 'no club rows rendered to check');
+  assert.ok(clubLabels.every(l => /^[A-Z]{3}$/.test(l)),
+    `a club row is labelled ${clubLabels.find(l => !/^[A-Z]{3}$/.test(l))} — clubs keep their codes`);
+});
+
+test('⭐ a player figure is headed "per game", the phrasing its own sentence already used', async () => {
+  /* Kevin, 2026-10-07: *"that's more standard terminology."* ⭐ And the card was
+     already disagreeing with itself: the goals row's sentence has said "per game
+     played" since it shipped, two lines under a heading that said "a game". */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  const heads = walk(block).filter(x => hasCls(x, 'pvlab')).map(x => x.textContent);
+  assert.deepEqual(heads, ['goals per game', 'assists per game',
+                           'shots on goal per game', 'shot attempts per game']);
+  assert.doesNotMatch(heads.join(' '), / a game/, 'the old phrasing is gone');
+});
+
 test('⛔ a player rate is spelled as a RATE, and its tick is not called the league', async () => {
   /* Two numbers that would be wrong by a factor of a hundred while looking
      entirely normal: `0.70 goals a game` rendered as `70%`, and the median
@@ -1066,8 +1107,13 @@ test('⛔ the counts that made the rate are printed, with games played', async (
   const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
   const said = textOf(walk(ids.pv).find(x => hasCls(x, 'pvwatchers')));
-  assert.match(said, /BUF 7 in 10 games/, 'the goals that made the rate');
-  assert.match(said, /PIT 5 in 11 games/);
+  /* ⚠️ THE SUBJECT CHANGED 2026-10-07 AND THIS TEST WAS RIGHT ABOUT THE OLD ONE.
+     It read `BUF 7 in 10 games` — a correct assertion about a sentence that named
+     the CLUB for a figure belonging to a man, which is what Kevin caught. The
+     claim it is really making (a rate is never printed without the counts that
+     made it) is unchanged; only who the sentence is about has moved. */
+  assert.match(said, /Scorer 7 in 10 games/, 'the goals that made the rate');
+  assert.match(said, /Captain 5 in 11 games/);
   assert.match(said, /needs 33 games before it holds steady/, 'and what it still needs');
   assert.match(said, /600 skater-seasons/, 'and what the axis is measured over');
 });

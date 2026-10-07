@@ -4003,6 +4003,10 @@ PREVCSS = r"""<style>
  align-items:center}
 .pvab{font-size:.78rem;font-weight:800;letter-spacing:.04em;
  font-variant-numeric:tabular-nums}
+/* A SURNAME IS NOT A THREE-LETTER CODE. The tracking that makes `PIT` read as a
+   label makes `Malkin` read as a logo, and the grid's `auto` column sizes to the
+   longer of the two names so both rows still line up. */
+.pvnm{letter-spacing:0;font-weight:700}
 .pvv{font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums;
  text-align:right;min-width:2.1em}
 .pvv.none{font-weight:500;color:var(--muted);font-size:.8rem;min-width:0}
@@ -4140,7 +4144,15 @@ __HELPERS__
 
     var wrap = el('div', 'pvtrack');
     sides.forEach(function (s) {
-      wrap.appendChild(el('span', 'pvab', s.ab));
+      /* ⛔⛔ THE LABEL AND THE CLUB ARE TWO THINGS AND `ab` WAS DOING BOTH —
+         Kevin, 2026-10-07, from the live card: *"in the card details it says the
+         team (PIT or WSH) when it should name the player."* He is right, and this
+         is the THIRD time *a player row wears the club row's clothes and is not
+         one* has cost something. `ab` still picks the COLOUR, because the colour
+         is what says which team; `label` is what a reader reads, and it defaults
+         to `ab` so no club row changed. **Fix the signature, not the call.** */
+      wrap.appendChild(el('span', 'pvab' + (s.label ? ' pvnm' : ''),
+                          s.label || s.ab));
 
       var svg = svgEl('svg', { 'class': 'pvsvg', viewBox: '0 0 100 10',
         preserveAspectRatio: 'none', 'aria-hidden': 'true' });
@@ -4655,7 +4667,13 @@ __HELPERS__
          null when a measure does not repeat, and drawing that at full strength
          would be the card asserting exactly what the measurement declined to. */
       var trust = (r.need && v && v.n) ? Math.min(1, v.n / r.need) : 0;
-      return { ab: p.clubs[side].ab, value: v ? v.value : null,
+      /* THE NAME A READER READS, THE CLUB THE MARK IS COLOURED BY. The header
+         line above already says which team each man plays for, so repeating the
+         code on every row told the reader nothing and cost them the one thing the
+         row is about. */
+      var man = p.watch && p.watch[side];
+      return { ab: p.clubs[side].ab, label: man ? man.nm : null,
+               value: v ? v.value : null,
                league: r.range ? r.range.median : null, trust: trust };
     });
     var track = trackFor({ range: r.range, fmt: dec, tick: 'typical skater' }, sides);
@@ -4666,11 +4684,12 @@ __HELPERS__
        isn't very inviting to a novice."* */
     var foot = [];
     var live = ['away', 'home'].map(function (side) {
-      return { ab: p.clubs[side].ab, v: r[side] };
+      var man = p.watch && p.watch[side];
+      return { who: man ? man.nm : p.clubs[side].ab, v: r[side] };
     }).filter(function (x) { return x.v; });
     if (live.length) {
       foot.push('Of ' + r.noun + ': ' + live.map(function (x) {
-        return x.ab + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
+        return x.who + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
       }).join(' \u00b7 ') + '.');
     }
     if (r.need) foot.push('This figure needs ' + r.need + ' games before it holds steady.');

@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QoL25F+KouOD38gwl6bAQVI12hnHT43bMIh05i86sZM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-Jyjb4RiVdNVO8+PZ/M8b0RvpRA4wYjt2swtWztlUvag='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RURRgQAB8hPYELw9zSriCaVmqOEbqULntn5aeQHYmdE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-i8U4YUjSuF2gMd2mvQc7sg88qYxBTthjQ797bxgjZOk='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -679,6 +679,10 @@ footer p{margin:0 0 8px}
  align-items:center}
 .pvab{font-size:.78rem;font-weight:800;letter-spacing:.04em;
  font-variant-numeric:tabular-nums}
+/* A SURNAME IS NOT A THREE-LETTER CODE. The tracking that makes `PIT` read as a
+   label makes `Malkin` read as a logo, and the grid's `auto` column sizes to the
+   longer of the two names so both rows still line up. */
+.pvnm{letter-spacing:0;font-weight:700}
 .pvv{font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums;
  text-align:right;min-width:2.1em}
 .pvv.none{font-weight:500;color:var(--muted);font-size:.8rem;min-width:0}
@@ -1479,14 +1483,20 @@ function rate(p, fig) {
  * same namespace, and the day they diverge a string match would silently pair a
  * row with the wrong derivation.
  */
+/* ⛔ "PER GAME", NOT "A GAME" — Kevin, 2026-10-07, reading the live card:
+   *"that's more standard terminology."* ⭐ AND THE CARD WAS ALREADY DISAGREEING
+   WITH ITSELF ABOUT IT: the goals row's own sentence has said *"per game
+   played"* since the day it shipped, directly under a heading that said *"goals
+   a game"*. One quantity, two phrasings, two lines apart — the same shape as
+   `club`/`team` ([[house-vocabulary]]), and it took a reader to hear it. */
 const PLAYER_ROWS = [
-  { key: 'playerGoals', fig: 'g', label: 'goals a game', noun: 'goals',
+  { key: 'playerGoals', fig: 'g', label: 'goals per game', noun: 'goals',
     says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
-  { key: 'playerAssists', fig: 'a', label: 'assists a game', noun: 'assists',
+  { key: 'playerAssists', fig: 'a', label: 'assists per game', noun: 'assists',
     says: 'The passes the league credited to him on somebody else\u2019s goal.' },
-  { key: 'playerShots', fig: 's', label: 'shots on goal a game', noun: 'shots on goal',
+  { key: 'playerShots', fig: 's', label: 'shots on goal per game', noun: 'shots on goal',
     says: 'Pucks he put on net that the goaltender had to deal with.' },
-  { key: 'playerAttempts', fig: 'c', label: 'shot attempts a game', noun: 'shot attempts',
+  { key: 'playerAttempts', fig: 'c', label: 'shot attempts per game', noun: 'shot attempts',
     says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
 ];
 
@@ -1909,7 +1919,15 @@ function formatDate(iso) {
 
     var wrap = el('div', 'pvtrack');
     sides.forEach(function (s) {
-      wrap.appendChild(el('span', 'pvab', s.ab));
+      /* ⛔⛔ THE LABEL AND THE CLUB ARE TWO THINGS AND `ab` WAS DOING BOTH —
+         Kevin, 2026-10-07, from the live card: *"in the card details it says the
+         team (PIT or WSH) when it should name the player."* He is right, and this
+         is the THIRD time *a player row wears the club row's clothes and is not
+         one* has cost something. `ab` still picks the COLOUR, because the colour
+         is what says which team; `label` is what a reader reads, and it defaults
+         to `ab` so no club row changed. **Fix the signature, not the call.** */
+      wrap.appendChild(el('span', 'pvab' + (s.label ? ' pvnm' : ''),
+                          s.label || s.ab));
 
       var svg = svgEl('svg', { 'class': 'pvsvg', viewBox: '0 0 100 10',
         preserveAspectRatio: 'none', 'aria-hidden': 'true' });
@@ -2424,7 +2442,13 @@ function formatDate(iso) {
          null when a measure does not repeat, and drawing that at full strength
          would be the card asserting exactly what the measurement declined to. */
       var trust = (r.need && v && v.n) ? Math.min(1, v.n / r.need) : 0;
-      return { ab: p.clubs[side].ab, value: v ? v.value : null,
+      /* THE NAME A READER READS, THE CLUB THE MARK IS COLOURED BY. The header
+         line above already says which team each man plays for, so repeating the
+         code on every row told the reader nothing and cost them the one thing the
+         row is about. */
+      var man = p.watch && p.watch[side];
+      return { ab: p.clubs[side].ab, label: man ? man.nm : null,
+               value: v ? v.value : null,
                league: r.range ? r.range.median : null, trust: trust };
     });
     var track = trackFor({ range: r.range, fmt: dec, tick: 'typical skater' }, sides);
@@ -2435,11 +2459,12 @@ function formatDate(iso) {
        isn't very inviting to a novice."* */
     var foot = [];
     var live = ['away', 'home'].map(function (side) {
-      return { ab: p.clubs[side].ab, v: r[side] };
+      var man = p.watch && p.watch[side];
+      return { who: man ? man.nm : p.clubs[side].ab, v: r[side] };
     }).filter(function (x) { return x.v; });
     if (live.length) {
       foot.push('Of ' + r.noun + ': ' + live.map(function (x) {
-        return x.ab + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
+        return x.who + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
       }).join(' \u00b7 ') + '.');
     }
     if (r.need) foot.push('This figure needs ' + r.need + ' games before it holds steady.');

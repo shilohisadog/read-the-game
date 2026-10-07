@@ -287,14 +287,20 @@ function rate(p, fig) {
  * same namespace, and the day they diverge a string match would silently pair a
  * row with the wrong derivation.
  */
+/* ⛔ "PER GAME", NOT "A GAME" — Kevin, 2026-10-07, reading the live card:
+   *"that's more standard terminology."* ⭐ AND THE CARD WAS ALREADY DISAGREEING
+   WITH ITSELF ABOUT IT: the goals row's own sentence has said *"per game
+   played"* since the day it shipped, directly under a heading that said *"goals
+   a game"*. One quantity, two phrasings, two lines apart — the same shape as
+   `club`/`team` ([[house-vocabulary]]), and it took a reader to hear it. */
 export const PLAYER_ROWS = [
-  { key: 'playerGoals', fig: 'g', label: 'goals a game', noun: 'goals',
+  { key: 'playerGoals', fig: 'g', label: 'goals per game', noun: 'goals',
     says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
-  { key: 'playerAssists', fig: 'a', label: 'assists a game', noun: 'assists',
+  { key: 'playerAssists', fig: 'a', label: 'assists per game', noun: 'assists',
     says: 'The passes the league credited to him on somebody else\u2019s goal.' },
-  { key: 'playerShots', fig: 's', label: 'shots on goal a game', noun: 'shots on goal',
+  { key: 'playerShots', fig: 's', label: 'shots on goal per game', noun: 'shots on goal',
     says: 'Pucks he put on net that the goaltender had to deal with.' },
-  { key: 'playerAttempts', fig: 'c', label: 'shot attempts a game', noun: 'shot attempts',
+  { key: 'playerAttempts', fig: 'c', label: 'shot attempts per game', noun: 'shot attempts',
     says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
 ];
 
