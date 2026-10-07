@@ -876,6 +876,14 @@ jobs:
             aws s3 cp "s3://${BUCKET}/$f" "ingest/$f" \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
           done
+          # ⭐ AND THE HEADSHOT CACHE. Without it every night refetches all ~228
+          # from the league — the one thing `mugs.py`'s `seen.json` exists to
+          # prevent, and the reason this is ~228 requests once rather than ~228
+          # every night. ⚠️ `|| true`: an empty prefix is the first-run state,
+          # not a failure.
+          mkdir -p ingest/mug
+          aws s3 sync "s3://${BUCKET}/mug/" ingest/mug/ \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress || true
           echo "  $(ls ingest/extract | wc -l) extracts, $(du -sh ingest/extract | cut -f1)"
 
       # ⭐ ARCHIVE MODE, NOT `--slate`, AND THE PULL ABOVE IS WHAT MAKES THAT
@@ -899,13 +907,34 @@ jobs:
       - name: the measurement describes the archive — before the sync
         run: node tools/measured-through.mjs --dir ingest
 
-      # ONLY THE TWO DOCUMENTS THIS JOB WROTE. An `aws s3 sync ingest/` would
+      # ⭐⭐ THE HEADSHOTS, NIGHTLY — Kevin, 2026-10-07: *"we need to refresh the
+      # data nightly, so there's the potential of new 'players to watch' every
+      # game."* This job already measures the WHOLE archive, so `players.json`
+      # was being written here every night and simply not published; the leading
+      # goalscorer can change on any night's results, and a weekly document
+      # cannot say so.
+      # ⚠️ IT MUTATES `ingest/players.json`, adding `mug` to the rows it has a
+      # headshot for, so it must run BEFORE the publish below — and the images
+      # must reach the bucket before the document that claims them.
+      # ⛔ `continue-on-error`: a headshot is decoration on a card whose numbers
+      # are the point, and a CDN hiccup may not stop a corrected measurement.
+      - name: the players' headshots
+        continue-on-error: true
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check 'pillow>=10,<13'
+          python3 builders/mugs.py ingest
+          if [ -n "$(ls -A ingest/mug 2>/dev/null)" ]; then
+            aws s3 sync ingest/mug/ "s3://${BUCKET}/mug/" \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          fi
+
+      # ONLY THE DOCUMENTS THIS JOB WROTE. An `aws s3 sync ingest/` would
       # re-upload the 0.4 GB it just downloaded and rewrite every extract's
       # headers. Neither document names a game id, so unlike catalog.json and
       # recent.json they have no ordering constraint against the extracts.
       - name: publish the measurement
         run: |
-          for f in measures.json teams.json; do
+          for f in measures.json teams.json players.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
               --cache-control no-cache \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress

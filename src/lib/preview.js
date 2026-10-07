@@ -393,9 +393,14 @@ function rowsFor(ab, season, teams, recent, league, needs) {
       t.count = v.count; t.n = v.n; });
   }
 
-  /* ⭐ THE NIGHTLY TAIL. `teams.json` is rebuilt weekly and `recent.json` every
-     night, so in season the table is up to seven days and ~3 games short — on a
-     card whose entire honesty device is a game count. THE DATES DECIDE IT, not a
+  /* ⭐ THE NIGHTLY TAIL. `teams.json` is republished on any night the archive
+     changes and `recent.json` every night, so in season the table is up to a day
+     and ~1 game short — on a card whose entire honesty device is a game count.
+     ⚠️ IT SAID "up to seven days and ~3 games" UNTIL 2026-10-07 and that was a
+     stale cadence, not a stale number: the nightly `measure` job has rebuilt
+     this document since 2026-10-03. The tail is still right and still needed —
+     the gap is smaller, never zero, and in the offseason it is weekly again.
+     THE DATES DECIDE IT, not a
      set of ids: `through` is the newest game the table contains, so anything
      after it is a game the table has not seen. A merge on id-presence would need
      the table to list its games, which it does not and should not. */

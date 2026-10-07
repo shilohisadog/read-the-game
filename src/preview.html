@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-FEUXGGJG6/sS3kWl7rwMbnuBjhhZc0Ysi/+Y3QWbvtA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-Ky9qlW1KCdkPDEhNq36wCGOwdBeqhKAzY16indFcvrA='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bbqX0nRm6Uqa9vWqFKSWkO5IRPe6NCZV8Mm95GXRo9s=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-Ky9qlW1KCdkPDEhNq36wCGOwdBeqhKAzY16indFcvrA='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1614,9 +1614,14 @@ function rowsFor(ab, season, teams, recent, league, needs) {
       t.count = v.count; t.n = v.n; });
   }
 
-  /* ⭐ THE NIGHTLY TAIL. `teams.json` is rebuilt weekly and `recent.json` every
-     night, so in season the table is up to seven days and ~3 games short — on a
-     card whose entire honesty device is a game count. THE DATES DECIDE IT, not a
+  /* ⭐ THE NIGHTLY TAIL. `teams.json` is republished on any night the archive
+     changes and `recent.json` every night, so in season the table is up to a day
+     and ~1 game short — on a card whose entire honesty device is a game count.
+     ⚠️ IT SAID "up to seven days and ~3 games" UNTIL 2026-10-07 and that was a
+     stale cadence, not a stale number: the nightly `measure` job has rebuilt
+     this document since 2026-10-03. The tail is still right and still needed —
+     the gap is smaller, never zero, and in the offseason it is weekly again.
+     THE DATES DECIDE IT, not a
      set of ids: `through` is the newest game the table contains, so anything
      after it is a game the table has not seen. A merge on id-presence would need
      the table to list its games, which it does not and should not. */
@@ -2506,9 +2511,18 @@ function formatDate(iso) {
     var through = w.through ? formatDate(w.through) : null;
     if (through) {
       sect.appendChild(el('p', 'pvwatch',
-        'Counted through ' + through + ', and refreshed weekly — so a game '
-        + 'played since tonight’s slate was listed is not in these numbers '
-        + 'yet.'));
+        /* ⛔⛔ THIS SENTENCE SAID "refreshed weekly" AND WENT FALSE THE HOUR
+           THE NIGHTLY STARTED PUBLISHING `players.json`. A caption is a SECOND
+           SURFACE describing a first, and nothing goes red when the first one
+           moves — the shape this repo has logged in CSS, in a legend, and in a
+           memory index. The cadence moved, so the sentence moved with it.
+           ⚠️ AND THE CAVEAT IS NOW ABOUT THE DATE, NOT ABOUT TONIGHT. It read
+           "a game played since tonight's slate was listed", which is wording
+           for a FUTURE game — and this same card renders for games already
+           played, where it is simply false. Stated against `through` it is true
+           either way. */
+        'Counted through ' + through + ', and refreshed each night — a game '
+        + 'played after that date is not in these numbers yet.'));
     }
     w.rows.forEach(function (r) { sect.appendChild(playerRow(r, p)); });
     return sect;

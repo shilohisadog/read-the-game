@@ -4731,9 +4731,18 @@ __HELPERS__
     var through = w.through ? formatDate(w.through) : null;
     if (through) {
       sect.appendChild(el('p', 'pvwatch',
-        'Counted through ' + through + ', and refreshed weekly — so a game '
-        + 'played since tonight’s slate was listed is not in these numbers '
-        + 'yet.'));
+        /* ⛔⛔ THIS SENTENCE SAID "refreshed weekly" AND WENT FALSE THE HOUR
+           THE NIGHTLY STARTED PUBLISHING `players.json`. A caption is a SECOND
+           SURFACE describing a first, and nothing goes red when the first one
+           moves — the shape this repo has logged in CSS, in a legend, and in a
+           memory index. The cadence moved, so the sentence moved with it.
+           ⚠️ AND THE CAVEAT IS NOW ABOUT THE DATE, NOT ABOUT TONIGHT. It read
+           "a game played since tonight's slate was listed", which is wording
+           for a FUTURE game — and this same card renders for games already
+           played, where it is simply false. Stated against `through` it is true
+           either way. */
+        'Counted through ' + through + ', and refreshed each night — a game '
+        + 'played after that date is not in these numbers yet.'));
     }
     w.rows.forEach(function (r) { sect.appendChild(playerRow(r, p)); });
     return sect;

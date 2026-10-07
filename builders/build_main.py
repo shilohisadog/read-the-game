@@ -1017,7 +1017,8 @@ say('Loading…');
 (want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
   // THE RATES ARE OPTIONAL AND MUST NEVER BLOCK THE GAME. measures.json is an
-  // archive-level document written weekly; the game is what the visitor came
+  // archive-level document, republished whenever the archive changes; the game
+  // is what the visitor came
   // for. If it 404s, times out or arrives malformed, the page still plays and
   // the sentence says the comparison is missing -- which is the same branch a
   // preseason game takes, and is stated rather than left as a gap.

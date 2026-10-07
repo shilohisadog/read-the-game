@@ -290,7 +290,8 @@ const PRINTED = {
  *
  * Every read is null-safe the whole way down, because a document that predates a
  * field is the ordinary case on this site and not an error: `measures.json` is
- * republished weekly and the page is fetched by whoever arrives. The page
+ * republished whenever the archive changes and the page is fetched by whoever
+ * arrives. The page
  * degrades by saying which half is missing — see `printed()`.
  */
 function at(measures, path) {

@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Z0b94uUSRVQQOwGrE0kVdR0pqUt+IIivNPd/w/1NHvM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JGvwwQ97fAXS/uyKYy01p7Rttr52Sm5OARiWww4kvVY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1729,9 +1729,14 @@ function rowsFor(ab, season, teams, recent, league, needs) {
       t.count = v.count; t.n = v.n; });
   }
 
-  /* ⭐ THE NIGHTLY TAIL. `teams.json` is rebuilt weekly and `recent.json` every
-     night, so in season the table is up to seven days and ~3 games short — on a
-     card whose entire honesty device is a game count. THE DATES DECIDE IT, not a
+  /* ⭐ THE NIGHTLY TAIL. `teams.json` is republished on any night the archive
+     changes and `recent.json` every night, so in season the table is up to a day
+     and ~1 game short — on a card whose entire honesty device is a game count.
+     ⚠️ IT SAID "up to seven days and ~3 games" UNTIL 2026-10-07 and that was a
+     stale cadence, not a stale number: the nightly `measure` job has rebuilt
+     this document since 2026-10-03. The tail is still right and still needed —
+     the gap is smaller, never zero, and in the offseason it is weekly again.
+     THE DATES DECIDE IT, not a
      set of ids: `through` is the newest game the table contains, so anything
      after it is a game the table has not seen. A merge on id-presence would need
      the table to list its games, which it does not and should not. */
@@ -2227,7 +2232,8 @@ const PRINTED = {
  *
  * Every read is null-safe the whole way down, because a document that predates a
  * field is the ordinary case on this site and not an error: `measures.json` is
- * republished weekly and the page is fetched by whoever arrives. The page
+ * republished whenever the archive changes and the page is fetched by whoever
+ * arrives. The page
  * degrades by saying which half is missing — see `printed()`.
  */
 function at(measures, path) {
@@ -2475,7 +2481,7 @@ const DERIVATION = {
        true of the figure itself, wherever it is read.
 
        ⚠️ AND IT CANNOT GO STALE. It used to state the share in words — "about half"
-       — beside a number published weekly, so a feed that moved to 60% would have
+       — beside a number the archive republishes, so a feed that moved to 60% would have
        left the prose quietly wrong. It now describes THE REST of the split, which
        is whatever the printed figure is not. */
     /* ⛔⛔⛔ AND THE FIRST REWRITE OVER-CLAIMED IN THE OTHER DIRECTION. It said an

@@ -494,19 +494,57 @@ test('⭐ the measurement is CHAINED to the ingest, not a cron of its own', () =
     'the measure job gates on an output the ingest job does not declare');
 });
 
-test('⭐ the publish step names its two documents and re-uploads nothing else', () => {
+test('⭐ the nightly publishes the documents it writes, and re-uploads the archive never', () => {
   /* The job downloads ~0.4 GB of extracts to measure them. An `aws s3 sync
      ingest/` afterwards would push all of it back and rewrite every extract's
      cache headers — and extracts are served with headers chosen in the ingest's
      own sync, which this job must not relitigate.
-     MUTATION: replace the loop with `aws s3 sync ingest/ s3://...` and this
-     fires. */
+
+     ⚠️ THIS TEST READ `for f in measures.json teams.json` AND IT WAS RIGHT UNTIL
+     2026-10-07, when `players.json` joined the list: the job had been MEASURING
+     the whole archive and writing that document every night and publishing only
+     two of the three, so the leading goalscorer moved weekly on a card the
+     nightly could have refreshed. Kevin: *"we need to refresh the data nightly,
+     so there's the potential of new 'players to watch' every game."*
+
+     ⛔ SO THE LIST IS NO LONGER TYPED HERE EITHER. It is derived from what
+     `measure.mjs` writes in ARCHIVE mode, which is the same inversion that
+     `every document the measure step WRITES is published` uses — a second typed
+     list is the thing that went stale.
+     MUTATION: drop a name from the loop, or replace it with
+     `aws s3 sync ingest/ s3://...`, and this fires. */
   const job = jobText('ingest.yml', 'measure');
-  assert.match(job, /for f in measures\.json teams\.json; do/,
-    'the publish step no longer names exactly the two documents this job writes');
-  const pushes = [...job.matchAll(/aws s3 sync [^\n]*ingest\/[^\n]*s3:/g)];
-  assert.deepEqual(pushes.map(m => m[0]), [],
-    'the job syncs its whole working tree back to the bucket, re-uploading the archive');
+  const measure = readFileSync(new URL('../builders/measure.mjs', import.meta.url), 'utf8');
+  /* ⚠️ ARCHIVE MODE ONLY. `recent.json` is written under `--slate` and belongs to
+     the OTHER job, so it is excluded by name and by reason rather than by the
+     pattern happening to miss it. */
+  /* ⚠️ `writeFileSync(join(out, …))`, NOT `join(out, …)`. The looser pattern — the
+     one the sibling gate uses, where a spare name is harmless — also matches the
+     `catalog.json` this builder READS to check the archive is whole, and a gate
+     demanding the nightly publish the catalog would be wrong twice over. Ask
+     what the pattern's subject is, not whether it finds the names you expected. */
+  const written = [...new Set(
+    [...measure.matchAll(/writeFileSync\(join\(out, '([a-z.]+\.json)'\)/g)]
+      .map(m => m[1]))].filter(d => d !== 'recent.json').sort();
+  /* ⚠️ AND THE LIST IS READ OUT OF THE PUBLISH STEP, not off the first `for f in`
+     in the job — that one is the archive PULL, and matching it had this test
+     reporting that the nightly publishes `catalog.json index.json`. */
+  const step = job.slice(job.indexOf('name: publish the measurement'));
+  const listed = /for f in ([a-z0-9.\- ]+); do/.exec(step);
+  assert.ok(listed, 'the publish step no longer has a document list to read');
+  const names = listed[1].trim().split(/\s+/).sort();
+  assert.deepEqual(names, written,
+    `the nightly publishes ${names.join(', ')} but measure.mjs writes ${written.join(', ')}`);
+
+  /* ⛔ THE HALF THAT MATTERS MOST, KEPT AND SHARPENED. The old form forbade EVERY
+     `aws s3 sync … ingest/… s3:` in this job, which would now fail on the
+     headshots — a narrow, named directory of 744 KB, not the archive. Forbidding
+     the whole tree and the extracts by name keeps the claim and admits the
+     legitimate case, instead of deleting a guard because it became inconvenient. */
+  const pushes = [...job.matchAll(/aws s3 sync +(ingest\/[^ ]*) +"?s3:/g)].map(m => m[1]);
+  const bad = pushes.filter(p => p === 'ingest/' || p.startsWith('ingest/extract'));
+  assert.deepEqual(bad, [],
+    `the job pushes ${bad.join(', ')} — that re-uploads the archive it just downloaded`);
 });
 
 /**

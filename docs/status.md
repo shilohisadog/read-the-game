@@ -138,6 +138,53 @@ guarantee than it sounds; the concurrency group is the real protection.**
 Kevin had Grok review the site on 2026-10-07. **I verified its two factual claims
 and both were real** (the rest is in `memory/outside-review-grok.md`):
 
+### ✅ NIGHTLY PLAYERS, FRAMED FACES, AND A SWEEP OF STALE CADENCES — 2026-10-07
+
+Kevin: *"we need to refresh the data nightly, so there's the potential of new
+'players to watch' every game."*
+
+⭐⭐ **IT WAS ALREADY BEING COMPUTED NIGHTLY AND SIMPLY NOT PUBLISHED.** The
+nightly `measure` job pulls the WHOLE extract archive and runs `measure.mjs` in
+archive mode — which writes `players.json` — and then uploaded only
+`measures.json` and `teams.json`. One name in one `for f in` list was the whole
+of it, plus the headshot step and the mug cache coming down with the archive.
+
+⛔ **AND THE CARD'S OWN SENTENCE WENT FALSE THE SAME HOUR.** *"refreshed weekly"*
+is a SECOND SURFACE describing the first, and nothing goes red when the first one
+moves. It now reads *"refreshed each night"* — and its caveat moved from *"a game
+played since tonight's slate was listed"* to *"a game played after that date"*,
+because this same card renders for games already PLAYED, where the old wording
+was simply false.
+
+⛔⛔ **SWEEPING THE CLASS FOUND SIX MORE, ALL OLDER THAN TODAY.** `measure.mjs`,
+`preview.js`, `build_main.py`, `printed.js`, `derivation.js` and
+`learn-doors.mjs` each said `measures.json`/`teams.json` is rebuilt **weekly**.
+The nightly measure job has rebuilt both since **2026-10-03**, so every one of
+them had been wrong for four days. ⭐ The costliest was `preview.js`, which argued
+from the cadence: *"up to seven days and ~3 games short"* justifying the nightly
+tail. The tail is still right and still needed — the gap is **a day**, never
+zero, and weekly again in the offseason — but the magnitude in the argument was
+out by a factor of seven.
+
+### ✅ THE FACES, FRAMED — AND A MAN WITH NO PHOTOGRAPH
+
+Kevin: *"the headshots need to be separated and enlarged, maybe a frame around
+each… right now it doesn't look very professional."* A transparent CUT-OUT has no
+edge, so at 64px on a page tint it reads as clip art. 96px, circular frame, 30px
+apart, **and the ring is the club's own colour** through the same
+`readableInk(colourOf(…))` the track marks use — which also restores the club
+identity the row labels gave up when they started naming the player.
+
+⛔⛔ **AND HE FOUND THE REAL DEFECT ON THE SECOND PREVIEW HE OPENED**: *"doesn't
+have a headshot of Knies … but his name appears above where the image will go."*
+A cell with no frame is shorter than one with a frame, and two heights in a flex
+row do not line up. ⭐ **The frame is now always drawn, and what fills it is the
+SWEATER NUMBER** — a fact about the man rather than an apology for the gap, and
+the one fact this block exists to give a newcomer, who cannot look for a face
+from the stands. ⚠️ That reverses *"no headshots at all means NO face row"*,
+written the same morning and argued from two bare SURNAMES being furniture — true
+of names, false of numbers.
+
 ### ✅ THE PLAYER BLOCK, AFTER KEVIN READ THE LIVE CARD — 2026-10-07
 
 Three from one screenshot, and the first two were his.
@@ -237,7 +284,7 @@ step, and the 15:49 ingest died at the health block between them.
 over the LATEST SEASON's games rather than the archive's — `clubs` describes this
 season only, so the archive's last date would be the right number for the wrong
 population in every month but the first, and the two coincide today. The card
-says *"Counted through 28 September 2026, and refreshed weekly"*: ⭐ the cadence is
+says *"Counted through 28 September 2026, and refreshed each night"*: ⭐ the cadence is
 part of the claim, because these rows move with `derive.yml` (`47 15 * * 1`) while
 the slate above them is rehydrated nightly, so two numbers on one screen are not
 taken at the same moment. ⚠️ A document with no `through` prints NO date — an

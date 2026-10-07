@@ -1017,7 +1017,19 @@ test('⛔⛔ the player figures say what they are COUNTED THROUGH, and name the 
   const said = textOf(block);
   assert.match(said, /Counted through 28 September 2026/,
     'the player figures must say what they are measured through');
-  assert.match(said, /weekly/, 'and that they do not move with the nightly slate');
+  /* ⛔ THE CADENCE IS PART OF THE CLAIM AND IT MOVED. Kevin, 2026-10-07: *"we
+     need to refresh the data nightly, so there's the potential of new 'players
+     to watch' every game."* The nightly `measure` job already measured the whole
+     archive and wrote this document — it simply did not publish it. A caption
+     reading "weekly" the hour that changed is a SECOND SURFACE gone stale with
+     nothing red, which is why the cadence is asserted and not just the date.
+     ⚠️ AND THIS TEST CAUGHT IT: it demanded /weekly/ and went red on the
+     renderer change, which is the behaviour a caption claim is written for. */
+  assert.match(said, /refreshed each night/, 'the cadence the document actually has');
+  assert.doesNotMatch(said, /weekly/, 'the old cadence must not survive the change');
+  /* ⚠️ THE CAVEAT IS ABOUT THE DATE, NOT ABOUT TONIGHT — this same card renders
+     for games already PLAYED, where "since tonight's slate" is false. */
+  assert.match(said, /played after that date/);
   /* ⛔ THE DATE IS THE DOCUMENT'S, NOT THE GAME'S. The fixture game is in
      October; printing its date here would be a plausible-looking lie. */
   assert.doesNotMatch(said, /Counted through \d+ October/,

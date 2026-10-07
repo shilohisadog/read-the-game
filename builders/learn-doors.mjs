@@ -367,8 +367,9 @@ export function doors(game, ot) {
                 ...(via ? { via } : {}) };
   }
   // THE ONE FIGURE ON THE PAGE, AND IT IS THIS GAME'S. The archive number —
-  // 51.9% of attempts never reach the goalie — is written weekly into
-  // measures.json, and a copy of it pasted here would be a constant that rots.
+  // 51.9% of attempts never reach the goalie — is written into measures.json
+  // whenever the archive changes, and a copy pasted here would be a constant
+  // that rots.
   // LIMITS already shipped a stale claim inside the block whose whole job is
   // stating limits. This one is recomputed from the same file the doors come
   // from, so it cannot drift, and it carries its denominator.

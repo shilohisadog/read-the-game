@@ -486,8 +486,9 @@ export function stable(v) {
  * ⭐ THE SLATE — what the games in THIS run measured, and it is a different
  * object from measures.json.
  *
- * `measures.json` is an archive-level claim: base rates over 4,192 games,
- * refreshed weekly by derive.yml. A daily surface needs the opposite — the few
+ * `measures.json` is an archive-level claim: base rates over the whole archive,
+ * republished on any night the archive changes and in full by the weekly
+ * derive. A daily surface needs the opposite — the few
  * games played last night, measured by these same reducers — and
  * `docs/front-door.md` §6.1 is the argument for computing it by invoking the
  * existing implementation on a smaller input rather than writing a second one.
@@ -573,8 +574,9 @@ export function archiveIsWhole(out, records, readJson) {
  * ⛔⛔⛔ THIS IS THE CHECK `archiveIsWhole` CANNOT MAKE, AND THE DEFECT OF
  * 2026-10-02 IS WHY IT EXISTS. That function compares a COUNT and compares it to
  * the catalog written by its own run, so it is correct and it is blind in one
- * direction: nothing re-checks after the write. `measures.json` is rebuilt
- * weekly, `catalog.json` is rewritten nightly, and for four days the published
+ * direction: nothing re-checks after the write. `measures.json` was rebuilt
+ * WEEKLY when this was written, `catalog.json` is rewritten nightly, and for
+ * four days the published
  * measurement covered eight games of the season while the published archive held
  * twenty-one. A reader on the Capitals' opener was told *"the 8 games we have
  * measured for this season"* — the figure was right about the measurement and

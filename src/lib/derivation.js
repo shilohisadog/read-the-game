@@ -160,7 +160,7 @@ const DERIVATION = {
        true of the figure itself, wherever it is read.
 
        ⚠️ AND IT CANNOT GO STALE. It used to state the share in words — "about half"
-       — beside a number published weekly, so a feed that moved to 60% would have
+       — beside a number the archive republishes, so a feed that moved to 60% would have
        left the prose quietly wrong. It now describes THE REST of the split, which
        is whatever the printed figure is not. */
     /* ⛔⛔⛔ AND THE FIRST REWRITE OVER-CLAIMED IN THE OTHER DIRECTION. It said an
