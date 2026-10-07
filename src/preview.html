@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RUpH+TipH8dvXtYN/WfZ8qf+LQPhzqz8HiDED3mWurs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-kPVlTsYD4fmWGdgQJ4Nkd2e6m8wjnKHEd0nEpShSBrQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RkV0qsrZDkSwD+Bf/OqETMtCX1sC/XoMQCnCeMuxO9U=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-kPVlTsYD4fmWGdgQJ4Nkd2e6m8wjnKHEd0nEpShSBrQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1929,12 +1929,53 @@ function anchorFor(rowKey) {
        inside a club's column reads as a club figure -- 3.6 under each of two
        clubs says the clubs are equal on penalties, which neither number claims.
        So the frame comes first and the clubs sit inside it. */
+    /* ⭐⭐⭐ THE TWO TEAMS COME FIRST NOW — 2026-10-07. The page is named for two
+       clubs and used to open with seven tiles about hockey in general; at 390px
+       the clubs did not begin until about 2,200px down, two and a half screens
+       on the phone the novice tester uses.
+
+       ⛔ THE REASON FOR THE OLD ORDER WAS FALSE, which is why this moved. I had
+       assumed the league frame had to come first so the club numbers could be
+       calibrated against it — but every club row already draws ITS OWN league
+       tick, its own measured axis and its own range ("league 50%", "43% to 62%",
+       "over 7,872 team-games"). The rows are self-contained; nothing in them
+       depends on the tiles. A reason that expired without being re-examined,
+       again — see `next-play-shading`.
+
+       ⚠️ THE FRAME IS BUILT HERE AND APPENDED BELOW, so CHENG's Q10 still holds:
+       a league figure must not sit inside a club's column, and it does not —
+       it sits in its own section, which is now underneath rather than above. */
+    var frame = null;
     if (p.league.length) {
-      var frame = el('section', 'pvframe');
+      frame = el('section', 'pvframe');
       frame.appendChild(el('p', 'pvkick', 'What is normal'));
       var tiles = el('div', 'pvtiles');
       var pp = p.league.filter(function (r) { return r.key === 'powerplay'; })[0];
-      p.league.forEach(function (r) { tiles.appendChild(tileFor(r, pp)); });
+      /* ⭐⭐⭐ WHAT THIS CARD DRAWS, DECLARED IN ONE PLACE AND IN READING ORDER.
+         Kevin, 2026-10-07: *"I think I want to remove some of the 'What is
+         normal' cards to create space for the per-player cards … let's keep that
+         merged card, offsides, icing and attempts (since each of those have a
+         diagram associated with them)."*
+
+         ⭐ THE RULE IS "IT HAS A DIAGRAM", which is a real property and not a
+         preference: a tile that can hand a novice a drawing teaches something the
+         number alone cannot, and the four that can are exactly these four. The
+         `powerplay` row is not listed because it is drawn INSIDE the penalties
+         tile now.
+
+         ⛔⛔ IT FILTERS HERE AND NOT IN `leagueRows()`, which would have been the
+         obvious place and would have been wrong. That module is SHARED -- the
+         replay's `Is that a lot?` overlay draws four of its rows -- so dropping
+         `shift` and `hits` there would have silently stripped them from a surface
+         nobody was looking at. Neither figure is lost: both still answer on
+         `how-we-measure.html`, and `shift` is on the front door. */
+      var SHOWN = ['penalties', 'offside', 'icing', 'attempts'];
+      SHOWN.forEach(function (key) {
+        var r = p.league.filter(function (x) { return x.key === key; })[0];
+        if (!r) return;                     // a document that predates the counter
+        var tile = tileFor(r, pp);
+        if (tile) tiles.appendChild(tile);
+      });
       frame.appendChild(tiles);
       /* ⛔⛔⛔ THIS SAID "is mostly luck" UNTIL 2026-10-03. Kevin: *"we need to
          rephrase that sentence, since saying '....is mostly luck....' is quite
@@ -1952,7 +1993,6 @@ function anchorFor(rowKey) {
         + (p.settles ? ' — it would take more than ' + p.settles + ' games, more than '
            + 'half a season, before it did' : '')
         + ', so one season cannot tell two teams apart on them.'));
-      $('pv').appendChild(frame);
     }
 
     var sect = el('section', 'pvclubs');
@@ -1980,6 +2020,7 @@ function anchorFor(rowKey) {
     });
     sect.appendChild(links);
     $('pv').appendChild(sect);
+    if (frame) $('pv').appendChild(frame);
   }
 
   function learnLink(key, text) {
@@ -2016,39 +2057,53 @@ function anchorFor(rowKey) {
        and they still get a work door, which is the half that is not optional. */
     var learn = null;
     var big = el('p', 'pvbig');
-    if (r.key === 'powerplay') {
-      big.textContent = pct(r.rate);
-      big.appendChild(el('span', 'pvunit', ' of every 100'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'power plays produce a goal'));
-      var dots = el('div', 'pvdots');
-      var on = Math.round(r.rate * 100);
-      for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
-      t.appendChild(dots);
-      t.appendChild(el('p', 'pvwatch',
-        'A team gets about ' + r.chancesPerClubGame.toFixed(1)
-        + ' a game. Watch who is a skater short, and for how long.'));
-      learn = learnLink('powerplay', 'What a power play is');
-    } else if (r.key === 'penalties') {
+    if (r.key === 'penalties') {
+      /* ⭐⭐⭐ ONE TILE FOR BOTH, because they are one lesson and they always were
+         ONE DOOR: `_preview_doors` sends `powerplay` and `penalties` to the same
+         page, and `penalties.html`'s own lede says why — *"the side with the
+         extra skater is on a power play: the same penalty, named from the other
+         bench."* Kevin, 2026-10-07: *"let's merge power plays and penalties,
+         since they are doors to the same diagram."*
+
+         THE PENALTY LEADS AND THE POWER PLAY FOLLOWS, which is the order the
+         rule page teaches them in and the order they happen in. Two cards
+         teaching one rule from two ends was the card asking a novice to join
+         them up.
+
+         ⛔⛔ AND IT PRINTS TWO MEASUREMENTS, SO IT CARRIES TWO DOORS -- one under
+         each paragraph, which is `slot.html`'s rule and for `slot.html`'s reason:
+         a single door at the foot could only be right about one of them, and
+         under its own paragraph "this" has an antecedent and needs no label.
+         Merging the doors instead would have been the quiet version of the
+         defect this card was built to avoid. */
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
       t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
       /* ⛔⛔ THE TWO NUMBERS BESIDE EACH OTHER LOOKED LIKE A CONTRADICTION, and
-         Kevin caught it: this tile says a team takes 3.7 penalties a game while
-         the one before it says a team gets 2.7 power plays. Both are right —
-         30,827 penalties produced 22,872 power plays over the archive — and the
-         gap is 25.8% of every penalty called. That is worth teaching, so the
-         card says the relation instead of leaving two figures to argue.
+         Kevin caught it: a team takes 3.7 penalties a game and gets 2.7 power
+         plays. Both are right -- 30,827 penalties produced 22,872 power plays
+         over the archive -- and the gap is 25.8% of every penalty called.
          ⚠️ AND IT DOES NOT SAY WHY. Offsetting minors, misconducts and penalties
-         taken while already short-handed are the obvious candidates and NONE of
-         them is measured yet, so naming them here would be a cause invented to
-         tidy a sentence. The numbers are measured; the reason is not, so the
-         reason is not printed. */
+         taken while already short-handed are the obvious candidates and NONE is
+         measured, so naming them would be a cause invented to tidy a sentence. */
       t.appendChild(el('p', 'pvwatch', 'Only about ' + (pp ? pp.chancesPerClubGame.toFixed(1)
         : '\u2014') + ' of those become a power play for the other team — the rest '
         + 'leave nobody a skater up.'));
-      learn = learnLink('penalties', 'What a penalty costs');
+      t.appendChild(doors('penalties', null));
+      if (pp) {
+        t.appendChild(el('p', 'pvsub', pct(pp.rate) + ' of every 100 power plays '
+          + 'produce a goal'));
+        var dots = el('div', 'pvdots');
+        var on = Math.round(pp.rate * 100);
+        for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
+        t.appendChild(dots);
+        t.appendChild(el('p', 'pvwatch',
+          'A team gets about ' + pp.chancesPerClubGame.toFixed(1)
+          + ' a game. Watch who is a skater short, and for how long.'));
+        t.appendChild(doors('powerplay', learnLink('powerplay', 'What a power play is')));
+      }
+      return t;
     } else if (r.key === 'offside') {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
@@ -2099,37 +2154,23 @@ function anchorFor(rowKey) {
       t.appendChild(key);
       t.appendChild(el('p', 'pvwatch', 'The other half never gets there — '
         + 'a body steps in front, or it misses.'));
-      learn = learnLink('level5', 'See an attempt being counted');
-
-    } else if (r.key === 'shift') {
-      /* THE MOST BEWILDERING THING ABOUT A FIRST HOCKEY GAME is that nobody stays
-         on the ice. The archive answered it three seasons ago in a field no
-         surface read. ⛔ THE MIDDLE HALF IS A DEFINITION, not a chosen band. */
-      big.textContent = String(r.median);
-      big.appendChild(el('span', 'pvunit', ' seconds'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'is how long a shift lasts'));
-      t.appendChild(el('p', 'pvwatch', 'The middle half run ' + r.p25 + ' to '
-        + r.p75 + ' seconds, and ' + pct(r.underMinute) + ' of every 100 are under a '
-        + 'minute. Watch the bench change while play is still going.'));
+      /* ⛔⛔ THIS SAID "See an attempt being counted" AND OPENED A REPLAY FRAME,
+         which it stopped doing when `control.html` was built: the door now lands
+         on a DIAGRAM of what counts as an attempt. A label is a promise about the
+         destination, and this one went on promising the old one.
+         ⭐ IT ALSO EXEMPTED ITSELF FROM THE ONE TEST THAT WOULD HAVE CAUGHT IT --
+         `a door that promises a term lands on a page that USES that term` only
+         reads labels of the form "What a … is", and skipped this. Saying it the
+         way the other tiles say it puts the row back under that gate. */
+      learn = learnLink('level5', 'What a shot attempt is');
 
     } else {
-      /* ⛔⛔ A MEASURED NULL, PRINTED AS ONE. A novice will hear "they are really
-         taking it to them physically" all night; this is the site's answer. The
-         club that landed more hits had FEWER shot attempts in 48 of every 100
-         games — a coin flip, over every game in the archive.
-         ⚠️ AND THE HOME PREMIUM SHIPS WITH IT. Hits are counted by the home rink's
-         own crew and carry a measured +4.1% home-ice premium. A figure we know is
-         scorer-dependent may not be printed as though it were clean. */
-      big.textContent = r.perClubGame.toFixed(1);
-      big.appendChild(el('span', 'pvunit', ' a game'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'hits a team lands'));
-      t.appendChild(el('p', 'pvwatch', 'The team that hits more has the puck less in '
-        + pct(r.opposite) + ' of every 100 games — a coin flip. Hitting and '
-        + 'controlling play are not the same thing.'));
-      t.appendChild(el('p', 'pvfine', 'Counted by each home rink’s own crew, which '
-        + 'records about 4% more hits at home than the same teams record away.'));
+      /* ⛔ UNREACHABLE BY CONSTRUCTION, AND IT STILL SAYS SO. `SHOWN` below is the
+         one list of what this card draws, so a key that reaches here is a key
+         somebody added to that list and not to this function. Returning null is
+         how it shows up as a missing tile rather than an empty box with two
+         doors under it. */
+      return null;
     }
     t.appendChild(doors(r.key, learn));
     return t;
@@ -2243,13 +2284,22 @@ function anchorFor(rowKey) {
     var fp = el('p', 'pvfoot');
     foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });
     /* ⭐ THE GRAPH IS A DOOR TOO. Kevin: "The graph should also be a front door to
-       a CF% learning card." There is no such page and there does not need to be:
-       `control` is a learn door onto the exact frame of a replay where the
-       Control layer counts an attempt, which is what CF% is made of. A diagram
-       would explain the metric; the replay shows it happening. */
+       a CF% learning card."
+       ⚠️ THE REASON RECORDED HERE HAS EXPIRED. It read: *"There is no such page
+       and there does not need to be … a diagram would explain the metric; the
+       replay shows it happening."* Kevin reopened it -- *"let's brainstorm if we
+       can figure out how to diagram the control rows … I'd like everything to be
+       consistent"* -- and `control.html` exists: it draws what COUNTS as an
+       attempt, which is the definition rather than the ratio, and then doors on
+       to the frame. The same expired-reason shape as the og:image.
+       ⛔ AND THE LABEL IS PER ROW, because the destinations differ. All three said
+       "See an attempt being counted", which was written for a replay frame and is
+       wrong about a drawing -- and `slot` has never led anywhere else. */
     box.appendChild(fp);
+    var SAYS = { level5: 'What a shot attempt is', dmen: 'What a shot attempt is',
+                 slot: 'What the slot is' };
     box.appendChild(doors(ar.key,
-      DOORS[ar.key] ? learnLink(ar.key, 'See an attempt being counted') : null));
+      DOORS[ar.key] && SAYS[ar.key] ? learnLink(ar.key, SAYS[ar.key]) : null));
     return box;
   }
 

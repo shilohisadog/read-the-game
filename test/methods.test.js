@@ -343,7 +343,14 @@ test('⛔⛔⛔ EVERY WORK DOOR THE CARD WRITES LANDS ON A SECTION THAT EXISTS',
   await card.settle();
   const rendered = walk(card.ids.pv);
   const doors = rendered.filter(n => n.className === 'pvwork').map(n => n.href);
-  assert.ok(doors.length >= 10, `the card drew only ${doors.length} work doors`);
+  /* ⛔ THE FLOOR USED TO BE THE LITERAL 10, which is the size the card happened
+     to be when this was written. Kevin took two tiles off and merged two more on
+     2026-10-07 and it went red on a card that had lost nothing — a check failing
+     for a reason it does not name. The floor is now derived from what the card
+     actually drew, so it still cannot pass on a card that rendered nothing. */
+  const panels = rendered.filter(n => n.className === 'pvtile' || n.className === 'pvm');
+  assert.ok(panels.length >= 6 && doors.length >= panels.length,
+    `${panels.length} figures on the card and ${doors.length} work doors`);
 
   const page = render('how-we-measure.html', { 'measures.json': MEASURES });
   await page.settle();
@@ -359,10 +366,23 @@ test('⛔⛔⛔ EVERY WORK DOOR THE CARD WRITES LANDS ON A SECTION THAT EXISTS',
 
   /* AND THE OTHER DIRECTION: every figure the card drew got a door, not most of
      them. Counting doors alone would pass a card that drew twelve figures and
-     doored ten. */
-  const figures = rendered.filter(n => n.className === 'pvtile' || n.className === 'pvm');
-  assert.equal(doors.length, figures.length,
-    `${figures.length} figures on the card, ${doors.length} of them with a door to the work`);
+     doored ten.
+
+     ⛔⛔ IT USED TO SAY `doors === tiles + rows`, AND THAT STOPPED BEING THE RULE
+     the moment one tile printed two measurements. The merged penalty tile carries
+     the penalty count AND the power-play conversion — two different derivations,
+     so two doors, one under each paragraph, which is `slot.html`'s rule. Counting
+     panels would have demanded it drop one of them.
+
+     ⭐ SO THE CLAIM IS PER PANEL, which is what "every figure has a door" always
+     meant: no tile and no measure row may be drawn without at least one door to
+     the work behind it. That survives any shape the card takes next, and it is
+     the assertion a merged tile can satisfy honestly. */
+  for (const panel of panels) {
+    const mine = walk(panel).filter(n => n.className === 'pvwork');
+    assert.ok(mine.length >= 1,
+      `a ${panel.className} prints a figure with no door to how it was counted`);
+  }
 });
 
 test('⛔ the methods page renders a section for every figure, named and caveated', async () => {

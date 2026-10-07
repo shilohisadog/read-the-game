@@ -14,6 +14,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+/* ⚠️ THE MODULE ITSELF, not the page's inlined copy of it. This file drives the
+   RENDERER, and for one claim below that is not enough: `leagueRows()` is shared
+   with the replay, and "the card stopped drawing a row" and "the module stopped
+   producing it" look identical from here. */
+import { leagueRows } from '../src/lib/league-rows.js';
 
 const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
@@ -235,12 +240,19 @@ test('with a season under way the page draws both frames and both clubs', async 
   await settle();
   const said = textOf(ids.pv);
   assert.match(said, /What is normal/, 'the league frame');
-  assert.match(said, /power plays produce a goal/, 'the power-play tile');
-  assert.match(said, /penalties a team takes/, 'the penalties tile');
+  assert.match(said, /penalties a team takes/, 'the merged penalty tile');
+  assert.match(said, /power plays produce a goal/, 'and the power play inside it');
   assert.match(said, /times a team is offside/, 'the offside tile');
   assert.match(said, /shot attempts reach the goalie/, 'the attempt partition');
-  assert.match(said, /is how long a shift lasts/, 'the shift tile');
-  assert.match(said, /hits a team lands/, 'the hits tile');
+  /* ⛔ AND THE TWO THAT WERE TAKEN OFF, ASSERTED AS ABSENT — 2026-10-07. Kevin:
+     *"I think I want to remove some of the 'What is normal' cards to create space
+     for the per-player cards … let's keep that merged card, offsides, icing and
+     attempts (since each of those have a diagram associated with them)."*
+     A presence-only list cannot tell a tile that was removed from one that is
+     quietly still drawn, which is the half that matters when the reason for
+     removing it was SPACE. */
+  assert.doesNotMatch(said, /is how long a shift lasts/, 'the shift tile is off this card');
+  assert.doesNotMatch(said, /hits a team lands/, 'and so is the hits tile');
   assert.match(said, /5-on-5 CF% while the score was level/, 'a club row');
   assert.match(said, /BUF 12 games · PIT 11 games\. This figure needs 35 before it holds steady/,
     'both teams\u2019 game counts on one line, with the target named once');
@@ -596,8 +608,20 @@ test('⭐ every tile and every measure row is a door into the lesson behind it',
      this test cannot reach and does not pretend to. */
   const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
-  const doors = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvlearn'));
-  assert.equal(doors.length, 7, 'four tiles with a lesson behind them, and three measure rows');
+  const has = (x, c) => (x.className || '').split(' ').includes(c);
+  const doors = walk(ids.pv).filter(x => has(x, 'pvlearn'));
+  /* ⛔ THE COUNT USED TO BE THE LITERAL 7, AND A LITERAL CANNOT SURVIVE THE CARD
+     CHANGING SHAPE -- which it did on 2026-10-07, when two tiles came off and two
+     merged into one. The claim was never "there are seven"; it is "every tile and
+     every row has a door", so that is what is asserted, and it holds whatever the
+     card is made of next. ⚠️ Both counts are floored so it cannot pass by drawing
+     nothing, which is how this family of check goes vacuous. */
+  const tiles = walk(ids.pv).filter(x => has(x, 'pvtile'));
+  const rows = walk(ids.pv).filter(x => has(x, 'pvm'));
+  assert.ok(tiles.length >= 3 && rows.length === 3,
+    `${tiles.length} tiles and ${rows.length} measure rows — the card did not draw`);
+  assert.equal(doors.length, tiles.length + rows.length,
+    'every tile and every measure row carries exactly one lesson door');
   for (const d of doors) {
     /* ⛔⛔⛔ THIS ASSERTION USED TO BE AN `OR` -- *a rule page OR a replay deep
        link* -- and an `or` over the two possible answers is satisfied by ALWAYS
@@ -817,41 +841,79 @@ test('⭐ the attempt partition is a stacked bar, and its three parts sum to the
     `a partition must fill the bar, got ${w.reduce((a, b) => a + b, 0)}`);
   // 215,529 + 25,597 of 500,720 = 48.2%, and the first rect must be that share.
   assert.ok(Math.abs(w[0] - 48.16) < 0.05, `the goalie share is wrong: ${w[0]}`);
-  assert.match(textOf(ids.pv), /48 of every 100/);
+  /* ⛔⛔⛔ THIS ASSERTION WAS BEING SATISFIED BY A DIFFERENT TILE ENTIRELY, and
+     removing the hits tile is what exposed it. It read `match(textOf(ids.pv),
+     /48 of every 100/)` over the WHOLE card, and the string it matched was the
+     hits tile's *"has the puck less in 48 of every 100 games"* — one text node,
+     single-spaced. The attempts tile renders its own figure as a `<p>` plus a
+     `<span>`, which `textOf` joins with a space, so "48  of every 100" never
+     matched and never had to. Both figures are 48 by coincidence this week.
+     ⭐ THE SHAPE: a whole-page regex in a test named for one tile. Scoped to the
+     tile that owns the bar, and tolerant of the split the renderer actually
+     makes, it can only pass for the right reason. */
+  const tile = walk(ids.pv).find(x => (x.className || '').split(' ').includes('pvtile')
+    && walk(x).some(y => (y.attrs && y.attrs.class) === 'pvmix'));
+  assert.ok(tile, 'the stacked bar is not inside a tile');
+  assert.match(textOf(tile), /48\s+of every 100\s+shot attempts reach the goalie/);
 });
 
-test('⛔⛔ the hits tile prints a NULL, and never without its home-rink premium', async () => {
-  /* A novice hears "they're really taking it to them physically" all night. This
-     is the site's answer: the club that hits more has the puck less in 48 of
-     every 100 games — a coin flip over 4,192 games.
-     ⚠️ AND HITS ARE SCORER-DEPENDENT: the home rink's own crew records about 4%
-     more of them. A figure we KNOW is biased may not be printed as though it were
-     clean, so the disclosure is asserted, not trusted to survive an edit.
-     MUTATION: delete the `.pvfine` line and the second half fires. */
+test('⛔⛔ the hits row is off the CARD and still in the MODULE', async () => {
+  /* ⚠️ THIS TEST HAS CHANGED SUBJECT, AND SAYING SO IS THE POINT. It used to
+     assert that the hits tile printed its measured NULL together with the
+     +4% home-rink premium — *a figure we KNOW is scorer-dependent may not be
+     printed as though it were clean*. Kevin took the tile off the card on
+     2026-10-07 to make room for the per-player block, so that assertion has no
+     subject here any more.
+
+     ⭐⭐ WHAT IT GUARDS NOW IS THE REAL RISK OF THAT CHANGE. `leagueRows()` is
+     SHARED: the replay's `Is that a lot?` overlay draws four of its rows. The
+     obvious way to drop a tile would have been to stop producing the row — and
+     that would have silently stripped it from a surface nobody was looking at,
+     which is this project's most expensive recurring defect. The card filters;
+     the module still answers. Both halves are asserted, so neither can rot.
+
+     ⏭ AND THE PREMIUM RULE NEEDS A HOME ON WHATEVER SURFACE STILL PRINTS HITS.
+     It is not this one. Not asserted here rather than asserted weakly: a check
+     aimed at a figure this page no longer draws would pass forever and protect
+     nothing. */
   const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
   const said = textOf(ids.pv);
-  assert.match(said, /48 of every 100 games — a coin flip/);
-  assert.match(said, /home rink’s own crew/);
-  assert.match(said, /about 4% more hits at home/);
-  /* ⛔ AND THE TILE MUST NOT READ AS A VERDICT ON HITTING. Scoped to the tile, not
-     the page: the frame's own caption legitimately says "which teams do BETTER
-     than this over a season is mostly luck", and the first version of this check
-     scanned everything and failed on that sentence — a guard that tests a wider
-     claim than it announces, which is this file's own recurring defect. */
-  const tiles = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvtile'));
-  const hits = tiles.find(t => /hits a team lands/.test(textOf(t)));
-  assert.ok(hits, 'no hits tile to check');
-  assert.ok(!/\b(better|worse|dominant|tougher|physical)\b/i.test(textOf(hits)),
-    textOf(hits).slice(0, 200));
+  assert.ok(!/hits a team lands/.test(said), 'the card still draws the hits tile');
+  assert.ok(!/4% more hits/.test(said), 'and so its premium has nothing to qualify');
+
+  // THE MODULE, ASKED DIRECTLY — the half the page cannot show.
+  const rows = leagueRows(DOCS['measures.json']);
+  const hits = rows.filter(r => r.key === 'hits');
+  assert.equal(hits.length, 1,
+    'leagueRows no longer produces a hits row — the replay overlay reads these too');
+  assert.ok(hits[0].perClubGame > 0, 'the row is produced but carries no figure');
 });
 
-test('a census with no shift chart draws no shift tile rather than a median of nothing', async () => {
-  const { ids, settle } = run({ 'measures.json': { ...DOCS['measures.json'],
-    census: { ...DOCS['measures.json'].census, shift: { n: 0, median: null } } } },
-    `?game=${GID}`, '2026-10-01T12:00:00Z');
-  await settle();
-  const said = textOf(ids.pv);
-  assert.ok(!/how long a shift lasts/.test(said), said.slice(0, 200));
-  assert.match(said, /hits a team lands/, 'the rest of the frame still draws');
+test('a census missing a counter drops that tile rather than drawing a figure from nothing', async () => {
+  /* ⚠️ THIS USED TO BE AIMED AT THE SHIFT TILE, which came off the card on
+     2026-10-07. The RULE it protects did not come off with it: a measures
+     document written before a counter existed must leave the tile out, never
+     print a number derived from an absent field. Re-pointed at a tile the card
+     still draws, so it keeps a live subject.
+
+     ⭐ THE ICING ROW IS THE RIGHT SUBJECT because `leagueRows()` already makes it
+     conditional — `w.icings ? [...] : []` — and the published fixture carries no
+     `icings` at all, which is itself the degradation in the wild. So the test
+     ADDS the counter, proves the tile appears, then takes it away and proves it
+     does not. Both halves, or "it is missing" proves nothing about why. */
+  const base = DOCS['measures.json'];
+  const withIcings = { ...base,
+    census: { ...base.census, whistles: { ...base.census.whistles, icings: 35500 } } };
+
+  const on = run({ 'measures.json': withIcings }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await on.settle();
+  assert.match(textOf(on.ids.pv), /times a team ices the puck/,
+    'with the counter present the tile must draw, or the half below proves nothing');
+
+  const off = run({ 'measures.json': base }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await off.settle();
+  const said = textOf(off.ids.pv);
+  assert.ok(!/times a team ices the puck/.test(said), said.slice(0, 200));
+  assert.match(said, /times a team is offside/, 'the rest of the frame still draws');
 });
