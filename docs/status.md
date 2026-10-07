@@ -138,10 +138,24 @@ guarantee than it sounds; the concurrency group is the real protection.**
 Kevin had Grok review the site on 2026-10-07. **I verified its two factual claims
 and both were real** (the rest is in `memory/outside-review-grok.md`):
 
-- ⛔ **ONE MEASUREMENT, TWO VINTAGES.** The front door FETCHES `measures.json`
-  while `what-you-can-see.html` and `slot.html` BAKE the figure at build time, so
-  the slot count printed two different numbers with nothing checking they agree.
-  The static pages carry `__MEASURED_UP_TO__`; the front door does not.
+- ⛔ **ONE MEASUREMENT, TWO COPIES — AND IT IS NOT A VINTAGE PROBLEM.** ✅ Today's
+  instance is CLOSED (`e89eede`): the committed copy was 171,027 slot attempts
+  against a published 171,026, and the three pages that BAKE the figure now agree
+  with the document the front door FETCHES — verified by fetching all four.
+  ⭐⭐ **BUT THE DIAGNOSIS IN THIS FILE WAS WRONG AND THE FIX FOLLOWS FROM THE
+  RIGHT ONE.** Both copies declared `dataThrough: 2026-10-06` and `measured: 4244`
+  — the SAME vintage — and **35 figures differed**, because the league
+  reclassified one shot-on-goal as a blocked shot after we measured
+  (`shot-on-goal` 218,002→218,001, `blocked-shot` 140,523→140,524, and
+  `census.shift.n` +3). **A `__MEASURED_UP_TO__` stamp on the front door would
+  have labelled both copies identically and changed nothing.**
+  ⭐ **THE GATE ALREADY EXISTS AND RUNS WHERE IT CANNOT HELP.**
+  `tools/measures_fresh.py` names the drift exactly — it was RED against the repo
+  as committed. It is not in `npm run gates`, and in `ingest.yml` it runs AFTER
+  `cp ingest/measures.json data/measures.json`, so it answers about a file the
+  step has just overwritten: it can only catch a failed PUBLISH, never a stale
+  repo, which is the case its own error message tells a human to fix. ⏭ **OPEN:**
+  run it before the copy, and in `gates`.
 - ⛔ **THE FIXTURE CLOCK IS IN THE READER'S ZONE, UNLABELLED**, under a heading
   that says *Tonight*. Reproduced: `TZ=UTC` on the live front door gives
   `EDM at ANA · 2:00 AM` — tomorrow, for that reader. Also `7:30 PM` and
@@ -151,13 +165,21 @@ and both were real** (the rest is in `memory/outside-review-grok.md`):
   already know Corsi. ⚠️ Worth reconciling deliberately with the player block we
   just added to the TOP of the preview.
 
-- **The hits premium rule needs a home.** *A figure we know is scorer-dependent
-  may not be printed as though it were clean* lived on the hits tile, which is
-  off the card. Deliberately not re-pointed at a figure this page no longer draws.
+- **The hits premium rule has no SUBJECT, which is weaker than this file said.**
+  Checked 2026-10-07: the preview prints no hits figure to a reader at all (every
+  remaining mention is inlined JS source), and the caveat — *a figure we know is
+  scorer-dependent may not be printed as though it were clean* — is still
+  published on `how-we-measure.html` beside the figure it qualifies. So nothing is
+  unqualified today. ⏭ The rule to keep is that hits may not return to a card
+  without it.
 - **The right-rail backfill** — ~4,556 requests, delivering the witness across the
   archive AND the whole-game recaps. Kevin's call.
 - **Player reliability is measured on ONE season** (2024-25) and not pooled; the
   club work ran over 96 club-seasons and had to centre them.
+- **The player block does not say what it is measured through**, checked by
+  fetching the live page. The static pages carry a snapshot banner for exactly
+  this reason and the player figures move WEEKLY (`derive.yml`, `47 15 * * 1`),
+  not nightly — so the card is the one surface quoting a figure with no date.
 
 ---
 
