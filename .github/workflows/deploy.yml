@@ -62,6 +62,15 @@ jobs:
         with:
           python-version: '3.x'
 
+      # ⭐ PILLOW, FOR TWO TESTS AND ONE BUILDER. `builders/mugs.py` resizes the
+      # headshots and `test/test_mugs.py` checks that the result is a 112px WebP
+      # with its alpha intact. ⛔ WITHOUT THIS THOSE TWO ANNOUNCE A SKIP AND THE
+      # GATE IS GREEN ON A CLAIM NOBODY CHECKED — Shape 10, a check that cannot
+      # fail in the conditions you run it under. The other ten tests in that file
+      # need no image library at all, deliberately, so a laptop without Pillow
+      # still runs everything the TRAP is about.
+      - name: pillow, so the headshot tests are not skipped
+        run: python3 -m pip install --quiet --disable-pip-version-check 'pillow>=10,<13'
       - name: gates
         run: npm run gates
       # A generated file that differs from what its builder produces means the

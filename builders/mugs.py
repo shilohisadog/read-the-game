@@ -121,7 +121,7 @@ def players_of(doc):
     return seen
 
 
-def run(root, fetch=None, sleep=time.sleep):
+def run(root, fetch=None, sleep=time.sleep, encode=None):
     root = pathlib.Path(root)
     pfile = root / "players.json"
     if not pfile.exists():
@@ -140,6 +140,14 @@ def run(root, fetch=None, sleep=time.sleep):
     if fetch is None:
         opener = urllib.request.build_opener(NoRedirect)
         fetch = lambda u: get(u, opener)          # noqa: E731
+    # ⛔⛔ THE ENCODER IS INJECTABLE SO THE TRAP LOGIC IS TESTABLE WITHOUT PILLOW,
+    # and that is not tidiness — it is the fix for a real failure. `test_mugs.py`
+    # imported PIL at module scope, which is fine on a laptop that has it and an
+    # ImportError on the gates runner that does not, so the suite went red on a
+    # dependency the thing under test does not need. Everything worth checking
+    # here — a redirect is not followed, a placeholder is not a face, a trade
+    # refetches, a timeout is retried — is about BYTES, not about images.
+    encode = encode or shrink
 
     # ⭐ THE PLACEHOLDER'S OWN BYTES, READ THIS RUN RATHER THAN TYPED. A hash in
     # the source would be a measurement frozen into a literal — the thing this
@@ -173,7 +181,7 @@ def run(root, fetch=None, sleep=time.sleep):
         sleep(DELAY)
         got = (status == 200 and body
                and hashlib.sha256(body).hexdigest() != placeholder)
-        small = shrink(body) if got else None
+        small = encode(body) if got else None
         if small:
             (out / f"{pid}.webp").write_bytes(small)
             seen[key] = {"t": r.get("t"), "ok": 1}

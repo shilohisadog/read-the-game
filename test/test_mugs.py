@@ -16,6 +16,15 @@ because the only honest way to check "what does it do when there is no picture"
 is to hand it the answer the CDN actually gives.
 
 ⚠️ NO NETWORK. The transport is a dict of canned replies.
+
+⛔⛔ AND NO IMAGE LIBRARY FOR THE PART THAT MATTERS. The first version of this
+file imported PIL at module scope: fine on a laptop that has Pillow, an
+ImportError on the gates runner that does not, and `npm run gates` went red on a
+dependency none of these claims needs. Everything the trap is about — a redirect
+is not followed, a placeholder is not a face, a trade refetches, a timeout is
+retried — is about BYTES. So `run()` takes its encoder, and only the two tests
+that are genuinely ABOUT the picture reach for Pillow, announcing themselves when
+it is missing rather than vanishing from the count.
 """
 import importlib.util
 import io
@@ -29,18 +38,27 @@ _spec = importlib.util.spec_from_file_location("mugs", ROOT / "builders" / "mugs
 mugs = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(mugs)
 
-from PIL import Image                                    # noqa: E402
+try:
+    from PIL import Image
+    HAVE_PIL = True
+except ImportError:                                      # a laptop without Pillow
+    Image = None
+    HAVE_PIL = False
 
+NEEDS_PIL = unittest.skipUnless(
+    HAVE_PIL, "Pillow is absent — the two picture tests cannot run here; the trap "
+              "and cache tests above do not need it and did")
 
-def png(colour):
-    """A real image, so `shrink` is exercised rather than mocked."""
-    b = io.BytesIO()
-    Image.new("RGBA", (336, 336), colour).save(b, format="PNG")
-    return b.getvalue()
+# ⭐ THE BODIES ARE JUST BYTES. What the fetcher must decide about them — is this a
+# face, is this the placeholder, did the host redirect — is decided before any
+# decoder sees them, so these need not be images.
+REAL = b"\x89PNG\r\n\x1a\n-a-real-headshot"
+PLACEHOLDER = b"\x89PNG\r\n\x1a\n-the-default-skater"
 
-
-REAL = png((12, 34, 56, 255))
-PLACEHOLDER = png((200, 200, 200, 255))          # what the CDN serves for nobody
+# A stand-in encoder: anything that is not the placeholder encodes to a marker,
+# and bytes that do not look like a PNG are refused, which is `shrink`'s contract.
+def fake_encode(raw):
+    return b"webp:" + raw[-8:] if raw.startswith(b"\x89PNG") else None
 
 
 def doc(**over):
@@ -78,7 +96,8 @@ class Base(unittest.TestCase):
 
     def run_with(self, replies):
         h = Harness(replies)
-        rep = mugs.run(self.dir, fetch=h, sleep=lambda _s: None)
+        rep = mugs.run(self.dir, fetch=h, sleep=lambda _s: None,
+                       encode=getattr(self, "encode", fake_encode))
         after = json.loads((self.dir / "players.json").read_text())
         return rep, after, h
 
@@ -125,10 +144,19 @@ class TheTrap(Base):
 
 
 class WhatItWrites(Base):
+    """These three run the REAL encoder, because they are about the picture."""
+
+    def real_png(self, colour):
+        b = io.BytesIO()
+        Image.new("RGBA", (336, 336), colour).save(b, format="PNG")
+        return b.getvalue()
+
+    @NEEDS_PIL
     def test_the_image_is_a_112px_webp(self):
-        """The size is the measurement in the module header: 3.5KB against the
+        """The size is the measurement in the module header: ~3.5KB against the
         source's 178,650."""
-        self.run_with(world())
+        self.encode = mugs.shrink
+        self.run_with(world(real=self.real_png((12, 34, 56, 255))))
         f = self.dir / "mug" / "111.webp"
         self.assertTrue(f.exists())
         im = Image.open(f)
@@ -136,17 +164,19 @@ class WhatItWrites(Base):
         self.assertEqual(im.size, (mugs.SIDE, mugs.SIDE))
         self.assertLess(f.stat().st_size, 20000, "a headshot this big defeats the point")
 
+    @NEEDS_PIL
     def test_transparency_survives_the_resize(self):
         """⚠️ The league's mugs are CUT-OUTS. Flattening them onto white would put
         a white box on a tinted card — the defect that only looking finds, so it
         is asserted instead."""
-        b = io.BytesIO()
-        Image.new("RGBA", (336, 336), (0, 0, 0, 0)).save(b, format="PNG")
-        self.run_with(world(real=b.getvalue()))
+        self.encode = mugs.shrink
+        self.run_with(world(real=self.real_png((0, 0, 0, 0))))
         im = Image.open(self.dir / "mug" / "111.webp").convert("RGBA")
         self.assertEqual(im.getpixel((0, 0))[3], 0, "the alpha channel was lost")
 
     def test_bytes_that_are_not_an_image_are_refused_rather_than_written(self):
+        """⛔ NO PILLOW NEEDED: the encoder's contract is "None means not an
+        image", and what the fetcher does with that None is the claim."""
         rep, after, _ = self.run_with(world(real=b"<html>nope</html>"))
         self.assertIsNone(self.flag(after, 111))
         self.assertFalse((self.dir / "mug" / "111.webp").exists())
