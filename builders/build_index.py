@@ -3905,6 +3905,15 @@ PREVCSS = r"""<style>
  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .pvunit{font-size:.82rem;font-weight:600;color:var(--muted);letter-spacing:0}
 .pvtlab{margin:5px 0 0;font-size:.9rem;font-weight:600}
+/* ⭐ THE SECOND FIGURE IN THE ONE TILE THAT CARRIES TWO. The merged penalty tile
+   prints the penalty count and the power-play conversion, and the second arrived
+   as body text -- a measurement that did not look like one, which is the opposite
+   of what a figure on this card is for. Smaller than `pvbig` because it is the
+   second thing read, and the rule above it is the DIVIDER: two measurements in
+   one box need a line between them or they read as one long paragraph. */
+.pvsub{margin:17px 0 0;padding:15px 0 0;border-top:1px solid var(--edge);
+ font-size:1.5rem;line-height:1;font-weight:800;
+ font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .pvwatch{margin:10px 0 0;font-size:.85rem;color:var(--muted);line-height:1.45}
 /* ⭐ A HUNDRED DOTS, BECAUSE THE UNIT IS LITERALLY "OF EVERY 100". This is the one
    league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
@@ -3984,7 +3993,12 @@ PREVCSS = r"""<style>
    work'."* Five of seven tiles had a lesson door and NONE had a work door, and I
    had been counting the first as though it satisfied the second. */
 .pvdoors{display:flex;flex-wrap:wrap;gap:3px 16px;margin:0;padding:11px 0 0}
-.pvtile .pvdoors{margin-top:auto}
+/* ⛔ THE LAST DOOR BLOCK IS PUSHED DOWN, NOT EVERY DOOR BLOCK. This was
+   `.pvtile .pvdoors`, which was exactly right while a tile had one -- and the
+   merged tile has two, so the FIRST one absorbed all the free space in the
+   column and shoved the second measurement to the floor of the box. A rule that
+   was correct for every case that existed when it was written. */
+.pvtile > .pvdoors:last-child{margin-top:auto}
 .pvwork{color:var(--muted)}
 .pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
 @media (max-width:430px){
@@ -4403,8 +4417,10 @@ __HELPERS__
         + 'leave nobody a skater up.'));
       t.appendChild(doors('penalties', null));
       if (pp) {
-        t.appendChild(el('p', 'pvsub', pct(pp.rate) + ' of every 100 power plays '
-          + 'produce a goal'));
+        var sub = el('p', 'pvsub', pct(pp.rate));
+        sub.appendChild(el('span', 'pvunit', ' of every 100'));
+        t.appendChild(sub);
+        t.appendChild(el('p', 'pvtlab', 'power plays produce a goal'));
         var dots = el('div', 'pvdots');
         var on = Math.round(pp.rate * 100);
         for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
