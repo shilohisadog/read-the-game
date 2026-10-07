@@ -344,8 +344,16 @@ jobs:
               sys.exit(f"::error::the catalog would LOSE {was - now} games "
                        f"({was} -> {now}); refusing to publish it")
           PY
-          # Both advertising documents go after the extracts they point at.
-          for f in catalog.json measures.json teams.json index.json; do
+          # The advertising documents go after the extracts they point at.
+          # ⛔⛔⛔ `players.json` WAS MISSING FROM THIS LIST AND THE FEATURE SHIPPED
+          # INERT, 2026-10-07. `measure.mjs` wrote it, the gates were green, this
+          # job reported success, and the site 404'd for it — a typed list of the
+          # documents that existed when the list was written, which is the same
+          # shape as a CSS rule correct for every case that existed when it was
+          # written. `test/workflows.test.js` now derives the set from what
+          # `measure.mjs` actually writes, so the next new document cannot be
+          # forgotten quietly.
+          for f in catalog.json measures.json teams.json players.json index.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
               --cache-control no-cache \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress

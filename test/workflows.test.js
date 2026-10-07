@@ -735,3 +735,47 @@ test('⭐⭐⭐ the measure job runs only when the run derived something', () =>
       `the measure job's condition dropped \`${need}\`: ${flat}`);
   }
 });
+
+test('⛔⛔⛔ every document the measure step WRITES is published by some workflow', () => {
+  /* ⛔ `players.json` SHIPPED INERT ON 2026-10-07 AND EVERY GATE WAS GREEN.
+     `measure.mjs` wrote it, the suite passed, `derive.yml` reported success — and
+     the site answered 404, because the publish list is a shell `for f in …` naming
+     the documents that existed when somebody typed it. A new archive document is
+     therefore invisible by default, and the only symptom is a feature that does
+     nothing.
+
+     ⭐ THE SET IS DERIVED FROM THE WRITER, which is the half that makes this a
+     gate rather than a second list to keep in step: whatever `measure.mjs` writes
+     into `--out` has to be published by SOMETHING, or named here as deliberately
+     local. A document nobody publishes and nobody excepted is the defect.
+
+     ⚠️ IT DOES NOT CARE WHICH WORKFLOW. `recent.json` is the nightly's and
+     `players.json` is the weekly derive's, because one describes a slate and the
+     other describes the archive — which workflow is a judgement about what the
+     document MEANS. That it reaches the bucket at all is not.
+
+     MUTATION: drop a name from either `for f in …` list and this fires. */
+  const measure = readFileSync(new URL('../builders/measure.mjs', import.meta.url), 'utf8');
+  const written = [...measure.matchAll(/join\(out, '([a-z.]+\.json)'\)/g)].map(m => m[1]);
+  const docs = [...new Set(written)].sort();
+  assert.ok(docs.length >= 4,
+    `only ${docs.length} documents found in measure.mjs — the pattern has lost its subject`);
+
+  const yml = ['derive.yml', 'ingest.yml']
+    .map(f => readFileSync(new URL(`../.github/workflows/${f}`, import.meta.url), 'utf8'))
+    .join('\n');
+  /* ⚠️ READ OFF THE `for f in …` LISTS, not off the whole file. A name that
+     appears only in a comment — or in a `--exclude` — is not a name that gets
+     uploaded, and this gate exists precisely because the words about the code
+     and the code disagreed. */
+  const published = new Set(
+    [...yml.matchAll(/for f in ([a-z0-9.\- ]+); do/g)]
+      .flatMap(m => m[1].trim().split(/\s+/)));
+  assert.ok(published.has('catalog.json'),
+    `the publish lists were not found — parsed ${[...published].join(', ')}`);
+
+  const missing = docs.filter(d => !published.has(d));
+  assert.deepEqual(missing, [],
+    `measure.mjs writes ${missing.join(', ')} and no workflow uploads it — the `
+    + 'document is built, committed to nothing, and 404s for every reader');
+});
