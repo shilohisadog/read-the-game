@@ -193,6 +193,28 @@ blind spot that 404'd `players.json`. A sibling gate derives the directory name
 from `mugs.py` and requires a workflow to sync it — and requires the page's
 policy to permit an image at all.
 
+✅ **LIVE AND VERIFIED 2026-10-07** (`c32c05c`, `725106f`). The derive reported
+**222 fetched, 6 have none, 0 failed, 761,726 bytes**, matching the local run
+exactly. Published: 228 rows, 222 carrying `mug`, images serving as `image/webp`
+at 3.5–4.1 KB, and a player without one **404s** rather than returning anything.
+On the live page `naturalWidth` reads **112x112** — the bytes arrived and decoded
+past the CSP, which is the only proof that counts; an `<img>` in the DOM survives
+a refusal, a 404 and a decode failure alike.
+
+⭐⭐ **AND THE SIX WITHOUT ONE NAME THE CASE EXACTLY**: Knies/CBJ, Kreider/MTL,
+Evangelista/NJD, Stanley/NYI, Tolvanen/NYR, Marchenko/TOR — every one an
+established player the league has not re-shot **in his new sweater**, because the
+asset path carries the CLUB. Not rookies, not edge cases: six well-known men who
+would each have appeared as a grey silhouette under his own name.
+
+⛔ **AND THE SUITE WENT RED ON PILLOW.** `test_mugs.py` imported PIL at module
+scope — fine here, `ModuleNotFoundError` on the gates runner. The fix was not to
+install it everywhere: everything the trap is about is BYTES, so the encoder is
+injectable and ten of twelve tests need no image library. The two that are about
+the PICTURE keep the real encoder, and because **a skip is not a pass**,
+`gates.yml` and `deploy.yml` install Pillow — CI reports `Ran 266 tests … OK`
+with no skips.
+
 ### ✅ THREE THINGS CLOSED — 2026-10-07, after the review
 
 **1. THE DRIFT GATE NOW RUNS WHERE IT CAN ANSWER.** `tools/measures_fresh.py` was
