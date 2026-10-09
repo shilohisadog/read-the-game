@@ -3,7 +3,7 @@
  * other side of it.
  *
  * WHY THIS LAYER EXISTS, AND IT IS ONE SENTENCE. Over the whole archive —
- * 506,991 attempts in 4,247 games — **51.9% of shot attempts never reach the
+ * 508,118 attempts in 4,257 games — **51.9% of shot attempts never reach the
  * goalie at all, and 27.7% are blocked by a body.** A novice reading "58
  * attempts" on the scoreboard hears 58 chances; about thirty of them never got
  * there. This layer is that correction, made visible on the ice.
@@ -12,7 +12,7 @@
  * was built around. The obvious number is "the team that blocked more won X% of
  * the time", and it is not publishable at any sample size. The team that blocks
  * more is the team that ATTEMPTED FEWER 81.7% of the time, and the archive
- * already reports that the attempts leader loses 54.2%. So the reference class
+ * already reports that the attempts leader loses 54.3%. So the reference class
  * for a blocks-leader win rate is "teams that were being outshot", and once
  * that is said honestly the sentence teaches nothing. CHENG's ruling was that it
  * is *uninterpretable, not merely uncertain* — a bigger sample buys precision on
