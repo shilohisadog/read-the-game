@@ -323,12 +323,20 @@ seam. The reviewer was reading the HTML source, not the page.
   as committed. It is not in `npm run gates`, and in `ingest.yml` it runs AFTER
   `cp ingest/measures.json data/measures.json`, so it answers about a file the
   step has just overwritten: it can only catch a failed PUBLISH, never a stale
-  repo, which is the case its own error message tells a human to fix. ⏭ **OPEN:**
-  run it before the copy, and in `gates`.
-- ⛔ **THE FIXTURE CLOCK IS IN THE READER'S ZONE, UNLABELLED**, under a heading
-  that says *Tonight*. Reproduced: `TZ=UTC` on the live front door gives
-  `EDM at ANA · 2:00 AM` — tomorrow, for that reader. Also `7:30 PM` and
-  `10:30pm` formatted two ways on one page.
+  repo, which is the case its own error message tells a human to fix.
+  ✅ **CLOSED `2415648`** — three positions, three questions: `deploy.yml` hard
+  fails, `ingest.yml` runs `--report` BEFORE the copy, `derive.yml` keeps its
+  hard fail. Deliberately NOT in `npm run gates`, which must run offline.
+- ✅ **THE FIXTURE CLOCK — CLOSED `2415648`.** `timeZoneName: 'short'` in the
+  READER's zone, and a row names its local day only when that day differs from
+  the night's. Verified live in three zones. ⚠️ The *"two time formats"* third of
+  that finding was never real: no page renders a clock literal at all.
+
+  ⛔⛔ **AND THESE TWO BULLETS SAT HERE SAYING OPEN FOR TWO DAYS AFTER THEY WERE
+  FIXED.** I appended the ✅ sections above and did not go back to the list that
+  describes them — #68 in my own status file, which is the document I read first
+  to answer *what is on the todo list*. **A correction is not finished until the
+  index that points at it is re-read.**
 - ⭐⭐ And its best structural point, which is not a defect: **the first screen is
   two products** — one teaches offside, one is a counting tool for people who
   already know Corsi. ⚠️ Worth reconciling deliberately with the player block we
