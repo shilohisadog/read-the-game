@@ -18,6 +18,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { readerText } from '../tools/jslex.mjs';
 
 const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
 // EVERY BUILT PAGE, so a front-door link can be resolved against what exists
@@ -1074,6 +1075,130 @@ test('no page promises that clubs are identified by abbreviation ALONE', () => {
  * for on the learn page instead — different builders, different templates, one
  * set of facts.
  */
+/* ------------------------------------- WHO THE FIRST SCREEN IS FOR
+ *
+ * ⭐⭐⭐ THE FIRST OUTSIDE REVIEW'S BEST POINT, 2026-10-07: *"The first screen is
+ * doing too many jobs … Those are two products. One teaches offside. The other
+ * is a careful counting tool for people who already know Corsi. The second will
+ * lose the first audience, and the first audience is the one the headline
+ * names."* Kevin agreed and chose the fix: reorder, reword, and gate the words.
+ *
+ * ⛔ NEITHER OF THESE EXISTED WHEN THE PAGE WAS BUILT THAT WAY, which is the
+ * whole reason the defect lasted. 81 homepage tests passed on a page whose
+ * sections were in the wrong order and whose counting cards spoke analyst,
+ * because every one of them asked about a section and none about the SEQUENCE,
+ * and none about the vocabulary a stranger meets first.
+ */
+test('⛔⛔⛔ the novice path runs unbroken: lessons, then a game, then the counting', () => {
+  /* THE ORDER IS THE CHANGE, so the order is what is held. A reader who needs
+     "New to hockey?" should reach a game without crossing a strip of archive
+     measurements — the strip is what they meet on the way back up.
+     ⚠️ ASSERTED AS A SEQUENCE OF POSITIONS, not as four separate presence
+     checks: four tests that each find their own heading all pass on any
+     arrangement whatsoever, which is exactly how this shipped.
+     MUTATION: move `<section class="countsin">` back above `#teams-h` and this
+     fires naming the pair that is out of order. */
+  const order = [
+    ['the hero', /<h1[^>]*>/],
+    ['New to hockey?', /<section class="learnin"/],
+    ['Pick your team', /<h2 id="teams-h"/],
+    ['What we counted', /<section class="countsin"/],
+    ['what this does and does not claim', /<h2>What this does and does not claim<\/h2>/],
+  ];
+  const at = order.map(([name, re]) => {
+    const m = re.exec(html);
+    assert.ok(m, `${name} is not on the front door at all`);
+    return [name, m.index];
+  });
+  for (let i = 1; i < at.length; i++)
+    assert.ok(at[i][1] > at[i - 1][1],
+      `"${at[i][0]}" comes before "${at[i - 1][0]}" on the front door — the `
+      + 'counting tool is interrupting the path the headline promises');
+});
+
+test('⛔⛔ the front door speaks no analyst', () => {
+  /* ⭐ A WORD LIST IS THE MECHANISED FORM OF GROK'S ARGUMENT, and this project
+     already has the instrument: `house-vocabulary.test.js` reads RENDERED text
+     across every page, comments stripped by the lexer, and is what caught
+     `club` leaking onto the preview.
+
+     ⚠️ THE FRONT DOOR ONLY, AND THAT IS THE POINT RATHER THAN A LIMITATION. The
+     lesson pages are where these terms get DEFINED — `score effects` is named
+     and explained on its own card — so a site-wide ban would forbid teaching.
+     This is about the screen a stranger meets before any lesson.
+
+     ⛔ AND IT IS NOT A CHECK THAT CANNOT FIRE. Two of these — `per 60` and
+     `even-strength` — were on this page until 2026-10-09, in the score-effects
+     sentence, which is why the list leads with them. The mutation is to put that
+     sentence back. */
+  const BANNED = [
+    /* ⚠️ THE BARE SHORTHAND, NOT THE SPELLED-OUT UNIT, AND I HAD THIS WRONG
+       FIRST. The entry read `/per[- ]60/` with the note *"an hour is the same
+       number"* — and `test/learn.test.js` says in so many words that **"in an
+       hour" was rejected once**: `per 60 minutes` is the sport's unit and the
+       two condition cards are deliberately parallel. That ruling is right. What
+       makes a sentence unreadable cold is a TERM OF ART with no definition on
+       the page, not an explicitly spelled unit: *per 60 minutes of play* is
+       four ordinary words, where *his per-60* is shorthand for people who
+       already have it. So the bare form is banned and the unit is not. */
+    [/\bper[- ]60\b(?! minutes)/i, 'shorthand; "per 60 minutes of play" spells the unit'],
+    [/\beven[- ]strength\b/i, '"the same number of skaters on each side" is the definition'],
+    [/\bcorsi\b/i, 'the metric this site exists to not need'],
+    [/\bfenwick\b/i, 'same'],
+    [/\bCF%|\bFF%|\bPDO\b/, 'a shorthand for people who already have it'],
+    [/\bexpected goals\b|\bxG\b/, 'we do not publish one'],
+    [/\bhigh[- ]danger\b/i, 'a classification we have never defined to a reader'],
+    [/\bzone starts?\b/i, 'our own key for a layer, not a phrase a newcomer owns'],
+  ];
+  const text = readerText(html);
+  assert.ok(text.length > 3000,
+    `the front door yielded ${text.length} characters — the sweep is not reaching it`);
+  const bad = [];
+  for (const line of text.split('\n'))
+    for (const [re, why] of BANNED) {
+      const hit = line.match(re);
+      if (hit) bad.push(`"${hit[0]}" — ${why}\n      …${line.trim().slice(0, 90)}…`);
+    }
+  assert.deepEqual(bad, [],
+    'the first screen is written for somebody who already knows hockey:\n    '
+    + bad.join('\n    '));
+});
+
+test('⛔⛔ each front-door figure sits with its OWN subject, now that the wording is split', () => {
+  /* ⭐ THE SAME ADJACENCY THE LEARN CARD ASSERTS, READ OFF THE OTHER ARTIFACT.
+     `test/learn.test.js` pins each rate beside the state it belongs to on
+     `what-you-can-see.html`; this asks the same question of the FRONT DOOR,
+     which is a different builder and a different template substituting the same
+     tokens. Two built artifacts, not a shared constant — the rule the figure
+     tests in this file already follow. Swapping two of these would have the
+     card say teams attack LESS when behind.
+
+     ⚠️ READ FROM THE PUBLISHED MEASUREMENT, not from a number typed here, so
+     this cannot become a stale copy of last month's rates. */
+  const strip = /<section class="countsin"[^>]*>([\s\S]*?)<\/section>/.exec(html);
+  assert.ok(strip, 'the measurement strip is gone from the front door');
+  const p = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+  const pace = p.census.pace, r = k => pace[k].per60.toFixed(0);
+  const text = strip[1].replace(/<[^>]+>/g, ' ');
+
+  for (const [key, subject] of [['evenTrail', 'while trailing'],
+                                ['evenTied', 'while the score is level'],
+                                ['evenLead', 'while leading']]) {
+    assert.match(text, new RegExp(`${r(key)}(?: shot attempts)? ${subject}`),
+      `the front door does not attribute ${r(key)} to "${subject}" — the three `
+      + 'score-effects rates may have been swapped');
+  }
+  /* AND THE ZONE PAIR, same reason and the card's own words. ⚠️ THAT CARD WAS
+     NOT REWRITTEN: it is wordy, not jargon — no term of art in it — and
+     rewriting it was polish beyond what was asked, colliding with three gates
+     for no reader's benefit. */
+  const z = p.census.endZone;
+  assert.match(text, new RegExp(`attacking that end[^.]*?takes ${z.atkPerDraw.toFixed(2)}\\b`),
+    'the attacking rate is not the one attributed to the attacking side');
+  assert.match(text, new RegExp(`${z.defPerDraw.toFixed(2)}[^.]*?team defending it`),
+    'the defending rate is not the one attributed to the defending side');
+});
+
 test('every figure the front door prints appears on the card that proves it', () => {
   const learn = PAGE_SRC.get('what-you-can-see.html');
   const strip = /<section class="countsin"[^>]*>([\s\S]*?)<\/section>/.exec(html);

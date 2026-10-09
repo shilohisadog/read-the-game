@@ -882,25 +882,6 @@ nothing in between, so that is all we draw.</p>
 watching. Each of these is drawn first, then shown in a real game.</p>
 __FRONT_RULES__
 </section>
-<!-- ⭐ THE OTHER HALF OF THE WALL, AND IT IS MARKED AS SUCH.
-     The strip above is the league's rules; this is what WE chose to count, and
-     `LEARN_GROUPS` keeps exactly this distinction on the learn page with exactly
-     this treatment — the blue left edge that already means "our claim" on
-     `.limits`. Two headings, two tints, no sentence spanning both.
-     ⛔ EVERY FIGURE IS SUBSTITUTED FROM THE PUBLISHED MEASUREMENTS, never typed.
-     `_front_counts()` refuses a sentence carrying no figure marker at all, and
-     refuses one stating a figure its own learn card does not — so these cannot
-     become a second, drifting account of the same finding. (This paragraph says
-     "figure marker" rather than writing one out: the placeholder gate scans the
-     BUILT page and cannot tell prose about a marker from a marker.)
-     WHY THESE THREE: a place (the slot), a duration (the shift) and the reason
-     the paradox in the card above is a paradox (score effects). Each is a fact
-     about hockey that a newcomer cannot get by watching, which is the only kind
-     worth spending the front door on. -->
-<section class="countsin">
-<h2 id="counts-h">What we counted</h2>
-__FRONT_COUNTS__
-</section>
 <!-- ⛔ WAS "Watch your team". The word implies streaming (Kevin), and unlike the
      hero's button — which sits under a moving rink that is plainly not video —
      this heading stands over a grid of three-letter codes with nothing beside it
@@ -924,6 +905,43 @@ __FRONT_COUNTS__
      Revealed by drawGrid, so it appears exactly where the chips do and never
      dangles under an empty div on a team page. -->
 <p class="bydate" id="bydate" hidden><a href="calendar.html">Or browse by date &rarr;</a></p>
+
+<!-- ⭐⭐⭐ THE COUNTING STRIP MOVED BELOW THE TEAM GRID, 2026-10-09, and the
+     argument is the first outside review's: *"the first screen is doing too many
+     jobs … One teaches offside. The other is a careful counting tool for people
+     who already know Corsi. The second will lose the first audience, and the
+     first audience is the one the headline names."*
+
+     ⚠️ THE FIX IS ORDER, NOT DELETION. Every one of these four is a fact a
+     newcomer cannot get by watching, which is the whole reason the front door
+     spends space on them — and two of the four were always readable cold ("a
+     shot from inside the slot goes in 11.4% of the time"). What was wrong is
+     that they INTERRUPTED the path: hero → lessons → <strong>counting</strong> →
+     pick a game. The novice the headline names now runs hero → lessons → a game,
+     unbroken, and the strip is what they meet on the way back up.
+
+     ⛔ AND THE TWO SENTENCES THAT SPOKE ANALYST WERE REWRITTEN IN THE SAME PASS
+     — see `FIGURE_CLAUSE`. Moving a card a newcomer cannot read further down the
+     page is hiding it, not fixing it. -->
+<!-- ⭐ THE OTHER HALF OF THE WALL, AND IT IS MARKED AS SUCH.
+     The strip above is the league's rules; this is what WE chose to count, and
+     `LEARN_GROUPS` keeps exactly this distinction on the learn page with exactly
+     this treatment — the blue left edge that already means "our claim" on
+     `.limits`. Two headings, two tints, no sentence spanning both.
+     ⛔ EVERY FIGURE IS SUBSTITUTED FROM THE PUBLISHED MEASUREMENTS, never typed.
+     `_front_counts()` refuses a sentence carrying no figure marker at all, and
+     refuses one stating a figure its own learn card does not — so these cannot
+     become a second, drifting account of the same finding. (This paragraph says
+     "figure marker" rather than writing one out: the placeholder gate scans the
+     BUILT page and cannot tell prose about a marker from a marker.)
+     WHY THESE THREE: a place (the slot), a duration (the shift) and the reason
+     the paradox in the card above is a paradox (score effects). Each is a fact
+     about hockey that a newcomer cannot get by watching, which is the only kind
+     worth spending the front door on. -->
+<section class="countsin">
+<h2 id="counts-h">What we counted</h2>
+__FRONT_COUNTS__
+</section>
 <h2>What this does and does not claim</h2>
 <ul class="limits">
 __LIMITS__
@@ -2610,9 +2628,37 @@ FIGURE_CLAUSE = {
     "shifts": ("a shift lasts a median of __SHIFT_MED__ seconds, "
                "__SHIFT_UNDER__% of them under a minute, measured over "
                "__SHIFT_N__ shifts"),
-    "score": ("per 60 minutes of even-strength play a team takes "
-              "__EVEN_TRAIL_PER60__ shot attempts while trailing, "
-              "__EVEN_TIED_PER60__ while the score is level, and "
+    # ⛔⛔⛔ "even-strength play" CAME OUT OF THIS SENTENCE ON 2026-10-09, and
+    # three prior rulings decided HOW. The first outside review: *"the first
+    # screen … is a careful counting tool for people who already know Corsi. The
+    # second will lose the first audience, and the first audience is the one the
+    # headline names."* True of `even-strength`, which is a term of art with no
+    # definition anywhere near the front door.
+    #
+    # ⚠️ WHAT I TRIED FIRST AND WHAT STOPPED IT, because the attempts are the
+    # record here:
+    #   "in an hour" instead of "per 60 minutes" — `test/learn.test.js` says in
+    #     so many words that it **was rejected once**. It is the sport's unit and
+    #     the two condition cards are deliberately parallel (Kevin, 2026-09-10:
+    #     *"seamless across the site"*). I reintroduced a declined wording
+    #     without running `git log -S`, which is this repo's own rule.
+    #   a SEPARATE front-door sentence — `test/test_one_statement.py` exists to
+    #     forbid exactly that: *"a measurement written out more than once, so the
+    #     two copies are free to drift in wording while their figures stay
+    #     identical — which is how the slot sentence came to exist in two
+    #     versions."*
+    #
+    # ⭐ SO IT IS ONE SENTENCE, AND THE TERM MOVES TO THE CARD THAT TEACHES IT.
+    # The clause now states the CONDITION in plain words; the score card's own
+    # prose names `even-strength play` beside it, which is where a definition
+    # belongs and what the learn gate asks for.
+    # ⭐⭐ AND THE PLAIN WORDS ARE THE DEFINITION, NOT A PARAPHRASE:
+    # `strength.js::EVEN` is `away === home` skaters with both goaltenders in.
+    # NOT "nobody in the penalty box" — two offsetting minors are 4-on-4 and
+    # still even. Checked before it was written.
+    "score": ("per 60 minutes of play with the same number of skaters on each "
+              "side, a team takes __EVEN_TRAIL_PER60__ shot attempts while "
+              "trailing, __EVEN_TIED_PER60__ while the score is level, and "
               "__EVEN_LEAD_PER60__ while leading"),
     "zones": ("after a face-off in one team&rsquo;s end, the team attacking "
               "that end takes __ZONE_ATK__ shot attempts before the next "
@@ -2799,6 +2845,17 @@ def _front_counts():
                 f"front door: `{cid}`'s sentence carries no __TOKEN__ — every "
                 "figure on this site is read from the published measurements, "
                 "never typed")
+        # ⚠️ A SUBSET, AND I TRIED TO MAKE IT EQUALITY AND WAS WRONG. When the
+        # front door stopped sharing the learn card's exact sentence (2026-10-09)
+        # it looked as though the two should now state identical figure sets —
+        # until the build said so: the SHIFTS card legitimately carries
+        # `__SHIFT_PER__` ("about N shifts a night") that the strip has never
+        # shown. A card may teach more than a strip advertises; what must never
+        # happen is the strip stating a figure the card does not.
+        # ⭐ WHAT THE SPLIT ACTUALLY LOSES is not covered here at all: the two
+        # sentences could attribute the same figures to DIFFERENT SUBJECTS, which
+        # one shared string made impossible. That is checked where it can be —
+        # against the rendered page, in `test/homepage.test.js`.
         missing = toks - set(_re.findall(r"__[A-Z0-9_]+__", blurbs[cid]))
         if missing:
             raise SystemExit(
@@ -3237,10 +3294,16 @@ LEARN_CARDS = [
      "about __SHIFT_PER__ shifts a night, and " + FIGURE_CLAUSE["shifts"] + ". "
      "So the five in front of you now are mostly not the five who were there a "
      "minute ago."),
+    # ⭐ THE CARD NAMES THE TERM ITS CLAUSE STOPPED CARRYING. `even-strength
+    # play` left `FIGURE_CLAUSE` so the front door would stop speaking analyst
+    # to a stranger; this is the page that DEFINES it, so it says the term and
+    # the clause says what it means, in that order. The learn gate asks for the
+    # phrase because the figures are only true of that population.
     ("ours", "score", "Score effects",
      "A team that is behind takes more shot attempts, and a team that is ahead "
-     "takes fewer &mdash; that is what <em>score effects</em> means: "
-     + FIGURE_CLAUSE["score"] + ". So part of a team&rsquo;s attempt lead can be "
+     "takes fewer &mdash; that is what <em>score effects</em> means. Measured in "
+     "even-strength play: " + FIGURE_CLAUSE["score"]
+     + ". So part of a team&rsquo;s attempt lead can be "
      "nothing but the time it spent behind."),
 ]
 

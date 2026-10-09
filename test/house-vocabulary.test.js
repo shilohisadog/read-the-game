@@ -35,24 +35,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { walk } from '../tools/jslex.mjs';
+import { readerText } from '../tools/jslex.mjs';
 
 const SRC = new URL('../src/', import.meta.url);
 const PAGES = readdirSync(SRC).filter(f => f.endsWith('.html')).sort();
 
-/** Everything on one built page that a reader can end up reading. */
-function readerText(html) {
-  const out = [];
-  // The static document: markup, minus the comments a reader never sees.
-  out.push(html.replace(/<script[\s\S]*?<\/script>/g, ' ')
-               .replace(/<style[\s\S]*?<\/style>/g, ' ')
-               .replace(/<!--[\s\S]*?-->/g, ' ')
-               .replace(/<[^>]+>/g, ' '));
-  // The inlined script: every string body, which is where the rendered prose is.
-  for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
-    walk(m[1], t => { if (t.t === 'str' || t.t === 'tstr') out.push(t.v); });
-  return out.join('\n');
-}
+/* ⭐ `readerText` MOVED TO `tools/jslex.mjs` ON 2026-10-09, when the front
+   door's *speaks no analyst* gate needed the same extraction. It was private
+   here; a second copy would be one function in two spellings, and the first
+   time one learned about a new way prose reaches a page the other would quietly
+   stop seeing it. Its header carries why the lexer is load-bearing. */
 
 test('⛔⛔⛔ no page calls a team a club', () => {
   /* MUTATION: put `club` back into any rendered sentence — a `says` line, a

@@ -338,3 +338,35 @@ export function specifiers(src) {
   });
   return out;
 }
+
+/**
+ * EVERYTHING ON ONE BUILT PAGE THAT A READER CAN END UP READING.
+ *
+ * ⭐ IT LIVES HERE BECAUSE TWO GATES NEED IT. `house-vocabulary.test.js` defined
+ * it privately — *no page calls a team a club* — and on 2026-10-09 the front
+ * door's *speaks no analyst* gate needed exactly the same extraction. A second
+ * copy would be one function in two spellings, which is the shape this project
+ * keeps repairing; the first time one of them learned about a new way prose
+ * reaches a page, the other would quietly stop seeing it.
+ *
+ * ⛔ THE LEXER IS LOAD-BEARING, NOT A TIDINESS. Every file swept carries
+ * COMMENTS ABOUT the banned words — including the write-ups of why they went —
+ * and a regex over source text reports those as violations: the
+ * monitor-armed-against-itself defect, logged four times here. `walk` drops
+ * comments by construction, so the question cannot be asked of one.
+ *
+ * ⚠️ IT TAKES THE INLINED SCRIPT'S STRING BODIES because that is where the
+ * rendered prose of these pages actually lives — the markup alone would miss
+ * every sentence the page writes at runtime.
+ */
+export function readerText(html) {
+  const out = [];
+  // The static document: markup, minus the comments a reader never sees.
+  out.push(html.replace(/<script[\s\S]*?<\/script>/g, ' ')
+               .replace(/<style[\s\S]*?<\/style>/g, ' ')
+               .replace(/<!--[\s\S]*?-->/g, ' ')
+               .replace(/<[^>]+>/g, ' '));
+  for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+    walk(m[1], t => { if (t.t === 'str' || t.t === 'tstr') out.push(t.v); });
+  return out.join('\n');
+}
