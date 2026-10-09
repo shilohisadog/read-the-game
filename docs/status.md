@@ -138,6 +138,54 @@ guarantee than it sounds; the concurrency group is the real protection.**
 Kevin had Grok review the site on 2026-10-07. **I verified its two factual claims
 and both were real** (the rest is in `memory/outside-review-grok.md`):
 
+### ✅ THE FRONT DOOR IS ONE PRODUCT AGAIN — 2026-10-09
+
+Kevin took the first outside review's structural point: *"the first screen is
+doing too many jobs … one teaches offside, the other is a careful counting tool
+for people who already know Corsi."*
+
+**THE ORDER.** `What we counted` moved below `Pick your team`. A reader who
+needed *New to hockey?* now reaches a game without crossing a strip of archive
+measurements; the strip is what they meet on the way back up. ⚠️ The fix is
+order, not deletion — all four findings are facts a newcomer cannot get by
+watching, and two were always readable cold.
+
+**THE WORDS.** `even-strength` left the shared clause for *"with the same number
+of skaters on each side"*, and the score CARD — the page that teaches the term —
+names `even-strength play` beside it. ⭐ The plain words are the DEFINITION:
+`strength.js::EVEN` is equal skaters with both goaltenders in, and **not**
+"nobody in the penalty box" (two offsetting minors are 4-on-4 and still even).
+
+⛔⛔⛔ **TWO THINGS I TRIED FIRST, AND THREE PRIOR RULINGS STOPPED THEM.**
+
+1. ***"in an hour"*** for *per 60 minutes* — `test/learn.test.js` says in so many
+   words that it **was rejected once**: it is the sport's unit, and the two
+   condition cards are deliberately parallel (Kevin, 2026-09-10, *"seamless
+   across the site"*). **I reintroduced a declined wording without running
+   `git log -S`**, which is this repo's own rule for anything brought back.
+2. **A SEPARATE FRONT-DOOR SENTENCE** — `test/test_one_statement.py` exists to
+   forbid exactly that: *"a measurement written out more than once … which is
+   how the slot sentence came to exist in two versions."*
+
+Both rulings were right, and the result is better than the split I was reaching
+for: ONE sentence, plainer, with the term on the card that defines it.
+
+⚠️ **AND THE ZONE CARD WAS LEFT ALONE.** I rewrote it too; it has no term of art
+in it — **wordy is not jargon**. Polish beyond the brief, colliding with three
+gates for no reader's benefit.
+
+✅ **TWO NEW GATES, both mutation-checked.** 81 homepage tests passed on the
+wrong order and the analyst copy, because every one asked about a SECTION and
+none about the SEQUENCE, and none about the vocabulary a stranger meets first.
+One pins the order as a sequence of positions; one is a banned-word list for the
+front door only — the lesson pages are where these terms get DEFINED, so a
+site-wide ban would forbid teaching. ⚠️ `per 60` is banned only in its bare
+shorthand form: an explicitly spelled unit is not a term of art, and my first
+version of that entry was over-reach.
+
+⏭ **STILL OPEN from that review:** eleven of fourteen lessons open the same game
+and the homepage does not admit it.
+
 ### ✅ NIGHTLY PLAYERS, FRAMED FACES, AND A SWEEP OF STALE CADENCES — 2026-10-07
 
 Kevin: *"we need to refresh the data nightly, so there's the potential of new
