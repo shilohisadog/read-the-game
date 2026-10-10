@@ -138,6 +138,57 @@ guarantee than it sounds; the concurrency group is the real protection.**
 Kevin had Grok review the site on 2026-10-07. **I verified its two factual claims
 and both were real** (the rest is in `memory/outside-review-grok.md`):
 
+### ⭐⭐⭐ MEASURED BEFORE BUILDING: THE BOXSCORE IS A PARTIAL WITNESS — 2026-10-10
+
+Step one of the plan: before a schema bump and a full archive re-derive are spent
+on it, compare the boxscore's per-player sums against the right rail on the games
+where we hold BOTH. Free — both are in our own bucket.
+`.github/workflows/box-rail-witness.yml`, dispatched; **134 games, 268
+team-sides.**
+
+| figure | boxscore sums vs the rail | verdict |
+|---|---|---|
+| hits | **268/268** | ✅ free, archive-wide |
+| takeaways | **268/268** | ✅ free, archive-wide |
+| blocked shots | **268/268** | ✅ free, archive-wide |
+| sog | 265/268 | the 3 are the boxscore disagreeing with ITSELF; we quote its team block already |
+| **pim** | 236/268 | ⛔ the boxscore is LOSSY |
+| **giveaways** | 166/268 | ⛔ the boxscore is LOSSY |
+| faceoffWins | — | ⛔ a percentage per player, no denominator to sum |
+
+⭐⭐⭐ **AND THE GAP HAS A SHAPE, WHICH IS WHAT MADE IT READABLE.** Every single
+`pim` disagreement is **exactly 2, with the rail always higher** — and giveaways
+are always short by 1–3, never over. A systematic one-directional gap is a
+definition, not noise.
+
+⛔⛔ **THE BOXSCORE IS THE ONE THAT IS WRONG, NOT US.** Checked against the
+published extracts across every game holding a rail: **our event log reproduces
+the rail 260/260 team-sides on hits, giveaways, takeaways AND pim.** So where the
+boxscore's per-player sum disagrees, it is dropping events the rail and our own
+count agree on. A bench minor explains some of it — *served by a player, committed
+by the team*, so it lands in no player's `pim` — but two of the three games I
+opened had no bench minor at all, so that is not the whole mechanism.
+
+⭐ **THE CONTROL EARNED ITS PLACE.** The tool also compares the boxscore's
+per-player `sog` against the boxscore's own team block, because that is KNOWN to
+disagree occasionally. It reported **265/268 — exactly the three games that
+disagreed with the rail.** The rail matches the boxscore's TEAM block; the
+per-player decomposition is the outlier. A run reporting that control perfect
+would have meant the arithmetic was not reaching the data.
+
+⏭ **THE DECISION, AND IT IS KEVIN'S.** Three of six figures can go archive-wide
+for **zero league requests** — and they localise a disagreement to a PLAYER,
+which the rail cannot. The cost is a `SCHEMA` bump and a full re-derive (~20
+minutes, no league requests). The other three stay with the rail, which still
+covers 1.4% of the archive. ⚠️ **Had we skipped this and built on the hypothesis,
+pim and giveaways would have cried wolf across 4,500 games against counts that
+are demonstrably right.**
+
+⚠️ One figure in my own ad-hoc sweep was wrong and is not a finding: I counted
+blocked shots by naively inverting `own`, which gave 76/260. `extract.py` applies
+the real opponent rule; the 268/268 in the table is the tool's, and the tool
+reads the league's own two documents rather than re-deriving ours.
+
 ### ✅ THE FRONT DOOR IS ONE PRODUCT AGAIN — 2026-10-09
 
 Kevin took the first outside review's structural point: *"the first screen is
