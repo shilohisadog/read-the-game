@@ -1,0 +1,110 @@
+# Can the BOXSCORE stand in for the RIGHT RAIL as the second witness?
+#
+# ⭐ THE QUESTION THIS ANSWERS, AND WHY IT IS A JOB RATHER THAN A SCRIPT RUN ON A
+# LAPTOP. `extract.py` checks our event-log counts against the league's own
+# per-team totals, read from `right-rail.teamGameStats`. We have only STORED that
+# feed since 2026-09-30, so the witness is live on 64 of 4,620 published games —
+# 1.4% — and backfilling it costs ~4,556 league requests. Kevin, 2026-10-07:
+# *"I really don't want to clobber that free interface any more than we have to."*
+#
+# `boxscore` is ESSENTIAL and kept for every game. Summing `playerByGameStats`
+# gives the same six team totals for the WHOLE archive at zero league requests,
+# and localises a disagreement to a PLAYER. ⛔ That is a HYPOTHESIS. Before a
+# schema bump and a full archive re-derive are spent on it, the two sources are
+# compared on the games where we hold BOTH — which is free, because both are
+# already in our own bucket.
+#
+# ⚠️ IT CANNOT RUN FROM A DEV MACHINE. There are no R2 credentials there and the
+# raw archive is not publicly readable (`/raw/...` answers 404 where
+# `/extract/...` answers 200). The measurement runs where the raw is.
+#
+# ⛔ A MEASUREMENT, NOT A GATE. It publishes nothing, writes nothing to the
+# bucket, and is never scheduled — the same standing Kevin's other measurement
+# scripts have (`tools/box-witness.mjs` says so in its own header). It exists so
+# the figure in `docs/status.md` can be REPRODUCED rather than quoted.
+name: box-rail witness
+
+on:
+  workflow_dispatch:
+
+# ⚠️ NO `concurrency: group: ingest`, DELIBERATELY, and the reasoning is stated
+# because every other R2 job takes it. This one only READS, and it reads `raw/`,
+# which is content-addressed and append-only — a derive running beside it adds
+# new keys and rewrites none, so there is no torn view to protect against.
+# Taking the group would queue a read-only measurement behind an hour-long
+# derive for no benefit.
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    env:
+      # ⚠️ THE BUCKET IS A LITERAL HERE AS IT IS EVERYWHERE ELSE — I reached for a
+      # `secrets.R2_BUCKET` that does not exist, which would have resolved to the
+      # empty string and sent every call to `s3:///raw/`.
+      BUCKET: readthegame
+      AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      # ⭐ AT THE JOB, NOT AT A STEP — derive.yml's own repair: step-level env is
+      # an enumeration, and throttling is the expected condition at this size.
+      AWS_RETRY_MODE: adaptive
+      AWS_MAX_ATTEMPTS: '10'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      # ⭐ TWO PASSES, BECAUSE ONE WOULD PULL THE WHOLE ARCHIVE'S BOXSCORES.
+      # Every game has a boxscore (~50 KB each, 4,687 of them); only ~64 have a
+      # rail. So the first pass takes the pointers and the rails — small, because
+      # the rails barely exist — and only then does the second pass ask for the
+      # boxscores of the games that turned out to have one.
+      - name: the pointers, and every right rail we hold
+        run: |
+          mkdir -p ingest/raw
+          aws s3 sync "s3://${BUCKET}/raw/" ingest/raw/ \
+            --exclude '*' --include '*/latest.json' --include '*/right-rail.json' \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          echo "  $(find ingest/raw -name 'latest.json' | wc -l) pointers, " \
+               "$(find ingest/raw -name 'right-rail.json' | wc -l) rails"
+
+      # ⛔ THE BLOB EACH POINTER NAMES, NOT EVERY BLOB FOR THAT GAME. The store is
+      # content-addressed so an amendment never overwrites its predecessor: a
+      # game can hold several boxscores and only one of them is current. Reading
+      # `latest.json` is the only way to know which, and comparing an superseded
+      # one against the current rail would be a disagreement of our own making.
+      - name: the boxscore each of those games is currently on
+        run: |
+          python3 - <<'PY' > want.txt
+          import json, pathlib
+          root = pathlib.Path("ingest/raw")
+          for latest in sorted(root.glob("*/latest.json")):
+              d = json.loads(latest.read_text())
+              if "right-rail" in d and "boxscore" in d:
+                  print(f"raw/{latest.parent.name}/{d['boxscore']}/boxscore.json")
+          PY
+          echo "  $(wc -l < want.txt) boxscores to fetch"
+          while read -r key; do
+            mkdir -p "ingest/$(dirname "$key")"
+            aws s3 cp "s3://${BUCKET}/${key}" "ingest/${key}" \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress --quiet
+          done < want.txt
+
+      # ⛔ `shell: bash` AND NO PIPE INTO tee. `| tee` returns tee's zero and has
+      # eaten the exit code of three different steps in this repo; the report is
+      # written to the summary with a redirect and the tool's own status stands.
+      - name: compare the boxscore against the rail
+        shell: bash
+        run: |
+          python3 tools/box_rail_witness.py ingest > report.txt
+          cat report.txt
+          {
+            echo '## box-rail witness'
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
