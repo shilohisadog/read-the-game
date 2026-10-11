@@ -84,7 +84,14 @@ GAME = "2023020204"
 #      fourth payload, and a new raw changes `src`, which re-derives that game by
 #      itself. The bump is here because the emitted shape changed and this number
 #      exists so that judgement is never made by forgetting.
-SCHEMA = 4
+#   5  2026-10-11, plus `quoted.box` — hits, takeaways and blocked shots summed
+#      over the boxscore's `playerByGameStats`. The rail witness above reaches
+#      only games fetched since 2026-09-30; the boxscore is kept for every game,
+#      so this is the bump that takes the second witness archive-wide on the
+#      three figures where the two documents were MEASURED identical (268/268
+#      team-sides, `tools/box_rail_witness.py`). Same reason to bump as 4:
+#      without it the witness exists for new games and no other.
+SCHEMA = 5
 
 # ⭐ WHAT IS NOT PLAY — one statement, and `derive.py` reads it from here.
 #
@@ -490,6 +497,13 @@ def extract(pbp, shifts, box=None, rail=None):
     team = _quoted_team(rail)
     if team:
         out.setdefault("quoted", {"src": "boxscore"})["team"] = team
+    # ⭐⭐ AND THE BOXSCORE'S OWN PLAYER ROWS, SUMMED — the same witness for EVERY
+    # game rather than the ones fetched since the rail was stored. Its own `src`
+    # for the reason `team` has one: these are the PLAYER rows, a different part
+    # of the document from the team block above, and the two can disagree.
+    pbox = _quoted_box(box)
+    if pbox:
+        out.setdefault("quoted", {"src": "boxscore"})["box"] = pbox
     return out
 
 
@@ -540,6 +554,48 @@ def _quoted_team(rail):
     # figure to print beside ours and nothing for the other, which reads as a
     # claim about the team that is missing.
     return out if out["home"] and out["home"].keys() == out["away"].keys() else None
+
+
+# What we quote from the boxscore's player rows, and the league's field for it.
+# ⛔⛔ THREE OF SIX, AND THE MISSING THREE ARE THE MEASUREMENT'S WHOLE YIELD.
+# Summed per team and compared with the rail on the 134 games holding both
+# (2026-10-10, `tools/box_rail_witness.py`): these three agree 268/268. `pim`
+# agrees 236/268 and `giveaways` 166/268, ALWAYS short and never over — and our
+# own event log reproduces the rail 260/260 on both. So where the boxscore's sum
+# disagrees it is the boxscore dropping events; quoting either would note a
+# disagreement on a game whose event log is right, across ~4,500 games.
+# `faceoffWins` cannot be here at all: the rows carry a percentage, not a count.
+QUOTED_BOX = {"hits": "hits", "takeaways": "takeaways", "blocked": "blockedShots"}
+
+
+def _box_rows(box):
+    """{side: [player row]} over forwards, defence AND goalies, or None.
+
+    ⚠️ GOALIES TOO. A goaltender is credited with the odd hit, and dropping the
+    group would note a disagreement on exactly the game where one happened.
+    BOTH SIDES OR NEITHER, on `_quoted_team`'s reasoning — and zero summed over
+    no rows is a claim, not an absence.
+    """
+    pbg = (box or {}).get("playerByGameStats") or {}
+    out = {}
+    for side in ("home", "away"):
+        g = pbg.get(f"{side}Team") or {}
+        rows = [r for k in ("forwards", "defense", "goalies") for r in (g.get(k) or [])]
+        if not rows:
+            return None
+        out[side] = rows
+    return out
+
+
+def _quoted_box(box):
+    """The boxscore's player rows summed per team, copied and not computed."""
+    rows = _box_rows(box)
+    if rows is None:
+        return None
+    return {"src": "boxscore.playerByGameStats",
+            **{side: {ours: sum(_count(r.get(theirs)) or 0 for r in rows[side])
+                      for ours, theirs in QUOTED_BOX.items()}
+               for side in ("home", "away")}}
 
 # ---------------------------------------------------------------- vocabulary
 
@@ -1181,29 +1237,65 @@ def validate(rich, pbp, shifts, box, rail=None):
     # was arguing about a sentence; it turns out to be the exact reason our count
     # and the league's differ, and it is worth three events a game.
     team = _quoted_team(rail)
+    pbox = _quoted_box(box)
+    tid = {int(pid): r["tid"] for pid, r in (rich.get("roster") or {}).items()}
+    ours = {s: dict.fromkeys(QUOTED_TEAM, 0) for s in ("home", "away")}
+    # ⭐ AND PER PLAYER, for the figures the boxscore's rows can be held to. The
+    # team total says THAT two documents differ; this says WHO, which is the
+    # one thing the boxscore can do that the rail cannot.
+    per = {key: {} for key in QUOTED_BOX}
+    side = {hid: "home", aid: "away"}
+    for e in rich["events"]:
+        own = side.get(e.get("own"))
+        if own is None:
+            continue
+        t = e["type"]
+        if t == "hit":
+            ours[own]["hits"] += 1
+            per["hits"][e.get("actor")] = per["hits"].get(e.get("actor"), 0) + 1
+        elif t == "giveaway":
+            ours[own]["giveaways"] += 1
+        elif t == "takeaway":
+            ours[own]["takeaways"] += 1
+            per["takeaways"][e.get("actor")] = per["takeaways"].get(e.get("actor"), 0) + 1
+        elif t == "faceoff":
+            ours[own]["faceoffWins"] += 1
+        elif t == "penalty":
+            ours[own]["pim"] += e.get("min") or 0
+        elif t == "blocked-shot":
+            b = side.get(tid.get(e.get("blk")))
+            if b is not None and b != own:
+                ours[b]["blocked"] += 1
+                per["blocked"][e["blk"]] = per["blocked"].get(e["blk"], 0) + 1
+
+    # ⭐⭐ THE BOXSCORE WITNESS, on every game that has player rows — which is
+    # every game. A game holding the rail as well is checked by both: the rail
+    # keeps the three figures this cannot carry, and on the shared three each
+    # note names its own document, so neither has to be trusted over the other.
+    if pbox:
+        rows = _box_rows(box)
+        for key, theirs in QUOTED_BOX.items():
+            agree = all(ours[s][key] == pbox[s][key] for s in ("home", "away"))
+            detail = {"kind": key, "src": pbox["src"],
+                      "home": {"ours": ours["home"][key], "league": pbox["home"][key]},
+                      "away": {"ours": ours["away"][key], "league": pbox["away"][key]}}
+            if not agree:
+                league = {}
+                for s in ("home", "away"):
+                    for r in rows[s]:
+                        pid = r.get("playerId")
+                        league[pid] = league.get(pid, 0) + (_count(r.get(theirs)) or 0)
+                detail["players"] = [
+                    {"id": pid, "ours": per[key].get(pid, 0), "league": league.get(pid, 0)}
+                    for pid in sorted(set(league) | set(per[key]), key=lambda p: (p is None, p or 0))
+                    if per[key].get(pid, 0) != league.get(pid, 0)]
+            note(agree,
+                 f"{key} reproduces the boxscore's player rows: "
+                 + ", ".join(f"{s} {ours[s][key]}=={pbox[s][key]}"
+                             for s in ("home", "away")),
+                 detail)
+
     if team:
-        tid = {int(pid): r["tid"] for pid, r in (rich.get("roster") or {}).items()}
-        ours = {s: dict.fromkeys(QUOTED_TEAM, 0) for s in ("home", "away")}
-        side = {hid: "home", aid: "away"}
-        for e in rich["events"]:
-            own = side.get(e.get("own"))
-            if own is None:
-                continue
-            t = e["type"]
-            if t == "hit":
-                ours[own]["hits"] += 1
-            elif t == "giveaway":
-                ours[own]["giveaways"] += 1
-            elif t == "takeaway":
-                ours[own]["takeaways"] += 1
-            elif t == "faceoff":
-                ours[own]["faceoffWins"] += 1
-            elif t == "penalty":
-                ours[own]["pim"] += e.get("min") or 0
-            elif t == "blocked-shot":
-                b = side.get(tid.get(e.get("blk")))
-                if b is not None and b != own:
-                    ours[b]["blocked"] += 1
         for key in QUOTED_TEAM:
             if key not in team["home"]:
                 continue

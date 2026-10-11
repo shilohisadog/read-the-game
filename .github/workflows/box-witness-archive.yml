@@ -1,0 +1,59 @@
+# What will the BOXSCORE witness (extract.SCHEMA 5) say across the whole archive?
+#
+# ⭐ MEASURE BEFORE THE RE-DERIVE PUBLISHES IT. The boxscore's player rows were
+# measured against the right rail on 134 RECENT games (box-rail-witness.yml).
+# Whether our event log agrees with those rows on 2023-25 games was known for
+# one game. A re-derive publishes every note it finds to a reader, so the count
+# is taken here first, by running the real `derive.judge` over every game and
+# publishing nothing. See `tools/box_witness_archive.py`.
+#
+# ⛔ A MEASUREMENT, NOT A GATE: dispatch only, reads the bucket, writes nothing.
+# No `concurrency: group: ingest`, for box-rail-witness.yml's stated reason:
+# `raw/` is content-addressed and append-only, so there is no torn view.
+name: box witness, archive-wide
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    env:
+      BUCKET: readthegame
+      AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_RETRY_MODE: adaptive
+      AWS_MAX_ATTEMPTS: '10'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      # derive.yml's pull, for derive.yml's reasons: throttling is the expected
+      # condition at this size, and sync is incremental so a retry is cheap.
+      - name: pull the raw archive
+        run: |
+          mkdir -p ingest
+          aws configure set default.s3.max_concurrent_requests 4
+          ok=
+          for attempt in 1 2 3; do
+            if aws s3 sync "s3://${BUCKET}/raw/" ingest/raw/ \
+                --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress; then ok=1; break; fi
+            echo "::warning::pull attempt $attempt hit a transient R2 error; retrying"
+            sleep $(( attempt * 20 ))
+          done
+          [ -n "$ok" ] || { echo "::error::the archive could not be pulled"; exit 1; }
+          echo "pulled $(find ingest/raw -name latest.json | wc -l) games"
+
+      # ⛔ NO PIPE INTO tee — it has eaten the exit code of steps in this repo.
+      - name: run the witness over every game
+        shell: bash
+        run: |
+          python3 tools/box_witness_archive.py ingest > report.txt
+          cat report.txt
+          { echo '## box witness, archive-wide'; echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

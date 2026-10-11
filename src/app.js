@@ -2995,14 +2995,23 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
  // WHICH DOCUMENT OF THE LEAGUE'S. Shots come from the boxscore and the team
  // totals from the game summary; the note says which, and a note that does not
  // say is not given a name it never claimed.
- const DOC={'boxscore':'boxscore','right-rail.teamGameStats':'game summary'};
+ // ⭐ The boxscore's PLAYER ROWS are still the boxscore to a reader, since
+ // 2026-10-11; `src` keeps the finer name for anyone asking which part.
+ const DOC={'boxscore':'boxscore','boxscore.playerByGameStats':'boxscore',
+  'right-rail.teamGameStats':'game summary'};
  const lg=[],us=[],docs=[];
  for(const n of (G.unreconciled||[])){
   if(!n||!NOUN[n.kind])continue;
   // Name the side that actually disagrees. Both are carried; usually one differs.
   const sides=[[HAB,n.home],[AAB,n.away]].filter(([,v])=>v&&v.ours!==v.league);
   if(!sides.length)continue;
-  for(const [ab,v] of sides){lg.push(`${v.league} ${NOUN[n.kind]} for ${ab}`);us.push(String(v.ours));}
+  /* ⛔ SAID ONCE WHEN TWO DOCUMENTS SAY IT. A game holding the rail is checked
+     by the boxscore too, and on the three shared figures they were measured
+     identical -- so one disagreement of ours arrives as two notes with the same
+     numbers. Keyed on the NUMBERS, so two documents disagreeing with EACH
+     OTHER are still both said. The document is still counted: both said it. */
+  for(const [ab,v] of sides){const s=`${v.league} ${NOUN[n.kind]} for ${ab}`;
+   if(lg.indexOf(s)<0||us[lg.indexOf(s)]!==String(v.ours)){lg.push(s);us.push(String(v.ours));}}
   const d=DOC[n.src];if(d&&docs.indexOf(d)<0)docs.push(d);}
  if(!lg.length)return;
  /* SHORT, BECAUSE THE READER IS ON A PHONE. The first wording ran to 75px at

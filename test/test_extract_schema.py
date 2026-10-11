@@ -57,7 +57,7 @@ EXPECTED_EVENT = {
     "sit", "srv", "type", "x", "y", "zone",
 }
 # The number that must move when either set above does.
-EXPECTED_SCHEMA = 4
+EXPECTED_SCHEMA = 5
 
 
 def _rich():
@@ -454,3 +454,145 @@ class SecondWitness(unittest.TestCase):
         half = {"teamGameStats": [{"category": "hits", "homeValue": 1}]}
         rich, _, _ = self._run(rail=half)
         self.assertNotIn("team", rich["quoted"])
+
+
+# ---------------------------------------------------------------------------
+# ⭐⭐⭐ THE BOXSCORE AS A WITNESS — three figures, archive-wide, 2026-10-11.
+#
+# The rail above has only been STORED since 2026-09-30, so it can check 134 of
+# 4,634 published games. The boxscore is kept for EVERY game, and its
+# `playerByGameStats` summed per team was measured against the rail on the 134
+# games holding both (`tools/box_rail_witness.py`, 268 team-sides):
+#
+#   hits · takeaways · blocked shots   268/268  -- quoted here
+#   pim                                236/268  -- LOSSY, always 2 short
+#   giveaways                          166/268  -- LOSSY, always 1-3 short
+#   faceoffWins                        a percentage per player; nothing to sum
+#
+# Our event log reproduces the rail 260/260 on pim and giveaways, so where the
+# boxscore's sum disagrees it is the boxscore dropping events. Quoting those two
+# would cry wolf across ~4,500 games. Kevin approved the three, 2026-10-11.
+# ---------------------------------------------------------------------------
+
+def _box(home, away, goalies=None):
+    """A boxscore whose players carry the given stats. `goalies` maps a side to
+    goalie rows, because a goaltender is credited with hits too."""
+    def rows(stats):
+        return [{"playerId": pid, **s} for pid, s in stats.items()]
+    g = goalies or {}
+    return {"homeTeam": {"id": HOME, "score": 0, "sog": 0},
+            "awayTeam": {"id": AWAY, "score": 0, "sog": 0},
+            "playerByGameStats": {
+                "homeTeam": {"forwards": rows(home), "defense": [],
+                             "goalies": rows(g.get("home", {}))},
+                "awayTeam": {"forwards": rows(away), "defense": [],
+                             "goalies": rows(g.get("away", {}))}}}
+
+
+# What the league's boxscore says of PLAYS, player by player. The teammate block
+# by 11 is in nobody's `blockedShots`, exactly as the rail does not count it.
+# ⚠️ `pim` and `giveaways` are present and WRONG on purpose: 20 took the 2-minute
+# minor and 10 made the giveaway, and these rows say neither. That is the
+# measured lossiness, and a witness that quoted them would note it on this game.
+BOX_HOME = {10: {"hits": 1, "takeaways": 0, "blockedShots": 0, "pim": 0, "giveaways": 0},
+            11: {"hits": 0, "takeaways": 0, "blockedShots": 0, "pim": 0, "giveaways": 0}}
+BOX_AWAY = {20: {"hits": 1, "takeaways": 1, "blockedShots": 1, "pim": 0, "giveaways": 0},
+            21: {"hits": 0, "takeaways": 0, "blockedShots": 0, "pim": 0, "giveaways": 0}}
+
+
+class BoxWitness(unittest.TestCase):
+
+    def _run(self, box, plays=PLAYS):
+        pbp = _game(plays, ROSTER)
+        rich = E.extract(pbp, {"data": []}, box, None)
+        fails, notes = E.validate(rich, pbp, {"data": []}, box, None)
+        return rich, fails, [n for n in notes if n["kind"] != "sog"]
+
+    def test_the_three_clean_figures_are_quoted_under_their_own_src(self):
+        """⭐ A THIRD BLOCK UNDER `quoted`, NOT A MERGE INTO THE FIRST. The score
+        and shots are the boxscore's TEAM block; these are sums over its PLAYER
+        rows -- a different part of the document, which the measurement showed
+        can disagree with the team part (the sog control, 265/268)."""
+        rich, _, _ = self._run(_box(BOX_HOME, BOX_AWAY))
+        q = rich["quoted"]["box"]
+        self.assertEqual(q["src"], "boxscore.playerByGameStats")
+        self.assertEqual(q["home"], {"hits": 1, "takeaways": 0, "blocked": 0})
+        self.assertEqual(q["away"], {"hits": 1, "takeaways": 1, "blocked": 1})
+        self.assertEqual(rich["quoted"]["src"], "boxscore",
+                         "the team block must keep saying where IT came from")
+
+    def test_the_lossy_figures_are_NOT_quoted(self):
+        """⛔⛔ THE MEASUREMENT'S WHOLE YIELD. The fixture's boxscore is short on
+        pim and giveaways in exactly the measured way. Quote either and the
+        witness notes a disagreement on a game whose event log is right.
+        MUTATION: add `pim` or `giveaways` to `QUOTED_BOX` and this fires."""
+        rich, _, notes = self._run(_box(BOX_HOME, BOX_AWAY))
+        for absent in ("pim", "giveaways", "faceoffWins", "sog"):
+            self.assertNotIn(absent, rich["quoted"]["box"]["home"])
+        self.assertEqual(notes, [], "a lossy figure was quoted and cried wolf")
+
+    def test_agreement_is_silent_and_the_teammate_block_counts_for_nobody(self):
+        _, fails, notes = self._run(_box(BOX_HOME, BOX_AWAY))
+        self.assertEqual(notes, [])
+        self.assertEqual(fails, [])
+
+    def test_a_goaltender_is_summed(self):
+        """⚠️ FORWARDS, DEFENCE **AND** GOALIES. A goaltender who throws a hit is
+        in the league's total; dropping the group would note a disagreement on
+        exactly that game. MUTATION: sum only skaters and this fires."""
+        plays = PLAYS + [_play("hit", AWAY, "11:00", hittingPlayerId=21)]
+        away = {k: v for k, v in BOX_AWAY.items() if k != 21}
+        box = _box(BOX_HOME, away, goalies={"away": {21: {"hits": 1}}})
+        rich, _, notes = self._run(box, plays)
+        self.assertEqual(rich["quoted"]["box"]["away"]["hits"], 2)
+        self.assertEqual(notes, [])
+
+    def test_a_disagreement_is_RECORDED_names_its_document_and_its_PLAYER(self):
+        """⭐⭐ THE THING THE RAIL CANNOT DO. A team total says THAT the documents
+        differ; the boxscore's rows say WHO. The note carries the players whose
+        count differs, so the disagreement can be followed to a person.
+        And it is a note, never a refusal -- the league disagreeing with itself
+        is not something withholding the game can fix."""
+        home = {pid: dict(s) for pid, s in BOX_HOME.items()}
+        home[11]["hits"] = 2                       # the league credits 11 twice
+        _, fails, notes = self._run(_box(home, BOX_AWAY))
+        hits = [n for n in notes if n["kind"] == "hits"]
+        self.assertEqual(len(hits), 1, "the disagreement was not recorded")
+        n = hits[0]
+        self.assertEqual(n["src"], "boxscore.playerByGameStats")
+        self.assertEqual(n["home"], {"ours": 1, "league": 3})
+        self.assertEqual(n["away"], {"ours": 1, "league": 1})
+        self.assertEqual(n["players"], [{"id": 11, "ours": 0, "league": 2}],
+                         "the note must localise to the player, and only to the "
+                         "player who differs")
+        self.assertEqual([f for f in fails if "hits" in f], [])
+
+    def test_a_player_the_event_log_credits_but_the_boxscore_omits_is_named(self):
+        """The other direction. A player with an event but no boxscore row at all
+        is still a disagreement about a person, and the rows-only reading would
+        never see him."""
+        home = {11: BOX_HOME[11]}                  # 10 has no row at all
+        _, _, notes = self._run(_box(home, BOX_AWAY))
+        hits = [n for n in notes if n["kind"] == "hits"]
+        self.assertEqual(hits[0]["players"], [{"id": 10, "ours": 1, "league": 0}])
+
+    def test_no_player_rows_means_no_witness_rather_than_a_false_one(self):
+        """A boxscore with no `playerByGameStats`, or one side empty, quotes
+        nothing: zero summed over no rows is a claim, not an absence."""
+        bare = {"homeTeam": {"id": HOME, "score": 0, "sog": 0},
+                "awayTeam": {"id": AWAY, "score": 0, "sog": 0}}
+        one_side = _box(BOX_HOME, {})
+        for box in (bare, one_side):
+            rich, _, notes = self._run(box)
+            self.assertNotIn("box", rich["quoted"], "a witness was invented")
+            self.assertEqual(notes, [])
+
+    def test_both_witnesses_run_on_a_game_that_has_both(self):
+        """The rail keeps the three figures the boxscore cannot carry, so a game
+        with both documents is checked by both -- and the shared figures are
+        checked twice, once per document, each note naming its own."""
+        pbp = _game(PLAYS, ROSTER)
+        box = _box(BOX_HOME, BOX_AWAY)
+        rich = E.extract(pbp, {"data": []}, box, RAIL)
+        self.assertIn("team", rich["quoted"])
+        self.assertIn("box", rich["quoted"])

@@ -1554,6 +1554,59 @@ test('a note whose document is unknown names no document, and still says the fig
     'the renderer named a document the artifact never claimed');
 });
 
+test('⭐ a boxscore player-row note says "boxscore", its noun and both numbers', () => {
+  /* ⭐⭐ THE SECOND WITNESS ARCHIVE-WIDE — 2026-10-11. Hits, takeaways and
+     blocked shots summed over the boxscore's player rows, which every game has.
+     It IS the boxscore, so the reader is told so; `src` names the player rows
+     because they are a different part of the document from the team block. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'hits', kind: 'hits', src: 'boxscore.playerByGameStats',
+      home: { ours: 20, league: 21 }, away: { ours: 29, league: 29 },
+      players: [{ id: 8478413, ours: 2, league: 3 }] },
+  ] }, CURVE_AND_MIX);
+  const t = a.$('unrecKey').textContent;
+  assert.ok(a.$('rg').classList.contains('unrec'));
+  assert.match(t, /the league\u2019s boxscore says 21 hits for BUF/);
+  assert.match(t, /event log says 20/);
+  assert.doesNotMatch(t, /game summary|MIN/);
+});
+
+test('⛔ the same disagreement from TWO documents is said ONCE', () => {
+  /* A game holding the rail is checked by both witnesses, and on hits,
+     takeaways and blocked shots the two documents were measured identical
+     (268/268). So when our count differs from both, two notes arrive carrying
+     the same numbers -- and "24 blocked shots for BUF and 24 blocked shots for
+     BUF" is a sentence that reads as two disagreements. MUTATION: drop the
+     de-duplication and the count of "24 blocked" fires. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'b1', kind: 'blocked', src: 'boxscore.playerByGameStats',
+      home: { ours: 23, league: 24 }, away: { ours: 17, league: 17 } },
+    { check: 'b2', kind: 'blocked', src: 'right-rail.teamGameStats',
+      home: { ours: 23, league: 24 }, away: { ours: 17, league: 17 } },
+  ] }, CURVE_AND_MIX);
+  const t = a.$('unrecKey').textContent;
+  assert.equal(t.match(/24 blocked shots for BUF/g).length, 1, t);
+  assert.match(t, /event log says 23 \u2014/, 'and ours once');
+  // Both documents say it, so neither alone is named.
+  assert.match(t, /the league\u2019s own figures say/);
+});
+
+test('⛔ two documents that DISAGREE WITH EACH OTHER are both said', () => {
+  /* The de-duplication above is on the NUMBERS, not the figure. If the boxscore
+     and the game summary give different totals, that is two disagreements and
+     both are the reader's business. MUTATION: de-duplicate on kind and side
+     alone and the 25 vanishes. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'b1', kind: 'blocked', src: 'boxscore.playerByGameStats',
+      home: { ours: 23, league: 24 }, away: { ours: 17, league: 17 } },
+    { check: 'b2', kind: 'blocked', src: 'right-rail.teamGameStats',
+      home: { ours: 23, league: 25 }, away: { ours: 17, league: 17 } },
+  ] }, CURVE_AND_MIX);
+  const t = a.$('unrecKey').textContent;
+  assert.match(t, /24 blocked shots for BUF/);
+  assert.match(t, /25 blocked shots for BUF/);
+});
+
 test('a shots note whose sides all AGREE prints nothing', () => {
   /* The other guard the suite was not reaching. derive.py only records the note
      when a side differs, so this artifact should not exist — which is exactly
