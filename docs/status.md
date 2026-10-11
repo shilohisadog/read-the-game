@@ -32,7 +32,74 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-07
+## ⏭ 0.00 PICK UP HERE — 2026-10-11
+
+**ONE DECISION IS WAITING ON KEVIN AND NOTHING ELSE IS BLOCKED.** The site is
+live and healthy; everything below §0.00 is history, newest first.
+
+### ⏭⏭ THE OPEN QUESTION — step two of the boxscore witness
+
+Kevin approved *"measure first, then decide"*. The measurement ran
+(`.github/workflows/box-rail-witness.yml`, dispatch only) and **changed the
+answer**, so the decision he agreed to is not the decision now in front of him:
+
+| | boxscore per-player sums vs the right rail, 134 games / 268 team-sides |
+|---|---|
+| **hits · takeaways · blocked shots** | **268/268** — free, archive-wide |
+| pim | 236/268 — the boxscore is LOSSY |
+| giveaways | 166/268 — the boxscore is LOSSY |
+| faceoffs | impossible: a per-player percentage with no denominator |
+
+**He has not ruled.** The proposal on the table: bump `extract.SCHEMA`, add the
+three clean figures as a third `quoted` source, and re-derive the archive (~20
+minutes, **zero league requests**). That takes the second witness from **134 of
+4,634 games to all of them** on three figures — and the boxscore localises a
+disagreement to a PLAYER, which the rail cannot. The other three stay on the
+rail at 2.9% coverage.
+
+⚠️ **DO NOT SKIP THE REASONING.** Our own event log reproduces the rail
+**260/260** on hits, giveaways, takeaways AND pim. Where the boxscore disagrees
+it is dropping events that the rail and our count agree on — so building pim and
+giveaways on it would have cried wolf across ~4,500 games against figures that
+are demonstrably right. That is what the measurement bought.
+
+### ⏭ THE REST OF THE LIST, in the order I would take it
+
+1. **Eleven of fourteen lessons open the same game** (`2023020204`). The lessons
+   page admits it; the homepage does not. Trust, not correctness — cheap.
+2. **Player reliability is measured on ONE season** (2024-25) and not pooled; the
+   club work ran over 96 team-seasons and had to be CENTRED. The published needs
+   (`a:24 c:5 g:28 s:9`), which set the ink on every player row, rest on it.
+3. **The right-rail backfill** — ~4,556 requests, and now largely unnecessary for
+   three of six figures. Still the only path to faceoffs archive-wide. Kevin's
+   call, and he has already said he does not want to clobber a free service.
+
+⚠️ **WATCHING, NO ACTION:** the hits-premium rule has no subject — the preview
+prints no hits figure to a reader and the caveat is still published beside the
+figure on `how-we-measure.html`. The rule to keep is that hits may not return to
+a card without it.
+
+### ✅ WHERE THINGS STAND, verified rather than recalled
+
+- Gates and deploy **green** on `599c4d7`; working tree clean.
+- `players.json` refreshes **nightly** and is through the previous day.
+- Headshots live: **222 of 228** players, the six without are traded men the
+  league has not re-shot, and they render as a sweater-number disc.
+- `tools/measures_fresh.py` clean — the repo and the published archive agree.
+- ⚠️ **Never quote the counts above from memory**: run `node builders/health.mjs`.
+
+### ⛔ ONE THING THAT WILL BITE A COLD SESSION
+
+The nightly commits `data/measures.json` several times a day, so **a push will be
+rejected as stale** if you have been working for a while. `git pull --rebase`
+conflicts only on the GENERATED health block: resolve by taking either side and
+then re-running `node builders/health.mjs` and `node tools/tiers.mjs`, which is
+what produces it. ⭐ Then **grep for something you wrote** — shape #70c, a side
+taken in a conflict loses the other side's work silently.
+
+---
+
+## ⏭ 0.00-PREV — 2026-10-07
 
 **TWO THREADS KEVIN OPENED OFF THE FEED INVENTORY, BOTH BUILT AND LIVE**, and
 every design decision in them was settled by MEASURING rather than arguing.
