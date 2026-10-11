@@ -571,8 +571,13 @@ QUOTED_BOX = {"hits": "hits", "takeaways": "takeaways", "blocked": "blockedShots
 def _box_rows(box):
     """{side: [player row]} over forwards, defence AND goalies, or None.
 
-    ⚠️ GOALIES TOO. A goaltender is credited with the odd hit, and dropping the
-    group would note a disagreement on exactly the game where one happened.
+    ⛔⛔ EVERY GROUP IS READ, BUT A ROW ONLY WITNESSES THE FIELDS IT CARRIES.
+    A goaltender's row has no `hits`, `takeaways` or `blockedShots` key at all,
+    and the 2023-24 event log credits goaltenders with takeaways. Reading the
+    absent key as zero flagged 89 of 1,501 games that season — every one ours
+    higher by one, every "omitted" player a goaltender — when the boxscore had
+    simply said nothing about him (`tools/box_witness_archive.py`, 2026-10-11).
+    validate() leaves such a player out of BOTH sides of the comparison.
     BOTH SIDES OR NEITHER, on `_quoted_team`'s reasoning — and zero summed over
     no rows is a claim, not an absence.
     """
@@ -593,7 +598,7 @@ def _quoted_box(box):
     if rows is None:
         return None
     return {"src": "boxscore.playerByGameStats",
-            **{side: {ours: sum(_count(r.get(theirs)) or 0 for r in rows[side])
+            **{side: {ours: sum(_count(r[theirs]) or 0 for r in rows[side] if theirs in r)
                       for ours, theirs in QUOTED_BOX.items()}
                for side in ("home", "away")}}
 
@@ -1275,23 +1280,32 @@ def validate(rich, pbp, shifts, box, rail=None):
     if pbox:
         rows = _box_rows(box)
         for key, theirs in QUOTED_BOX.items():
-            agree = all(ours[s][key] == pbox[s][key] for s in ("home", "away"))
+            # A player whose row lacks the field is not witnessed, so he leaves
+            # OUR side too — the comparison is over the players the document
+            # speaks for, and nobody else.
+            blind = {r.get("playerId") for s in ("home", "away")
+                     for r in rows[s] if theirs not in r}
+            mine = {s: ours[s][key] - sum(n for pid, n in per[key].items()
+                                          if pid in blind and side.get(tid.get(pid)) == s)
+                    for s in ("home", "away")}
+            agree = all(mine[s] == pbox[s][key] for s in ("home", "away"))
             detail = {"kind": key, "src": pbox["src"],
-                      "home": {"ours": ours["home"][key], "league": pbox["home"][key]},
-                      "away": {"ours": ours["away"][key], "league": pbox["away"][key]}}
+                      "home": {"ours": mine["home"], "league": pbox["home"][key]},
+                      "away": {"ours": mine["away"], "league": pbox["away"][key]}}
             if not agree:
                 league = {}
                 for s in ("home", "away"):
                     for r in rows[s]:
-                        pid = r.get("playerId")
-                        league[pid] = league.get(pid, 0) + (_count(r.get(theirs)) or 0)
+                        if theirs in r:
+                            pid = r.get("playerId")
+                            league[pid] = league.get(pid, 0) + (_count(r[theirs]) or 0)
                 detail["players"] = [
                     {"id": pid, "ours": per[key].get(pid, 0), "league": league.get(pid, 0)}
                     for pid in sorted(set(league) | set(per[key]), key=lambda p: (p is None, p or 0))
-                    if per[key].get(pid, 0) != league.get(pid, 0)]
+                    if pid not in blind and per[key].get(pid, 0) != league.get(pid, 0)]
             note(agree,
                  f"{key} reproduces the boxscore's player rows: "
-                 + ", ".join(f"{s} {ours[s][key]}=={pbox[s][key]}"
+                 + ", ".join(f"{s} {mine[s]}=={pbox[s][key]}"
                              for s in ("home", "away")),
                  detail)
 

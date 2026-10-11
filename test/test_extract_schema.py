@@ -536,16 +536,38 @@ class BoxWitness(unittest.TestCase):
         self.assertEqual(notes, [])
         self.assertEqual(fails, [])
 
-    def test_a_goaltender_is_summed(self):
-        """⚠️ FORWARDS, DEFENCE **AND** GOALIES. A goaltender who throws a hit is
-        in the league's total; dropping the group would note a disagreement on
-        exactly that game. MUTATION: sum only skaters and this fires."""
+    def test_a_row_WITHOUT_the_field_is_no_witness_for_that_player(self):
+        """⛔⛔ THE DEFECT THE ARCHIVE MEASUREMENT FOUND, 2026-10-11. A
+        goaltender's boxscore row carries no `hits`, `takeaways` or
+        `blockedShots` field AT ALL -- and the 2023-24 event log credits
+        goaltenders with takeaways. Summing the absent field as zero flagged 89 of
+        1,501 games that season, every one ours higher by one and every "omitted"
+        player a goaltender. An absent field is not a zero: the boxscore says
+        nothing about him, so neither side of the comparison counts him.
+        MUTATION: read a missing field as 0 and this fires."""
+        plays = PLAYS + [_play("takeaway", AWAY, "11:00", playerId=21)]
+        away = {k: v for k, v in BOX_AWAY.items() if k != 21}
+        box = _box(BOX_HOME, away, goalies={"away": {21: {"pim": 0}}})
+        rich, _, notes = self._run(box, plays)
+        self.assertEqual(rich["quoted"]["box"]["away"]["takeaways"], 1)
+        self.assertEqual(notes, [], "a goaltender's absent field was read as zero")
+
+    def test_a_row_that_DOES_carry_the_field_is_summed_whatever_its_group(self):
+        """And the other half: the rule is the FIELD, not the group. A goalie row
+        carrying `hits` is a witness like any other. MUTATION: skip the goalies
+        group wholesale and this fires."""
         plays = PLAYS + [_play("hit", AWAY, "11:00", hittingPlayerId=21)]
         away = {k: v for k, v in BOX_AWAY.items() if k != 21}
         box = _box(BOX_HOME, away, goalies={"away": {21: {"hits": 1}}})
         rich, _, notes = self._run(box, plays)
         self.assertEqual(rich["quoted"]["box"]["away"]["hits"], 2)
         self.assertEqual(notes, [])
+
+        box = _box(BOX_HOME, away, goalies={"away": {21: {"hits": 0}}})
+        _, _, notes = self._run(box, plays)
+        self.assertEqual([n["players"] for n in notes if n["kind"] == "hits"],
+                         [[{"id": 21, "ours": 1, "league": 0}]],
+                         "a goalie row that SAYS zero is a witness, and disagrees")
 
     def test_a_disagreement_is_RECORDED_names_its_document_and_its_PLAYER(self):
         """⭐⭐ THE THING THE RAIL CANNOT DO. A team total says THAT the documents
