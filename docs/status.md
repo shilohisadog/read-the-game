@@ -32,36 +32,49 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-11
+## ⏭ 0.00 PICK UP HERE — 2026-10-11 (evening)
 
-**ONE DECISION IS WAITING ON KEVIN AND NOTHING ELSE IS BLOCKED.** The site is
-live and healthy; everything below §0.00 is history, newest first.
+**NOTHING IS WAITING ON KEVIN.** The boxscore witness is BUILT (`1542c27`,
+`b422484`), live on the nightly, and reaches the archive on the next full derive.
 
-### ⏭⏭ THE OPEN QUESTION — step two of the boxscore witness
+### ✅ THE SECOND WITNESS GOES ARCHIVE-WIDE — on three figures
 
-Kevin approved *"measure first, then decide"*. The measurement ran
-(`.github/workflows/box-rail-witness.yml`, dispatch only) and **changed the
-answer**, so the decision he agreed to is not the decision now in front of him:
+Kevin ruled *"yes"* on the proposal. `extract.SCHEMA` 5 adds `quoted.box` —
+hits, takeaways and blocked shots summed over the boxscore's
+`playerByGameStats` — and `validate()` notes any our event log does not
+reproduce, **naming the players whose count differs**, which the rail cannot.
+pim and giveaways stay off it (the boxscore is lossy on both, measured
+2026-10-10); faceoffs cannot be summed. The page calls it "the boxscore", and
+says a disagreement ONCE when the boxscore and the game summary carry the same
+numbers.
 
-| | boxscore per-player sums vs the right rail, 134 games / 268 team-sides |
-|---|---|
-| **hits · takeaways · blocked shots** | **268/268** — free, archive-wide |
-| pim | 236/268 — the boxscore is LOSSY |
-| giveaways | 166/268 — the boxscore is LOSSY |
-| faceoffs | impossible: a per-player percentage with no denominator |
+⏭ **NOT YET RE-DERIVED.** The bump only reaches old games through `derive.yml`
+(weekly, `47 15 * * 1`, or dispatch). A manual dispatch was refused by the
+session's permission check, so the Monday cron does it. **Verify after it:** an
+extract from 2023 (e.g. `/extract/2023020045.json`) carries `quoted.box`, and
+`node builders/health.mjs` shows `unreconciled` unchanged at 78.
 
-**He has not ruled.** The proposal on the table: bump `extract.SCHEMA`, add the
-three clean figures as a third `quoted` source, and re-derive the archive (~20
-minutes, **zero league requests**). That takes the second witness from **134 of
-4,634 games to all of them** on three figures — and the boxscore localises a
-disagreement to a PLAYER, which the rail cannot. The other three stay on the
-rail at 2.9% coverage.
+### ⛔⛔ MEASURED BEFORE PUBLISHING, AND THE MEASUREMENT CAUGHT ME
 
-⚠️ **DO NOT SKIP THE REASONING.** Our own event log reproduces the rail
-**260/260** on hits, giveaways, takeaways AND pim. Where the boxscore disagrees
-it is dropping events that the rail and our count agree on — so building pim and
-giveaways on it would have cried wolf across ~4,500 games against figures that
-are demonstrably right. That is what the measurement bought.
+The 268/268 was the boxscore against the rail on 134 RECENT games. Whether our
+event log agrees with the boxscore's rows on 2023-25 games was known for ONE
+game. So before any re-derive, `box-witness-archive.yml` (dispatch only,
+publishes nothing) ran the real `derive.judge` over every game:
+
+| run | 2023 | 2024 | 2025 | 2026 |
+|---|---|---|---|---|
+| first | **89 / 1,501 flagged** | 0 / 1,500 | 0 / 1,489 | 0 / 144 |
+| after the fix | 0 | 0 | 0 | 0 |
+
+Every one of the 89: ours higher by one, and the "omitted" player a
+**goaltender**. A goalie's boxscore row has NO `hits`/`takeaways`/`blockedShots`
+key, and the 2023-24 event log credits goalies with takeaways. **I read an absent
+field as zero** — and my own test, "a goaltender is summed", asserted the wrong
+assumption and passed. Had the re-derive run first, 89 games would have told a
+reader the league disagreed with itself when it had said nothing. ⭐ **An absent
+field is not a zero; a row witnesses only the fields it carries.** Shape for
+[[mechanize-the-review]]: *a fixture built from the assumption cannot test the
+assumption* — only the archive could.
 
 ### ⏭ THE REST OF THE LIST, in the order I would take it
 
@@ -70,8 +83,8 @@ are demonstrably right. That is what the measurement bought.
 2. **Player reliability is measured on ONE season** (2024-25) and not pooled; the
    club work ran over 96 team-seasons and had to be CENTRED. The published needs
    (`a:24 c:5 g:28 s:9`), which set the ink on every player row, rest on it.
-3. **The right-rail backfill** — ~4,556 requests, and now largely unnecessary for
-   three of six figures. Still the only path to faceoffs archive-wide. Kevin's
+3. **The right-rail backfill** — ~4,556 requests, and now unnecessary for
+   three of six figures (the boxscore witness covers them). Still the only path to faceoffs archive-wide. Kevin's
    call, and he has already said he does not want to clobber a free service.
 
 ⚠️ **WATCHING, NO ACTION:** the hits-premium rule has no subject — the preview
@@ -81,7 +94,7 @@ a card without it.
 
 ### ✅ WHERE THINGS STAND, verified rather than recalled
 
-- Gates and deploy **green** on `599c4d7`; working tree clean.
+- Gates and deploy **green** on `b422484`; working tree clean.
 - `players.json` refreshes **nightly** and is through the previous day.
 - Headshots live: **222 of 228** players, the six without are traded men the
   league has not re-shot, and they render as a sweater-number disc.
