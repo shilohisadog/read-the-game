@@ -201,9 +201,25 @@ export function judgeTap({ anim, ev }, hold = HOLD) {
     /* ⚠️ COUNTED PER NAME, AND IN TIME. Six counters ticking at once is six
        starts of `pkn` on six different elements and is CORRECT. Two starts in
        the same millisecond are two elements arriving together; two starts apart
-       in time are one thing drawn twice. */
+       in time are one thing drawn twice.
+
+       ⛔⛔ AND THE BOUND WAS `gap > 0`, WHICH FAILED A GREEN DEPLOY ON 2026-10-11
+       WITH NO CODE CHANGE. Production reported *"pkn ran 6 times for one tap,
+       1ms apart (417, 417, 417, 418, 418, 418)"* — the same six elements this
+       comment calls CORRECT, created in one loop that happened to straddle a
+       millisecond. Three at 417 and three at 418 looks like 3+3 and is 6: the
+       canary in that same run drew all six in ONE beat at 473ms.
+
+       ⭐ SO IT TAKES THE BOUND THE OTHER RULE ALREADY DERIVES — half the hold the
+       probe itself presses for. Same reasoning, and it was always the missing
+       half: a press held for `hold` ms IS the gap between the two reports, so
+       half of it is a bound no single draw can reach and no double draw can
+       duck. Measured on both sides: 1ms of clock jitter across six synchronous
+       elements, against the 108–116ms that the real defect and the canary both
+       produce. A constant picked here instead would be a number that stopped
+       describing the experiment the moment `hold` moved. */
     const gap = Math.max(...when) - Math.min(...when);
-    if (when.length > 1 && gap > 0)
+    if (when.length > 1 && gap > hold / 2)
       bad.push(`"${name}" ran ${when.length} times for one tap, ${gap}ms apart `
         + `(at ${when.join('ms, ')}ms) — the reader sees it arrive twice`);
   }

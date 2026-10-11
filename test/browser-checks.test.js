@@ -855,6 +855,17 @@ test('⭐ six counters ticking together are six elements, not six repeats', () =
   const restart = judgeTap(landing([['plfade', 300], ['plfade', 417]]));
   assert.ok(restart.some(m => /"plfade" ran 2 times/.test(m)),
     'an entrance animation restarting 117ms later is what a reader calls two loops');
+
+  /* ⛔⛔ THE CASE PRODUCTION ACTUALLY PRODUCED, 2026-10-11, failing a deploy on
+     code that had passed the same probe hours earlier. Six elements made in one
+     loop that straddled a millisecond: three at 417 and three at 418. The old
+     bound was `gap > 0`, so 1ms of clock jitter read as "the reader sees it
+     arrive twice". ⭐ The test above only ever placed all six at ONE instant,
+     which is why it could not see this. */
+  assert.deepEqual(
+    judgeTap(landing([['pkn', 417], ['pkn', 417], ['pkn', 417],
+                      ['pkn', 418], ['pkn', 418], ['pkn', 418]])), [],
+    'six elements created across a millisecond boundary are still six elements');
 });
 
 test('⛔ the bound comes from the gesture the probe itself performs', () => {
