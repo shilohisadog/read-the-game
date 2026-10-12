@@ -1537,3 +1537,14 @@ test('⛔ with no per-team classes, the key does not claim the scales are of tea
   assert.doesNotMatch(key, /a team/);
   assert.match(key, /fewest/);
 });
+
+test('⭐ the key in Kevin’s words, naming Stoppages as the whole-game row', () => {
+  /* Kevin, 2026-10-12, rewording the first draft: "in a game this season"
+     rather than "in one of those games", and the whole-game row named by
+     example. The example is only true while the Stoppages row actually drew a
+     scale, so it is said only then. */
+  const key = keyOf(page());
+  assert.equal(key, 'Each scale runs from the fewest to the most a team has had in a game '
+    + 'this season; the shaded part is the middle half, and each dot is a team in this game. '
+    + 'A row counted for the whole game is scaled against whole games (e.g. Stoppages).');
+});

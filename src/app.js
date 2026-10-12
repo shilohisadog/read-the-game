@@ -1823,7 +1823,7 @@ function renderSum(){
     it was deleted, and this is now the only reader of `LENS` that draws rows. */
  let placed=0;
  // Which KIND of scale each drawn rail is, for the key below the heading.
- let scTeam=0,scWhole=0;
+ let scTeam=0,scWhole=0,scStop=false;
  /* ⭐⭐ THIS LENS, PER CLUB, AND IT IS THE QUANTITY `perTeamGame` IS BUILT FROM.
     The mapping is `measure.mjs`'s, restated nowhere: Control and Blocked and Zone
     starts each carry a `t` keyed by club; the slot is split by SHOOTER, the way
@@ -1920,7 +1920,7 @@ function renderSum(){
      every game in the archive. */
   const ref0=marks[0]&&marks[0].at;
   if(ref0&&ref0.max>ref0.min){
-   if(split)scTeam++;else scWhole++;
+   if(split)scTeam++;else{scWhole++;if(id==='whistle')scStop=true;}
    /* ⭐ ONE BOX STATES THE WIDTH AND THE RAIL AND ITS ENDS BOTH FILL IT — see
       `.sscale`. They each carried `max-width:34ch` and `ch` is relative to the
       element's own font-size, so the smaller ends row came out 78% as wide and
@@ -1981,11 +1981,15 @@ function renderSum(){
  if(scTeam||scWhole){
   const key=document.createElement('p');
   key.className='skey';
+  /* ⭐ KEVIN'S WORDING, 2026-10-12. "This season" has its antecedent in the
+     heading above, which names the season. The example names Stoppages only
+     when that row drew a whole-game scale, which is the only time it is true. */
   key.textContent=scTeam
-   ?'Each scale runs from the fewest to the most a team has had in one of those games; '
+   ?'Each scale runs from the fewest to the most a team has had in a game this season; '
     +'the shaded part is the middle half, and each dot is a team in this game.'
-    +(scWhole?' A row counted for the whole game is scaled against whole games.':'')
-   :'Each scale runs from the fewest to the most in one of those games; '
+    +(scWhole?' A row counted for the whole game is scaled against whole games'
+      +(scStop?' (e.g. Stoppages).':'.'):'')
+   :'Each scale runs from the fewest to the most in a game this season; '
     +'the shaded part is the middle half, and the dot is this game.';
   host.appendChild(key);}
  host.appendChild(ul);

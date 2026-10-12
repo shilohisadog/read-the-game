@@ -1807,11 +1807,18 @@
    ⚠️ 56ch IS A READING LENGTH, so it stays on what is READ — the heading and the
    key — and leaves the rows, which are scales. `auto-fit` with a 34ch floor (the
    scale's own width) falls back to ONE column wherever two will not fit, which
-   is a landscape phone's 515px panel: no breakpoint anybody tuned. */
-#rg #sumBody>h2,#rg #sumBody>.skey{max-width:56ch}
+   is a landscape phone's 515px panel: no breakpoint anybody tuned.
+   ⭐ AND THE FULL WIDTH OF THE PANEL, Kevin, same day: *"expanding the columns to
+   the full width (as long as it's done smartly)"*. Smartly means three things:
+   the grid takes the panel's width but NEVER a third column (the floor is half
+   the row, so the pairing with the sidebar survives a 2560px screen); each
+   scale fills its column, so the width goes to resolution on the rail rather
+   than to space beside it; and the heading and key widen with the grid but stop
+   at 90ch, a long line rather than an unreadable one. */
+#rg #sumBody>h2,#rg #sumBody>.skey{max-width:90ch}
 #rg #sumBody .skey{margin:6px 0 0;font-size:.84rem;line-height:1.5;color:var(--muted)}
-#rg .srows{margin:10px 0 0;padding-left:20px;display:grid;column-gap:32px;max-width:84ch;
- grid-template-columns:repeat(auto-fit,minmax(min(100%,34ch),1fr))}
+#rg .srows{margin:10px 0 0;padding-left:20px;display:grid;column-gap:40px;
+ grid-template-columns:repeat(auto-fit,minmax(max(min(100%,34ch),calc((100% - 40px)/2)),1fr))}
 #rg .srows li{min-width:0}
 #rg .srows li{margin:0 0 11px;font-size:.9rem;line-height:1.5;color:var(--muted)}
 /* ⭐ THE PER-ROW SCALE. Same vocabulary as the verdict dot above it on purpose:
@@ -1827,7 +1834,7 @@
    takes the track's width by construction rather than restating it.
    ⭐ SO THERE IS ONE DECLARATION AND TWO `width:100%` CHILDREN. A number repeated
    in two unit contexts is not one number. */
-#rg .srows .sscale{display:block;max-width:34ch}
+#rg .srows .sscale{display:block;max-width:none}
 #rg .strack{display:block;position:relative;height:11px;border-radius:5px;
  background:#eef3f7;margin:6px 0 0;width:100%}
 #rg .sband{position:absolute;top:0;bottom:0;border-radius:4px;background:#ccdbe7}

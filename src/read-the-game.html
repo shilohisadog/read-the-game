@@ -45,7 +45,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3bgory4O+N+3O50m81BFf20ryw/JlFfhY89wwXuP0ck=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-3/xNmhfLSMtpCa0GGvX+IYrkv7d1EuADtn0SUXR+70w='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jlPlsRU654ZB4L59SxtcDf55/HUNCIYA2TANoY2/7mg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-sTM8E5uqo8CY5jXyPqtTzvcHJ252mHR1R0V2rEQRZ3I='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -1859,11 +1859,18 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    ⚠️ 56ch IS A READING LENGTH, so it stays on what is READ — the heading and the
    key — and leaves the rows, which are scales. `auto-fit` with a 34ch floor (the
    scale's own width) falls back to ONE column wherever two will not fit, which
-   is a landscape phone's 515px panel: no breakpoint anybody tuned. */
-#rg #sumBody>h2,#rg #sumBody>.skey{max-width:56ch}
+   is a landscape phone's 515px panel: no breakpoint anybody tuned.
+   ⭐ AND THE FULL WIDTH OF THE PANEL, Kevin, same day: *"expanding the columns to
+   the full width (as long as it's done smartly)"*. Smartly means three things:
+   the grid takes the panel's width but NEVER a third column (the floor is half
+   the row, so the pairing with the sidebar survives a 2560px screen); each
+   scale fills its column, so the width goes to resolution on the rail rather
+   than to space beside it; and the heading and key widen with the grid but stop
+   at 90ch, a long line rather than an unreadable one. */
+#rg #sumBody>h2,#rg #sumBody>.skey{max-width:90ch}
 #rg #sumBody .skey{margin:6px 0 0;font-size:.84rem;line-height:1.5;color:var(--muted)}
-#rg .srows{margin:10px 0 0;padding-left:20px;display:grid;column-gap:32px;max-width:84ch;
- grid-template-columns:repeat(auto-fit,minmax(min(100%,34ch),1fr))}
+#rg .srows{margin:10px 0 0;padding-left:20px;display:grid;column-gap:40px;
+ grid-template-columns:repeat(auto-fit,minmax(max(min(100%,34ch),calc((100% - 40px)/2)),1fr))}
 #rg .srows li{min-width:0}
 #rg .srows li{margin:0 0 11px;font-size:.9rem;line-height:1.5;color:var(--muted)}
 /* ⭐ THE PER-ROW SCALE. Same vocabulary as the verdict dot above it on purpose:
@@ -1879,7 +1886,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    takes the track's width by construction rather than restating it.
    ⭐ SO THERE IS ONE DECLARATION AND TWO `width:100%` CHILDREN. A number repeated
    in two unit contexts is not one number. */
-#rg .srows .sscale{display:block;max-width:34ch}
+#rg .srows .sscale{display:block;max-width:none}
 #rg .strack{display:block;position:relative;height:11px;border-radius:5px;
  background:#eef3f7;margin:6px 0 0;width:100%}
 #rg .sband{position:absolute;top:0;bottom:0;border-radius:4px;background:#ccdbe7}
@@ -13242,7 +13249,7 @@ function renderSum(){
     it was deleted, and this is now the only reader of `LENS` that draws rows. */
  let placed=0;
  // Which KIND of scale each drawn rail is, for the key below the heading.
- let scTeam=0,scWhole=0;
+ let scTeam=0,scWhole=0,scStop=false;
  /* ⭐⭐ THIS LENS, PER CLUB, AND IT IS THE QUANTITY `perTeamGame` IS BUILT FROM.
     The mapping is `measure.mjs`'s, restated nowhere: Control and Blocked and Zone
     starts each carry a `t` keyed by club; the slot is split by SHOOTER, the way
@@ -13339,7 +13346,7 @@ function renderSum(){
      every game in the archive. */
   const ref0=marks[0]&&marks[0].at;
   if(ref0&&ref0.max>ref0.min){
-   if(split)scTeam++;else scWhole++;
+   if(split)scTeam++;else{scWhole++;if(id==='whistle')scStop=true;}
    /* ⭐ ONE BOX STATES THE WIDTH AND THE RAIL AND ITS ENDS BOTH FILL IT — see
       `.sscale`. They each carried `max-width:34ch` and `ch` is relative to the
       element's own font-size, so the smaller ends row came out 78% as wide and
@@ -13400,11 +13407,15 @@ function renderSum(){
  if(scTeam||scWhole){
   const key=document.createElement('p');
   key.className='skey';
+  /* ⭐ KEVIN'S WORDING, 2026-10-12. "This season" has its antecedent in the
+     heading above, which names the season. The example names Stoppages only
+     when that row drew a whole-game scale, which is the only time it is true. */
   key.textContent=scTeam
-   ?'Each scale runs from the fewest to the most a team has had in one of those games; '
+   ?'Each scale runs from the fewest to the most a team has had in a game this season; '
     +'the shaded part is the middle half, and each dot is a team in this game.'
-    +(scWhole?' A row counted for the whole game is scaled against whole games.':'')
-   :'Each scale runs from the fewest to the most in one of those games; '
+    +(scWhole?' A row counted for the whole game is scaled against whole games'
+      +(scStop?' (e.g. Stoppages).':'.'):'')
+   :'Each scale runs from the fewest to the most in a game this season; '
     +'the shaded part is the middle half, and the dot is this game.';
   host.appendChild(key);}
  host.appendChild(ul);
