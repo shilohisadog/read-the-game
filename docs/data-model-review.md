@@ -139,6 +139,14 @@ sub-count is attempts), `through` (archive for teams, latest season for players)
 
 ## 6. Proposed fix list — to discuss, in this order
 
+**Progress** (each verified on the live site, not by a green run):
+- ✅ 1 — `bd9d559` + re-measure `137f0c8`: the layer and every published slot
+  figure use the three-clause slot. Slot attempts 46.7% → 45.6%, slot goals
+  75.4% → 74.8%, conversion 11.4% → 11.6%; the live lesson shows them.
+- ✅ 2 — `0aef016`: catalog `us` marks shot disputes only (78 `u`, 74 `us`,
+  the four faceoff-only preseason games now unmarked on the live calendar);
+  `teams.archive` and its wrong "7.8%" deleted (it had no reader).
+
 Ordered by what a reader is told wrong first, then bytes, then hygiene.
 
 1. **D1 slot rule** — one rule for the ice, the layer and the published figures (decision: which rule — Kevin's three-clause rule is the one he asked for).
