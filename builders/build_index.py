@@ -3506,6 +3506,7 @@ def build_learn():
                       current="/what-you-can-see.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
+    html = P.strip(html)
     return html.replace("__CSP__", _csp(html, connect=None))
 
 
@@ -3566,6 +3567,7 @@ def build_rule(cid):
                       current="/what-you-can-see.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + css)
+    html = P.strip(html)
     return html.replace("__CSP__", _csp(html, connect=None))
 
 
@@ -5717,6 +5719,7 @@ def build_methods():
                       current="/how-we-measure.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE + _section_css(HOWCSS))
+    html = P.strip(html)
     return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 
@@ -5792,6 +5795,7 @@ def build_preview():
     # the league's. `builders/mugs.py` says at length why the headshots are
     # copied rather than hotlinked; the short version is that the sentence on
     # this site reads *"Nothing is fetched from the league while you watch"*.
+    html = P.strip(html)
     return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 
@@ -5811,6 +5815,7 @@ def build_calendar():
                       current="/calendar.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
+    html = P.strip(html)
     return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 def build():
@@ -5827,6 +5832,7 @@ def build():
                       url="https://readthegame.co/", current="/",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
+    html = P.strip(html)
     return html.replace("__CSP__", _csp(html, images=DATA_ORIGIN))
 
 def main():

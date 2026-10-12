@@ -30,15 +30,6 @@
 .sitehdr nav a:hover,.sitehdr nav a:focus{border-bottom-color:#2a5d86}
 .sitehdr nav a[aria-current="page"]{color:#0f1a23;border-bottom-color:#0f1a23}
 .sitefoot{border-top:1px solid #ccd8e0;padding:18px 16px 28px;color:#5b6d7a;font-size:.82rem}
-/* PREVIEW HAS NO ROOM FOR CHROME. The five-second loop on the front door is an
-   iframe of the game page, and the shared header and footer are real height
-   inside a box sized for a rink -- they push the ice past the bottom edge, and
-   `scrolling=no` crops it. The class is set by the page at runtime (there is no
-   build-time preview variant; one file serves both), and the rule lives HERE
-   because this is where the chrome is defined. A rule in build_main.py reaching
-   across to style .sitehdr would be the second place chrome is decided. */
-/* Every page now, not just the preview: the site header and footer are flush to
-   the viewport edges and the gutter lives on `.wrap`. See build_index.py. */
 body{margin:0}
 body.previewing{margin:0}
 body.previewing .sitehdr,body.previewing .sitefoot{display:none}
@@ -46,22 +37,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JGvwwQ97fAXS/uyKYy01p7Rttr52Sm5OARiWww4kvVY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-US29cvjrGJ06Rq18mjTCfV2C3YZbg/657+2Q7WBrJh8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
 *{box-sizing:border-box}
-/* ⭐ THE CHROME IS FLUSH TO THE TOP, AND THE GUTTER MOVED BELOW IT.
-   Kevin, 2026-08-27, comparing the two pages: "I much prefer the no padding, it
-   tightens up the top of the page, which looks better than the home page, let's
-   default to that." The game page had never carried this rule -- it ran on the
-   browser's default 8px body margin -- so the site header sat 44px down and
-   inset 22px here and flush there. Same header markup, different box.
-
-   THE PADDING IS NOT DELETED, IT IS MOVED: `.wrap` takes it, so the header and
-   footer go edge to edge and the CONTENT keeps the breathing room it had. A
-   `body{padding:0}` on its own would have run the text into the viewport edge on
-   a phone, which is the version of this change that looks tidy in a diff. */
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
  color:var(--ink);background:var(--bg);line-height:1.55;padding:0}
 .wrap{max-width:900px;margin:0 auto;box-sizing:content-box;
@@ -71,16 +51,7 @@ h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;mar
 h1.says{font-weight:400;letter-spacing:normal}
 .says{font-size:1.06rem;line-height:1.5;color:var(--ink);margin:0 0 22px;max-width:56ch}
 .says b{font-weight:700}
-/* THE PERSONAL LINE, INSIDE the heading rather than beside it. It is the second
-   half of what this page says it is, so semantically it belongs to the same
-   sentence pair; typographically it is quieter, because "what this is" should
-   land before "who we made it for". `display:block` gives it its own line
-   without a second paragraph's margin. */
 .says .by{display:block;margin-top:5px;font-size:.95rem;color:var(--muted)}
-/* HIDDEN UNTIL THE SPACE EXISTS. `display:none` rather than a narrower column:
-   below 1180 the hero card is a single column and there is no room beside the
-   lede at all, so this would stack underneath and lengthen a phone screen that
-   is already 4.5 screens tall. Kevin's call, with that number in front of him. */
 .pucknote{display:none}
 .conc{margin:0 0 26px}
 .conc .ck{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
@@ -97,12 +68,6 @@ h1.says{font-weight:400;letter-spacing:normal}
 h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
  font-weight:700;margin:34px 0 12px}
 
-/* THE TEAM GRID IS ONE OBJECT, not thirty-three. Uniform chips, no typing, one
-   click. Google-clean was the brief: above the fold is this and one link. */
-/* `:not([hidden])` for the same reason as `.opener .pucknote` and `.hero`: a bare
-   `display:grid` outranks the UA sheet's `[hidden]`, so the empty grid a team page
-   hides would stay in the flow. It has no children there, which is exactly why
-   this one was invisible rather than obvious. */
 .teams:not([hidden]){display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));
  gap:7px;margin:0 0 26px}
 .chip{display:flex;align-items:center;justify-content:center;height:46px;
@@ -111,8 +76,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  transition:transform .12s ease,box-shadow .12s ease}
 .chip:hover,.chip:focus-visible{transform:translateY(-2px);box-shadow:0 6px 16px rgba(16,32,45,.18)}
 
-/* A team's games. The top row is the thing you press play on -- two clicks from
-   a cold load to watching, which is the number this page was rebuilt for. */
 .crumb{margin:0 0 14px;font-size:.85rem}
 .crumb a{color:var(--blue);text-decoration:none}
 .teamhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px}
@@ -139,67 +102,19 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .games .off{color:var(--muted)}
 
 
-/* THE HERO IS A GAME. Read from the archive, never typed. */
 .hero{background:#fff;border:1px solid var(--edge);border-radius:13px;
  padding:18px 20px 20px;margin:0 0 26px;box-shadow:0 4px 16px rgba(16,32,45,.06)}
 .herokick{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
-/* The frame carries the rink's own aspect, so it does not letterbox on a phone
-   or crop on a desktop. 200x85 is the rink; the scoreboard above it takes the
-   rest, measured from the rendered page rather than guessed. */
-/* ⭐⭐ THE BIGGEST THING ON THE PAGE WAS NOT A DOOR.
-   Measured 2026-09-11 in a real browser: the frame is 26.9% of a 1325x959
-   laptop screen and 21.1% of a 390x844 phone -- the largest element on the front
-   door and the only one that MOVES -- and clicking the middle of it navigated
-   nowhere. The cursor did not even change: `auto`, over a playing rink.
-   Every instinct a visitor has points at the moving picture, and above the fold
-   on a phone the one content link sits at y=739 of an 844px fold, 87% of the way
-   down. So the loop was an advertisement for a door the reader had to scroll to.
-
-   ⭐ THE SAME DEFECT, THE THIRD TIME. `a6454fa` -- "the whole goal figure is
-   clickable, and the older reader had the same bug" -- and the calendar's rows
-   are anchors rather than text-with-a-link-in-it for the same reason. The fix
-   is structural each time: make the RECTANGLE the target.
-
-   POINTER-EVENTS OFF THE FRAME, because a click landing inside an iframe never
-   reaches a parent anchor wrapped around it. The preview hides every control it
-   has (`#rg.preview` in app.css), so there is nothing inside to click and
-   nothing is taken away.
-
-   ⚠️ AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `aria-hidden` and `tabindex=-1`
-   keep it out of the tab order and out of the accessibility tree, because
-   `Watch the whole game` sits directly beneath it with the same destination --
-   a keyboard user would otherwise meet the same link twice with nothing to tell
-   them apart, which is a duplicate-funnel defect wearing accessibility clothes.
-   The frame itself already carried `tabindex=-1` for the same reason. */
 .heroframe{position:relative;margin:0 0 13px;background:var(--ice);
  border:1px solid var(--edge);border-radius:10px;overflow:hidden}
 .heroframe iframe{display:block;width:100%;aspect-ratio:200/117;border:0;
  pointer-events:none}
-/* The border answers the pointer, in the treatment `.drow` already uses for
-   exactly this question -- "is this rectangle a door". */
 .herohit{position:absolute;inset:0;cursor:pointer}
 .heroframe:hover{border-color:var(--blue)}
-/* A TALLER FRAME ON A PHONE, because the scoreboard inside it is not
-   proportional even after it was made to shrink. Measured in a real browser:
-   the chrome is 87px of an 856px-wide frame (10%) and 49px of a 287px one
-   (17%), so one ratio cannot serve both -- at 200/108 the phone's rink fits
-   the height and leaves empty ice down both sides. 200/128 gives the narrow
-   frame the room its rink actually wants; the wide one is already exact. */
-/* TALLER WHERE THE CHROME COSTS MORE -- and this breakpoint already existed,
-   which is why a second query for the same job lost to it silently. The
-   scoreboard and the penalty band are the frame's fixed furniture; the rink is
-   what is left, and a fixed cost eats proportionally more of a narrow frame.
-   128 left the ice 27px short of its own aspect, so it letterboxed -- narrower
-   than the frame with white space either side, which reads as a SMALLER rink
-   rather than a tighter one. Measured at 390 and 1100, not reasoned. */
 @media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
 .herosub{margin:0 0 4px;font-size:.9rem;color:var(--muted);max-width:56ch}
-/* THE HERO'S RELATION TO THE RATE ABOVE IT. Same size and colour as .herosub,
-   because it is the second half of the same thought and a louder treatment would
-   make one game argue with 3,957. The verdict itself is bold; the rate that
-   settles it is not. */
 .herorel:empty{display:none}
 .herorel{margin:0 0 15px;font-size:.9rem;color:var(--muted);max-width:56ch}
 .herorel b{color:var(--ink);font-weight:650}
@@ -207,32 +122,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
 
-/* ------------------------------------------------------------- THE DAILY BLOCK
-   The one dated element on the front door. It sits INSIDE the hero card (see the
-   markup for why) and has to read as a separate thought rather than as more
-   sentences about the featured game -- so it takes a rule above it and the same
-   uppercase kicker the card's own first line uses, which is a treatment a reader
-   has already met four lines higher.
-   ⚠️ THE MARGIN IS ON THE TOP AND THE RULE IS A BORDER, not a `<hr>`: the block
-   is `hidden` until a state fires, and a separator that is its own element would
-   be left drawing a line under an empty card on every page load. */
 .daily{border-top:1px solid var(--edge);margin:20px 0 0;padding:15px 0 0}
 .dailykick{margin:0 0 6px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
 .dailysay{margin:0;font-size:.9rem;color:var(--muted);max-width:52ch}
 .dailysay:empty{display:none}
 .dailylist{display:flex;flex-direction:column;gap:5px;margin:11px 0 0}
-/* EACH ROW IS A DOOR, so it is an anchor and not a line of text with a link in
-   it -- the whole rectangle is the hit target. That is the defect of 2026-09-08
-   in its third form, and the fix is structural rather than a wider `<a>`. */
 .drow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
  text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--edge);
  border-radius:8px;padding:7px 11px;font-size:.85rem}
 .drow:hover,.drow:focus-visible{border-color:var(--blue)}
-/* A FIXTURE IS NOT A DOOR. It sits in the same list and must not read as one:
-   no border, no hover, no pointer -- the game has not been played and there is
-   nothing to open. The day the club preview gives it a destination, it becomes a
-   `.drow` and this rule goes. */
 .dfix{display:block;margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px;
  text-decoration:none}
 .dfix:hover,.dfix:focus-visible{color:var(--ink);text-decoration:underline}
@@ -242,22 +141,10 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
 .dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
-/* The attempts figure is the reason the row is here rather than in a scores
-   list, and it is `--muted` for the same reason `.herorel` is: it is the second
-   half of the thought, and matching the score's weight would make the two
-   numbers argue. `tabular-nums` so a column of them lines up. */
 .drow .datt{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dmore{display:block;margin:3px 0 0;font-size:.83rem;color:var(--blue);text-decoration:none}
 .dmore:hover,.dmore:focus-visible{text-decoration:underline}
 
-/* THE RULES STRIP. Same rectangle as `.drow` and for the same reason: each tile
-   IS a door, so the whole rectangle is the hit target rather than a line of text
-   with a link in it. That is the 2026-09-08 defect in its fourth form, and the
-   border answering the pointer is the treatment this page already uses to say
-   "this is a door".
-   ONE COLUMN UNTIL 640, because the hook is a sentence and three sentences side
-   by side on a phone are three columns of two words each. The breakpoint is the
-   grid's own, not the card's: above it there is room for three real lines. */
 .learnin{margin:30px 0 0}
 .lgrid{display:grid;gap:8px;margin:11px 0 0}
 @media (min-width:640px){.lgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -266,12 +153,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .lcard:hover,.lcard:focus-visible{border-color:var(--blue)}
 .lcard .lt{font-weight:650}
 .lcard .ld{font-size:.85rem;color:var(--muted);line-height:1.45}
-/* THE MEASUREMENT STRIP. Same rectangle-as-door as `.lcard`, plus the blue left
-   edge `.grid.learn.ours` and `.limits` both already use for "this is our claim
-   and not the league's". A reader has met the distinction before arriving here.
-   TWO COLUMNS, NOT THREE: these sentences carry figures and denominators, so
-   they are twice the length of a rule's hook and a third of the width would set
-   them four words to a line. */
 .countsin{margin:26px 0 0}
 .cgrid{display:grid;gap:8px;margin:11px 0 0}
 @media (min-width:760px){.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -282,190 +163,53 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
-/* ⏹ A `.wcard` LIVED HERE FOR AN HOUR — the methods door as a fifth card in the
-   measurement strip. Kevin moved it: *"I would have thought you would have put
-   the card in the what this (site) does and does not claim?"* He is right, and
-   the section's own heading is the argument: a reader in the limits block is
-   already asking what we claim, and *how did you count it* is the next sentence.
-   ⛔ AND TWO DOORS TO ONE PAGE IS THE DUPLICATE FUNNEL this page has already had
-   once (`_NAV`: "a second copy of the same link 40px lower"). The strip's card
-   also had to be appended AFTER the loop to dodge `_front_counts`'s own check
-   that every card in it is one of our measurements — routing around a guard
-   rather than satisfying it, which is its own answer about whether it belonged. */
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
 
-/* ⭐⭐ THE FOLD, AT A LAPTOP'S WIDTH -- docs/front-door.md §5.4.
-   Kevin, with the live page above the fold on his laptop: "encourages daily
-   visits, offers valuable information right from the get go, and encourages a
-   visitor to click into the site."
-   MEASURED FIRST, at 1900x1065: the document is 2.05 screens, `.wrap` renders
-   944px of 1900 (half the viewport is gutter), and the hero card alone is 729px
-   of a 1065px fold -- 68%. The card stacks the loop above four lines of text, so
-   `Watch the whole game` sits at y=903 and the club grid's heading at 982, and
-   the fold ends there. Everything a reader might act on is pushed down by the one
-   thing they are meant to look at.
-   ⚠️ IT READ `Watch your team` WHEN THIS WAS MEASURED, and is `Pick your team`
-   since 2026-09-11 — the word implied streaming and a heading over a grid of
-   club codes has nothing beside it to say otherwise. The MEASUREMENT is
-   unchanged; what moved is that the line above no longer cites the heading by a
-   name the codebase has stopped containing, which would send the next reader
-   grepping for something that is not there. Stated here once, where it is
-   explained, rather than left in the record as a live-looking quotation.
-   SO THE CARD BECOMES TWO COLUMNS: what you READ on the left, the loop on the
-   right. The proposition lands whole in the first screen, and the space this
-   frees on the left is where the daily block goes when its data exists
-   (front-door.md §5.1) -- it is not decoration, it is the slot.
-
-   ⚠️ AND THE BAND HAS TO GROW OR THE RINK SHRINKS, which measuring is what
-   showed. Two columns inside the 900px reading column would leave the frame
-   ~520px against 898 today -- a 42% narrower rink to tidy the text beside it,
-   which trades the product for the layout. So above 1180 the card alone breaks
-   out of the column to `min(1240px, 100vw - 96px)`: at 1900 that is a 400px text
-   column and an ~810px frame, 10% narrower than today rather than 42%.
-   ⛔ THE REST OF THE PAGE STAYS AT 900. Prose has a measure; only the card has a
-   picture in it.
-
-   ⚠️⚠️ `:not([hidden])` IS LOAD-BEARING, NOT TIDINESS. `#hero` ships with the
-   `hidden` attribute and `drawHero` clears it once a game is chosen, which works
-   because nothing sets `display` on `.hero` -- the UA sheet's `[hidden]` wins by
-   default. A bare `display:grid` here would OVERRIDE it and paint an empty white
-   card on every page load before the catalog arrives, and on a page that never
-   gets one it would stay. The state this protects is the one nobody screenshots.
-
-   THE PHONE IS UNTOUCHED, on purpose: the whole query starts at 1180, and the
-   novice test is on a phone (docs/site-purpose.md §9). */
 @media (min-width:1180px){
-  /* ⚠️ THE COLUMN WIDENS; THE CARD DOES NOT BREAK OUT OF IT. The first draft gave
-     `.hero` a wider width and centred it with a translate, which put the card's
-     left edge 148px outside the headline above it -- the eyebrow and the h1 stayed
-     in the 900px column and the card jutted past them on both sides. LOOKING is
-     what found it: every measurement of that draft was an improvement (the fold
-     gained 313px) and it still read as a mistake.
-     ⛔ AND IT IS `.wrap.front`, NOT `.wrap`. Four BODY templates in this file share
-     this stylesheet -- the home page, learn, the rule pages and the calendar --
-     and three of them are prose that has no business at 1240px. The home page's
-     own BODY carries the class; nothing else can be widened by accident. */
   .wrap.front{max-width:1240px}
-  /* ⭐ THE OPENING BLOCK BECOMES TWO COLUMNS, THE SAME MOVE THE CARD BELOW MAKES.
-     ⛔⛔ IT IS `.opener` AND NOT `.lede`, AND THE REPO HAD ALREADY SAID SO. I
-     named it `.lede`, and this stylesheet has carried `.lede{max-width:62ch}`
-     all along — so the grid silently capped at 662px of a 1240px row, `1fr`
-     collapsed to the note's longest WORD (32px), and the card was pushed 527px
-     down the page. `build_main.py:54` warns in as many words: "NOT
-     class=\"lede\" -- that name is spoken for", and `render-notes.test.js:1238`
-     forbids it. The warning existed, in a comment, and I did not grep for it
-     before taking the name. See the site-wide guard that now covers every page
-     rather than only the one where the collision was first paid for.
-     ⚠️ THE FIRST COLUMN IS WIDER THAN THE SENTENCE IN IT, AND THAT IS THE POINT.
-     Borrowing the card's `minmax(320px,400px)` would squeeze the opening line
-     from two rows to four — a layout change to the sentence a visitor judges the
-     site by, paid for a note beside it. ⛔ AND `56ch` WAS NOT SAFE EITHER, WHICH
-     ONLY MEASURING SHOWED: `ch` resolves against THIS element's font size and
-     `.says` caps at 56ch of its OWN larger one, so the column came out 597.9px
-     against the sentence's 603.5px cap — SIX PIXELS, and the lede wrapped to
-     three lines. ⚠️ THE TWO-LINE LEDE THEREFORE HAS ABOUT 6px OF MARGIN and any
-     type change flips it; the column is 62ch so the sentence keeps its own cap
-     and nothing here decides its wrapping. The second column takes what is
-     left. */
   .opener{display:grid;grid-template-columns:minmax(0,62ch) minmax(0,1fr);
    column-gap:clamp(20px,2.4vw,34px);align-items:end}
   .opener .eyebrow{grid-column:1;grid-row:1}
   .opener .says{grid-column:1;grid-row:2;margin-bottom:0}
-  /* Bottom-aligned with the sentence beside it, so the two blocks share a
-     baseline rather than both hanging from the top of an uneven grid. */
-  /* ⚠️ `:not([hidden])` FOR THE REASON `.hero` CARRIES IT, ~250 lines up: "a bare
-     display:grid here would OVERRIDE it". This was a bare `display:block`, so
-     when a team page set `hidden` on this note the attribute was inert and the
-     sentence stayed on screen — Kevin saw it there after the fix shipped. The
-     warning was already written for the element next door. */
   .opener .pucknote:not([hidden]){display:block;grid-column:2;grid-row:1/span 2;align-self:end;
    margin:0;max-width:58ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
   .opener .pucknote b{color:var(--ink);font-weight:650}
-  /* ⛔ THE 78ch CAP IS GONE, AND IT WAS SOLVING THE WRONG HALF OF THE PROBLEM.
-     It existed because the cards were full-width boxes in ONE column, so at
-     1240 their text would have run to about a hundred characters a line. The
-     cap fixed the measure and bought a 460px empty gutter beside every card --
-     the only block on the front door that does not reach the edge the three
-     above it reach. Kevin, looking at the laptop: "seems like we should make
-     the 'what we claim' section multi column to align with everything else".
-     TWO COLUMNS FIX BOTH: the measure comes from the COLUMN now, exactly as it
-     does for `.cgrid` directly above, so there is nothing left for a cap to do.
-     See the breakpoint beside `.limits` itself -- it is `.cgrid`'s, on purpose. */
   .hero:not([hidden]){
     display:grid;
     grid-template-columns:minmax(320px,400px) minmax(0,1fr);
-    /* ⚠️ THE SIXTH ROW IS THE SLACK, and without it the text column is spread
-       down the card. A grid item spanning five rows distributes ITS height across
-       those rows, so the frame's ~470px was being handed to the five text rows --
-       measured at 1900, the sentences sat 88, 83 and 119px apart, which reads as
-       four unrelated notes rather than one thought. Five `min-content` rows plus
-       one `1fr` underneath send the surplus to the bottom of the card instead. */
     grid-template-rows:repeat(5,min-content) 1fr;
     column-gap:clamp(20px,2.4vw,34px);
     align-items:start;
   }
-  /* THE FRAME SPANS THE CARD'S WHOLE HEIGHT so the rink is as tall as the card,
-     rather than as tall as whichever sentence happens to be longest. */
   .hero:not([hidden]) .heroframe{grid-column:2;grid-row:1/-1;margin:0}
   .hero:not([hidden]) .herokick{grid-column:1;grid-row:1}
   .hero:not([hidden]) .heroline{grid-column:1;grid-row:2}
   .hero:not([hidden]) .herosub{grid-column:1;grid-row:3}
   .hero:not([hidden]) .herorel{grid-column:1;grid-row:4}
-  /* `justify-self:start` because a grid item stretches by default and the button
-     is `inline-block`: without it the anchor's BOX fills the column while its
-     background does not, so the click target and the thing that looks clickable
-     stop being the same rectangle. That is the hit-target defect of 2026-09-08
-     waiting to happen in a third place. */
   .hero:not([hidden]) .herogo{grid-column:1;grid-row:5;justify-self:start;margin-top:4px}
-  /* ⭐ ROW SIX IS THE SLACK, AND THIS IS WHAT IT WAS BEING SAVED FOR. The five
-     text rows are `min-content` and the frame spans the card, so column one runs
-     out of sentences about two thirds of the way down -- measured at 1900,
-     ~900px of gutter. The block that fills it is the only one on the page that
-     is different tomorrow, which is the argument docs/front-door.md §5.4 makes:
-     the three questions land in order, what is this, what is new, where do I go.
-     ⚠️ `align-self:end` PARKS IT AT THE BOTTOM OF THE ROW rather than floating it
-     under the button with the surplus beneath. Without it the row's height is
-     the slack and the block sits at its top edge, which reads as a paragraph
-     that lost its place rather than as the foot of the card. */
   .daily:not([hidden]){grid-column:1;grid-row:6;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
 .card{display:block;text-decoration:none;color:inherit;background:#fff;
  border:1px solid var(--edge);border-radius:12px;padding:15px 17px;
- /* ⭐ ROOM ABOVE THE CARD A READER JUST ARRIVED AT. Every card is now an anchor
-    target -- the work panel links back to `#<card-id>` -- and without this the
-    browser parks it flush with the top edge, which reads as a rendering glitch
-    rather than as an arrival. It is only ever consumed on a `#hash` landing. */
  scroll-margin-top:16px}
 .card:hover,.card:focus-visible{border-color:var(--blue)}
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}
 
-/* THE TWO GROUPS ARE MADE TO LOOK DIFFERENT, not merely ordered. The split is
-   the page's whole argument -- what the league does, against what we chose to
-   count -- and a uniform grid flattens two kinds of claim into one row of
-   cards. The measurement group takes the blue left edge that already means
-   "our claim" on `.limits`, so the distinction is one a reader has met before. */
 .grid.learn{margin:0 0 20px}
 .grid.learn.ours .card{border-left:3px solid var(--blue)}
 .card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
  font-variant-numeric:tabular-nums}
-/* ⭐ THE DOOR TO THE WORK SITS UNDER THE CARD, NOT INSIDE IT. `.card` is an
-   anchor, so the second link cannot be nested; the wrapper is a column and the
-   card grows to fill it, which keeps a row of tiles the same height whether or
-   not they carry one. */
 .cardw{display:flex;flex-direction:column}
 .cardw .card,.cardw .ccard{flex:1}
 .cw{margin:6px 2px 0;font-size:.74rem;line-height:1.3}
 .cw a{color:var(--blue);text-decoration:none;font-weight:600}
 .cw a:hover,.cw a:focus-visible{text-decoration:underline}
 
-/* THE CALENDAR (C1). In the shared sheet because the learn page's selectors
-   already are: one stylesheet for the pages this builder emits, so there is one
-   place a colour or an edge is defined. */
 .months{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 14px}
 .months a{font-size:.76rem;text-decoration:none;color:var(--muted);padding:3px 8px;
  border:1px solid var(--edge);border-radius:999px;background:#fff}
@@ -482,13 +226,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  text-decoration:none;color:inherit}
 .cell .dy{position:absolute;top:2px;left:5px;font-size:.6rem;color:var(--muted);
  font-variant-numeric:tabular-nums;line-height:1}
-/* THE COUNT WE MAKE CLAIMS ABOUT: full ink, and the only thing in the cell that
-   is ever summed anywhere on this site. */
 .cell .n{font-size:1.1rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-/* AND THE ONE WE DO NOT. A dashed edge rather than only a colour, so the
-   difference survives a reader who cannot separate the two hues -- the label
-   itself is under the grid, where there is room to be right about which
-   competition it is. */
 .cell .o{font-size:.64rem;font-weight:700;line-height:1.5;color:var(--muted);
  border:1px dashed #9fb3c0;border-radius:5px;padding:0 4px;
  font-variant-numeric:tabular-nums}
@@ -496,59 +234,29 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .cell.void{background:transparent;border-color:transparent}
 a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
  box-shadow:0 4px 12px rgba(58,90,156,.14)}
-/* A cell is 48px square-ish on a phone, which is all there is. Given room it
-   should look like a calendar rather than a row of flat slots -- 125x54 read as
-   a table with the lines rubbed out. */
 @media (min-width:700px){.cell{min-height:78px}.cell .n{font-size:1.3rem}}
 .offnote{font-size:.84rem;color:var(--muted);margin:0 0 22px;max-width:62ch}
 .offnote b{color:var(--ink);font-weight:650}
 .gk{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
-/* The NAME shouts; the qualifier after it does not. A whole sentence in
-   letter-spaced capitals wrapped to two lines of shouting at 390px. */
 .gk span{text-transform:none;letter-spacing:normal;font-weight:400}
-/* A DEAD END, WHICH IS A STATE AND NOT A LIST. Same furniture as `.limits` --
-   a claim of ours, on the blue edge -- because that is what it is. */
 .dead{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:10px;padding:12px 14px;margin:0 0 22px;font-size:.88rem;
  color:var(--muted);max-width:62ch}
 .dead b{display:block;color:var(--ink);font-weight:650;margin-bottom:2px}
-/* The night list is a MATCHUP and a RESULT; the team page's list leads with a
-   date, which on a page whose heading IS the date would be the same word twice. */
 .games.night a,.games.night .off{grid-template-columns:1fr auto}
-/* A REFUSED ROW STACKS. Its right-hand cell is a sentence, not a score, and
-   `auto` gave it whatever it asked for -- which squeezed "Arizona Coyotes at
-   Los Angeles Kings" into a five-line column beside it. */
 .games.night .off{grid-template-columns:1fr;gap:3px}
 .games.night li.uncounted{border-left:3px dashed #9fb3c0}
-/* D10's note, in the same voice as the dashed-count note above it: a small
-   qualifying sentence under the list, not a warning. The disagreement is the
-   LEAGUE's, between its own two documents, and we are reporting it rather
-   than apologising for it. */
 p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .bydate{margin:14px 0 0;font-size:.9rem}
 .bydate a{color:var(--blue);text-decoration:none;font-weight:600}
 .bydate a:hover{text-decoration:underline}
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
-/* ⭐ THE SAME BREAKPOINT AS `.cgrid`, AND THAT IS THE POINT RATHER THAN A
-   COINCIDENCE. These four cards sit two sections below the four measurement
-   cards and are the same object -- a bordered box with a bold line and a
-   paragraph under it -- so a width where one block is two columns and the other
-   is one is a width where the page looks half-finished. A test pins the two
-   numbers together so they cannot drift apart.
-   TWO, NOT auto-fill: `.grid`'s `minmax(255px,1fr)` would give FOUR columns at
-   1240 and set these sentences three words to a line. The limits carry the
-   longest prose on the page, not the shortest. */
 @media (min-width:760px){.limits{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:0 10px 10px 0;padding:12px 16px}
 .limits b{display:block;font-size:.93rem;margin-bottom:2px}
 .limits span{font-size:.87rem;color:var(--muted)}
-/* ⭐⭐ THE ONE LIMIT THAT IS A DOOR LOOKS LIKE ONE. The others state a boundary
-   and end; this one answers all four and has somewhere to go. It spans the two
-   columns so it reads as the block's closing line rather than a fifth peer, and
-   its link is a line of its own — buried mid-sentence in the same grey as the
-   prose, it was invisible as a route and Kevin read the section as having none. */
 .limits li:last-child{grid-column:1/-1;border-left-color:var(--ink)}
 .lgo{display:block;margin-top:7px;color:var(--blue);font-weight:600;
  text-decoration:none}
@@ -557,17 +265,6 @@ p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
  background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);
  border-radius:0 9px 9px 0;max-width:70ch}
-/* ⚠️ IT LANDS IN THE FIRST COLUMN, BECAUSE A NEAR-MISS READS AS A MISTAKE.
-   This line sits directly under `.limits`, and the day that block became two
-   columns its own 70ch cap (843px at 1400) stopped agreeing with anything on
-   screen -- 228px wider than the card above it and 397 short of the block's
-   right edge, which LOOKING showed as a stray fifth card hanging off the corner.
-   Same breakpoint again, so above it the line is exactly one column and below it
-   the grid is one column anyway and 70ch is the narrower cap. It is the only
-   element on the site with this class, so the selector needs no page scope. */
-/* 5.5px is HALF THE GRID GAP: `.limits` columns are (100% - 11px)/2, and this
-   line shares their containing block, so the two right edges are identical
-   rather than approximately so. */
 @media (min-width:760px){.state{max-width:calc(50% - 5.5px)}}
 .state[data-state="stalled"],.state[data-state="halted"]{border-left-color:var(--flag,#d9662b)}
 .state[data-state="behind"]{border-left-color:var(--buf)}
@@ -578,14 +275,6 @@ footer{margin-top:38px;padding-top:18px;border-top:1px solid var(--edge);
  font-size:.79rem;color:var(--muted);max-width:70ch}
 footer a{color:var(--blue)}
 footer p{margin:0 0 8px}
-/* NARROW SCREENS. The three-column game row is 8.5rem of date plus a result plus
-   a score — about 300px of content before it starts squeezing, which is most of a
-   360px phone once padding is taken off. Below 30rem it stacks, and the chips get
-   smaller so a row of them still fits without the grid forcing a scrollbar.
-
-   This is where the whole site was wrong until Kevin asked about phones: not the
-   CSS, but the missing viewport meta above it. Without that, none of this applies
-   at all -- the phone lays out at ~980px and scales the result down. */
 @media (max-width:30rem){
   .games a,.games .off{grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px}
   .games .d{grid-column:1/-1;order:-1}
@@ -596,12 +285,6 @@ footer p{margin:0 0 8px}
   .chip{height:42px;font-size:.82rem}
   .rates li{flex-direction:column;gap:2px}
 }
-/* ⚠️ `animation`, NOT JUST `transition`. This rule said `transition:none` alone
-   for as long as it has existed, and that was harmless only because these pages
-   carried ZERO @keyframes -- an un-reachable gap reads exactly like a working
-   guard. The learn page's rule diagrams animate, so it became live the moment
-   the first figure shipped. app.css:1127 has always had the blanket form; this
-   is the same rule, finally saying the same thing. */
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style><style>
 .hmlede{font-size:1.05rem;line-height:1.6;margin:0 0 6px}
@@ -610,9 +293,6 @@ footer p{margin:0 0 8px}
 .hmsec{margin:0 0 26px}
 .hmsec h2{font-size:1.15rem;margin:0 0 8px}
 .hmsec p{line-height:1.6;margin:0 0 10px}
-/* ⛔ A GRID, NOT A WRAPPING FLEX ROW. Each cell sized to its own content, and
-   once the labels became sentences a reader could follow, the four of them
-   staircased down the page at four different widths. Found by looking. */
 .hmpol{display:grid;gap:10px;margin:12px 0 0;padding:0;list-style:none;
  grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
 .hmpol li{background:#fff;border:1px solid var(--edge);border-radius:9px;
@@ -620,11 +300,6 @@ footer p{margin:0 0 8px}
 .hmpol b{display:block;font-size:1.25rem;color:var(--ink);font-weight:800;
  font-variant-numeric:tabular-nums}
 
-/* ---- one block per figure -------------------------------------------- */
-/* ⏹ THE FIGURE BLOCKS’ RULES MOVED TO `src/sections.css` on 2026-09-26. The replay's `Is that a lot?`
-   overlay draws the same blocks, and a second copy of their rules would diverge
-   silently on a surface no unit test can see. Substituted below. */
-/* ---- the replay's layers, indexed ------------------------------------- */
 .hmlay{display:grid;gap:10px;margin:14px 0 0}
 @media (min-width:720px){.hmlay{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .hmlay>div{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
@@ -634,7 +309,6 @@ footer p{margin:0 0 8px}
 .hmlay b{font-weight:700}
 .hmlc{color:var(--muted)}
 .hmld{margin:8px 0 0 !important;font-size:.8rem !important}
-/* ---- the family matrix ------------------------------------------------ */
 .hmpairs{list-style:none;margin:12px 0 14px;padding:0;display:grid;gap:7px}
 .hmpairs li{display:grid;grid-template-columns:1fr 150px 3.1em;gap:10px;
  align-items:center;font-size:.83rem}
@@ -645,33 +319,10 @@ footer p{margin:0 0 8px}
 @media (max-width:430px){
  .hmpairs li{grid-template-columns:1fr 46px 3.1em}
 }
-/* THE SECTION A PRINTED FIGURE IS DRAWN IN — SHARED BY BOTH SURFACES.
- *
- * ⭐⭐⭐ THIS FILE EXISTS FOR THE SAME REASON `src/lib/printed-section.js` DOES.
- * `how-we-measure.html` drew these blocks and owned their rules; on 2026-09-26
- * Kevin's `Is that a lot?` overlay draws the same blocks over the rink, and two
- * stylesheets for one component is the drift the shared renderer was extracted
- * to remove — with the extra cruelty that the copies would look right the day
- * they were written and diverge silently afterwards, on a surface no unit test
- * can see ([[looking-at-pixels]]).
- *
- * ⚠️ UNSCOPED, DELIBERATELY. `app.css` scopes everything to `#rg` and this does
- * not, because the methods page has no `#rg`. The custom properties resolve from
- * whichever ancestor defines them — `#rg` on the game page, the document on the
- * methods page — which is what makes one file serve both.
- *
- * WHAT IS NOT HERE: `.hmpol`, `.hmlay`, `.hmpairs`, `.hmkick`. Those belong to
- * blocks only the methods page draws, and moving them would make this a dumping
- * ground rather than a component. ⚠️ `.hmwork` is emitted by `workRow` and has
- * NO RULE ANYWHERE — checked, not assumed — so it renders as a plain paragraph
- * on both surfaces. That is pre-existing and consistent; it is recorded here
- * because a hook with no rule looks like an omission to the next reader. */
 
-/* ---- one block per figure -------------------------------------------- */
 .hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
  padding:15px 16px 14px;margin:0 0 14px}
 .hmf h3{margin:0 0 9px;font-size:1rem}
-/* ---- the prose figure: what it was counted from, and over what ------- */
 .hmfrom{margin:0 0 10px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;
  font-size:.86rem;line-height:1.5}
 .hmfrom dt{color:var(--muted);font-weight:700;white-space:nowrap}
@@ -682,39 +333,23 @@ footer p{margin:0 0 8px}
 .hmnums b{display:block;font-size:1.05rem;color:var(--ink);font-weight:800;
  font-variant-numeric:tabular-nums}
 .hmwhy{margin:0 0 10px;font-size:.9rem;line-height:1.55}
-/* ⭐⭐⭐ THE COUNTS BEHIND A DEFINITION, where the page used to assert a reason.
-   Arithmetic a reader can check, rather than a sentence they have to take. */
 .hmev{margin:0 0 10px;padding:9px 11px;background:#f4f8fb;border-radius:8px;
  font-size:.86rem;line-height:1.55}
 .hmev ul{list-style:none;margin:7px 0 7px;padding:0;display:grid;gap:4px}
 .hmev li{font-variant-numeric:tabular-nums}
 .hmev b{font-weight:700}
-/* ⚠️ THE CAVEAT IS NOT SMALL PRINT AND IS NOT STYLED AS SMALL PRINT. It is the
-   half a critic is here for, so it reads at the same size as the rest of the
-   block with a rule down its side rather than shrinking away. */
 .hmcav{margin:0;padding:8px 0 8px 11px;border-left:3px solid #d6c07a;
  font-size:.86rem;line-height:1.55}
 .hmcav b{font-weight:700}
 .hmnone{color:var(--muted);font-size:.86rem;margin:0}
 .hmwhere{font-size:.78rem;color:var(--muted);margin:-2px 0 10px;line-height:1.45}
-/* ⭐ THE PATH IS SET IN THE MONOSPACE A READER EXPECTS FOR A FIELD NAME, because
-   it is an instruction: open measures.json and look HERE. Prose styling would
-   read as a phrase rather than as somewhere to go. */
 .hmsrc{margin:0 0 4px}
 .hmsrc code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
  font-size:.93em;background:#e7eef4;border-radius:4px;padding:1px 4px}
 @media (max-width:430px){.hmf{padding:13px 12px 12px}}
 
-/* The population every section in a panel shares, said once above them.
-   ⭐ IT IS NOT A FIGURE TILE. `.hmnums` is for a number a reader weighs; this is
-   the denominator under all of them, so it reads as a caption rather than
-   competing with the arithmetic it qualifies. */
 .wpop{margin:0 0 12px;font-size:.82rem;color:var(--muted)}
 
-/* ⭐ THE ANSWER TO THE BUTTON, ABOVE THE DERIVATIONS THAT SUPPORT IT.
-   Heavier than `.wpop` and lighter than a section heading: it is the one
-   sentence a reader pressed `Is that a lot?` to get, and everything under it is
-   the working. */
 .walot{margin:0 0 14px;padding:11px 13px;background:#f4f8fb;border-radius:8px;
  font-size:.92rem;line-height:1.6}
 .walot b{font-weight:700}
@@ -732,10 +367,7 @@ Nothing here is a projection or an estimate.</p>
 <p class="note">This page takes each number in turn and shows you what we counted,
 what we divided it by, how much of a season it takes before it tells you anything,
 and what could be wrong with it.</p>
-<!-- ⭐ THE QUESTIONS ARE AT THE FOOT AND THE FIGURES POINT AT THEM BY NUMBER, so
-     a reader meeting "see question 2" nine screens above it needs to have been
-     told they exist. Kevin: *"We refer to question numbers, but the questions
-     aren't until the very bottom, we need to point readers to them."* -->
+
 <p class="note">Seven questions people fairly ask about how we do this &mdash;
 four of which we think are right &mdash; are answered at the foot of the page:
 <a href="#criticisms">Fair questions about all this</a>. Figures below that
@@ -743,18 +375,7 @@ depend on one of them link straight to it.</p>
 
 <main id="hm"></main>
 
-<!-- ⛔ STATIC, AND DELIBERATELY BELOW THE MEASURED PART. Everything above this
-     point is read from the published document and disappears if it cannot be
-     fetched; everything here is an argument and is always on the page. A reader
-     who arrives to check our work and finds a blank page has been told nothing.
-     ⚠️ AND IT IS WRITTEN FOR A HOCKEY FAN, NOT FOR US. Kevin stopped reading the
-     first version a few paragraphs in: *"it's more of an internal type
-     phrasing... I doubt a novice hockey fan is going to grasp what 'settles'
-     means right away."* He is right, and it is the same defect as a naked figure
-     — a reader who has to learn our vocabulary before they can check our work
-     cannot check our work. The words that went: settles, admission rule, club
-     row, league row, reliability, chronological, centred, club-season. The
-     arguments are now QUESTIONS, in the words someone would actually ask. -->
+
 <section class="hmsec" id="the-layers">
 <p class="hmkick">What the replay counts</p>
 <h2>Six switches, and the rule behind each one</h2>
@@ -850,15 +471,7 @@ another, so it does not fit the shape every number here takes. Both of its parts
 need far more than a season to steady. And PDO is <em>designed</em> to measure
 luck &mdash; presenting it as something a team is would turn its own meaning
 inside out.</p>
-<!-- ⛔⛔ THIS PARAGRAPH USED TO SAY THE PER-60 PROBLEM WAS "the strongest
-     criticism of the numbers above", AND IT WAS NOT A CRITICISM OF THEM AT ALL.
-     Kevin's note about the CF% caveat sent me back to the definitions: every
-     team number here is a SHARE of two teams' totals, not a rate per game, so
-     the denominator the industry argues about does not appear in any of them.
-     What IS true, and is worse for being specific, is that two of the three
-     count every situation. The vague version let us off; the precise one does
-     not. Same defect as a figure with no door — a criticism aimed at the wrong
-     number is not a concession. -->
+
 <p><b>Anything per sixty minutes of even-strength play.</b> That is what the
 analytics world divides rate statistics by, and working it out needs each
 team&rsquo;s ice time split by how many players were on the ice &mdash; which we
@@ -879,112 +492,23 @@ The code behind every number on this page is
 Both are open, and so is everything else here.</p>
 </div>
 <script>
-/**
- * WHICH COMPETITION A GAME BELONGS TO, and whether it counts.
- *
- * The league carries `gameType` as a bare integer in characters 4–6 of the game
- * id and names it nowhere in the feed, so a human has to — in
- * `data/competitions.json`, which `derive.py` walks the whole archive against.
- * This file is the only code that reads a game's type or turns one into words.
- *
- * WHY IT IS ITS OWN MODULE. Three surfaces need it and they do not overlap: the
- * calendar names a night's competition, the verdict card says why a game gets no
- * comparison, and `archive.js` decides what enters a base rate. Each of them had
- * its own spelling of `String(id).slice(4, 6)` — `archive.js::inScope`,
- * `calendar.js::competitionOf` and a private `TYPE` map in `sentence.js` that
- * knew about preseason and nothing else. Three readings of one field is three
- * chances for them to disagree about the same game.
- *
- * NO TABLE LIVES HERE EITHER. `names` is passed in, from the JSON, because a
- * copy in JavaScript is the defect this project keeps almost building. Every
- * builder inlines the same file.
- */
 
-/** The league's own gameType, read off the id. Never a lookup, never a date. */
 function typeOf(gameId) {
   return Number(String(gameId).slice(4, 6));
 }
 
-/**
- * Regular season (02) and playoffs (03) — the population every rate covers.
- *
- * Preseason, the all-star games, the Olympics and the 4 Nations Face-Off are
- * archived, derived and viewable, and never enter a computed number. A rate
- * pooled across preseason split squads, national sides under different roster
- * rules and an all-star exhibition is not a claim about NHL hockey; it is an
- * average over four competitions.
- */
 function isLeague(type) {
   return type === 2 || type === 3;
 }
 
-/**
- * NHL CLUBS PLAYING EACH OTHER — preseason (01) as well as 02 and 03.
- *
- * ⭐ A DIFFERENT QUESTION FROM `isLeague`, and the reason it exists as its own
- * name rather than an inline `type <= 3`. `isLeague` answers *may a RATE pool
- * this*; this answers *are these the clubs this site is about*. Preseason is
- * NHL clubs in NHL sweaters on half-strength rosters — worth showing, never
- * worth averaging. The all-star games, the Olympics and the 4 Nations Face-Off
- * are not clubs at all.
- *
- * Kevin, 2026-09-21, ruling that the front door's showcase replay may be a
- * preseason game: "preseason game can be a front-door hero." Widening `hero`
- * with a bare `g.v` instead let the fixture's OLYMPIC game take the door, which
- * is a thing nobody ruled — the tests caught it. So the line being drawn is
- * club hockey, and it is drawn once, here.
- *
- * ⛔ NOT A VISIBILITY RULE EITHER. A club page lists what the club played and
- * filters on the abbreviation, which no country code can match; it needs no
- * predicate and must not grow one.
- */
 function isClubGame(type) {
   return type === 1 || type === 2 || type === 3;
 }
 
-/**
- * The label for a competition, from the table in `data/competitions.json`.
- *
- * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
- * derive run loudly; this exists so that in the window between the league
- * inventing one and a human naming it, a reader sees `game type 21` rather than
- * `undefined`. Rendering raw was briefly the whole answer and that was wrong:
- * `gameType` is a small closed enum, so a value nobody has seen is an EVENT, not
- * the open-ended vocabulary a missed-shot reason is.
- *
- * Naming is not cosmetic. Lumping these under "preseason" — the tempting
- * shorthand, since 320 of 361 are — would be false on every Olympic and
- * 4 Nations night, which is 38 of the 60 dates the calendar makes visible at all.
- */
 function competitionOf(type, names) {
-  // `names[type]` and not `names[String(type)]`: object keys ARE strings and the
-  // lookup coerces, so the second form was a branch no mutation could reach.
-  // The table arrives from JSON with string keys and the catalog carries `t` as
-  // a number; that is one expression, not two.
   return (names && names[type]) || `game type ${type}`;
 }
 
-/**
- * ⭐ THE COMPETITIONS THIS SITE DELIBERATELY LEAVES OUT, named from the table.
- *
- * WHY THIS IS DERIVED AND NOT WRITTEN. The front door's limits block read
- * "Preseason, the Olympics and the 4 Nations Face-Off", and it had been wrong
- * since February 2024: the archive also holds four ALL-STAR games, which that
- * sentence never named. Nothing could see it — the sentence is prose in a
- * builder, and prose cannot be compared to a table by anything but a person
- * remembering to.
- *
- * That is the same shape as the deploy gate that exempted two pages by filename
- * and the night list that labelled a group only when it was not alone: a rule
- * written against the cases that existed, silently wrong when a fourth arrived.
- * The league mints a competition whenever it invents one — 19 and 20 in February
- * 2025, 9 in February 2026, both after this archive started — so a hand-written
- * list here is a claim with an expiry date nobody is told about.
- *
- * DISTINCT NAMES, because two types can share one: 4 and 12 are both all-star,
- * 19 and 20 are both 4 Nations. Ordered by the lowest type carrying each name,
- * so the order is stable and derived rather than chosen.
- */
 function excludedCompetitions(names) {
   const seen = new Map();
   for (const key of Object.keys(names || {})) {
@@ -996,44 +520,7 @@ function excludedCompetitions(names) {
   return [...seen].sort((a, b) => a[1] - b[1]).map(([name]) => name);
 }
 
-/**
- * Team identity — the one table on this site that is not derived from the feed.
- *
- * WHAT THIS IS AND IS NOT. Colours and names are public reference data, entered by
- * hand (Kevin, 2026-08-11). Nothing here is a measurement, so nothing here can be
- * wrong in the way a number can be wrong — but it CAN be incomplete, and that is
- * the failure this file's test exists to catch.
- *
- * NO LEAGUE OR CLUB MARKS. Colours and three-letter abbreviations identify a team;
- * logos and wordmarks do not appear anywhere on this site and must not be added
- * here. The site says so on its own front page.
- *
- * THIRTY-THREE, NOT THIRTY-TWO. Arizona relocated to Utah inside the window this
- * archive covers: ARI played 82 games in 2023-24 and none after, UTA begins in
- * 2024-25. A "32 NHL clubs" list would have been wrong on the first day. The set
- * the page renders is read from the CATALOG, never from this file — this file only
- * has to be able to answer for whatever the catalog contains.
- *
- * ⚠️ THIS PARAGRAPH USED TO END "the next relocation or expansion team fails
- * loudly instead of rendering a blank chip", AND THAT WAS NOT TRUE. The
- * completeness test compares this table to a hand-pinned fixture, so a new club
- * would have rendered as a grey chip and every check would have stayed green
- * until a human re-pinned the list. It failed loudly only AFTER somebody noticed,
- * which is the opposite of what the sentence promised.
- *
- * It is true now, and not because of that test. `builders/measure.mjs` walks
- * every extract, collects the abbreviations the archive actually contains, and
- * exits non-zero naming any club with no entry here — after writing measures.json
- * and teams.json, because a missing NAME cannot change a number and withholding
- * the archive over one would be the mistake the 73 refused games already were.
- * The unit test below is the edit-time half; that is the day-it-happens half.
- *
- * The rule it came from, which cost a day to learn: A VALUE THE LEAGUE CAN
- * INVENT NEEDS A CHECK WHERE THE WHOLE ARCHIVE IS WALKED, not a unit test
- * holding a copy of last year's answer. See data/competitions.json.
- */
 
-/** ab -> { name, colour }. `colour` is the club's primary, for a chip background. */
 const TEAMS = {
   ANA: { name: 'Anaheim Ducks',          colour: '#F47A38' },
   ARI: { name: 'Arizona Coyotes',        colour: '#8C2633' },
@@ -1070,18 +557,11 @@ const TEAMS = {
   WSH: { name: 'Washington Capitals',    colour: '#C8102E' },
 };
 
-/**
- * A note a team's own page owes the reader, or null.
- *
- * Only where the archive itself would otherwise mislead: a fan clicking ARI finds
- * one season and then nothing, and the honest answer is a fact, not an empty page.
- */
 const NOTES = {
   ARI: 'Relocated to Utah after the 2023-24 season.',
   UTA: 'Began play in 2024-25, after the Arizona team relocated.',
 };
 
-/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
 function luminance(hex) {
   const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
     .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -1092,68 +572,16 @@ function contrast(a, b) {
   return Math.max(x, y) / Math.min(x, y);
 }
 
-/**
- * Readable ink for a chip of this colour — MEASURED, not guessed.
- *
- * This used to pick by Rec. 601 luma against a threshold of 0.6, and 0.6 was a
- * number we chose. It cost real contrast: Anaheim's orange got white ink at
- * **2.73:1**, below WCAG's 3:1 floor for even large text, and Vegas 2.79 and
- * Philadelphia 3.55 were not much better. The heuristic was answering a question
- * ("is this colour light?") next to the one that matters ("which ink can be read
- * on it?").
- *
- * Asking the real question needs no threshold at all: take whichever ink
- * contrasts more. The worst case across the 33 clubs goes from 2.73:1 to
- * **4.96:1**, and three clubs change ink — Anaheim 2.73 → 6.45, Vegas 2.79 →
- * 6.30, Philadelphia 3.55 → 4.96.
- *
- * Same species of fix as the goalie card's `thin = f < 20`: a chosen constant
- * dissolves when you measure the thing it was standing in for.
- */
 function inkOn(hex) {
   return contrast('#0f1a23', hex) >= contrast('#ffffff', hex) ? '#0f1a23' : '#ffffff';
 }
 
-/** The label for a team, falling back to the abbreviation we were given. */
 function nameOf(ab) {
   return (TEAMS[ab] && TEAMS[ab].name) || ab;
 }
 
-/**
- * Nobody's colour. Used for the 42 games in the archive whose teams this table
- * cannot answer for — national sides at the 4 Nations Face-Off and the Olympics
- * (CAN, USA, FIN, SWE, SVK, SUI, CZE, GER, ITA, FRA, LAT, DEN) and the All-Star
- * squads (MCD, MAT, MKN, HGS, KNG, KLS, MUN).
- *
- * A slate grey ON PURPOSE and not a guess at a flag. Those competitions are
- * deliberately outside every computed number on this site, and inventing colours
- * for them would be adding reference data for teams we have decided not to make
- * claims about. The game page can still open them; it just does not pretend to
- * know what colour they wear.
- */
 const NEUTRAL = '#5b6d7a';
 
-/**
- * ⭐ THE SIDES WE HAVE DELIBERATELY NOT NAMED — as a list the code can read.
- *
- * The paragraph above has always said which teams these are, and a paragraph is
- * not a check. `measure.mjs` walks every extract and reports any club `TEAMS`
- * cannot answer for, so that a relocation or an expansion team fails loudly
- * instead of arriving as a grey chip nobody notices. Fired against the real
- * archive it names CAN, FIN, HGS, KLS, KNG, MAT, MCD, MKN, SWE and USA — every
- * one of them a side this file has decided, on the record, not to describe.
- *
- * ⛔ A GUARD THAT FIRES ON EVERY RUN IS A GUARD SOMEBODY SWITCHES OFF. Its own
- * test says so — *"a check that fired on every run would be turned off within a
- * week, and then the expansion team would arrive invisibly"* — and until
- * 2026-09-09 it never got the chance, because `main()` threw a ReferenceError
- * two lines before the exit code that was supposed to be the alert.
- *
- * SO THE EXCEPTION IS NAMED, NOT INFERRED. Membership here is a decision with a
- * reason attached, and `test/teams.test.js` requires every entry to be a side
- * `TEAMS` really does not name — an entry that shadowed a real club would be a
- * hole in the check rather than an exception to it.
- */
 const NATIONAL = 'a national side — the 4 Nations Face-Off and the Olympics are '
   + 'outside every computed number here, so we do not invent a badge for them';
 const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a team';
@@ -1165,86 +593,20 @@ const NOT_A_CLUB = new Map([
   ['KNG', ALLSTAR], ['KLS', ALLSTAR], ['MUN', ALLSTAR],
 ]);
 
-/**
- * The colour to paint this team, or NEUTRAL if it is not one of the 33 clubs.
- *
- * NEVER THROWS AND NEVER RETURNS UNDEFINED. `nameOf` falls back to the
- * abbreviation, which reads fine as text; a colour has no such fallback, and
- * `undefined` reaching a CSS custom property is an invisible mark rather than a
- * loud failure.
- */
 function colourOf(ab) {
   return (TEAMS[ab] && TEAMS[ab].colour) || NEUTRAL;
 }
 
-/**
- * A team's colour when it can be READ as text on white, and plain ink when it
- * cannot.
- *
- * Six of the 33 primaries fail: Boston and Nashville gold at 1.73:1, Pittsburgh
- * 1.79, Utah 2.34, Anaheim 2.73, Vegas 2.79. Gold text on a white card is a
- * decision to make a number harder to read in order to decorate it.
- *
- * THE THRESHOLD IS NOT OURS. 3:1 is WCAG 2.1's minimum for large text and for
- * graphical objects (SC 1.4.3, 1.4.11) — a published standard, cited, in the way
- * a stoppage sentence cites NHL Rule 81. This project refuses numbers it chose
- * itself; this is a number somebody else chose and wrote down.
- *
- * Identity does not depend on this. The abbreviation chip carries the true colour
- * with `inkOn` deciding its ink, so a team whose gold cannot be read as text is
- * still shown IN gold — on a chip, where it has a background to be read against.
- */
 function readableInk(hex, on = '#ffffff') {
   return contrast(hex, on) >= 3 ? hex : '#0f1a23';
 }
 
-/**
- * WHAT IS NORMAL IN HOCKEY — THE LEAGUE ROWS, COUNTED ACROSS THE ARCHIVE.
- *
- * ⭐⭐ WHY THIS LEFT `preview.js` — 2026-09-26. It was the preview card's, and it
- * still is; what changed is that a SECOND surface needs it. Kevin's `Is that a
- * lot?` overlay draws a layer's methods-page section over the rink, and four of
- * the seven doors — attempts, penalties, offsides, icings — are league rows.
- * Inlining the whole of `preview.js` to reach them would put the club-row
- * machinery, the schedule copy and the season logic on the replay, none of which
- * it draws.
- *
- * ⛔ AND "IT WOULD HAVE WORKED ANYWAY" IS NOT A REASON TO SHIP IT. Nothing the
- * replay calls would have touched the rest of that file — until somebody added
- * one call. A module whose correctness depends on which of its functions a page
- * happens to invoke is not a module; it is a bundle that has not failed yet.
- *
- * These read `measures.census` and nothing else, which is why the split is clean:
- * the boundary was already there in the data.
- */
 
-/**
- * ⭐ WHAT IS NORMAL, ONCE, ABOVE BOTH CLUBS.
- *
- * CHENG's Q10: a league figure inside a club's column READS as a club figure —
- * `3.6` under each of two clubs says the clubs are equal on penalties, which
- * neither number claims. So these are a frame, not content, and the renderer
- * prints them once.
- *
- * ⛔ AND THEY COME FROM THE CENSUS, which walks every game in the archive. A
- * document written before those counters existed has no `whistles` block, and
- * this returns NOTHING rather than inventing a figure — the same degradation the
- * front door makes when fixtures carry no date.
- */
 function leagueRows(measures) {
   const c = (measures && measures.census) || null;
   const w = c && c.whistles;
   if (!c || !w || !c.games) return [];
   const perClubGame = n => n / (2 * c.games);
-  /* ⭐⭐⭐ `work` IS THE DIVISION ITSELF, CARRIED SO A CRITIC CAN SEE IT DONE.
-     The methods page renders "30,827 ÷ 8,384 = 3.68" from this. It is built as
-     the PRIMITIVE and the displayed figure is read back off it — `rate` is
-     `pp.value`, not a second `w.ppGoals / w.ppChances` — because two spellings
-     of one division is how a card and its own explanation come to disagree about
-     what the card says.
-     ⚠️ `count` IS NULL WHERE THERE IS NO DIVISION. A median is a percentile, not
-     a ratio, and printing it as one would be a false arithmetic on the page whose
-     job is showing true arithmetic. */
   const ratio = (count, n) => ({ count, n, value: n > 0 ? count / n : null });
   const pp = ratio(w.ppGoals, w.ppChances);
   const pen = ratio(w.penalties, 2 * c.games);
@@ -1252,9 +614,6 @@ function leagueRows(measures) {
   const ice = ratio(w.icings, 2 * c.games);
   return [
     { key: 'powerplay', games: c.games,
-      /* ⛔⛔ POWER-PLAY GOALS, NOT GOALS SCORED DURING A POWER PLAY. The census
-         counts both; the second includes the short-handed ones and reads three
-         points higher than the league's own figure. */
       goals: w.ppGoals, chances: w.ppChances, rate: pp.value, work: pp,
       chancesPerClubGame: perClubGame(w.ppChances) },
     { key: 'penalties', games: c.games, count: w.penalties,
@@ -1266,31 +625,9 @@ function leagueRows(measures) {
    .concat(extraLeagueRows(measures, c, perClubGame, ratio));
 }
 
-/**
- * ⭐ THE REST OF THE FRAME — MEASURED LONG AGO AND READ BY NOTHING.
- *
- * Kevin, 2026-09-23: *"I'd like to add what's feasible, even if we aren't
- * consistent in display characteristics."* Relaxing that changes nothing about
- * the CLUB rows — the binding constraint there is the 41-game admission rule and
- * only one candidate in the whole archive clears it — but the league frame has no
- * admission rule at all, which is the entire point of the split. So it can grow,
- * and every figure below was already being computed and published and never read.
- *
- * ⛔ EACH ROW GUARDS ITSELF AND VANISHES RATHER THAN GUESSING. A document written
- * before any of these counters existed returns the three original rows and
- * nothing else — the same degradation the whistles block already makes.
- *
- * ⛔ AND THE FRAME IS NOT A STAT DUMP. Every row here answers "watch for this" for
- * someone who has never seen a hockey game. A figure with no such answer belongs
- * in the archive pages, not on a card a novice reads before a puck drops.
- */
 function extraLeagueRows(measures, c, perClubGame, ratio) {
   const out = [];
 
-  /* WHERE A SHOT ATTEMPT ENDS. Three shares of one defined whole, which is the
-     only figure on this card that can honestly be a stacked bar — and it is the
-     frame the `missed` club row sits inside, the same arithmetic at two
-     distances. `byType` sums to the attempt total exactly. */
   const mix = (measures && measures.attemptMix) || null;
   const t = mix && mix.byType;
   if (t && typeof t['shot-on-goal'] === 'number') {
@@ -1298,33 +635,17 @@ function extraLeagueRows(measures, c, perClubGame, ratio) {
     const blocked = t['blocked-shot'] || 0, missed = t['missed-shot'] || 0;
     const total = goalie + blocked + missed;
     if (total > 0) out.push({ key: 'attempts', games: mix.games || c.games, total,
-      /* THE DIVISION THE TILE'S HEADLINE IS: the share that reached the goalie.
-         The other two parts are on the card's bar and in the key beside it. */
       work: ratio(goalie, total),
       parts: [{ k: 'goalie', label: 'reached the goalie', v: goalie },
               { k: 'blocked', label: 'blocked by a body', v: blocked },
               { k: 'missed', label: 'missed the net', v: missed }] });
   }
 
-  /* HOW LONG A SHIFT IS. The single most bewildering thing about a first hockey
-     game is that nobody stays on the ice, and the archive has answered it for
-     three seasons in a field no surface reads. */
   const sh = c.shift;
   if (sh && sh.n > 0 && sh.median != null) out.push({ key: 'shift', n: sh.n,
-    /* ⛔ NO NUMERATOR, BECAUSE THERE IS NO DIVISION. The median is the middle
-       value of 3.1 million shifts; writing it as a ratio would be arithmetic we
-       did not do, on the page that exists to show the arithmetic we did. */
     work: { count: null, n: sh.n, value: sh.median },
     median: sh.median, p25: sh.p25, p75: sh.p75, underMinute: sh.underMinute });
 
-  /* ⛔⛔ A MEASURED NULL, PUBLISHED AS ONE. `opposite` is the share of games in
-     which the club that landed more hits had FEWER shot attempts — 0.481 is a
-     coin flip, over every game in the archive. It is on the card because a novice
-     will hear "they're really taking it to them physically" all night, and this
-     is the site's answer: we looked, and it does not go with having the puck.
-     ⚠️ THE HOME PREMIUM SHIPS WITH IT. Hits are counted by the home rink's own
-     crew and carry a measured +4.1% home-ice premium; a figure that we know is
-     scorer-dependent may not be printed as though it were clean. */
   const h = c.hits;
   if (h && h.n > 0 && typeof h.opposite === 'number' && h.totalHits) {
     const hw = ratio(h.totalHits, 2 * h.n);
@@ -1334,127 +655,16 @@ function extraLeagueRows(measures, c, perClubGame, ratio) {
   return out;
 }
 
-/**
- * The preview card — what is worth watching for in a game nobody has played yet.
- *
- * `docs/preview-and-corsi.md` settled WHAT it says, over three seasons and two
- * rounds of review; `docs/preview-page.md` settled where it lives. The short of
- * it, because the reason is the whole design:
- *
- * ⭐⭐ A ROW IS A CLUB ROW ONLY IF IT SETTLES INSIDE HALF A SEASON. Measured over
- * 3,936 regular-season games (96 club-seasons, split chronologically), the
- * club-to-club differences in penalties (73 games), offside (85) and every
- * power-play measure (PP% 150, PK% 383) do not settle within a season at all.
- * Presented as a trait, such a row tells a novice something false — the
- * differences are mostly luck. Kevin: *"we are a teaching centric site, at the
- * core."* So those three became LEAGUE rows that teach what is normal, and the
- * three that do settle stayed CLUB rows.
- *
- * ⛔ NOTHING HERE FORECASTS. The site's own headline is that the club with more
- * shot attempts LOSES 2,228 of 4,100 games; a card implying who will win would
- * contradict the page it is linked from. Every row is a fact with its n, and the
- * copy that surrounds it says what to watch for, never what will happen.
- *
- * ⛔ AND NO FIGURE IS TYPED. The league rows are counted where the archive is
- * walked (`census.js`, published in measures.json) and the club rows are summed
- * where the seasons are (`team-season.js`, published in teams.json). What this
- * module does is divide, once, and say what each figure is drawn from.
- */
 
-/**
- * ⭐ THE THREE ROWS THAT SETTLE, AND THE GAMES EACH ONE NEEDS.
- *
- * `need` is the number of games a club must have played before its figure
- * describes the club rather than the sample — reliability 0.7, derived from the
- * three-season chronological split in `docs/preview-and-corsi.md` §11.2.
- *
- * ⚠️ IT IS PINNED FOR THE SEASON AND RE-DERIVED EACH SUMMER, which is CHENG's
- * P2 ruling: re-deriving inside a season moves the labels for a reason no reader
- * can see, and pinning from ONE season inherits its flattery. The estimate is
- * pooled across every season in the archive and it is deliberately the
- * CONSERVATIVE one — alternate-game halves share a season's opponents and
- * schedule, which inflates reliability and would let a row say *settled* before
- * it has earned it.
- *
- * ⛔ 41 IS THE ADMISSION RULE (`preview-and-corsi.md` §12), not a target: a row
- * that needs more than half a season is a LEAGUE row. Adding a club row with a
- * `need` above 41 is the drift that rule exists to stop, and a test holds it.
- */
-/* ⭐ RE-EXPORTED, NOT RE-STATED. `leagueRows` moved to `league-rows.js` so the
-   replay can carry it without this file (see that header). Every caller that
-   already read it from here still does, and this is two statements rather than
-   `… from` because the builders' inliner strips the import line and would
-   leave the rest dangling. */
 
 { leagueRows };
 
-/**
- * ⭐⭐⭐ WHAT THE NUMBER COUNTS, IN WORDS — and it is a FIELD because the card
- * could not be read without it.
- *
- * Kevin, 2026-10-03, reading the live card: *"on the shot attempts by defensemen
- * section, I don't know what the 35 and 37 mean at the right side of the line
- * graph, no idea."* He wrote the ruling this card was built from. If the author
- * cannot read it, the novice it is for never could.
- *
- * ⛔⛔⛔ AND THE REASON IS NOT THAT A UNIT WAS MISSING. THESE THREE ROWS LOOK
- * IDENTICAL AND ARE TWO DIFFERENT KINDS OF SHARE:
- *
- *   level5   the denominator is BOTH CLUBS' attempts — so the league figure is
- *            50% by construction, and the two clubs in a game would sum to 100
- *            if they had played each other.
- *   dmen     the denominator is THIS CLUB'S OWN attempts — league 31%.
- *   slot     the denominator is THIS CLUB'S OWN located attempts — league 50%
- *            this season, which is a coincidence and reads exactly like level5's
- *            50%, which is not.
- *
- * A reader cannot tell those apart from a bar and a number, and nothing on the
- * card distinguished them. So each row states its own denominator in a sentence,
- * here, once — the same rule `archive.js::perGame` already follows for the
- * replay's lenses: *"a summary that says '55 goaltending' is a label nobody
- * wrote, and one that reaches for its own wording is a second vocabulary."*
- *
- * ⚠️ "of every 100", NOT "%". The house split: a chart AXIS is read as percent,
- * and prose for a novice says "of every 100" — the form the league tiles on this
- * same page already use.
- */
 const CLUB_ROWS = [
   { key: 'level5', label: '5-on-5 CF% while the score was level',
-    /* ⚠️ "BOTH SIDES" MEANS THIS CLUB AND ITS OPPONENTS, NOT THE TWO CLUBS ON
-       THIS CARD, and the first draft of this sentence said "the two clubs took
-       between them" — which reads as WSH against TBL. They have not played each
-       other: each figure is that club's own season so far, and on this card both
-       were one game against somebody else. A sentence that invites a reader to
-       add 40 and 25 and expect 100 is worse than no sentence. */
     says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
         + 'team\u2019s own games — both sides counted — this many were its own.',
-    /* ⭐⭐⭐ THE NOUN ON THE SECOND NUMBER, AND IT IS DIFFERENT ON EVERY ROW.
-       Kevin, reading the live card on 2026-10-03: *"I noticed 10 attempts, 43
-       attempts and 34 attempts, obviously those are all different numbers and it
-       confuses me why that's the case."* All three were ARITHMETICALLY RIGHT and
-       all three said `attempts`, so the only route from the figure to the
-       population it counts was to read `says` and carry it down to a footnote
-       that repeated none of its words.
-
-       `counts` is that bridge, and the words here are deliberately the words of
-       `says` above: the reader's only way across is recognising them twice.
-       ⚠️ IT IS WORDED FOR BOTH TEAMS AT ONCE ("each team"), because the footnote
-       prints it ONCE and then both teams' counts after it. It read "its own
-       games" while each team had its own line, and two lines carrying the same
-       seventy characters is half of what made the card a wall of text.
-       ⚠️ "BOTH SIDES" AGAIN MEANS THIS CLUB AND ITS OPPONENTS. Spelling it "both
-       clubs" would read as WSH against TBL — the trap the note above already
-       names, arriving one line lower. */
     counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score level',
-    /* THE ONE INDUSTRY LABEL ON THE SITE, and it may only sit on strict 5-on-5
-       (`1551`) — score-close and score-adjusted CF% are different defined terms.
-       The level condition is not decoration: every trailing club pushes, so a
-       season's raw CF% flatters whoever trails more. */
     of: t => ({ count: t.level5.for, n: t.level5.for + t.level5.against }),
-    /* ⭐ THE SAME ROW, PER GAME — and it is here so the rule is stated ONCE. The
-       pipeline measures how many games the row needs by splitting club-seasons in
-       half, which needs the per-game form; a second statement of it in the driver
-       is the copy this project keeps almost making. */
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
     says: 'Of every 100 shot attempts this team took, this many came from one of '
@@ -1462,118 +672,28 @@ const CLUB_ROWS = [
     counts: 'attempts each team took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
-  /* ⛔⛔⛔ `missed` WAS HERE FOR ABOUT FOUR HOURS ON 2026-09-23 AND IS NOT COMING
-     BACK. It is recorded rather than deleted because the way it got here is the
-     lesson, and the next person to find a fast-settling candidate needs it.
-
-     It shipped on r = 0.748 / 33 games, and BOTH halves of that were artefacts:
-
-     (1) THE INSTRUMENT WAS BIASED. `reliability.js` pooled three seasons without
-         centring them, against its own specification in `preview-and-corsi.md`
-         §11.2. The league's miss rate rose 15% across those seasons, so the
-         pooled correlation was substantially measuring WHICH SEASON a point came
-         from. Centred it needs 113 games — a league row, three times over.
-     (2) THE VENUE CONTROL TESTED THE WRONG THING, and it was mine. "A club's home
-         figure and its away figure differ by 0.14 of a point" is arithmetically
-         right and answers a narrower question than it announced: a league-wide
-         home−away gap CANCELS any bias that inflates both clubs in a building
-         equally — which is exactly what one scorer's miss-versus-save threshold
-         does. Asked properly (does the home club's figure co-move with its
-         visitors' inside one building-season?) `missed` scores 0.732, against
-         0.155 for the slot row, −0.012 for the defencemen row, and 0.449 for
-         hits — the KNOWN scorer-judged positive control. It is nearly twice as
-         building-dependent as the metric we already disclose a bias on.
-
-     ⭐ WHETHER A MISS IS A MISS IS A HUMAN JUDGEMENT. Shot location is geometry
-     and a defenceman is a roster row; "that one missed rather than being saved"
-     is a person in the arena deciding. That is the line, and it is worth more
-     than this row was. */
   { key: 'slot', label: 'shot attempts from the slot',
-    /* ⚠️ THE DENOMINATOR IS THE LOCATED ATTEMPTS, NOT ALL OF THEM, and the
-       sentence says so: a blocked shot's coordinate is the BLOCK POINT, so an
-       attempt a body stopped has no shot location and is in neither part. */
     says: 'Of every 100 shot attempts this team took from a spot the feed records, '
         + 'this many came from the slot.',
-    /* ⚠️ AND THIS IS WHY 34 IS SMALLER THAN THE DEFENCEMEN ROW'S 43 IN THE SAME
-       GAME: nine of that club's attempts were blocked, and a blocked shot's
-       coordinate is the BLOCK POINT, so a blocked attempt has no shot location
-       at all. Without the noun the two numbers read as a contradiction. */
     counts: 'attempts each team took from a spot the feed records',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
 ];
 
-/**
- * ⭐⭐ THE MEASURES WE DELIBERATELY DO NOT SHOW, DEFINED SO THE CARD CAN SAY WHY.
- *
- * Kevin, 2026-09-23: *"as long as we quantify what 'possession family' means (so
- * a novice can connect the dots), then yes, I'm good with showing it once."*
- *
- * Corsi, Fenwick and shots-on-goal share are separate names in public hockey
- * analysis and each of them clears our admission rule on its own. They are not on
- * the card because they are **the same measurement as the CF% row** — over full
- * club-seasons they move together almost perfectly, and four rows that agree read
- * to a novice as four pieces of evidence rather than one. `reliability.agreement`
- * computes exactly how tightly, over the same club-seasons and with the same
- * centring, and the card prints that number instead of the rows.
- *
- * ⛔ THEY ARE HERE AND NOT IN THE PIPELINE, because a measure the site declines
- * to show is still a claim the site makes, and a claim belongs beside the rows it
- * is about. Nothing renders these; `measure.mjs` reads them to compute one figure.
- *
- * ⚠️ EVERY FIELD BELOW ALREADY EXISTS ON THE PER-GAME RECORD. Adding a withheld
- * measure that needed new plumbing would be paying for a row we are not going to
- * draw — if one ever does, that is a reason to argue about it, not to build it.
- */
 const WITHHELD = [
   { key: 'corsi', label: 'shot-attempt share, all situations',
     of: g => ({ h: g.attempts.h, a: g.attempts.a }) },
-  /* UNBLOCKED ATTEMPTS = a side's attempts minus the blocks CREDITED TO THE OTHER
-     SIDE. `measureGame` credits a block to the team that made it, which is the
-     defending team, so the away side's blocks are what removed home attempts. The
-     first draft subtracted a side's own blocks and produced a Fenwick share that
-     moved the wrong way; the fields are named for who did the blocking. */
   { key: 'fenwick', label: 'unblocked shot-attempt share',
     of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
   { key: 'sog', label: 'shots-on-goal share',
     of: g => ({ h: g.sog.h, a: g.sog.a }) },
 ].map(m => ({ key: m.key, label: m.label,
-  /* A SHARE OF THE TWO SIDES' TOTAL, in the `{count, n}` contract every other row
-     uses. A game whose boxscore carried no figure contributes 0 to both rather
-     than a guess — the same degradation `rowsFor` makes. */
   ofGame: (g, side) => {
     const v = m.of(g);
     return Number.isFinite(v.h) && Number.isFinite(v.a) && v.h + v.a > 0
       ? { count: v[side], n: v.h + v.a } : { count: 0, n: 0 };
   } }));
 
-/**
- * The CF% row and the three measures it stands in for, as one list — so the
- * agreement figure is computed over the shown row and the withheld ones together
- * and nobody has to compose that pairing at the call site.
- */
-/**
- * ⭐⭐⭐ THE ONE JUDGEMENT ON THE PLAYER BLOCK, DECLARED SO IT CAN BE ARGUED WITH.
- *
- * **Each team's leading goalscorer this season.** Kevin, 2026-10-07, on which
- * figures a novice engages with: *"attempts, shots on goal, assists and goals …
- * I would lean toward those."*
- *
- * ⭐ IT IS A FACT, NOT A FORECAST, and that is what makes it publishable at all.
- * "He has scored the most goals for this team this season" is true of games
- * already played; it predicts nothing about tonight, so none of the
- * regression-to-the-mean trouble that comes with picking an extreme applies to
- * the CLAIM. What the reliability work governs is whether the FIGURES beside him
- * mean anything, and all four clear the 0.7 target inside the club admission.
- *
- * ⛔ NOTHING ABOUT THE PREVIEWED GAME IS USED. `players.json` is built from games
- * already in the archive, so a preview of a game not yet played cannot leak it,
- * and a preview of one already played does not quietly become a report on it.
- *
- * ⚠️ TIES GO TO THE LOWER PLAYER ID, which is arbitrary and is stated: it is a
- * tiebreak, not a second opinion about who is better. Early in a season several
- * players share the lead and something has to be stable across renders.
- */
 function watchFor(players, awayAb, homeAb) {
   if (!players || !players.clubs) return null;
   const pick = ab => {
@@ -1582,14 +702,7 @@ function watchFor(players, awayAb, homeAb) {
     return roster.slice().sort((x, y) => y.g - x.g || x.p - y.p)[0];
   };
   const away = pick(awayAb), home = pick(homeAb);
-  if (!away || !home) return null;          // one side missing is no comparison
-  /* ⛔ THE DATE TRAVELS WITH THE FIGURES. Every other surface on this site that
-     quotes an archive figure says what it counted through -- the static pages in
-     a banner, the front door in its own sentence -- and this block did not,
-     which made it the only dateless number on the site. It matters more here
-     than anywhere: these rows are rebuilt WEEKLY by `derive.yml`, never by the
-     nightly, so they are the figures most able to be days behind the scoreboard
-     a reader just looked at. */
+  if (!away || !home) return null; 
   return { season: players.season, through: players.through || null,
            range: players.range, need: players.need,
            away, home,
@@ -1600,35 +713,10 @@ function watchFor(players, awayAb, homeAb) {
              away: rate(away, r.fig), home: rate(home, r.fig) })) };
 }
 
-/** One player's per-game rate for one figure, with the counts that made it. */
 function rate(p, fig) {
   return p.gp ? { value: p[fig] / p.gp, count: p[fig], n: p.gp } : null;
 }
 
-/**
- * ⭐⭐⭐ THE FOUR PLAYER ROWS — Kevin, 2026-10-07: *"for a novice, I think they
- * would be most engaged with the 'standard' metrics: attempts, shots on goal,
- * assists and goals."*
- *
- * ⭐ ALL FOUR WERE MEASURED BEFORE THEY WERE DRAWN, by the instrument the club
- * rows are admitted under (`reliability.js`, at the declared TARGET of 0.7):
- * attempts repeat at 6 games, shots on goal at 10, assists at 24, goals at 33 --
- * every one inside the 41-game admission, and three of the four faster than any
- * club row we publish. The published `need` is recomputed from the archive by
- * `archive.js::playerSeasons`; these numbers are the reason the rows exist, not
- * the source of anything drawn.
- *
- * ⚠️ `fig` IS THE KEY IN THE PUBLISHED DOCUMENT and `key` is the row's own, for
- * the reason `EXPLAINS` exists at all: a row key and a storage key are not the
- * same namespace, and the day they diverge a string match would silently pair a
- * row with the wrong derivation.
- */
-/* ⛔ "PER GAME", NOT "A GAME" — Kevin, 2026-10-07, reading the live card:
-   *"that's more standard terminology."* ⭐ AND THE CARD WAS ALREADY DISAGREEING
-   WITH ITSELF ABOUT IT: the goals row's own sentence has said *"per game
-   played"* since the day it shipped, directly under a heading that said *"goals
-   a game"*. One quantity, two phrasings, two lines apart — the same shape as
-   `club`/`team` ([[house-vocabulary]]), and it took a reader to hear it. */
 const PLAYER_ROWS = [
   { key: 'playerGoals', fig: 'g', label: 'goals per game', noun: 'goals',
     says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
@@ -1642,20 +730,10 @@ const PLAYER_ROWS = [
 
 const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
 
-/** The season a game id belongs to, the way every other reader of an id reads it. */
 function seasonOf(id) {
   return String(id).slice(0, 4);
 }
 
-/**
- * ⭐ WHAT THE LEAGUE IS DOING THIS SEASON, for the club rows to sit beside.
- *
- * A share with no base rate loses the argument — 32 of every 100 attempts means
- * nothing to a novice until the league's own figure is next to it. It is summed
- * over THIS season's clubs rather than taken from the archive block, because the
- * club figure beside it is this season's: comparing a club's October to three
- * seasons of everybody would be two populations wearing one label.
- */
 function leagueShares(season, teams, recent) {
   const bucket = (teams && teams.seasons && teams.seasons[season]) || {};
   const tot = {};
@@ -1663,7 +741,6 @@ function leagueShares(season, teams, recent) {
   for (const t of Object.values(bucket)) {
     for (const r of CLUB_ROWS) { const v = r.of(t); tot[r.key].count += v.count; tot[r.key].n += v.n; }
   }
-  // the same tail the club rows get, so the two are current to the same night
   for (const g of (recent && recent.games) || []) {
     if (!g || typeof g.date !== 'string' || g.date <= ((teams && teams.through) || '')) continue;
     if (seasonOf(g.id) !== season || !g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
@@ -1676,19 +753,6 @@ function leagueShares(season, teams, recent) {
   return out;
 }
 
-/**
- * ⭐ HOW MANY GAMES EACH ROW NEEDS — MEASURED, NEVER TYPED.
- *
- * These were three numbers I had measured by hand and written into this file.
- * Kevin, 2026-09-23: *"there should never be hard coded values, anywhere."* They
- * are now computed over the archive by `reliability.js`, published in
- * measures.json, and read here.
- *
- * ⛔ AND THE ADMISSION RULE IS APPLIED TO WHAT WAS MEASURED, not to what was
- * assumed: a row whose measured count exceeds half a season is not a club row at
- * all, and it is dropped rather than shown with a target no club reaches inside a
- * season. That is `preview-and-corsi.md` §12 made to run rather than remembered.
- */
 function needsFrom(measures) {
   const s = (measures && measures.settle) || null;
   if (!s || !s.rows) return null;
@@ -1697,26 +761,13 @@ function needsFrom(measures) {
     const pub = s.rows[r.key] || {};
     const need = pub.games;
     if (need == null || need > (s.admission || Infinity)) continue;
-    /* ⭐ THE AXIS TRAVELS WITH THE ROW. `clubRange` is the min/max of the
-       full-season figures real clubs posted (`reliability.js`), and it is what
-       the card's bar is drawn against — so the edge of the bar means the edge of
-       what clubs do rather than a span somebody picked. A row published before
-       that field existed carries `null` and the renderer prints the figure with
-       no bar, which is the same degradation every other missing document gets. */
     out[r.key] = { need, range: pub.clubRange || null };
   }
   return out;
 }
 
-/** A club's season row, plus the games played since the weekly table was built. */
 function rowsFor(ab, season, teams, recent, league, needs) {
   const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab] || null;
-  /* ⛔⛔ NO CURRENT SEASON MEANS NO FIGURES, AND NOTHING BORROWED. Our numbers
-     exclude preseason, so from June until the season opens there is no row here
-     at all — and last season's row describes a different roster. Kevin and CHENG
-     both ruled silence: a stale figure presented as current is the stale-date
-     defect chosen on purpose. The rows still appear, saying they have nothing
-     yet, because the card's shape may not change from one week to the next. */
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
     .map(r => ({ key: r.key, label: r.label, says: r.says, counts: r.counts,
       need: needs ? needs[r.key].need : null,
@@ -1729,27 +780,12 @@ function rowsFor(ab, season, teams, recent, league, needs) {
       t.count = v.count; t.n = v.n; });
   }
 
-  /* ⭐ THE NIGHTLY TAIL. `teams.json` is republished on any night the archive
-     changes and `recent.json` every night, so in season the table is up to a day
-     and ~1 game short — on a card whose entire honesty device is a game count.
-     ⚠️ IT SAID "up to seven days and ~3 games" UNTIL 2026-10-07 and that was a
-     stale cadence, not a stale number: the nightly `measure` job has rebuilt
-     this document since 2026-10-03. The tail is still right and still needed —
-     the gap is smaller, never zero, and in the offseason it is weekly again.
-     THE DATES DECIDE IT, not a
-     set of ids: `through` is the newest game the table contains, so anything
-     after it is a game the table has not seen. A merge on id-presence would need
-     the table to list its games, which it does not and should not. */
   const through = (teams && teams.through) || '';
   for (const g of (recent && recent.games) || []) {
     if (!g || typeof g.date !== 'string' || g.date <= through) continue;
     if (seasonOf(g.id) !== season) continue;
     const side = g.homeAb === ab ? 'h' : g.awayAb === ab ? 'a' : null;
     if (!side) continue;
-    /* ⚠️ A RECORD FROM BEFORE THESE FIELDS EXISTED CANNOT BE ADDED, and it does
-       not move the game count either. Counting the game while dropping its
-       numerators would grow a denominator without its numerator, which makes a
-       share quietly wrong — worse than being a game behind. */
     if (!g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
     games += 1;
     for (const t of tally) {
@@ -1760,55 +796,21 @@ function rowsFor(ab, season, teams, recent, league, needs) {
 
   return { ab, games, rows: tally.map(t => ({ ...t, games,
     league: (league && league[t.key]) ?? null,
-    /* A SHARE IS COUNT OVER COUNT and the row carries both, so the card can print
-       its own evidence: "320 of 1,000 attempts" beside the league's figure. */
     value: t.n > 0 ? t.count / t.n : null,
-    // A row whose target the archive could not measure never claims to be settled.
     settled: t.need != null && games >= t.need })) };
 }
 
 
-/**
- * ⭐ WHEN THIS SEASON'S NUMBERS BEGIN — FROM THE LEAGUE, NOT FROM US.
- *
- * ⛔ THE CARD WAS A DEAD END FOR TEN DAYS AND SAID NOTHING ABOUT IT. Preseason
- * is excluded from every number here, so from the first preseason game until the
- * opener both columns read *"No games counted yet this season."* and stopped —
- * true, and to a reader it is indistinguishable from a page that is broken.
- * Kevin, from the live site on 23 September 2026, with exactly that screenshot.
- *
- * The repair is to say WHEN instead of only that there is nothing: `schedule.json`
- * already carries the league's own `regularSeasonStartDate`, so the sentence is
- * quoted from the feed and moves by itself every year. No date is typed, and a
- * document that predates the field degrades to the bare sentence rather than
- * inventing one.
- */
 function countingFrom(schedule, now) {
   const startsOn = ((schedule || {}).season || {}).regularSeasonStartDate || null;
   const today = String(now || '').slice(0, 10);
   return { startsOn, started: !!(startsOn && today && today >= startsOn) };
 }
 
-/**
- * @param id       the game this card is about
- * @param docs     {schedule, teams, measures, recent, catalog} — all published
- * @param now      ISO instant, injected so this is testable and deterministic
- *
- * @returns {{state, game, result, clubs, league, counting}}
- *   state    'before' | 'started' | 'played' | 'unknown'
- *   game     {id, away, home, startTimeUTC, date, preseason} or null
- *   result   {score, watch} once the archive holds it, else null
- *   clubs    {away, home} — each {ab, games, rows}
- *   league   the frame, or [] when the census predates it
- *   counting {startsOn, started} — when this season's numbers begin
- */
 function preview(id, docs, now) {
   const gid = Number(id);
   const d = docs || {};
   const fix = (((d.schedule || {}).upcoming) || []).find(g => g && Number(g.id) === gid) || null;
-  /* ⭐ THE CATALOG IS THE WITNESS THAT A GAME WAS PLAYED, not the clock. A
-     postponed game whose start has passed is not a game we hold, and deciding
-     from `now` would open a replay that does not exist. */
   const held = (((d.catalog || {}).games) || []).find(g => g && Number(g.id) === gid) || null;
 
   if (!fix && !held) return { state: 'unknown', game: null, result: null, clubs: null, league: [] };
@@ -1819,17 +821,8 @@ function preview(id, docs, now) {
   const game = { id: gid, away, home,
     startTimeUTC: fix ? fix.startTimeUTC : null,
     date: fix ? fix.date : held.d,
-    // The league's own type, quoted: 1 is preseason, which our numbers exclude.
     preseason: (fix ? fix.gameType : held.t) === 1 };
 
-  /* ⛔⛔ 'started', NOT 'underway', AND THE RENAME IS THE FIX. A start time that
-     has passed is all we know; a game is over about two and a half hours later
-     and the next ingest is up to thirteen hours after that, so `underway` was a
-     claim that went false on its own and stayed on the page — the shape of
-     defect this project has now made three times (`next-play-shading`). It was
-     also a REAL-TIME claim on a site whose whole position is that it is a replay
-     and never live. `started` is a fact about the clock that cannot expire, and
-     the renderer prints the start itself rather than a status. */
   let state = 'before', result = null;
   if (held && held.v) {
     state = 'played';
@@ -1840,170 +833,40 @@ function preview(id, docs, now) {
 
   const shares = leagueShares(season, d.teams, d.recent);
   const needs = needsFrom(d.measures);
-  /* ⭐ HOW MANY GAMES A ROW MAY NEED AND STILL BE SHOWN AS A CLUB ROW. Published
-     by `reliability.js` and carried here because the page says it OUT LOUD: the
-     league rows above the clubs are league rows precisely because they need more
-     than this, and the sentence under them used to call that "mostly luck". */
   const settles = ((d.measures || {}).settle || {}).admission;
   return { state, game, result, counting: countingFrom(d.schedule, now),
     settles: settles == null ? null : settles,
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures),
-    /* ⭐ WHO TO WATCH, OR NULL. Built here rather than in the renderer so the
-       SELECTION -- the one judgement on this block -- is a function of published
-       data that a test can drive, not a branch inside a DOM builder. */
     watch: watchFor(d.players, away, home) };
 }
 
-/**
- * ⭐ WHERE A FIGURE'S DOOR LANDS, AND NOTHING ELSE.
- *
- * ⛔⛔ WHY THIS IS ITS OWN FILE, 2026-09-24. The preview card writes work-door
- * hrefs and the methods page writes the matching section ids, so the two must
- * agree on one spelling — and the way that was guaranteed was to inline the
- * whole of `methods.js` into the card's page. That was cheap while `methods.js`
- * was a table of ten derivations. The moment `PRINTED` was added it cost
- * `preview.html` 12KB of prose it can never render: every caveat, every
- * argument, on the one page of this site that exists to be pasted into a chat
- * window. A page carrying a tenth of its weight in code it cannot reach is the
- * asset-caching argument arriving from the other side.
- *
- * ⚠️ SO THE RULE IS UNCHANGED AND THE FILE IS SMALLER: there is still exactly
- * one spelling of the anchor, and both sides still call it rather than asserting
- * agreement between two literals. `methods.js` imports from here and re-states
- * nothing.
- */
 
-/**
- * ⭐⭐ WHICH DERIVATION EXPLAINS WHICH ROW, DECLARED RATHER THAN MATCHED BY NAME.
- *
- * ⛔⛔ THE DEFECT THIS CLOSES, 2026-09-24. Every entry used to be found by
- * `DERIVATION[row.key]`, so a row and a derivation were the same thing whenever
- * they happened to share a string. The card's `slot` row is A CLUB'S SHARE OF
- * ITS ATTEMPTS TAKEN FROM THE SLOT; the front door, `what-you-can-see` and
- * `slot.html` all print a different measurement that is also called slot — HOW
- * OFTEN A SHOT FROM THERE GOES IN, 11.4%. Two measurements, two denominators,
- * one word. Under string matching, giving the second one a derivation would have
- * silently handed it the first one's, and the door would have opened on a
- * confident, wrong explanation — worse than no door.
- *
- * ⚠️ AND THE ROW KEY IS NOT OURS TO RENAME, which is why the DERIVATION moved
- * instead. `preview.js` reads `settle.rows[row.key]` out of the published
- * `measures.json`, whose live keys are `dmen`, `level5`, `slot`. Renaming the
- * row would leave that lookup undefined until `derive.yml` next republished —
- * Mondays 15:47 UTC — so a rename that reads as cosmetic would have degraded a
- * live card for days. A derivation key is internal and costs nothing.
- *
- * ⭐ A NEW ROW WITH NO ENTRY HERE IS A BUILD FAILURE, not a silent fallback: the
- * gate requires this map to cover everything `keysOf()` reports.
- */
 const EXPLAINS = {
   level5: 'level5', dmen: 'dmen', slot: 'slotShare',
   powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
   icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
-  /* ⭐ FOUR ROWS, ONE DERIVATION, and that is the honest grouping rather than a
-     saving: all four are the SAME DIVISION -- a count of a player's events over
-     the games he dressed for -- differing only in which events are counted. The
-     methods page is organised by division, so four sections would be one
-     explanation printed four times with a word changed, which is the drift
-     `methods.js` exists to prevent. The numerators are named inside it. */
   playerGoals: 'playerRate', playerAssists: 'playerRate',
   playerShots: 'playerRate', playerAttempts: 'playerRate',
 };
 
-/** The derivation that explains a row, or undefined if none is declared. */
 function explains(rowKey) {
   return EXPLAINS[rowKey];
 }
 
-/** Every row the card can draw, as declared here. */
 const EXPLAINED_ROWS = Object.keys(EXPLAINS);
 
-/**
- * ⭐ THE ANCHOR A FIGURE'S DOOR POINTS AT, stated once.
- *
- * The card writes this href and the page writes this id. Two spellings of one
- * string is the shape of dead link that looks completely normal, so there is one
- * spelling and both sides call it.
- */
 function anchorOf(key) {
   return 'm-' + key;
 }
 
-/**
- * The anchor for a ROW, which is the form every caller outside this module
- * holds. It exists so that no caller has to know a row key and a derivation key
- * are different things — the one place that knows is `EXPLAINS`.
- */
 function anchorFor(rowKey) {
   return anchorOf(explains(rowKey));
 }
 
-/**
- * EVERY FIGURE THE REST OF THE SITE PRINTS, AND THE ARITHMETIC BEHIND IT.
- *
- * ⭐⭐⭐ WHY THIS IS NOT IN `methods.js` ANY MORE — 2026-09-26. It was, and the
- * split is the same move `anchors.js` made in the same week, for the same
- * measured reason. Kevin's overlay puts this table on the REPLAY: pressing
- * `Is that a lot?` beside a layer draws that layer's figures over the rink. The
- * replay therefore has to carry whatever `printed()` needs — and `methods.js`
- * imports `CLUB_ROWS`, `POSSESSION_FAMILY` and `leagueRows` from `preview.js`
- * for its OTHER half, the preview card's derivation catalogue, which the replay
- * never draws. Inlining the whole of it would have put 63KB on `game.html` to
- * reach 18KB of it, and left the game page holding a second module it uses no
- * part of.
- *
- * ⛔ AND THE ALTERNATIVE WAS WORSE THAN BYTES. Shipping `methods.js` without
- * `preview.js` beside it would have WORKED — `CLUB_ROWS` is referenced only
- * inside functions the replay never calls — which is exactly the kind of thing
- * that works until somebody adds one call. A module whose correctness depends on
- * which of its functions a page happens to invoke is not a module.
- *
- * The line is a real one: what is in this file is the figures the site PRINTS
- * and the published arithmetic behind them. What stayed in `methods.js` is the
- * derivation catalogue for the preview card's rows. `methods.js` imports and
- * re-exports these three, so nothing that already read them had to change.
- */
 
 
-/**
- * ⭐⭐⭐ THE FIGURES THE REST OF THE SITE PRINTS, AND WHY THEY ARE A SECOND TABLE.
- *
- * `DERIVATION` explains the preview card's rows, and `keysOf()` asks the CARD
- * what those are so that the two lists cannot drift apart. The front door and
- * `what-you-can-see.html` print seventeen more figures that are not card rows at
- * all — how often a shot from the slot goes in, what the power play does to the
- * pace, what the scoreboard does to it, what a zone start is worth — and on
- * 2026-09-24 not one of them had a door to anything. A reader following Kevin's
- * standing rule from the front door arrived at a LESSON, which teaches what the
- * thing is and says nothing about how it was counted. That is the same
- * conflation `methods.js` was built to end, one surface further out.
- *
- * ⛔⛔ AND AN ENTRY HERE MAY NOT TYPE ITS OWN `count` AND `of`. Every row in
- * `DERIVATION` carries two sentences written HERE, one file away from the
- * arithmetic that makes them true, and the only thing stopping them drifting is
- * that somebody re-reads both. For these four there is no need to take that
- * risk: `archive.js` has always published a `what` beside its shares, and as of
- * 2026-09-24 `census.js` does too — in the same document this page already
- * fetches. So the sentence a reader is shown IS the sentence the measurement
- * travels with, read at render time, and `test/methods.test.js` fails an entry
- * that grows a `count` or an `of`. `why` and `caveat` stay written here because
- * they are ARGUMENTS about a figure rather than descriptions of it, and an
- * argument has no published field to read.
- *
- * ⭐ EACH `read` NAMES ITS THREE FIELDS RATHER THAN INFERRING THEM. `count ÷ n`,
- * `attempts ÷ minutes` and `atk ÷ n` are three spellings of one idea and the
- * document is not going to unify them; a resolver that guessed which field was
- * the numerator would be a second place the shape of the archive is written
- * down. Naming them makes the path greppable: a reader can open `measures.json`
- * at `census.endZone`, find `atk` and `n`, and do the division themselves.
- *
- * ⚠️ `is` IS A LABEL AND NOT A DESCRIPTION. It says WHICH published object a
- * line is reading — "on the power play", not what a power play is — because the
- * field name (`ppFor`) is ours and means nothing to a reader. Anything that
- * describes the MEASUREMENT belongs in the published `what`.
- */
 const PRINTED = {
   slotGoals: {
     label: 'How often a shot from the slot goes in',
@@ -2029,16 +892,6 @@ const PRINTED = {
           + 'went right, so this cannot tell you that the same shot moved '
           + 'twenty feet in would go in three times as often.' },
   slotAttempts: {
-    /* ⛔⛔ THE THIRD MEASUREMENT CALLED "SLOT", AND THE REASON IT IS ITS OWN
-       ENTRY. `slotGoals` is how often a shot from there goes in; the CARD's
-       `slot` row is one club's share of its own attempts taken from there, and
-       this is the LEAGUE's share of every located attempt. Three denominators,
-       one noun. The figure under the drawing on `slot.html` first pointed at the
-       card row's derivation, which is the same definition over a different
-       population — so the door resolved, rendered, and would have answered a
-       reader's "where did 46.7% come from?" with r = 0.72 over 38 games. Caught
-       by the gate that requires a door's section to show a number the copy
-       shows, which is the one check here that is not circular. */
     label: 'How many shot attempts are taken from the slot',
     where: 'The note under the drawing on the Shots from the slot rule page.',
     reads: [
@@ -2051,28 +904,6 @@ const PRINTED = {
        + 'worth printing rather than arguing with. Nearly half of all located '
        + 'attempts are already taken from inside it, and the conversion gap '
        + 'survives that.',
-    /* ⛔⛔ THE TWO FIGURES CAME OUT OF THIS SENTENCE, 2026-09-28, rather than
-       being derived. It read *"the boundary is also ours — 33 feet from the net
-       and 22 from centre"*, both typed — and the shape is already stated in one
-       place: the slot layer's own `counts`, which interpolates both constants
-       and is printed on every surface this caveat reaches, the replay panel and
-       `how-we-measure.html`, where `data/layer-rules.json` carries it verbatim.
-       ⭐ **Deleting a second copy beats deriving a second copy.** Deriving would
-       have meant importing `rink.js` into this module, and this module is
-       inlined on `how-we-measure.html`, which does not carry it — 5.4KB gzipped
-       to restate a number the page already prints.
-
-       ⚠️ AND THE OLD SENTENCE WAS INVISIBLE TO ITS OWN GATE, TWICE OVER.
-       `test/prose-constants.test.js` anchors on the UNIT, so `22 from centre`
-       was out of reach by that file's own declared rule — and `33 ` ended one
-       concatenated string while `feet` began the next, so the quantity was split
-       across a boundary nothing in this repo reassembles. The second one was
-       undeclared, and is refused outright by that file now.
-
-       ⭐ THE CLAIM THE SENTENCE WAS FOR SURVIVES AND IS SHARPER. `33` and `22`
-       arrived in the initial commit and no file, doc or commit message says
-       where from; Doctrine §7 defends the KIND of definition, not these values.
-       So the sentence says CHOICE where it used to say numbers. */
     caveat: 'A blocked attempt is not in either count, and that is not '
           + 'tidiness: the coordinate the feed records for a block is where the '
           + 'puck was STOPPED, which is the blocker\u2019s position rather than '
@@ -2082,21 +913,7 @@ const PRINTED = {
           + 'or the league publishes, applied to coordinates a person in the '
           + 'building recorded.' },
   saves: {
-    /* ⭐ THE ONE ENTRY HERE THAT IS NOT ON A STATIC PAGE. Every other figure in
-       this table is printed in prose the builder substitutes; this one is
-       printed by the REPLAY, once per game, by the Goaltending layer. A reader
-       watching a save percentage build in front of them has exactly the same
-       question a reader of the front door does, and until now the layer could
-       only answer it with its own counting rule — true, and silent about what
-       ordinary looks like. */
     label: 'How often a goaltender makes the save',
-    /* ⚠️ NO `where`, AND THAT IS NOT AN OMISSION. This figure is printed on no
-       static page at all — the Goaltending layer builds it in front of a viewer,
-       once per game — and the line saying so is DERIVED from the layer
-       descriptors rather than typed here. A `where` would have been the same
-       sentence twice on one screen, which is the defect `FIGURE_CLAUSE` closed
-       on the front door. The gate requires a figure to say where a reader met
-       it; it does not require that sentence to be typed. */
     reads: [
       { is: 'Saved', at: ['attemptMix', 'saveFraction'],
         num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
@@ -2105,10 +922,6 @@ const PRINTED = {
        + 'they are least equipped to read: .900 sounds like a school grade and '
        + 'is in fact roughly average. Printing what ordinary is turns the '
        + 'figure on screen from a score into a comparison.',
-    /* ⚠️ THIS SAID "THE DENOMINATOR", AND THE COLD-READER GATE CAUGHT IT. That
-       is a word only we use, on the page whose whole subject is being checkable
-       by somebody who does not work here. What it divides by can be said in the
-       words a reader already has. */
     caveat: 'What it divides by is the shots the goaltender actually FACED, so '
           + 'an empty-net goal is in neither half and a shootout attempt is out '
           + 'altogether. It also treats every shot as one shot: a tip from the '
@@ -2116,18 +929,7 @@ const PRINTED = {
           + 'same, which is most of what separates two goaltenders with the '
           + 'same number.' },
   pace: {
-    /* ⛔ THIS LABEL SAID "an hour of hockey" AND THAT IS A DIFFERENT NUMBER.
-        `census.pace` counts one CLUB's attempts against the minutes that club
-        played, so an hour of even-strength hockey holds about 117 of these
-        between the two of them — not 59. A label on the methods page that
-        doubles a figure is the worst place on the site to be loose. */
     label: 'How many shot attempts a team takes in an hour',
-    /* ⛔ AND THIS USED TO CLAIM THE GAME PAGE TOO. It does not print this
-       figure: the box under the ice counts attempts, and the per-60 rate is
-       printed on exactly one surface. Measured by grepping the built pages for
-       the substituted clause, after a first version asserted the surface from
-       memory — which is the flattering direction on a question nobody had
-       asked. ⏭ The gate that makes this mechanical arrives with the doors. */
     where: 'The All situations card on What you can see here.',
     reads: [
       { is: 'On the power play', at: ['census', 'pace', 'ppFor'],
@@ -2166,13 +968,6 @@ const PRINTED = {
         said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
         as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
     ],
-    /* ⚠️ IT USED TO SAY "the first figure on this page", which is a claim about
-       ORDER rather than about a measurement, and the order is decided by
-       `CLUB_ROWS` two files away. Naming the figure costs nothing and cannot
-       drift. */
-    /* ⚠ AND THE COMMENT ABOVE WAS HALF-OBEYED. It named the figure, which was
-       the fix, and kept "above", which was the defect — on a page where this
-       sits in a different place entirely. */
     why: 'It is the evidence behind the condition on the 5-on-5 number. '
        + 'That one is measured only while the score is level, '
        + 'and this is why: the same teams, at the same strength, take a '
@@ -2196,26 +991,6 @@ const PRINTED = {
         num: 'def', den: 'n', out: 'defPerDraw', as: 'ratio',
         unit: 'attempts per face-off' },
     ],
-    /* ⛔⛔⛔ THIS PROSE POINTED AT THINGS THE READER CANNOT SEE, and both
-       surfaces that print it are surfaces where they are not on screen. It read
-       *"It prices the blue-line band"* and *"which is what the shaded band is
-       drawn around"*. On `how-we-measure.html` there is no rink at all; in the
-       overlay over the replay there is one and the panel sets it to
-       `visibility:hidden` — measured on production 2026-09-28, both the band and
-       the ice, while those exact sentences were on screen.
-
-       ⭐⭐ THE COST WAS A FALSE BUG REPORT FROM THE PERSON WHO BUILT IT. Kevin
-       read this card with the Zone starts layer ON and concluded the shading had
-       been removed, because the only place the band was named was a paragraph
-       covering it up. When a sentence's referent is invisible, a reader does not
-       conclude *I cannot see it* — they conclude *it is not there*.
-
-       ⭐ AND IT NAMES NO GEOMETRY, deliberately. The band's width has exactly one
-       source — `ZONE_BAND_FT` in `rink.js`, measured off the paint — and
-       spelling "five feet either side" here would be a fourth prose copy of a
-       constant, which is the open debt this project already carries for the
-       slot. The sentence says what the QUESTION is; the shape stays where it is
-       defined. */
     why: 'It prices the place a face-off is taken. A novice is told that where a '
        + 'draw happens matters; this says by how much, in the only currency the '
        + 'record holds — shot attempts before the next whistle.',
@@ -2227,54 +1002,15 @@ const PRINTED = {
           + 'not the place.' },
 };
 
-/**
- * ⭐ ONE FIELD OUT OF THE PUBLISHED DOCUMENT, OR NULL.
- *
- * Every read is null-safe the whole way down, because a document that predates a
- * field is the ordinary case on this site and not an error: `measures.json` is
- * republished whenever the archive changes and the page is fetched by whoever
- * arrives. The page
- * degrades by saying which half is missing — see `printed()`.
- */
 function at(measures, path) {
   return path.reduce((o, k) => (o == null ? null : o[k]), measures);
 }
 
-/**
- * ⭐ THE TABLE ITSELF IS EXPORTED SO THE GATE CAN LOOK AT IT, and that is not a
- * convenience. `printed()` builds its result field by field, so an entry that
- * grew a typed `count` would never reach the output and a test reading the
- * OUTPUT would report the rule as kept — a check asking a narrower question than
- * it announces, which is the failure this project keeps paying for. The rule is
- * about what is WRITTEN here, so the gate reads what is written here.
- */
 { PRINTED };
 
-/** Every figure printed elsewhere on the site that this page explains. */
 const PRINTED_KEYS = Object.keys(PRINTED);
 
-/**
- * The entries for the third section: one per figure, each carrying the published
- * arithmetic and the published sentence that says what it is.
- *
- * ⛔ A READ WHOSE NUMBERS OR WHOSE SENTENCE ARE MISSING IS DROPPED AND COUNTED,
- * never rendered half-built. The alternative — a figure with no sentence — is a
- * number with no derivation, on the one page that exists to refuse those, so
- * `missing` travels out and the page says which half it lost.
- *
- * ⭐⭐ AND A PUBLISHED SENTENCE IS PRINTED ONCE PER PAGE, NOT ONCE PER FIGURE.
- * `pace` and `scoreEffects` are two different figures cut out of ONE published
- * measurement, so they read one `what` between them — and rendering it under
- * both would put the same paragraph on the page twice. That is the defect
- * `FIGURE_CLAUSE` closed on the front door the day before this was written,
- * arriving from the other direction: not one statement written twice, but one
- * statement READ twice. So the first entry to reach a sentence prints it and
- * every later one carries `sameAs`, the anchor of the section that has it.
- */
 function printed(measures) {
-  /* path → the anchor of the first entry that printed that sentence. Built as
-     the list is walked, which is why this is a map rather than a second pass:
-     the order entries are rendered in IS the order they claim a sentence in. */
   const seen = {};
   return PRINTED_KEYS.map(key => {
     const e = PRINTED[key];
@@ -2285,23 +1021,12 @@ function printed(measures) {
       const from = (r.said || r.at).join('.');
       const sentence = at(measures, r.said || r.at);
       const path = r.at.join('.');
-      /* ⛔ THE REASON TRAVELS WITH THE PATH. The page says out loud what it
-         could not show, and "no description published for X" and "no figures
-         published for X" are two different confessions — one of them ours to
-         fix in `census.js` and the other a stale document. A single `missing`
-         list would have the page announcing a narrower claim than it knows. */
       if (!o || o[r.num] == null || !o[r.den] || o[r.out] == null) {
         missing.push({ path, why: 'figures' }); return;
       }
       if (!sentence || !sentence.what) {
         missing.push({ path, why: 'description' }); return;
       }
-      /* ⭐ GROUPED UNDER THE SENTENCE THAT DESCRIBES THEM, not listed and then
-         described. The published `what` for the slot reads "…this many were
-         goals", and "this many" has to have a number immediately above it or
-         the reader is reassembling the page in their head. Three rates that
-         share one sentence group under it; two that have one each sit under
-         their own. */
       let g = groups.find(x => x.from === from);
       if (!g) {
         groups.push(g = { from, what: sentence.what, sameAs: seen[from] || null,
@@ -2319,37 +1044,11 @@ function printed(measures) {
   });
 }
 
-/**
- * WHAT EACH FIGURE IS COUNTED FROM — THE PROSE, AND THE LEAGUE ROWS IT DESCRIBES.
- *
- * ⭐⭐ WHY THIS LEFT `methods.js` — 2026-09-26, the same week and the same reason
- * as `anchors.js`, `printed.js` and `league-rows.js`. Kevin's `Is that a lot?`
- * overlay draws a layer's methods-page section over the rink, and four of the
- * seven layer doors land on league rows — attempts, penalties, offsides, icings.
- * The replay therefore needs this table and the join below; it does not need
- * `methods()`, which resolves the preview card's CLUB rows and pulls `CLUB_ROWS`
- * in with it.
- *
- * ⛔ AND `leagueFigures` IS HERE RATHER THAN IN THE OVERLAY. `methods()` calls
- * it for the methods page and the replay calls it for the panel; written twice,
- * the two surfaces would be free to join a row to its prose differently, which
- * is precisely the drift the shared renderer was extracted to stop.
- */
 
 
 
 
-/**
- * What each figure is COUNTED FROM, in the words a reader can check us on.
- *
- * `count` and `of` are the numerator and the denominator. They are prose and not
- * code, which is a real weakness: nothing forces the sentence to match the
- * arithmetic, and the only defence is that the arithmetic lives one file away in
- * the row's own `of`/`ofGame`. Where the two could plausibly diverge the sentence
- * names the FIELD, so a reader can grep for it.
- */
 const DERIVATION = {
-  /* ---------------------------------------------------------- the club rows */
   level5: {
     count: 'shots this team tried while both sides had five skaters and a goalie '
          + 'on the ice, and the score was tied',
@@ -2357,15 +1056,6 @@ const DERIVATION = {
       + 'the two traded shots evenly',
     why: 'It is the closest thing hockey has to "who had the puck": a team that '
        + 'is shooting is a team that has it.',
-    /* ⛔⛔ THIS SENTENCE USED TO EXPLAIN THE SCORE CONDITION BY A MECHANISM WE DO
-       NOT MEASURE — "a team that is losing throws everything at the net". Kevin
-       caught it: *"We don't measure that, nor can we 'show the work'
-       conclusively that that's the case, so why do we include that snippet?"*
-       He is right, and on this page of all pages. The replacement is not a
-       deletion: the archive has counted the EFFECT for as long as the site has
-       existed, it is the front door's own headline, and it was sitting one
-       document away. So the claim is made by two published counts instead of by
-       an assertion about what teams do. `evidence` in `methods()` reads them. */
     evidenceLead: 'Why the score has to be tied \u2014 the site\u2019s own count, over '
                 + 'every game it holds. Two different counts of two different '
                 + 'things, so the totals differ:',
@@ -2381,12 +1071,6 @@ const DERIVATION = {
   dmen: {
     count: 'shot attempts taken by a player the roster lists as a defenceman',
     of: 'every shot attempt by that team',
-    /* ⚠ THIS ENDED "something the number ABOVE does not" until 2026-10-03, and
-       the rule against it is written out at `attempts` further down this same
-       file: a `why` travels with its figure to every surface that draws it, so a
-       sentence about what is NEXT TO it is true in at most one place. Kevin found
-       it on the methods page, where nothing is above this at all. The replacement
-       says the useful thing without naming a neighbour. */
     why: 'You can see this one from the first shift: does the puck keep going back '
        + 'out to the blue line, or does this team work it down low? And it is close '
        + 'to independent of who has the puck \u2014 two teams that trade shot attempts '
@@ -2410,7 +1094,6 @@ const DERIVATION = {
           + 'one counts every situation, so a team with a '
           + 'lot of power-play time is partly being described by its power play.' },
 
-  /* -------------------------------------------------------- the league frame */
   powerplay: {
     unit: 'goals for every 100 power plays',
     label: 'How often a power play produces a goal',
@@ -2452,11 +1135,6 @@ const DERIVATION = {
     label: 'How often a team ices the puck',
     count: 'times play was stopped for icing',
     of: 'two teams per game',
-    /* ⛔ "so tired players have to stay out" WAS HERE AND HAS BEEN CUT TWICE.
-       Kevin: *"I remember we cut this phrase once, but it snuck back in."* We
-       measure shift lengths; we do not measure fatigue, and whether the players
-       caught out there are tired is exactly the kind of thing this page is for
-       refusing. The RULE is the consequence, and the rule is checkable. */
     why: 'The other stoppage a newcomer cannot read, and the one whose '
        + 'consequence you can watch: the team that iced the puck may not change '
        + 'its line before the faceoff, and the faceoff is all the way back in '
@@ -2469,55 +1147,11 @@ const DERIVATION = {
     label: 'Where a shot attempt ends',
     count: 'attempts of each ending \u2014 reached the goalie, blocked, missed',
     of: 'every shot attempt in the archive',
-    /* ⛔⛔ THIS PROSE NAMED TWO THINGS THAT ARE NOT THERE, and they were not there
-       on EITHER surface. It promised a single bar — nothing draws one, here or on
-       the methods page — and it pointed at "the possession number above", where
-       what sits above is how often a team ices the puck. Kevin, 2026-09-30,
-       reading the Attempts door: *"there is no 'possession number'."*
-
-       ⭐ IT WAS WRITTEN FOR A NEIGHBOUR IT NO LONGER HAS. A `why` travels with its
-       figure to every surface that draws it, so a sentence about what is beside it
-       is a sentence that is true in at most one place. This one says only what is
-       true of the figure itself, wherever it is read.
-
-       ⚠️ AND IT CANNOT GO STALE. It used to state the share in words — "about half"
-       — beside a number the archive republishes, so a feed that moved to 60% would have
-       left the prose quietly wrong. It now describes THE REST of the split, which
-       is whatever the printed figure is not. */
-    /* ⛔⛔⛔ AND THE FIRST REWRITE OVER-CLAIMED IN THE OTHER DIRECTION. It said an
-       attempt "ends in exactly one of three ways: it reaches the goalie, a
-       DEFENDER blocks it, or it misses the net" — a taxonomy of the ICE, and
-       false. Kevin, 2026-09-30: *"the shot could be deflected by a teammate, the
-       shot could hit a teammate too, there are (at least) 5 ways a shot attempt
-       could end."* Right, and the tell was already in the document: the archive's
-       own published description of that bucket reads *blocked by a BODY*, which
-       is the hedge my sentence removed.
-
-       ⭐ WHAT IS TRUE IS A FACT ABOUT THE RECORD, AND IT IS ALREADY GATED. Every
-       attempt carries exactly one of the four recorded types and they sum to the
-       denominator — `test/measure.test.js`, *the archive shares are of ATTEMPTS*,
-       asserts both halves against the producer, so it holds for any archive and
-       not merely for this week's. That is the property this sentence rests on,
-       and it survives the ice being messier than three words. The numbers are
-       deliberately NOT quoted here: a sum typed into a comment beside a document
-       rewritten every Monday is a claim with a half-life.
-
-       ⏹ AND THE MESSINESS MOVED TO THE CAVEAT, which is the section that asks
-       what could be wrong with it — rather than being answered by a `why` that
-       simply did not mention it. */
     why: 'Every attempt in the archive is filed as ending one of three ways \u2014 it '
        + 'reached the goaltender, a body blocked it, or it missed the net \u2014 and '
        + 'the three account for all of them with none left over. That is what '
        + 'makes this figure readable on its own: an attempt it does not '
        + 'count is one the goaltender never had to face.',
-    /* ⛔ AND THE CAVEAT SPOKE TO THE WRONG READER. Kevin: *"this sentence doesn't
-       really talk to our audience \u2014 even though it's geared toward the
-       #fancystats crowd, it still needs to be understandable by all."* It leaned
-       on two scorer's categories in quotation marks, named the person only as
-       "a person in the arena", and closed on house vocabulary. Same three claims,
-       said the way you would say them out loud: it is a human call, we measured
-       how far apart the rinks are, and that measurement constrains what we are
-       willing to publish. */
     caveat: 'Three headings are coarser than what happens on the ice \u2014 a puck '
           + 'deflected off a teammate still has to be filed under one of them \u2014 '
           + 'and somebody in the arena decides which. Whether a shot that did not '
@@ -2530,25 +1164,10 @@ const DERIVATION = {
     label: 'What a player does in a game',
     count: 'that player\u2019s goals, assists, shots on goal or shot attempts',
     of: 'the games he dressed for this season',
-    /* ⚠️ THE DENOMINATOR IS GAMES DRESSED, NOT GAMES HE DID SOMETHING IN, and
-       the difference is the whole honesty of the figure: dividing by the games a
-       player recorded something would divide by the games he was good in, which
-       flatters exactly the players this card is most likely to name. */
-    /* ⚠️ IT SAID "the totals are printed beside it" AND THAT WAS CAUGHT BY THE
-       GATE WRITTEN FOR EXACTLY THIS. A `why` travels with its figure to every
-       surface that draws it -- the card, the methods page, the work overlay --
-       so a sentence about what sits next to it is true in at most one of them.
-       The same defect `attempts.why` had, in the same week. */
     why: 'The preview names one skater on each side so a newcomer has somebody to '
        + 'follow, and shows what he does rather than how good he is. A rate rather '
        + 'than a total, because two players have not played the same number of '
        + 'games.',
-    /* ⛔⛔ THE CAVEAT IS THE ONE THAT MATTERS AND IT IS NOT A HEDGE. The split-half
-       measurement that admitted these four rows says they REPEAT; it says nothing
-       about whether the player is good. Most of the distance between two skaters
-       on any of them is role and ice time -- a centre takes the draws, a first-line
-       winger gets the minutes. A card that let "does this often" be read as "is
-       good at this" would be making a claim nothing here supports. */
     caveat: 'This says what a player does, not how well he does it. Most of the '
           + 'difference between two skaters is the job they are given and the '
           + 'minutes they get \u2014 a player on the first line and the power play '
@@ -2579,54 +1198,21 @@ const DERIVATION = {
           + 'were clean.' },
 };
 
-/**
- * A LEAGUE ROW JOINED TO THE WORDS THAT EXPLAIN IT — one per published counter.
- *
- * ⛔ THE ROW COMPUTED ITS OWN DIVISION AND THIS PASSES IT ALONG; NOTHING HERE
- * DIVIDES. "power-play goals out of power plays" is a sentence and
- * "5,011 ÷ 22,872 = 21.9" is the work, and two spellings of one division is how
- * a card and its own explanation come to disagree about what the card says.
- */
 function leagueFigures(measures) {
   return leagueRows(measures).map(row => {
 
-    /* THE n, WHICHEVER FORM THIS ROW CARRIES IT IN. A shift row counts shifts and
-       a whistle row counts games; both are "what it was measured over" and the
-       page prints the one the row actually has. */
     const over = row.games != null ? { n: row.games, unit: 'games' }
                : row.n != null ? { n: row.n, unit: 'shifts' } : null;
     return { key: row.key, anchor: anchorFor(row.key),
       ...DERIVATION[explains(row.key)],
-      /* ⭐⭐⭐ THE DIVISION, CARRIED FROM THE ROW THAT DID IT. This is the whole
-         point of the page: "power-play goals out of power plays" is a sentence,
-         and "5,011 ÷ 22,872 = 21.9" is the work. The row computed it once and
-         this passes it along; nothing here divides. */
       work: row.work || null,
-      /* ⛔ AND THE ARCHIVE SIZE IS DROPPED WHEN IT IS THE DENOMINATOR AGAIN. The
-         shift row is counted over 3.1 million shifts and divided by nothing, so
-         printing "3,101,105 shifts it was counted over" beside "the middle value
-         of 3,101,105" is the same number twice wearing two labels. */
       over: over && row.work && row.work.n === over.n ? null : over,
-      /* ⚠️ AND THE NOUN SURVIVES THE SUPPRESSION. Dropping `over` also dropped
-         the only word that said WHAT was counted, so the page read "the middle
-         value of 3,101,105" — a number with no unit, on the page whose whole
-         subject is what our numbers are made of. Found by looking at it. */
       population: over ? over.unit : null };
   });
 }
 
-/** Every key this table can explain. The gate compares it against the card. */
 const EXPLAINED = Object.keys(DERIVATION);
 
-/**
- * What a figure is called, for a surface that links to it rather than renders it.
- *
- * ⭐ THE REPLAY'S LAYER DOORS NEED THIS AT BUILD TIME. Stoppages opens three
- * sections — penalties, offsides, icings — and three links all reading "How we
- * counted this" would be a menu with no labels on it. The labels are baked into
- * `data/layer-rules.json` by node and injected, so the game page carries the
- * label and not the machinery that produced it.
- */
 function explainedLabel(key) {
   const e = DERIVATION[key] || PRINTED[key];
   return e ? e.label : null;
@@ -2634,74 +1220,16 @@ function explainedLabel(key) {
 
 { DERIVATION };
 
-/**
- * Where every figure on the preview card comes from, and what is wrong with it.
- *
- * ⭐⭐ THE RULE THIS MODULE EXISTS TO MAKE MECHANICAL. Kevin, 2026-09-23: *"every
- * metric and number needs to have an opportunity for a critic to 'be shown the
- * work' and the work needs to be squared away."* When I audited the card against
- * that the same afternoon, five of its seven league tiles carried a door and
- * **every one of those doors led to a LESSON rather than to the WORK** — a link
- * to `penalties.html` teaches what a penalty is and says nothing about how 3.7 a
- * game was counted. Two tiles had no door at all, and the most attackable number
- * on the card, *"14 of 35 games"*, was naked.
- *
- * ⛔ SO THE LIST OF FIGURES AND THE LIST OF DERIVATIONS ARE ONE LIST. A methods
- * page maintained beside the card is a methods page that goes stale the first
- * time a row is added, and the staleness is invisible: both pages render fine.
- * `keysOf()` below reports exactly what the card can draw, `DERIVATION` must
- * cover it, and `test/methods.test.js` fails the build when it does not. That is
- * the gate rather than the intention.
- *
- * ⛔ AND EVERY NUMBER HERE IS READ, NEVER RESTATED. This module divides nothing
- * and counts nothing; it pairs published figures with the sentence that says what
- * they were divided by. A methods page that computed its own version of a figure
- * would be a second implementation of the measurement, which is the one defect
- * that would make the page worse than having none.
- *
- * ⚠️ THE `caveat` FIELD IS NOT DECORATION AND MAY NOT BE LEFT EMPTY TO BE TIDY.
- * Where we know a figure is dirty — hits are counted by the home rink's own crew
- * — the page says so in the same breath as the number. A criticism we have
- * already conceded internally and did not print is a criticism a reader is
- * entitled to think we were hiding.
- */
 
 
-/* ⭐ RE-EXPORTED, NOT RE-STATED. The prose table and the league join moved to
-   `derivation.js` so the replay's overlay can carry them without this file; see
-   that header. Two statements rather than `… from`, because the builders'
-   inliner strips the import line. */
 
 { DERIVATION, EXPLAINED, explainedLabel };
-/* ⭐ RE-EXPORTED, NOT RE-STATED. The table moved to `printed.js` so the replay
-   can carry it without `preview.js` (see that file's header). Every caller that
-   already read these three from here still does; `_module()` strips the import
-   and turns the re-into a harmless no-op, which is why this is two
-   statements rather than `… from`. */
 
 { PRINTED, PRINTED_KEYS, printed };
 
 
 
-/**
- * ⭐ EVERY KEY THE CARD CAN DRAW, ASKED OF THE CARD RATHER THAN LISTED BY HAND.
- *
- * The club keys come from `CLUB_ROWS` directly. The league keys cannot: they are
- * emitted conditionally by `leagueRows()`, one per published counter, so a
- * document that predates a counter renders fewer tiles. Calling the card's own
- * function means this answers what a READER is actually looking at — and the gate
- * gets the full set simply by handing it a complete document.
- *
- * ⛔ A SECOND LIST OF KEYS HERE WOULD DEFEAT THE WHOLE MODULE. The failure this
- * is built against is a methods page that silently stops covering a row; a
- * hand-written list is that failure with extra steps.
- */
 function keysOf(measures) {
-  /* ⭐ THE PLAYER ROWS ARE UNCONDITIONAL, unlike the league rows. A league row is
-     emitted only when the census carries its counter, so an older document draws
-     fewer; the four player rows are a fixed set the card either draws or does
-     not, and a document with no `players.json` means no BLOCK rather than fewer
-     rows inside one. */
   return [...CLUB_ROWS.map(r => r.key), ...PLAYER_ROWS.map(r => r.key),
           ...leagueRows(measures).map(r => r.key)];
 }
@@ -2709,41 +1237,17 @@ function keysOf(measures) {
 
 
 
-/* ⭐ RE-EXPORTED, NOT RE-STATED. Every caller outside this file holds
-   `methods.js` as the one place that knows about derivations, and moving the
-   anchor into its own file is a page-weight decision rather than a change to
-   that. ⛔ `… from` IS NOT USED: `_module()` in the builder strips import
-   lines and deletes the word `export`, which would leave the browser a bare
-   `{ … } from './anchors.js';`. Two statements survive that transform. */
 { anchorOf, anchorFor, explains, EXPLAINED_ROWS };
 
-/**
- * The page's content: the policy, then one entry per figure, then the family.
- *
- * @param measures  the published `measures.json`
- * @returns {{policy, club, league, family}} — `null` fields where the document
- *          predates the figure, which is the degradation every other surface makes.
- */
 function methods(measures) {
   const s = (measures && measures.settle) || null;
   const c = (measures && measures.census) || null;
 
   const policy = s ? { target: s.target, admission: s.admission, probes: s.probes || [],
                        half: s.half, seasons: s.seasons || [],
-                       /* ⚠️ THE CLUB-SEASONS BEHIND THE INSTRUMENT, taken off a row
-                          rather than stored twice. Every row is measured over the
-                          same population; reading it from the first one that has it
-                          keeps one number in one place. */
                        clubSeasons: Object.values(s.rows || {})
                          .map(r => r.clubSeasons).find(n => n != null) || null } : null;
 
-  /* ⭐⭐⭐ THE EVIDENCE FOR A CLAIM THE PROSE USED TO JUST MAKE. `baseRates` has
-     been published since the site began and the front door reads it; nothing
-     else did. A figure explaining WHY a measure is defined the way it is belongs
-     next to that measure, and it is the difference between "a losing team throws
-     everything at the net" (which we do not measure) and two counts a reader can
-     check. Only `level5` has one; a row without evidence renders without it,
-     rather than being given a figure that is not about it. */
   const base = (measures && measures.baseRates) || {};
   const EVIDENCE = {
     level5: [base.moreAttemptsLost, base.moreLevelControlLost]
@@ -2754,32 +1258,15 @@ function methods(measures) {
     const pub = (s && s.rows && s.rows[r.key]) || null;
     return { key: r.key, anchor: anchorFor(r.key),
              ...DERIVATION[explains(r.key)],
-             /* ⛔ THE CARD'S LABEL WINS, AND IT IS SET AFTER THE SPREAD ON PURPOSE.
-                A methods page that names a row differently from the row it explains
-                is a page a reader cannot match up — and the spread would silently
-                take precedence if this sat above it. */
              label: r.label,
-             /* ⛔ `admitted` IS RECOMPUTED FROM THE PUBLISHED FIGURES rather than
-                inferred from the row being present. A reader checking our work
-                needs to see the rule applied, not to be told the outcome. */
              admitted: !!(pub && pub.games != null && policy && pub.games <= policy.admission),
              r: pub ? pub.r : null, games: pub ? pub.games : null,
              alternate: pub ? pub.alternate || null : null,
              atTarget: pub ? pub.atTarget || null : null,
              clubRange: pub ? pub.clubRange || null : null,
-             /* The published `what` string travels WITH the count, so the page
-                never restates what a base rate is about. A sentence describing
-                a figure, typed somewhere other than where the figure is made, is
-                the drift this module exists to avoid. */
              evidence: (EVIDENCE[r.key] || []).length ? EVIDENCE[r.key] : null };
   });
 
-  /* ⭐⭐⭐ ONE SECTION FOR FOUR ROWS, AND THAT IS WHY `EXPLAINS` MAPS THEM ALL TO
-     `playerRate`. Goals, assists, shots on goal and shot attempts per player are
-     the SAME DIVISION with four numerators, so four sections would be one
-     explanation printed four times with a word changed -- and, since the anchor
-     is derived from the DERIVATION key, four sections would also share one id.
-     The numerators are named inside the section instead. */
   const player = DERIVATION.playerRate
     ? [{ key: 'playerRate', anchor: anchorOf('playerRate'), ...DERIVATION.playerRate,
          numerators: PLAYER_ROWS.map(r => r.noun) }]
@@ -2787,13 +1274,6 @@ function methods(measures) {
 
   const frame = leagueFigures(measures);
 
-  /* ⭐⭐ WHY THERE IS ONE POSSESSION ROW, AS A RANGE RATHER THAN AN ASSERTION.
-     The weakest agreement in the family is the honest headline: if even the least
-     similar pair moves together at 0.84, printing four of them shows one piece of
-     evidence four times. `min` is taken over the ABSOLUTE value because a
-     differential runs opposite to a share and is no less the same measurement
-     for it — though no member of the published family is currently signed that
-     way, and a future one would make this line load-bearing. */
   const fam = s && s.family && s.family.pairs && s.family.pairs.length ? s.family : null;
   const family = fam ? {
     clubSeasons: fam.clubSeasons,
@@ -2805,87 +1285,14 @@ function methods(measures) {
   } : null;
 
   return { policy, club, player, league: frame, family,
-           /* ⭐ THE THIRD SECTION RIDES ALONG rather than being a second fetch.
-              The page grabs one document and calls one function; a surface that
-              had to remember to call two would eventually call one. */
            printed: printed(measures),
-           /* The archive the league frame was counted over, so the page can say
-              it once above the tiles instead of on each of them. */
            games: c && c.games != null ? c.games : null };
 }
 
-/**
- * A FIGURE'S SECTION, AS MARKUP — THE RENDERERS, SHARED BY BOTH SURFACES.
- *
- * ⭐⭐⭐ WHY THIS IS A MODULE AND NOT PAGE SCRIPT. It was page script: these
- * functions lived inside `build_index.py`'s `HOW_BODY` string, which is
- * JavaScript embedded in Python and reachable from exactly one page. Kevin,
- * 2026-09-25: *"It takes 3 or 4 mouse clicks to get to 'how we counted this'
- * from a replay-layer and it takes us away from the replay page."* The fix is a
- * second door on the replay that draws THIS section over the rink — and the
- * moment two pages draw it, a copy written for the overlay would be a SECOND
- * IMPLEMENTATION of the block whose entire job is being the one place a figure's
- * arithmetic is stated. That is the drift the whole door architecture exists to
- * remove ([[show-the-work-or-do-not-print-it]]).
- *
- * So the renderers moved here unchanged, `how-we-measure.html` inlines them, and
- * the game page inlines them too. Neither page owns them.
- *
- * ⭐⭐ THERE ARE TWO, BECAUSE THE SITE HAS TWO KINDS OF FIGURE. `figureSection`
- * draws one whose numerator and denominator are described in PROSE we wrote
- * (`derivation.js`); `printedSection` draws one that travels with its own
- * published description in `measures.json`, and therefore has no `count`/`of`
- * written anywhere in our source. The header over `PRINTED` in `printed.js` says
- * why that asymmetry is deliberate.
- * ⛔ THE OVERLAY NEEDED BOTH AND I SHIPPED IT WITH ONE. Four of the replay's
- * seven layer doors land on the first kind and three on the second; the panel
- * opened on `Control`, named the layer in its heading and drew an empty body.
- * A design note written from the doors' NAMES rather than from what renders
- * them — the same reading-instead-of-measuring this file's `where` field has
- * already cost a morning.
- *
- * ⭐⭐⭐ AND IT IS HANDED ITS ELEMENT-MAKER RATHER THAN REACHING FOR `document`.
- * `src/lib` is the tier `tools/tiers.mjs` COUNTS as pure, and the first version
- * of this file named `document.createElement` — which made the generated block
- * in `docs/architecture.md` read *"sections.js reach outside pure computation —
- * the boundary §1 claims is broken."* It was right. `work.js` keeps the same
- * boundary by returning markup STRINGS; this keeps it by taking the primitive as
- * an argument, which is the arrangement `boot(G, RATES)` already uses and states:
- * *"RATES ARRIVES AS AN ARGUMENT AND IS NEVER REQUESTED IN THIS FUNCTION."*
- * The renderers are therefore a function of their inputs, testable with a
- * `create` that builds anything at all, and the tier's claim survives the move.
- *
- * ⚠️ THE NAMES ARE DELIBERATELY NOT `el`, `num`, `r2`. `_module()` strips the
- * import lines and drops the file's body into the page script's TOP LEVEL, and
- * `how-we-measure.html` already declares all three there. A redeclaration in
- * that scope does not throw — the later one silently wins — so a collision here
- * would not break the build, it would quietly change what another part of the
- * page prints. `mk`, `commas` and `two` cannot collide.
- *
- * ⚠️ AND IT TAKES `layerFor` RATHER THAN READING IT. The methods page injects
- * `LAYER_FOR` from `data/layer-rules.json` at build time; the game page knows
- * which layer is on because the reader just pressed it. A module that reached
- * for a page global would work on one surface and be undefined on the other.
- */
 
 const commas = n => (n == null ? '—' : n.toLocaleString());
 const two = v => (v == null ? '—' : v.toFixed(2));
 
-/* ⭐⭐⭐ THE ARITHMETIC OF A FIGURE PRINTED SOMEWHERE ELSE, AND NOTHING HERE
-   DIVIDES. Numerator, denominator and result are three published fields; this
-   places them side by side and rounds for the page. Rounding is presentation
-   — the division happened in `census.js` or `archive.js` and is not repeated.
-
-   ⛔ TWO SHAPES, BECAUSE A RATE PER SIXTY MINUTES IS NOT A QUOTIENT. Writing
-   "67,517 ÷ 42,615.7 = 95.06" would put a false sum on the page whose whole
-   subject is checkable arithmetic: that division is 1.58, and the 60 is the
-   scaling the published sentence describes. So a scaled figure says "in", and
-   a true ratio says "÷".
-
-   ⚠️ AND `fig()` IS NOT USED HERE. It reads anything under 1 as a share and
-   multiplies by 100 — correct for every figure it was written for, and wrong
-   for 0.765 shot attempts per face-off, which it would print as 76.5. The
-   unit decides, and the unit is published beside the figure. */
 function readLine(l) {
   const right = l.unit === '%' ? (l.value * 100).toFixed(1) + '%'
                                : two(l.value) + ' ' + l.unit;
@@ -2894,41 +1301,17 @@ function readLine(l) {
     : commas(l.count) + ' ÷ ' + commas(l.n) + ' = ' + right;
 }
 
-/** ⭐ HOW A MEASURED FIGURE IS PRINTED, IN ONE PLACE. A count of seconds is an
-    integer and reads wrong as "46.00"; a share reads wrong as "0.22" beside a
-    unit that says "for every 100". Three shapes, one rule, no per-row config.
-    ⚠️ NOT USED BY `readLine`: see the note over it for the 0.765 this would
-    print as 76.5. */
 function figFmt(v) {
   if (v == null) return '\u2014';
   return figScaled(v) ? (v * 100).toFixed(1)
        : Number.isInteger(v) ? String(v) : v.toFixed(2);
 }
 
-/**
- * ⭐ DOES `figFmt` MULTIPLY THIS BY 100 TO PRINT IT? Asked rather than re-derived,
- * because the answer changes what an equals sign is allowed to claim: a caller
- * writing "241,126 ÷ 500,720 = 48.2" has put a division on the page that does not
- * come out — see `workRow`. Two statements of the same condition is how the line
- * and the figure would come to disagree about which one is scaled.
- */
 const figScaled = v => v != null && !Number.isInteger(v) && v < 1;
 
-/** The quotient as a reader checking the division would get it, agreeing to the
-    last digit with the scaled figure printed beside it — derived FROM that
-    figure, so the two cannot round apart. */
 const figQuotient = v => (Number(figFmt(v)) / 100).toFixed(3);
 
-/**
- * THE RENDERERS, BOUND TO A WAY OF MAKING AN ELEMENT.
- *
- * `create(tag)` is the only thing either page supplies: `how-we-measure.html`
- * hands over its own `el`'s primitive, the replay hands over a one-line lambda,
- * and a test can hand over anything with `className`, `textContent`, `href` and
- * `appendChild`. See the header for why this is a parameter.
- */
 function sections(create) {
-    /** One element. See the header for why this is not called `el`. */
     const mk = (tag, cls, text) => {
       const n = create(tag);
       if (cls) n.className = cls;
@@ -2936,25 +1319,9 @@ function sections(create) {
       return n;
     };
 
-  /* ⭐⭐ WHICH LAYERS ON THE REPLAY OPEN THIS SECTION, READ RATHER THAN TYPED.
-     `where` is prose and this is the half of it that can be derived: the layer
-     descriptors record which figure each one opens, node writes that into
-     `data/layer-rules.json`, and this is its inverse. A sentence typed here would
-     be the second statement of a pairing the layers already own — and the one on
-     the methods page that claimed a surface the figure is not printed on survived
-     a whole morning.
-
-     ⭐ IT RETURNS NULL WHERE THE READER IS ALREADY THERE. On the replay the layer
-     is on and the rink is behind the panel, so "on a game page, this is what the
-     Control layer is counting" is telling a reader what they are looking at. The
-     game page passes no `layerFor` and gets no sentence. */
   function onTheReplay(anchor, layerFor) {
     const ls = layerFor && layerFor[anchor];
     if (!ls || !ls.length) return null;
-    /* ⚠️ A LIST, NOT A JOIN. The first version read "the Control (Corsi) layer,
-       the Blocked shots layers are counting" — two layers open the same section,
-       which was never going to be the common case and so was never read aloud.
-       Found by looking at the rendered page. */
     const named = ls.length > 1
       ? ls.slice(0, -1).join(', ') + ' and ' + ls[ls.length - 1]
       : ls[0];
@@ -2963,24 +1330,6 @@ function sections(create) {
       + ' counting — for one night rather than for the archive.');
   }
 
-  /**
-   * ⭐⭐⭐ A FIGURE THE REST OF THE SITE PRINTS. Same block as the methods page's
-   * `figure()` with one deliberate difference: there is no "Counted / Out of" pair
-   * written in `methods.js`, because these figures travel with their own
-   * description in the published document. The page prints THAT sentence, names
-   * the path it read it from, and a reader can open the same file and check. See
-   * the header over `PRINTED` in `src/lib/methods.js` for why that asymmetry is on
-   * purpose.
-   *
-   * `e` is one entry from `printed(measures)`. `ctx` carries what differs between
-   * the two surfaces and nothing else:
-   *
-   *   labelOf   {anchor: label} — for the "counted exactly as …" cross-reference
-   *   layerFor  {anchor: [layer names]}, or omitted on the replay (see above)
-   *   href      how a cross-reference addresses another section. The methods page
-   *             has them all on one page and uses `#anchor`; the overlay has ONE,
-   *             so a bare fragment there would scroll the game page to nothing.
-   */
   function printedSection(e, ctx) {
     const labelOf = (ctx && ctx.labelOf) || {};
     const href = (ctx && ctx.href) || (a => '#' + a);
@@ -2988,15 +1337,6 @@ function sections(create) {
     s.id = e.anchor;
     s.appendChild(mk('h3', null, e.label));
     const box = mk('div', 'hmev');
-    /* ⭐⭐ ONE GROUP PER PUBLISHED SENTENCE: the figures that sentence describes,
-       and then the sentence. The published `what` for the slot ends "…this many
-       were goals", and "this many" needs its number directly above it.
-
-       ⭐⭐ AND A SENTENCE IS PRINTED ONCE PER PAGE. Two of these figures are cut
-       out of a single published measurement, and printing its description under
-       both would be the same paragraph twice — the defect the front door's
-       `FIGURE_CLAUSE` closed the day before this was written, arriving from the
-       other direction. `sameAs` is the anchor of the section that has it. */
     e.groups.forEach(g => {
       const ul = mk('ul');
       g.lines.forEach(l => {
@@ -3025,14 +1365,6 @@ function sections(create) {
       box.appendChild(mk('p', null, g.what));
     });
     s.appendChild(box);
-    /* ⛔ AND IT SAYS WHICH HALF IS MISSING, IN THE WORDS OF WHICH HALF IT IS. A
-       document that predates a field is ordinary here; a page that quietly drew
-       three lines where four belong is not.
-
-       ⚠️ ONE SENTENCE WHEN THE WHOLE FIGURE IS GONE, one per line when part of
-       it is. A dead document would otherwise print the same confession three
-       times under a block that has nothing in it, under a banner at the top of
-       the page already saying the counts could not be loaded. */
     if (e.missing && !e.lines) {
       s.appendChild(mk('p', 'hmnone', 'The published figures for this one could '
         + 'not be read, so the counts are not shown. What follows does not '
@@ -3048,37 +1380,10 @@ function sections(create) {
       });
     }
     s.appendChild(mk('p', 'hmwhy', e.why));
-    /* ⛔ THE CAVEAT IS UNCONDITIONAL IN THE DATA AND SO IT IS HERE. Every entry in
-       `PRINTED` carries one; a figure that reached a page without one would render
-       a block that reads as though nothing is wrong with it, which is the one
-       thing these surfaces may not do. A test holds the data side.
-
-       ⚠️ "COULD BE", NOT "IS". Kevin: *"could (or should?) this say 'What could be
-       wrong with it', mainly to soften the decisiveness of saying it's flat out
-       wrong (then why would we include it on our site?)"* He is right, and it is
-       not a hedge: the heading is an invitation to doubt the figure, and "what is
-       wrong with it" is a confession that argues against printing the figure at
-       all. Where something IS measurably wrong the body still says so flatly, so
-       nothing is softened except the promise the heading makes. */
     const c = mk('p', 'hmcav');
     c.appendChild(mk('b', null, 'What could be wrong with it. '));
     c.appendChild(mk('span', null, e.caveat));
     s.appendChild(c);
-    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
-       are printed in prose a builder substituted and name their surfaces in
-       `where`; one is printed only by the replay, and for that one the sentence
-       is derived from the layer rather than written twice. A test requires one
-       of the two to be present.
-
-       ⛔⛔ AND IT SITS AT THE FOOT, WHICH IT DID NOT UNTIL 2026-09-28. This block
-       led the section, so the first line a reader met in the overlay over the
-       rink was *"Where this appears: The front door, and The attacking zone card
-       on What you can see here."* — a list of other places, offered to somebody
-       who is standing in one of them and asked a question. Measured on
-       production, on the Zone starts door, with the lead sentence missing.
-       ⭐ A CROSS-REFERENCE IS PROVENANCE, NOT AN ANSWER. It belongs after the
-       figure, its source, its point and its caveat, on both surfaces — the
-       reading page gains the same way and neither needs a special case. */
     if (e.where) s.appendChild(mk('p', 'hmwhere', 'Where this appears: ' + e.where));
     const rep = onTheReplay(e.anchor, ctx && ctx.layerFor);
     if (rep) s.appendChild(rep);
@@ -3086,52 +1391,22 @@ function sections(create) {
   }
 
 
-  /* ---------------------------------------------------------------------------
-     THE OTHER KIND OF FIGURE: one whose count and denominator are prose we wrote.
-     --------------------------------------------------------------------------- */
 
   function workRow(m) {
     const w = m.work;
     if (!w || w.value == null) return null;
     const p = mk('p', 'hmwork');
-    /* ⛔⛔ THE EQUALS SIGN HAS TO BE TRUE, and for two of these figures it was not.
-       Kevin, 2026-09-30, reading the Attempts door: `241,126 ÷ 500,720 = 48.2 of
-       every 100 attempts reached the goalie`. That division is 0.482. On a site
-       whose whole pitch is CHECK OUR WORK, the one reader who actually does the
-       arithmetic gets a different number than the one after the sign — and this
-       is the panel they opened to see the work.
-
-       ⭐ SO THE QUOTIENT IS SHOWN, THEN THE FIGURE THE UNIT IS ABOUT. Both are
-       said because both are wanted: the division is what makes the line
-       checkable, and `48.2 of every 100` is what a person can hold. The scaled
-       figure keeps the bold, because it is the one the sentence after it names.
-       `figQuotient` is derived from the printed figure rather than from the raw
-       value, so the two sides cannot round apart on a reader who checks them.
-
-       ⚠️ ONLY WHERE `figFmt` SCALED — asked of `figScaled`, not re-tested here.
-       Two of the seven league figures are shares (`m-attempts`, `m-powerplay`);
-       the rest are already true quotients and gain nothing from a second copy of
-       themselves. It is the same two-shapes argument `readLine` makes one screen
-       up, one rounding rule further in. */
     if (w.count != null) {
       p.appendChild(mk('span', null, commas(w.count) + ' \u00f7 ' + commas(w.n) + ' = '
         + (figScaled(w.value) ? figQuotient(w.value) + ' \u2014 ' : '')));
     }
     p.appendChild(mk('b', null, figFmt(w.value)));
-    /* ⛔ A MEDIAN HAS NO NUMERATOR, so it says what it is instead of pretending
-       to be a ratio — and it still names the population it is the middle of. */
     p.appendChild(mk('span', null, ' ' + m.unit
       + (w.count == null ? ', the middle value of ' + commas(w.n)
           + (m.population ? ' ' + m.population : '') : '')));
     return p;
   }
 
-  /* ⭐⭐⭐ WHY A MEASURE IS DEFINED THE WAY IT IS, IN COUNTS RATHER THAN IN PROSE.
-     The CF% row's score condition used to be explained by a mechanism we do not
-     measure. The archive had counted the EFFECT since the site began — it is the
-     front door's own headline — so the explanation is now two published figures
-     and their own published descriptions. Nothing here divides or names a rate:
-     `what` travels with the count from `archive.js`. */
   function evidenceBox(m) {
     if (!m.evidence || !m.evidence.length) return null;
     const box = mk('div', 'hmev');
@@ -3148,13 +1423,6 @@ function sections(create) {
     return box;
   }
 
-  /** A labelled number. The first argument is the figure, the rest says what it is.
-      ⭐ `q` MAKES THE CROSS-REFERENCE A LINK RATHER THAN AN INSTRUCTION. Kevin,
-      reading the page: *"We refer to question numbers, but the questions aren't
-      until the very bottom, we need to point readers to them."* A page about
-      showing the work cannot answer "see question 2" with a scroll. Only the
-      methods page passes one — the overlay's cells are bare counts, and a `#q2`
-      on the game page would scroll to nothing. */
   function cell(value, said, q) {
     const li = mk('li');
     li.appendChild(mk('b', null, value));
@@ -3175,21 +1443,10 @@ function sections(create) {
     return ul;
   }
 
-  /** The cells a LEAGUE row gets: what it was counted over, and nothing else.
-      ⭐ ONE STATEMENT, because both surfaces draw these rows now. */
   function leagueNums(r) {
     return cellList('hmnums', r.over ? [cell(commas(r.over.n), r.over.unit + ' counted')] : []);
   }
 
-  /**
-   * ⭐ ONE BLOCK PER FIGURE, AND ITS `id` IS WHAT THE CARD'S DOOR POINTS AT.
-   *
-   * ⚠️ `nums` IS NULL WHEN THERE IS NOTHING TO SAY, RATHER THAN AN EMPTY LIST.
-   * This asked `nums.childNodes.length` once and the page's own test harness has
-   * no `childNodes` — which is not the harness being wrong. A renderer that reads
-   * a DOM property to find out what it just built is asking the browser a question
-   * it already knows the answer to.
-   */
   function figureSection(m, nums, ctx) {
     const s = mk('section', 'hmf');
     s.id = m.anchor;
@@ -3208,8 +1465,6 @@ function sections(create) {
     const ev = evidenceBox(m);
     if (ev) s.appendChild(ev);
     if (nums) s.appendChild(nums);
-    /* ⛔ THE CAVEAT IS UNCONDITIONAL IN THE DATA AND SO IT IS HERE — see the same
-       note in `printedSection`, which is the one place that argument is written. */
     const c = mk('p', 'hmcav');
     c.appendChild(mk('b', null, 'What could be wrong with it. '));
     c.appendChild(mk('span', null, m.caveat));
@@ -3253,27 +1508,8 @@ function sections(create) {
   }
   function kick(text) { return el('p', 'hmkick', text); }
 
-  /* ⭐ ONE BLOCK PER FIGURE, AND ITS `id` IS WHAT THE CARD'S DOOR POINTS AT.
-     `anchorOf` in `src/lib/methods.js` is the single spelling of that string;
-     writing 'm-' + key here as well would be the second statement of it, which
-     is how a link that looks completely normal stops resolving. */
-  /* ⭐⭐⭐ THE ARITHMETIC, PERFORMED ON THE PAGE. "5,011 ÷ 22,872 = 21.9 goals
-     for every 100 power plays" is the answer to *show me the work*; the sentence
-     above it is only the promise of one. The numbers come off `row.work`, which
-     the card's own row computed — nothing here divides. */
-  /* ⭐⭐ WHICH LAYERS ON THE REPLAY OPEN THIS SECTION, READ RATHER THAN TYPED.
-     `where` above is prose and this is the half of it that can be derived: the
-     layer descriptors record which figure each one opens, node writes that into
-     `data/layer-rules.json`, and this is its inverse.
-     ⏹ THE RENDERER ITSELF IS IN `src/lib/printed-section.js` NOW. It draws on
-     the replay too, and a copy written for that surface would be a second
-     implementation of the section. This page keeps the TABLE and hands it over. */
   var LAYER_FOR = {"m-attempts":["Control (Corsi)","Blocked shots"],"m-icing":["Why play stopped"],"m-offside":["Why play stopped"],"m-penalties":["Why play stopped"],"m-saves":["Goaltending"],"m-slotAttempts":["Shots from the slot"],"m-zoneStarts":["Zone starts"]};
 
-  /* ⭐ THE RENDERERS, BOUND TO THIS PAGE'S WAY OF MAKING AN ELEMENT.
-     `sections.js` takes `create` rather than reaching for `document`, so the
-     purity `tools/tiers.mjs` counts over `src/lib` survives a module that builds
-     DOM. See its header. */
   var S = sections(function (tag) { return document.createElement(tag); });
   var printedSection = S.printedSection, figureSection = S.figureSection,
       onTheReplay = S.onTheReplay, cell = S.cell, cellList = S.cellList,
@@ -3281,9 +1517,6 @@ function sections(create) {
 
   function clubNums(m, policy) {
     var out = [];
-    /* ⚠️ THE PROBE CELLS NAME THE BAR THEY MOVE FROM. "0.6 instead" means
-       nothing to a reader who has not been told what we normally ask for, and by
-       the time they reach a figure the policy block is a screen and a half up. */
     var policyTarget = policy ? policy.target : null;
     if (m.games != null) {
       out.push(cell(num(m.games) + ' games',
@@ -3294,13 +1527,11 @@ function sections(create) {
         + 'its second, where 1.00 would be a perfect match'
         + (policy && policy.clubSeasons ? ', across ' + num(policy.clubSeasons) + ' team-seasons' : '')));
     }
-    /* THE SIZE OF CRITICISM 1, BESIDE THE NUMBER IT CRITICISES. */
     if (m.alternate && m.alternate.games != null) {
       out.push(cell(num(m.alternate.games) + ' games',
         'what it would be if we compared every other game instead of the first '
         + 'half against the second', 1));
     }
-    /* AND OF CRITICISM 2. */
     (m.atTarget || []).forEach(function (t) {
       out.push(cell(num(t.games) + ' games',
         'what it would be if we wanted to be ' + (t.target < policyTarget ? 'less' : 'more')
@@ -3313,10 +1544,6 @@ function sections(create) {
         + ' team-seasons'));
     }
     if (m.games != null && policy) {
-      /* ⚠️ THE VERDICT IS THE BIG WORD AND THE ARITHMETIC IS THE LABEL. This
-         read "35 of 41", which every other cell in the row has trained the eye to
-         read as a progress count — 35 games of the 41 needed. It is the opposite:
-         35 is what the number needs and 41 is the ceiling. Found by looking. */
       out.push(cell('under ' + num(policy.admission),
         num(m.games) + ' games is inside our half-season line, so this number is '
         + 'shown for each of the two teams on a game’s preview'));
@@ -3324,12 +1551,6 @@ function sections(create) {
     return cellList('hmnums', out);
   }
 
-  /** A `<ul>` of the cells, or NULL when there are none — see `figure`. */
-  /* ⭐⭐ WHY THERE IS ONE POSSESSION ROW, DRAWN RATHER THAN ASSERTED.
-     Kevin: *"as long as we quantify what 'possession family' means (so a novice
-     can connect the dots), then yes, I'm good with showing it once."* The axis is
-     0 to 1 because that is a correlation's own range, so the bar needs no chosen
-     span — the same rule the card's club tracks follow. */
   function familyBlock(f) {
     var sec = el('section', 'hmsec');
     sec.id = 'possession-family';
@@ -3381,11 +1602,6 @@ function sections(create) {
   function draw(m) {
     var host = $('hm');
 
-    /* ⛔ THE DEFINITIONS SURVIVE A DEAD DOCUMENT AND THE COUNTS DO NOT, so the
-       page says which half is missing. `CLUB_ROWS` is code and renders whatever
-       happens; every figure beside it is read from the bucket. A reader who
-       arrived to check our work and found the derivations with no numbers, and
-       no explanation of why, would reasonably conclude we never had any. */
     if (!m.policy) {
       host.appendChild(el('p', 'hmnone', 'The measured figures could not be '
         + 'loaded just now, so the counts below are missing. What each number is '
@@ -3416,12 +1632,6 @@ function sections(create) {
         + 'Each figure below carries what that version would say, so you can see '
         + 'the size of the difference, and question 1 at the foot of the page is '
         + 'about why we do not use it.'));
-      /* ⛔ THIS PARAGRAPH DESCRIBED A SURFACE THE READER WAS NOT ON. It said a
-         failing number "never appears beside a team's name" and goes "into the
-         section below" — but this page shows no team names at all, and two
-         sections sit between here and the one it meant. Kevin: *"the first part
-         of this sentence doesn't align with the page."* It now names both places
-         a number can end up, on the site and on this page. */
       pol.appendChild(el('p', null, 'A number that passes is shown for each of '
         + 'the two teams on a game’s preview page — they are the three under '
         + '"The numbers we show beside a team" below. A number that fails is '
@@ -3436,13 +1646,6 @@ function sections(create) {
         + 'Our choice, not something we measured', 2));
       ul.appendChild(cell(m.policy.admission, 'games. A number needing more than '
         + 'this is not shown for a team at all', 3));
-      /* ⭐ WHAT A "TEAM-SEASON" IS, SPELLED OUT AS ITS OWN ARITHMETIC. Kevin:
-         *"We should be crystal clear about what 'team-seasons' are, e.g. there
-         are 32 teams and we hold 3 seasons of data, hence 32 x 3 = 96."* The
-         count of teams is DIVIDED OUT of the two published numbers rather than
-         typed, and the sentence only claims the multiplication when it comes out
-         whole — a season the league played with an odd roster of clubs would
-         otherwise have this page asserting a tidy sum that is not true. */
       var perYear = m.policy.seasons.length
         ? m.policy.clubSeasons / m.policy.seasons.length : null;
       ul.appendChild(cell(num(m.policy.clubSeasons), 'team-seasons behind every '
@@ -3467,14 +1670,9 @@ function sections(create) {
       m.club.forEach(function (c) { host.appendChild(figureSection(c, clubNums(c, m.policy), { layerFor: LAYER_FOR })); });
     }
 
-    /* ⭐ THE PLAYER BLOCK'S ONE SECTION. Four rows on the card, one division
-       here, because they differ only in what is counted on top. The numerators
-       are listed rather than given a section each — see `methods.js`. */
     if (m.player && m.player.length) {
       host.appendChild(kick('The numbers we show beside a player'));
       m.player.forEach(function (r) {
-        // ⚠️ `cellList(cls, cells)` — the second argument is the list and the
-        // first is the class. `figureSection` appends ONE node, never an array.
         var cells = cellList('hmnums', [
           cell(String(r.numerators.length), 'figures share this division'),
           cell(r.numerators.join(', '), 'are what the card counts')]);
@@ -3491,18 +1689,10 @@ function sections(create) {
         + (m.games ? ' — ' + num(m.games) : '') + '.');
       host.appendChild(intro);
       m.league.forEach(function (r) {
-        /* THE CELLS COME FROM THE MODULE TOO — the overlay draws these same
-           rows, and "what a league row is counted over" written in two places
-           is the drift the shared renderer exists to stop. */
         host.appendChild(figureSection(r, leagueNums(r), { layerFor: LAYER_FOR }));
       });
     }
 
-    /* ⭐⭐⭐ THE THIRD SECTION, AND THE REASON IT EXISTS. Everything above is a
-       row on a game's preview card. The front door and `what-you-can-see.html`
-       print seventeen more figures that are not rows at all, and until this
-       section they had no door to anything — a reader following "show the work"
-       from the front door landed on a LESSON. */
     if (m.printed && m.printed.length) {
       host.appendChild(kick('The other figures on this site'));
       host.appendChild(el('p', 'hmwhy', 'These are not shown beside a team '
@@ -3515,49 +1705,16 @@ function sections(create) {
       var labelOf = {};
       m.printed.forEach(function (e) { labelOf[e.anchor] = e.label; });
       m.printed.forEach(function (e) {
-        /* THE SHARED RENDERER, with the two things that differ between this page
-           and the replay: the layer table, and how a cross-reference addresses
-           another section. Here they are all on one page, so a fragment. */
         host.appendChild(printedSection(e, { labelOf: labelOf, layerFor: LAYER_FOR }));
       });
     }
 
   }
 
-  /**
-   * ⛔⛔⛔ THE DEEP LINK HAS TO BE RESOLVED BY HAND, BECAUSE THE SECTION IT NAMES
-   * DOES NOT EXIST WHEN THE BROWSER LOOKS FOR IT.
-   *
-   * Kevin, 2026-10-03: *"in the what is normal section, we provide a doorway into
-   * the how we measure page. but, each link just goes to the page header, not the
-   * specific section of each metric being explained."*
-   *
-   * Every door on this site is `/how-we-measure.html#m-<key>` and every one of
-   * those ids is real — all sixteen, checked against `anchorOf` by
-   * test/methods.test.js. They are drawn by `draw(methods(mj))` AFTER
-   * `measures.json` arrives, and the browser resolves a fragment while parsing
-   * the document, when `#hm` is still empty. It finds nothing, gives up, and
-   * never looks again. So every work door on the site landed on the page header,
-   * and the one page whose whole purpose is to answer "where did that number come
-   * from" answered "somewhere below".
-   *
-   * ⚠️ NOTHING WAS WRONG WITH THE LINKS, which is why no test saw it: the href is
-   * right, the id is right, and they match. The defect lives in the gap between
-   * two correct things — the oldest shape in this repo — and only a browser can
-   * see it, so `tools/browser/methods-deeplink.mjs` is the check.
-   *
-   * ⭐ FOCUS MOVES TOO, not just the scroll. A reader on a keyboard or a screen
-   * reader who follows a link and is left at the top of the document has not been
-   * taken anywhere, whatever the scrollbar says. `tabIndex = -1` makes a heading
-   * focusable without putting it in the tab order, and `preventScroll` stops the
-   * browser undoing the alignment we just made.
-   */
   function openTheFragment() {
     var want = (location.hash || '').slice(1);
     if (!want) return;
     var target = document.getElementById(decodeURIComponent(want));
-    /* A fragment naming nothing is not an error here. It may name a section of
-       the static argument below, which the browser already resolved itself. */
     if (!target) return;
     target.scrollIntoView();
     target.tabIndex = -1;

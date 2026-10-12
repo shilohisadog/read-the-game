@@ -30,15 +30,6 @@
 .sitehdr nav a:hover,.sitehdr nav a:focus{border-bottom-color:#2a5d86}
 .sitehdr nav a[aria-current="page"]{color:#0f1a23;border-bottom-color:#0f1a23}
 .sitefoot{border-top:1px solid #ccd8e0;padding:18px 16px 28px;color:#5b6d7a;font-size:.82rem}
-/* PREVIEW HAS NO ROOM FOR CHROME. The five-second loop on the front door is an
-   iframe of the game page, and the shared header and footer are real height
-   inside a box sized for a rink -- they push the ice past the bottom edge, and
-   `scrolling=no` crops it. The class is set by the page at runtime (there is no
-   build-time preview variant; one file serves both), and the rule lives HERE
-   because this is where the chrome is defined. A rule in build_main.py reaching
-   across to style .sitehdr would be the second place chrome is decided. */
-/* Every page now, not just the preview: the site header and footer are flush to
-   the viewport edges and the gutter lives on `.wrap`. See build_index.py. */
 body{margin:0}
 body.previewing{margin:0}
 body.previewing .sitehdr,body.previewing .sitefoot{display:none}
@@ -46,22 +37,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4462uA/qEJ9qHeYK5Rg6uD0cvFWFT7CsC+LAN2P9b6I=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0M9ABSy0sPTKR9OK/hRzdxEBsODJs2d1K+zJHNuNoX8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
 *{box-sizing:border-box}
-/* ⭐ THE CHROME IS FLUSH TO THE TOP, AND THE GUTTER MOVED BELOW IT.
-   Kevin, 2026-08-27, comparing the two pages: "I much prefer the no padding, it
-   tightens up the top of the page, which looks better than the home page, let's
-   default to that." The game page had never carried this rule -- it ran on the
-   browser's default 8px body margin -- so the site header sat 44px down and
-   inset 22px here and flush there. Same header markup, different box.
-
-   THE PADDING IS NOT DELETED, IT IS MOVED: `.wrap` takes it, so the header and
-   footer go edge to edge and the CONTENT keeps the breathing room it had. A
-   `body{padding:0}` on its own would have run the text into the viewport edge on
-   a phone, which is the version of this change that looks tidy in a diff. */
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
  color:var(--ink);background:var(--bg);line-height:1.55;padding:0}
 .wrap{max-width:900px;margin:0 auto;box-sizing:content-box;
@@ -71,16 +51,7 @@ h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;mar
 h1.says{font-weight:400;letter-spacing:normal}
 .says{font-size:1.06rem;line-height:1.5;color:var(--ink);margin:0 0 22px;max-width:56ch}
 .says b{font-weight:700}
-/* THE PERSONAL LINE, INSIDE the heading rather than beside it. It is the second
-   half of what this page says it is, so semantically it belongs to the same
-   sentence pair; typographically it is quieter, because "what this is" should
-   land before "who we made it for". `display:block` gives it its own line
-   without a second paragraph's margin. */
 .says .by{display:block;margin-top:5px;font-size:.95rem;color:var(--muted)}
-/* HIDDEN UNTIL THE SPACE EXISTS. `display:none` rather than a narrower column:
-   below 1180 the hero card is a single column and there is no room beside the
-   lede at all, so this would stack underneath and lengthen a phone screen that
-   is already 4.5 screens tall. Kevin's call, with that number in front of him. */
 .pucknote{display:none}
 .conc{margin:0 0 26px}
 .conc .ck{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
@@ -97,12 +68,6 @@ h1.says{font-weight:400;letter-spacing:normal}
 h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
  font-weight:700;margin:34px 0 12px}
 
-/* THE TEAM GRID IS ONE OBJECT, not thirty-three. Uniform chips, no typing, one
-   click. Google-clean was the brief: above the fold is this and one link. */
-/* `:not([hidden])` for the same reason as `.opener .pucknote` and `.hero`: a bare
-   `display:grid` outranks the UA sheet's `[hidden]`, so the empty grid a team page
-   hides would stay in the flow. It has no children there, which is exactly why
-   this one was invisible rather than obvious. */
 .teams:not([hidden]){display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));
  gap:7px;margin:0 0 26px}
 .chip{display:flex;align-items:center;justify-content:center;height:46px;
@@ -111,8 +76,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  transition:transform .12s ease,box-shadow .12s ease}
 .chip:hover,.chip:focus-visible{transform:translateY(-2px);box-shadow:0 6px 16px rgba(16,32,45,.18)}
 
-/* A team's games. The top row is the thing you press play on -- two clicks from
-   a cold load to watching, which is the number this page was rebuilt for. */
 .crumb{margin:0 0 14px;font-size:.85rem}
 .crumb a{color:var(--blue);text-decoration:none}
 .teamhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px}
@@ -139,67 +102,19 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .games .off{color:var(--muted)}
 
 
-/* THE HERO IS A GAME. Read from the archive, never typed. */
 .hero{background:#fff;border:1px solid var(--edge);border-radius:13px;
  padding:18px 20px 20px;margin:0 0 26px;box-shadow:0 4px 16px rgba(16,32,45,.06)}
 .herokick{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
-/* The frame carries the rink's own aspect, so it does not letterbox on a phone
-   or crop on a desktop. 200x85 is the rink; the scoreboard above it takes the
-   rest, measured from the rendered page rather than guessed. */
-/* ⭐⭐ THE BIGGEST THING ON THE PAGE WAS NOT A DOOR.
-   Measured 2026-09-11 in a real browser: the frame is 26.9% of a 1325x959
-   laptop screen and 21.1% of a 390x844 phone -- the largest element on the front
-   door and the only one that MOVES -- and clicking the middle of it navigated
-   nowhere. The cursor did not even change: `auto`, over a playing rink.
-   Every instinct a visitor has points at the moving picture, and above the fold
-   on a phone the one content link sits at y=739 of an 844px fold, 87% of the way
-   down. So the loop was an advertisement for a door the reader had to scroll to.
-
-   ⭐ THE SAME DEFECT, THE THIRD TIME. `a6454fa` -- "the whole goal figure is
-   clickable, and the older reader had the same bug" -- and the calendar's rows
-   are anchors rather than text-with-a-link-in-it for the same reason. The fix
-   is structural each time: make the RECTANGLE the target.
-
-   POINTER-EVENTS OFF THE FRAME, because a click landing inside an iframe never
-   reaches a parent anchor wrapped around it. The preview hides every control it
-   has (`#rg.preview` in app.css), so there is nothing inside to click and
-   nothing is taken away.
-
-   ⚠️ AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `aria-hidden` and `tabindex=-1`
-   keep it out of the tab order and out of the accessibility tree, because
-   `Watch the whole game` sits directly beneath it with the same destination --
-   a keyboard user would otherwise meet the same link twice with nothing to tell
-   them apart, which is a duplicate-funnel defect wearing accessibility clothes.
-   The frame itself already carried `tabindex=-1` for the same reason. */
 .heroframe{position:relative;margin:0 0 13px;background:var(--ice);
  border:1px solid var(--edge);border-radius:10px;overflow:hidden}
 .heroframe iframe{display:block;width:100%;aspect-ratio:200/117;border:0;
  pointer-events:none}
-/* The border answers the pointer, in the treatment `.drow` already uses for
-   exactly this question -- "is this rectangle a door". */
 .herohit{position:absolute;inset:0;cursor:pointer}
 .heroframe:hover{border-color:var(--blue)}
-/* A TALLER FRAME ON A PHONE, because the scoreboard inside it is not
-   proportional even after it was made to shrink. Measured in a real browser:
-   the chrome is 87px of an 856px-wide frame (10%) and 49px of a 287px one
-   (17%), so one ratio cannot serve both -- at 200/108 the phone's rink fits
-   the height and leaves empty ice down both sides. 200/128 gives the narrow
-   frame the room its rink actually wants; the wide one is already exact. */
-/* TALLER WHERE THE CHROME COSTS MORE -- and this breakpoint already existed,
-   which is why a second query for the same job lost to it silently. The
-   scoreboard and the penalty band are the frame's fixed furniture; the rink is
-   what is left, and a fixed cost eats proportionally more of a narrow frame.
-   128 left the ice 27px short of its own aspect, so it letterboxed -- narrower
-   than the frame with white space either side, which reads as a SMALLER rink
-   rather than a tighter one. Measured at 390 and 1100, not reasoned. */
 @media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
 .herosub{margin:0 0 4px;font-size:.9rem;color:var(--muted);max-width:56ch}
-/* THE HERO'S RELATION TO THE RATE ABOVE IT. Same size and colour as .herosub,
-   because it is the second half of the same thought and a louder treatment would
-   make one game argue with 3,957. The verdict itself is bold; the rate that
-   settles it is not. */
 .herorel:empty{display:none}
 .herorel{margin:0 0 15px;font-size:.9rem;color:var(--muted);max-width:56ch}
 .herorel b{color:var(--ink);font-weight:650}
@@ -207,32 +122,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
 
-/* ------------------------------------------------------------- THE DAILY BLOCK
-   The one dated element on the front door. It sits INSIDE the hero card (see the
-   markup for why) and has to read as a separate thought rather than as more
-   sentences about the featured game -- so it takes a rule above it and the same
-   uppercase kicker the card's own first line uses, which is a treatment a reader
-   has already met four lines higher.
-   ⚠️ THE MARGIN IS ON THE TOP AND THE RULE IS A BORDER, not a `<hr>`: the block
-   is `hidden` until a state fires, and a separator that is its own element would
-   be left drawing a line under an empty card on every page load. */
 .daily{border-top:1px solid var(--edge);margin:20px 0 0;padding:15px 0 0}
 .dailykick{margin:0 0 6px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
 .dailysay{margin:0;font-size:.9rem;color:var(--muted);max-width:52ch}
 .dailysay:empty{display:none}
 .dailylist{display:flex;flex-direction:column;gap:5px;margin:11px 0 0}
-/* EACH ROW IS A DOOR, so it is an anchor and not a line of text with a link in
-   it -- the whole rectangle is the hit target. That is the defect of 2026-09-08
-   in its third form, and the fix is structural rather than a wider `<a>`. */
 .drow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
  text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--edge);
  border-radius:8px;padding:7px 11px;font-size:.85rem}
 .drow:hover,.drow:focus-visible{border-color:var(--blue)}
-/* A FIXTURE IS NOT A DOOR. It sits in the same list and must not read as one:
-   no border, no hover, no pointer -- the game has not been played and there is
-   nothing to open. The day the club preview gives it a destination, it becomes a
-   `.drow` and this rule goes. */
 .dfix{display:block;margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px;
  text-decoration:none}
 .dfix:hover,.dfix:focus-visible{color:var(--ink);text-decoration:underline}
@@ -242,22 +141,10 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
 .dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
-/* The attempts figure is the reason the row is here rather than in a scores
-   list, and it is `--muted` for the same reason `.herorel` is: it is the second
-   half of the thought, and matching the score's weight would make the two
-   numbers argue. `tabular-nums` so a column of them lines up. */
 .drow .datt{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dmore{display:block;margin:3px 0 0;font-size:.83rem;color:var(--blue);text-decoration:none}
 .dmore:hover,.dmore:focus-visible{text-decoration:underline}
 
-/* THE RULES STRIP. Same rectangle as `.drow` and for the same reason: each tile
-   IS a door, so the whole rectangle is the hit target rather than a line of text
-   with a link in it. That is the 2026-09-08 defect in its fourth form, and the
-   border answering the pointer is the treatment this page already uses to say
-   "this is a door".
-   ONE COLUMN UNTIL 640, because the hook is a sentence and three sentences side
-   by side on a phone are three columns of two words each. The breakpoint is the
-   grid's own, not the card's: above it there is room for three real lines. */
 .learnin{margin:30px 0 0}
 .lgrid{display:grid;gap:8px;margin:11px 0 0}
 @media (min-width:640px){.lgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -266,12 +153,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .lcard:hover,.lcard:focus-visible{border-color:var(--blue)}
 .lcard .lt{font-weight:650}
 .lcard .ld{font-size:.85rem;color:var(--muted);line-height:1.45}
-/* THE MEASUREMENT STRIP. Same rectangle-as-door as `.lcard`, plus the blue left
-   edge `.grid.learn.ours` and `.limits` both already use for "this is our claim
-   and not the league's". A reader has met the distinction before arriving here.
-   TWO COLUMNS, NOT THREE: these sentences carry figures and denominators, so
-   they are twice the length of a rule's hook and a third of the width would set
-   them four words to a line. */
 .countsin{margin:26px 0 0}
 .cgrid{display:grid;gap:8px;margin:11px 0 0}
 @media (min-width:760px){.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -282,190 +163,53 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
-/* ⏹ A `.wcard` LIVED HERE FOR AN HOUR — the methods door as a fifth card in the
-   measurement strip. Kevin moved it: *"I would have thought you would have put
-   the card in the what this (site) does and does not claim?"* He is right, and
-   the section's own heading is the argument: a reader in the limits block is
-   already asking what we claim, and *how did you count it* is the next sentence.
-   ⛔ AND TWO DOORS TO ONE PAGE IS THE DUPLICATE FUNNEL this page has already had
-   once (`_NAV`: "a second copy of the same link 40px lower"). The strip's card
-   also had to be appended AFTER the loop to dodge `_front_counts`'s own check
-   that every card in it is one of our measurements — routing around a guard
-   rather than satisfying it, which is its own answer about whether it belonged. */
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
 
-/* ⭐⭐ THE FOLD, AT A LAPTOP'S WIDTH -- docs/front-door.md §5.4.
-   Kevin, with the live page above the fold on his laptop: "encourages daily
-   visits, offers valuable information right from the get go, and encourages a
-   visitor to click into the site."
-   MEASURED FIRST, at 1900x1065: the document is 2.05 screens, `.wrap` renders
-   944px of 1900 (half the viewport is gutter), and the hero card alone is 729px
-   of a 1065px fold -- 68%. The card stacks the loop above four lines of text, so
-   `Watch the whole game` sits at y=903 and the club grid's heading at 982, and
-   the fold ends there. Everything a reader might act on is pushed down by the one
-   thing they are meant to look at.
-   ⚠️ IT READ `Watch your team` WHEN THIS WAS MEASURED, and is `Pick your team`
-   since 2026-09-11 — the word implied streaming and a heading over a grid of
-   club codes has nothing beside it to say otherwise. The MEASUREMENT is
-   unchanged; what moved is that the line above no longer cites the heading by a
-   name the codebase has stopped containing, which would send the next reader
-   grepping for something that is not there. Stated here once, where it is
-   explained, rather than left in the record as a live-looking quotation.
-   SO THE CARD BECOMES TWO COLUMNS: what you READ on the left, the loop on the
-   right. The proposition lands whole in the first screen, and the space this
-   frees on the left is where the daily block goes when its data exists
-   (front-door.md §5.1) -- it is not decoration, it is the slot.
-
-   ⚠️ AND THE BAND HAS TO GROW OR THE RINK SHRINKS, which measuring is what
-   showed. Two columns inside the 900px reading column would leave the frame
-   ~520px against 898 today -- a 42% narrower rink to tidy the text beside it,
-   which trades the product for the layout. So above 1180 the card alone breaks
-   out of the column to `min(1240px, 100vw - 96px)`: at 1900 that is a 400px text
-   column and an ~810px frame, 10% narrower than today rather than 42%.
-   ⛔ THE REST OF THE PAGE STAYS AT 900. Prose has a measure; only the card has a
-   picture in it.
-
-   ⚠️⚠️ `:not([hidden])` IS LOAD-BEARING, NOT TIDINESS. `#hero` ships with the
-   `hidden` attribute and `drawHero` clears it once a game is chosen, which works
-   because nothing sets `display` on `.hero` -- the UA sheet's `[hidden]` wins by
-   default. A bare `display:grid` here would OVERRIDE it and paint an empty white
-   card on every page load before the catalog arrives, and on a page that never
-   gets one it would stay. The state this protects is the one nobody screenshots.
-
-   THE PHONE IS UNTOUCHED, on purpose: the whole query starts at 1180, and the
-   novice test is on a phone (docs/site-purpose.md §9). */
 @media (min-width:1180px){
-  /* ⚠️ THE COLUMN WIDENS; THE CARD DOES NOT BREAK OUT OF IT. The first draft gave
-     `.hero` a wider width and centred it with a translate, which put the card's
-     left edge 148px outside the headline above it -- the eyebrow and the h1 stayed
-     in the 900px column and the card jutted past them on both sides. LOOKING is
-     what found it: every measurement of that draft was an improvement (the fold
-     gained 313px) and it still read as a mistake.
-     ⛔ AND IT IS `.wrap.front`, NOT `.wrap`. Four BODY templates in this file share
-     this stylesheet -- the home page, learn, the rule pages and the calendar --
-     and three of them are prose that has no business at 1240px. The home page's
-     own BODY carries the class; nothing else can be widened by accident. */
   .wrap.front{max-width:1240px}
-  /* ⭐ THE OPENING BLOCK BECOMES TWO COLUMNS, THE SAME MOVE THE CARD BELOW MAKES.
-     ⛔⛔ IT IS `.opener` AND NOT `.lede`, AND THE REPO HAD ALREADY SAID SO. I
-     named it `.lede`, and this stylesheet has carried `.lede{max-width:62ch}`
-     all along — so the grid silently capped at 662px of a 1240px row, `1fr`
-     collapsed to the note's longest WORD (32px), and the card was pushed 527px
-     down the page. `build_main.py:54` warns in as many words: "NOT
-     class=\"lede\" -- that name is spoken for", and `render-notes.test.js:1238`
-     forbids it. The warning existed, in a comment, and I did not grep for it
-     before taking the name. See the site-wide guard that now covers every page
-     rather than only the one where the collision was first paid for.
-     ⚠️ THE FIRST COLUMN IS WIDER THAN THE SENTENCE IN IT, AND THAT IS THE POINT.
-     Borrowing the card's `minmax(320px,400px)` would squeeze the opening line
-     from two rows to four — a layout change to the sentence a visitor judges the
-     site by, paid for a note beside it. ⛔ AND `56ch` WAS NOT SAFE EITHER, WHICH
-     ONLY MEASURING SHOWED: `ch` resolves against THIS element's font size and
-     `.says` caps at 56ch of its OWN larger one, so the column came out 597.9px
-     against the sentence's 603.5px cap — SIX PIXELS, and the lede wrapped to
-     three lines. ⚠️ THE TWO-LINE LEDE THEREFORE HAS ABOUT 6px OF MARGIN and any
-     type change flips it; the column is 62ch so the sentence keeps its own cap
-     and nothing here decides its wrapping. The second column takes what is
-     left. */
   .opener{display:grid;grid-template-columns:minmax(0,62ch) minmax(0,1fr);
    column-gap:clamp(20px,2.4vw,34px);align-items:end}
   .opener .eyebrow{grid-column:1;grid-row:1}
   .opener .says{grid-column:1;grid-row:2;margin-bottom:0}
-  /* Bottom-aligned with the sentence beside it, so the two blocks share a
-     baseline rather than both hanging from the top of an uneven grid. */
-  /* ⚠️ `:not([hidden])` FOR THE REASON `.hero` CARRIES IT, ~250 lines up: "a bare
-     display:grid here would OVERRIDE it". This was a bare `display:block`, so
-     when a team page set `hidden` on this note the attribute was inert and the
-     sentence stayed on screen — Kevin saw it there after the fix shipped. The
-     warning was already written for the element next door. */
   .opener .pucknote:not([hidden]){display:block;grid-column:2;grid-row:1/span 2;align-self:end;
    margin:0;max-width:58ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
   .opener .pucknote b{color:var(--ink);font-weight:650}
-  /* ⛔ THE 78ch CAP IS GONE, AND IT WAS SOLVING THE WRONG HALF OF THE PROBLEM.
-     It existed because the cards were full-width boxes in ONE column, so at
-     1240 their text would have run to about a hundred characters a line. The
-     cap fixed the measure and bought a 460px empty gutter beside every card --
-     the only block on the front door that does not reach the edge the three
-     above it reach. Kevin, looking at the laptop: "seems like we should make
-     the 'what we claim' section multi column to align with everything else".
-     TWO COLUMNS FIX BOTH: the measure comes from the COLUMN now, exactly as it
-     does for `.cgrid` directly above, so there is nothing left for a cap to do.
-     See the breakpoint beside `.limits` itself -- it is `.cgrid`'s, on purpose. */
   .hero:not([hidden]){
     display:grid;
     grid-template-columns:minmax(320px,400px) minmax(0,1fr);
-    /* ⚠️ THE SIXTH ROW IS THE SLACK, and without it the text column is spread
-       down the card. A grid item spanning five rows distributes ITS height across
-       those rows, so the frame's ~470px was being handed to the five text rows --
-       measured at 1900, the sentences sat 88, 83 and 119px apart, which reads as
-       four unrelated notes rather than one thought. Five `min-content` rows plus
-       one `1fr` underneath send the surplus to the bottom of the card instead. */
     grid-template-rows:repeat(5,min-content) 1fr;
     column-gap:clamp(20px,2.4vw,34px);
     align-items:start;
   }
-  /* THE FRAME SPANS THE CARD'S WHOLE HEIGHT so the rink is as tall as the card,
-     rather than as tall as whichever sentence happens to be longest. */
   .hero:not([hidden]) .heroframe{grid-column:2;grid-row:1/-1;margin:0}
   .hero:not([hidden]) .herokick{grid-column:1;grid-row:1}
   .hero:not([hidden]) .heroline{grid-column:1;grid-row:2}
   .hero:not([hidden]) .herosub{grid-column:1;grid-row:3}
   .hero:not([hidden]) .herorel{grid-column:1;grid-row:4}
-  /* `justify-self:start` because a grid item stretches by default and the button
-     is `inline-block`: without it the anchor's BOX fills the column while its
-     background does not, so the click target and the thing that looks clickable
-     stop being the same rectangle. That is the hit-target defect of 2026-09-08
-     waiting to happen in a third place. */
   .hero:not([hidden]) .herogo{grid-column:1;grid-row:5;justify-self:start;margin-top:4px}
-  /* ⭐ ROW SIX IS THE SLACK, AND THIS IS WHAT IT WAS BEING SAVED FOR. The five
-     text rows are `min-content` and the frame spans the card, so column one runs
-     out of sentences about two thirds of the way down -- measured at 1900,
-     ~900px of gutter. The block that fills it is the only one on the page that
-     is different tomorrow, which is the argument docs/front-door.md §5.4 makes:
-     the three questions land in order, what is this, what is new, where do I go.
-     ⚠️ `align-self:end` PARKS IT AT THE BOTTOM OF THE ROW rather than floating it
-     under the button with the surplus beneath. Without it the row's height is
-     the slack and the block sits at its top edge, which reads as a paragraph
-     that lost its place rather than as the foot of the card. */
   .daily:not([hidden]){grid-column:1;grid-row:6;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
 .card{display:block;text-decoration:none;color:inherit;background:#fff;
  border:1px solid var(--edge);border-radius:12px;padding:15px 17px;
- /* ⭐ ROOM ABOVE THE CARD A READER JUST ARRIVED AT. Every card is now an anchor
-    target -- the work panel links back to `#<card-id>` -- and without this the
-    browser parks it flush with the top edge, which reads as a rendering glitch
-    rather than as an arrival. It is only ever consumed on a `#hash` landing. */
  scroll-margin-top:16px}
 .card:hover,.card:focus-visible{border-color:var(--blue)}
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}
 
-/* THE TWO GROUPS ARE MADE TO LOOK DIFFERENT, not merely ordered. The split is
-   the page's whole argument -- what the league does, against what we chose to
-   count -- and a uniform grid flattens two kinds of claim into one row of
-   cards. The measurement group takes the blue left edge that already means
-   "our claim" on `.limits`, so the distinction is one a reader has met before. */
 .grid.learn{margin:0 0 20px}
 .grid.learn.ours .card{border-left:3px solid var(--blue)}
 .card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
  font-variant-numeric:tabular-nums}
-/* ⭐ THE DOOR TO THE WORK SITS UNDER THE CARD, NOT INSIDE IT. `.card` is an
-   anchor, so the second link cannot be nested; the wrapper is a column and the
-   card grows to fill it, which keeps a row of tiles the same height whether or
-   not they carry one. */
 .cardw{display:flex;flex-direction:column}
 .cardw .card,.cardw .ccard{flex:1}
 .cw{margin:6px 2px 0;font-size:.74rem;line-height:1.3}
 .cw a{color:var(--blue);text-decoration:none;font-weight:600}
 .cw a:hover,.cw a:focus-visible{text-decoration:underline}
 
-/* THE CALENDAR (C1). In the shared sheet because the learn page's selectors
-   already are: one stylesheet for the pages this builder emits, so there is one
-   place a colour or an edge is defined. */
 .months{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 14px}
 .months a{font-size:.76rem;text-decoration:none;color:var(--muted);padding:3px 8px;
  border:1px solid var(--edge);border-radius:999px;background:#fff}
@@ -482,13 +226,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  text-decoration:none;color:inherit}
 .cell .dy{position:absolute;top:2px;left:5px;font-size:.6rem;color:var(--muted);
  font-variant-numeric:tabular-nums;line-height:1}
-/* THE COUNT WE MAKE CLAIMS ABOUT: full ink, and the only thing in the cell that
-   is ever summed anywhere on this site. */
 .cell .n{font-size:1.1rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-/* AND THE ONE WE DO NOT. A dashed edge rather than only a colour, so the
-   difference survives a reader who cannot separate the two hues -- the label
-   itself is under the grid, where there is room to be right about which
-   competition it is. */
 .cell .o{font-size:.64rem;font-weight:700;line-height:1.5;color:var(--muted);
  border:1px dashed #9fb3c0;border-radius:5px;padding:0 4px;
  font-variant-numeric:tabular-nums}
@@ -496,59 +234,29 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .cell.void{background:transparent;border-color:transparent}
 a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
  box-shadow:0 4px 12px rgba(58,90,156,.14)}
-/* A cell is 48px square-ish on a phone, which is all there is. Given room it
-   should look like a calendar rather than a row of flat slots -- 125x54 read as
-   a table with the lines rubbed out. */
 @media (min-width:700px){.cell{min-height:78px}.cell .n{font-size:1.3rem}}
 .offnote{font-size:.84rem;color:var(--muted);margin:0 0 22px;max-width:62ch}
 .offnote b{color:var(--ink);font-weight:650}
 .gk{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
-/* The NAME shouts; the qualifier after it does not. A whole sentence in
-   letter-spaced capitals wrapped to two lines of shouting at 390px. */
 .gk span{text-transform:none;letter-spacing:normal;font-weight:400}
-/* A DEAD END, WHICH IS A STATE AND NOT A LIST. Same furniture as `.limits` --
-   a claim of ours, on the blue edge -- because that is what it is. */
 .dead{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:10px;padding:12px 14px;margin:0 0 22px;font-size:.88rem;
  color:var(--muted);max-width:62ch}
 .dead b{display:block;color:var(--ink);font-weight:650;margin-bottom:2px}
-/* The night list is a MATCHUP and a RESULT; the team page's list leads with a
-   date, which on a page whose heading IS the date would be the same word twice. */
 .games.night a,.games.night .off{grid-template-columns:1fr auto}
-/* A REFUSED ROW STACKS. Its right-hand cell is a sentence, not a score, and
-   `auto` gave it whatever it asked for -- which squeezed "Arizona Coyotes at
-   Los Angeles Kings" into a five-line column beside it. */
 .games.night .off{grid-template-columns:1fr;gap:3px}
 .games.night li.uncounted{border-left:3px dashed #9fb3c0}
-/* D10's note, in the same voice as the dashed-count note above it: a small
-   qualifying sentence under the list, not a warning. The disagreement is the
-   LEAGUE's, between its own two documents, and we are reporting it rather
-   than apologising for it. */
 p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .bydate{margin:14px 0 0;font-size:.9rem}
 .bydate a{color:var(--blue);text-decoration:none;font-weight:600}
 .bydate a:hover{text-decoration:underline}
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
-/* ⭐ THE SAME BREAKPOINT AS `.cgrid`, AND THAT IS THE POINT RATHER THAN A
-   COINCIDENCE. These four cards sit two sections below the four measurement
-   cards and are the same object -- a bordered box with a bold line and a
-   paragraph under it -- so a width where one block is two columns and the other
-   is one is a width where the page looks half-finished. A test pins the two
-   numbers together so they cannot drift apart.
-   TWO, NOT auto-fill: `.grid`'s `minmax(255px,1fr)` would give FOUR columns at
-   1240 and set these sentences three words to a line. The limits carry the
-   longest prose on the page, not the shortest. */
 @media (min-width:760px){.limits{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:0 10px 10px 0;padding:12px 16px}
 .limits b{display:block;font-size:.93rem;margin-bottom:2px}
 .limits span{font-size:.87rem;color:var(--muted)}
-/* ⭐⭐ THE ONE LIMIT THAT IS A DOOR LOOKS LIKE ONE. The others state a boundary
-   and end; this one answers all four and has somewhere to go. It spans the two
-   columns so it reads as the block's closing line rather than a fifth peer, and
-   its link is a line of its own — buried mid-sentence in the same grey as the
-   prose, it was invisible as a route and Kevin read the section as having none. */
 .limits li:last-child{grid-column:1/-1;border-left-color:var(--ink)}
 .lgo{display:block;margin-top:7px;color:var(--blue);font-weight:600;
  text-decoration:none}
@@ -557,17 +265,6 @@ p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
  background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);
  border-radius:0 9px 9px 0;max-width:70ch}
-/* ⚠️ IT LANDS IN THE FIRST COLUMN, BECAUSE A NEAR-MISS READS AS A MISTAKE.
-   This line sits directly under `.limits`, and the day that block became two
-   columns its own 70ch cap (843px at 1400) stopped agreeing with anything on
-   screen -- 228px wider than the card above it and 397 short of the block's
-   right edge, which LOOKING showed as a stray fifth card hanging off the corner.
-   Same breakpoint again, so above it the line is exactly one column and below it
-   the grid is one column anyway and 70ch is the narrower cap. It is the only
-   element on the site with this class, so the selector needs no page scope. */
-/* 5.5px is HALF THE GRID GAP: `.limits` columns are (100% - 11px)/2, and this
-   line shares their containing block, so the two right edges are identical
-   rather than approximately so. */
 @media (min-width:760px){.state{max-width:calc(50% - 5.5px)}}
 .state[data-state="stalled"],.state[data-state="halted"]{border-left-color:var(--flag,#d9662b)}
 .state[data-state="behind"]{border-left-color:var(--buf)}
@@ -578,14 +275,6 @@ footer{margin-top:38px;padding-top:18px;border-top:1px solid var(--edge);
  font-size:.79rem;color:var(--muted);max-width:70ch}
 footer a{color:var(--blue)}
 footer p{margin:0 0 8px}
-/* NARROW SCREENS. The three-column game row is 8.5rem of date plus a result plus
-   a score — about 300px of content before it starts squeezing, which is most of a
-   360px phone once padding is taken off. Below 30rem it stacks, and the chips get
-   smaller so a row of them still fits without the grid forcing a scrollbar.
-
-   This is where the whole site was wrong until Kevin asked about phones: not the
-   CSS, but the missing viewport meta above it. Without that, none of this applies
-   at all -- the phone lays out at ~980px and scales the result down. */
 @media (max-width:30rem){
   .games a,.games .off{grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px}
   .games .d{grid-column:1/-1;order:-1}
@@ -596,132 +285,37 @@ footer p{margin:0 0 8px}
   .chip{height:42px;font-size:.82rem}
   .rates li{flex-direction:column;gap:2px}
 }
-/* ⚠️ `animation`, NOT JUST `transition`. This rule said `transition:none` alone
-   for as long as it has existed, and that was harmless only because these pages
-   carried ZERO @keyframes -- an un-reachable gap reads exactly like a working
-   guard. The learn page's rule diagrams animate, so it became live the moment
-   the first figure shipped. app.css:1127 has always had the blanket form; this
-   is the same rule, finally saying the same thing. */
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
 <div class="wrap front">
-<!-- ⭐ THE SENTENCE THAT WAS RENDERING IN THE BROWSER TAB.
-     This read "Read the Game" -- the wordmark, 40px under the wordmark, a third
-     statement of the site's name in the first 270px of a phone screen. What went
-     in its place is not new copy: it is the second half of this page's own
-     `<title>`, "Read the Game — hockey, made legible", which is the most
-     welcoming sentence the site has and was reaching nobody who does not read
-     browser tabs.
-     ⛔ AND IT IS THE ONLY PLACE THE PAGE SAYS "HOCKEY". Measured 2026-09-11: the
-     word appeared ZERO times in the visible front door -- once in the whole
-     file, in that title. A page whose job is to welcome someone who does not
-     know the sport never named the sport.
-     NO HEIGHT IS ADDED. One line replaces one line, in the slot the eye reaches
-     first, and the duplicate leaves with it. -->
+
 <div class="opener">
 <p class="eyebrow">Hockey, made legible</p>
-<!-- WHAT THIS IS, IN ONE SENTENCE, WHICH THE PAGE DID NOT SAY AT ALL.
-     A stranger's questions are, in order: what is this, why should I care, what
-     do I do. Only the third had an answer above the fold, and it was a button. -->
+
 <h1 class="says">Every NHL game since 2023, replayed event by event. <span class="by">We made it for people who like hockey and were never shown how to read it.</span></h1>
-<!-- ⭐⭐ THE ONE THING THE RINK DOES THAT A STRANGER READS AS BROKEN, SAID BEFORE
-     THEY SEE IT. Kevin: "we don't mention we don't track puck movement, so the
-     actual puck movement isn't shown in the replays... that's probably worth
-     mentioning somewhere on the home page, since it's an integral part of what
-     we can't show."
-     ⛔ IT WAS SAID IN EXACTLY ONE PLACE ON THE WHOLE SITE, and that place is the
-     game page's LEGEND: four words, `puck — jumps between real events`, on the
-     page where the behaviour is already happening, reached after a visitor has
-     been confused by it. The front door said nothing. `what-you-can-see.html` —
-     fourteen learn cards and six rule pages — says nothing either.
-     ⭐ A READING INSTRUCTION, NOT A CAVEAT. "The puck jumps because we do not
-     have tracking data" is an apology that teaches a reader we are missing
-     something; this says what the picture MEANS, which is the difference between
-     a limit and a lesson.
-     ⛔⛔ AND IT IS ABOUT OUR FEED, NOT ABOUT THE WORLD. The league DOES track the
-     puck — it is simply not in the public play-by-play we read. "Nothing records
-     where it went" would be false, and false in exactly the way this site exists
-     to catch other people being.
-     ⛔ ONE SENTENCE THIS MUST NEVER BECOME: "watch the marks, not the puck".
-     Measured 2026-09-11 through three full loops — the rink holds ONE event at a
-     time, on the front door and in the replay alike. There are no marks
-     accumulating to watch, so that line would be false about the very rink
-     underneath it.
-     ⚠️ WIDE SCREENS ONLY, AND IT IS A TRADE KEVIN MADE WITH THE NUMBER IN FRONT
-     OF HIM. Above 1180 this occupies 637x100 of space already being spent, to the
-     right of a lede that caps at 56ch and directly above the rink — it costs
-     nothing. Below 1180 the card is one column, the space does not exist, and
-     this would add ~50px to a phone whose first screen he is separately judging
-     for length. THE COST, STATED: a phone reader does not get this sentence. They
-     get the game page's four-word legend entry if they open a game, and nothing
-     before that. -->
+
 <p class="pucknote" id="pucknote"><b>The puck only appears where something happened</b>
 &mdash; a shot, a hit, a faceoff. The feed we read records those moments and
 nothing in between, so that is all we draw.</p>
 </div>
 
-<!-- THE PAGE NOW LEADS WITH THE GAME. Kevin, with a screenshot of everything
-     above the rink: "this is the area I would like removed... I think we lead
-     with the 'Every game since 2023' [sentence]". So one sentence says what this
-     is, and the next thing a visitor meets is hockey moving.
-     Rendered by script from the catalog, because the team set is a fact about
-     the archive and not a list to type. Thirty-three today: Arizona relocated to
-     Utah inside the window this archive covers. -->
+
 <main id="main">
-  <!-- THE HERO IS A GAME, and it is READ, never typed.
-       docs/homepage.md §1 already flagged the old typed-in hero as "the same
-       shape as the hard-coded date we just pulled out of game.html". Both
-       ingredients are already in memory: `featured` is published in
-       measures.json (teams that controlled play while the score was level AND
-       LOST, sorted by edge) and the catalog is fetched anyway for the grid. So
-       this costs zero extra requests and cannot go stale. -->
+  
   <div class="hero" id="hero" hidden>
-    <!-- ⭐ EMPTY IN THE MARKUP, AND WRITTEN FROM SCRIPT LIKE EVERY OTHER LINE
-         IN THIS BLOCK. It read "The most recent game in the archive", which was
-         true for exactly as long as the hero WAS the most recent game. The hero
-         now prefers one whose replay reaches a goal, which is a median of zero
-         days behind and occasionally several -- and a fixed sentence describing
-         a rule that has two branches is false in one of them. Which branch fired
-         is known only to `hero()`, so the sentence is written there. -->
+    
     <p class="herokick" id="herokick"></p>
-    <!-- THE REAL RENDERER, FRAMED. Not a recorded video: no binary asset to go
-         stale, no media-src in the policy, nothing to re-record when the rink
-         changes, and every mark still traces to a recorded event. The frame is
-         created in script AFTER the catalog says which game is newest, which
-         also means it never loads for a visitor who does not reach it. -->
+    
     <div class="heroframe" id="heroframe"></div>
     <p class="heroline" id="heroline"></p>
     <p class="herosub" id="herosub"></p>
-    <!-- WHETHER THIS GAME IS THE USUAL CASE. Declared here and filled from
-         script, like every other line in this block -- a slot in the markup is
-         also the one place that decides whether it is shown, and `:empty` keeps
-         a game the rate cannot classify from taking any room. -->
+    
     <p class="herorel" id="herorel"></p>
     <a class="herogo" id="herogo" href="game.html">Watch the whole game &rarr;</a>
-    <!-- ⭐ THE ONE ELEMENT ON THIS PAGE WHOSE CONTENT IS A FUNCTION OF THE DATE.
-         docs/front-door.md §3 stated it as an invariant rather than a taste:
-         before this, nothing above the fold changed from one morning to the
-         next, so a visitor had no way to tell a return visit from a first one.
-
-         ⚠️ IT LIVES INSIDE THE HERO ON PURPOSE, and the reason is the sixth grid
-         row. Above 1180 the frame spans the card's whole height while the five
-         text rows are `min-content`, which leaves ~900px of column-one gutter
-         that §5.4 measured and nothing occupied. A sibling of the card would
-         have to be full-width underneath it, wasting exactly that space and
-         pushing the team grid down. ⛔ AND `display:contents` ON `.hero` IS NOT
-         THE ANSWER HERE, though it was on the game page yesterday: `.hero` is a
-         CARD -- background, border, padding -- and an element with
-         `display:contents` generates no box, so hoisting the grid to `#main`
-         that way would delete the card it is drawn on.
-
-         THE COST IS ONE COUPLING, STATED: `#hero` is revealed by `drawHero`, so
-         a catalog that fails to load takes this block with it. That is the state
-         where the page already says it could not load the archive.
-         Empty in the markup like every other line in this card -- see daily.js
-         for which of the three states can fire and why there is no fourth. -->
+    
     <section class="daily" id="daily" hidden>
       <p class="dailykick" id="dailykick"></p>
       <p class="dailysay" id="dailysay"></p>
@@ -729,36 +323,7 @@ nothing in between, so that is all we draw.</p>
     </section>
   </div>
 </main>
-<!-- ⭐⭐ THE TEACHING WAS TWO CLICKS DEEP BEHIND ONE AMBIGUOUS LABEL.
-     Measured 2026-09-11: fourteen learn cards and six drawn rule pages — twenty
-     teaching artifacts — were reachable ONLY through `/what-you-can-see.html`,
-     and nothing else on the site linked to any rule page at all. The front door
-     offered one game, thirty-two three-letter club codes, and a calendar. A
-     visitor who does not know what offside is had no way to find out that the
-     site would tell them.
 
-     RULES ONLY, AND THAT IS THE SPLIT BEING RESPECTED RATHER THAN A SAMPLE.
-     `LEARN_CARDS` keeps two groups apart on purpose — "the page's best idea",
-     per its own comment: the first is HOCKEY, the second is OURS, and merging
-     them "would let our measurements borrow the rulebook's authority". A strip
-     mixing three cards from both halves would do exactly that with no heading to
-     separate them, so this promotes the rules half only. The measurement half
-     keeps its own door, one line down.
-
-     ⚠️ THE HOOKS ARE NEW COPY AND THAT IS DELIBERATE, NOT LAZINESS. The obvious
-     move was to reuse each card's first sentence and it does not survive
-     reading: offside's opens "This is the one rule we can draw but never replay"
-     — a sentence about OUR FEED's limits, which is the right thing to say to
-     someone already on the learn page and the wrong first thing to say to
-     someone who does not know the rule. Penalties' blurb is a single 230-
-     character sentence with no split point at all. So each hook states the RULE,
-     in the site's own vocabulary ("a skater short" is the penalties card's own
-     phrase), and `_front_rules()` refuses any id that is not a real rules card.
-
-     ⛔ NO FREQUENCIES HERE. The wall between the halves lets the rules side say
-     what the record CONTAINS and reserves how often for the measurement side, so
-     "the three that stop play most" — the natural heading — is not available and
-     is not written. -->
 <section class="learnin">
 <h2 id="learn-h">New to hockey?</h2>
 <p class="note">The rules that stop play are the hardest part to pick up by
@@ -770,62 +335,16 @@ watching. Each of these is drawn first, then shown in a real game.</p>
 </div>
 <p class="lmore"><a href="/what-you-can-see.html">All 14 lessons, including what we count &amp; how &rarr;</a></p>
 </section>
-<!-- ⛔ WAS "Watch your team". The word implies streaming (Kevin), and unlike the
-     hero's button — which sits under a moving rink that is plainly not video —
-     this heading stands over a grid of three-letter codes with nothing beside it
-     to say otherwise. That is the rule the eleven uses of the word sorted into:
-     it misleads only where nothing corrects it.
-     AN INSTRUCTION RATHER THAN A PROMISE, which is also what the section is: the
-     line under the grid already reads "Or browse by date", so the two ways into
-     the archive now both tell a reader what to DO. `_NAV`'s own comment says
-     they are the same kind of thing; they finally read like it. -->
+
 <h2 id="teams-h">Pick your team</h2>
 <p class="note" id="teams-note">Every game each team played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
 <div class="teams" id="teams"></div>
-<!-- THE SECOND WAY IN, and it is a LINE rather than a second index.
-     CHENG's ruling (docs/discovery.md §10.4): a month grid on the home page
-     needs a rule for which month and every rule has an ugly case -- "most
-     recent" is an empty August on the front door for the newcomer arriving from
-     a summer link, and a calendar's whole value is navigable RANGE, which one
-     month cannot provide. So the grid gets its own page and the front door gets
-     the cheap half: about 40px, discoverable, no second index to attend to.
-     Revealed by drawGrid, so it appears exactly where the chips do and never
-     dangles under an empty div on a team page. -->
+
 <p class="bydate" id="bydate" hidden><a href="calendar.html">Or browse by date &rarr;</a></p>
 
-<!-- ⭐⭐⭐ THE COUNTING STRIP MOVED BELOW THE TEAM GRID, 2026-10-09, and the
-     argument is the first outside review's: *"the first screen is doing too many
-     jobs … One teaches offside. The other is a careful counting tool for people
-     who already know Corsi. The second will lose the first audience, and the
-     first audience is the one the headline names."*
 
-     ⚠️ THE FIX IS ORDER, NOT DELETION. Every one of these four is a fact a
-     newcomer cannot get by watching, which is the whole reason the front door
-     spends space on them — and two of the four were always readable cold ("a
-     shot from inside the slot goes in 11.4% of the time"). What was wrong is
-     that they INTERRUPTED the path: hero → lessons → <strong>counting</strong> →
-     pick a game. The novice the headline names now runs hero → lessons → a game,
-     unbroken, and the strip is what they meet on the way back up.
 
-     ⛔ AND THE TWO SENTENCES THAT SPOKE ANALYST WERE REWRITTEN IN THE SAME PASS
-     — see `FIGURE_CLAUSE`. Moving a card a newcomer cannot read further down the
-     page is hiding it, not fixing it. -->
-<!-- ⭐ THE OTHER HALF OF THE WALL, AND IT IS MARKED AS SUCH.
-     The strip above is the league's rules; this is what WE chose to count, and
-     `LEARN_GROUPS` keeps exactly this distinction on the learn page with exactly
-     this treatment — the blue left edge that already means "our claim" on
-     `.limits`. Two headings, two tints, no sentence spanning both.
-     ⛔ EVERY FIGURE IS SUBSTITUTED FROM THE PUBLISHED MEASUREMENTS, never typed.
-     `_front_counts()` refuses a sentence carrying no figure marker at all, and
-     refuses one stating a figure its own learn card does not — so these cannot
-     become a second, drifting account of the same finding. (This paragraph says
-     "figure marker" rather than writing one out: the placeholder gate scans the
-     BUILT page and cannot tell prose about a marker from a marker.)
-     WHY THESE THREE: a place (the slot), a duration (the shift) and the reason
-     the paradox in the card above is a paradox (score effects). Each is a fact
-     about hockey that a newcomer cannot get by watching, which is the only kind
-     worth spending the front door on. -->
 <section class="countsin">
 <h2 id="counts-h">What we count</h2>
 <p class="note">Our own measurements rather than the league&rsquo;s, over 4,279 games, up to 12 October 2026. Each one opens the lesson behind it.</p>
@@ -847,79 +366,23 @@ watching. Each of these is drawn first, then shown in a real game.</p>
 
 <p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
 
-<!-- THE PAGE'S OWN FOOTER IS GONE, and it was a leftover rather than a choice.
-     It predates the shared chrome: when `page.py` grew a site footer this page
-     kept its old one, so the home page said the attribution TWICE, in two
-     wordings, and only one of them was on the other eight pages. Kevin: "please
-     remove this section, since the footer contains the disclaimer."
-     Every claim it made survives in `page.py::_footer` -- the source of the
-     data, the not-affiliated line, the no-marks line, and the link to the
-     source -- which is the only copy any page can be missing. -->
+
 </div>
 <script>
-/**
- * A DATE, AS A READER WOULD WRITE IT. "2023-11-10" -> "10 November 2023".
- *
- * ⭐ ITS OWN FILE SO THE REPLAY CAN HAVE IT WITHOUT THE FRONT DOOR'S STATE
- * MODEL. This lived in `ingest-state.js`, which is 10 KB of pipeline-state prose
- * the replay page has no use for, and the replay now has to date its own
- * measurements (ruling 8, 2026-10-03). The alternatives were both worse: inline
- * the 10 KB into `game.html` for one function, or write a second month table
- * beside the first — and a second spelling of a date is this build's own subject
- * matter. ~400 bytes, one implementation, both bundles.
- */
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
   'August', 'September', 'October', 'November', 'December'];
 
-/** "2023-11-10" -> "10 November 2023", or null for anything that is not one.
- *  PARSED BY HAND rather than with `Date`, which would apply the viewer's
- *  timezone to a date that has none and can slip a day westward. */
 function formatDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
   if (!m) return null;
   return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
 }
 
-/**
- * What the front page says about its own data.
- *
- * This is the visible half of docs/ingest-state.md. A stalled pipeline becomes
- * something users and we can see, on a page we already control, with no
- * monitoring service in existence — Doctrine §3, honest limits stated on screen,
- * rather than a health check bolted on the side.
- *
- * EVERY LINE STATES A FACT, NEVER A DIAGNOSIS. "Last checked 4 days ago" is
- * observable. "The pipeline is broken" is a conclusion we would be drawing on
- * the reader's behalf, and it might be wrong — GitHub could be down, the season
- * could have ended, the league could have changed its feed. The reader can
- * conclude; we report. Same discipline as `whyNotEven` stating skater counts and
- * never intent.
- *
- * The cadence ships with the staleness for the same reason a save percentage
- * ships with the number of shots: "last checked 4 days ago" is uninterpretable
- * without knowing what normal is, and a rate without a base rate is a story
- * rather than a measurement (Doctrine §8). It applies to our own reliability as
- * much as to a goalie's.
- */
 
-/** How long since a run before we say so. Policy, not a fact about hockey.
- *  The job runs every 24h, so 36 tolerates one missed run plus a delayed retry
- *  without crying wolf, and catches two consecutive failures. */
 const STALE_HOURS = 36;
 
-/* ⭐ MOVED TO `day.js` ON 2026-10-03, not copied. The replay page has to date
-   its own measurements now and has no use for the rest of this file, so the
-   formatter lives on its own and both bundles carry the one implementation.
-   ⛔ AND IT IS NOT RE-EXPORTED FROM HERE, which was the first attempt and broke
-   the front door with `Unexpected string`. `build_index.py::_module` inlines
-   these files by deleting `import` statements and then doing a blunt
-   `replace("", "")`, so `{ formatDate } from './day.js';` became
-   `{ formatDate } from './day.js';` — a syntax error inside the page, caught by
-   59 homepage tests at once. A convenience alias for one caller was not worth a
-   second import path anyway: `daily.js` reads it from `day.js` now. */
 
 
-/** Whole days between two instants, floored. */
 function daysBetween(then, now) {
   const a = Date.parse(then), b = Date.parse(now);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
@@ -934,23 +397,6 @@ function ago(then, now) {
   return `${Math.floor(h / 24)} days ago`;
 }
 
-/**
- * @param index     the parsed index.json, or null if it could not be loaded
- * @param now       ISO instant, injected so this is testable and deterministic
- * @returns {{state, lines: string[]}}
- *
- * ⚠️ THIS REPORTS ON THE PIPELINE AND ON NOTHING ELSE. It briefly also said when
- * the season reopens, which was the only forward-looking sentence on the page
- * and therefore landed in the only slot that existed at the time. `daily.js` is
- * that slot now, and CHENG's q4 ruling split the two: the season sentence goes
- * where a reader looks for what is next, the ledger half stays at the foot of
- * the page where a reader looks for what we hold. Printing both halves in both
- * places is what the ruling ruled against.
- *
- * `state` is a machine-readable label for styling; `lines` is what a reader
- * sees. The states are ordered by how much they tell you, not by severity:
- * a halt explains itself, so it outranks staleness, which is only a symptom.
- */
 function describe(index, now) {
   if (!index || typeof index !== 'object') {
     return { state: 'empty', lines: ['No data loaded yet.'] };
@@ -960,9 +406,6 @@ function describe(index, now) {
   const through = formatDate(index.dataThrough);
   lines.push(through ? `Data through ${through}.` : 'No games loaded yet.');
 
-  // A missing lastRun means an index written before this schema existed. Say so
-  // rather than substituting the field it replaced -- reusing `lastIngest` here
-  // would quietly reassert the conflation the schema exists to end.
   if (!index.lastRun) {
     lines.push('When we last checked is unknown.');
     return { state: 'unknown', lines };
@@ -971,10 +414,6 @@ function describe(index, now) {
   const stale = daysBetween(index.lastRun, now) !== null &&
     (Date.parse(now) - Date.parse(index.lastRun)) / 3600000 >= STALE_HOURS;
 
-  // A halt is the most informative thing we can tell a reader, and saying it
-  // plainly reads as competence rather than apology: we noticed, and we stopped
-  // rather than guess. Hiding it would mean knowing our data is incomplete and
-  // not saying so, which is the one thing this project has never done.
   if (index.halted && index.halted.since) {
     const since = formatDate(String(index.halted.since).slice(0, 10));
     lines.push(`Updates paused${since ? ` ${since}` : ''}. The league's feed ` +
@@ -993,80 +432,21 @@ function describe(index, now) {
     const held = c.heldInWindow || 0;
     const unread = c.unknownStateInWindow || 0;
 
-    // THE DENOMINATOR IS THE HOCKEY, NOT OUR COMPREHENSION OF IT.
-    //
-    // `finalInWindow` counts games we recognised as final, so games in a state
-    // we cannot read are excluded from it — correctly, since we cannot claim
-    // they are over. Using it as the denominator meant the page compared what we
-    // hold against what we managed to understand, which flatters us exactly when
-    // we are doing worst: "we have 10 of the 10 games played" with ninety more
-    // played and dropped. At the limit it produced an outright false sentence —
-    // every game unreadable gives zero, and the page announced "no games in the
-    // last 14 days" over a full slate. Preseason guaranteed that: all 56 sit in
-    // state FINAL, which we had never observed.
-    //
-    // Older indexes predate `gamesInWindow`, so reconstruct it rather than
-    // defaulting to zero — defaulting would reintroduce the false sentence on
-    // precisely the indexes written before the fix.
-    // ⛔⛔ AND `gamesInWindow` IS NOT "PLAYED" EITHER — 2026-09-20, live.
-    //
-    // It counts every game the league LISTED, which on any evening includes the
-    // ones starting later tonight. The front door read: "We have 8 of the 14
-    // games played in the last 14 days. 6 are listed in a state we don't
-    // recognise yet, so we haven't read them." Six of those fourteen were `LIVE`
-    // or `FUT` — being played, or not started. We recognise both perfectly well,
-    // and neither had been played.
-    //
-    // So the denominator moved once too far. `finalInWindow` was too small
-    // because it excluded what we could not read; `gamesInWindow` is too large
-    // because it includes what nobody has played. What belongs in it is every
-    // game that is OVER as far as we can tell — the ones we read, plus the ones
-    // we could not, which might be over and we cannot say. A game in progress is
-    // neither held nor missing. It is not yet.
-    //
-    // Older indexes predate `pendingInWindow`, so it defaults to 0, which
-    // reproduces the previous arithmetic exactly rather than inventing a
-    // correction for a document that never carried the field.
     const pending = c.pendingInWindow || 0;
     const played = (Number.isFinite(c.gamesInWindow)
       ? c.gamesInWindow
       : c.finalInWindow + unread) - pending;
 
     if (played === 0) {
-      /* ⚠️ AND "NO GAMES" WOULD BE A NEW FALSE SENTENCE ON OPENING NIGHT. Taking
-         the unplayed games out of the denominator makes it zero on exactly the
-         morning the league lists a full slate that starts this evening — 7
-         games on 2026-09-19 — and "No games in the last 14 days" over a slate is
-         the same shape of lie the denominator was changed to stop telling.
-         The STATE stays `quiet`, because the observable it drives is still
-         right: the daily card is carrying the next fixture, so this line has
-         nothing to add and hides. Only the sentence has to be true. */
       lines.push(pending > 0
         ? `No games have finished in the last ${c.windowDays} days. `
           + `${pending} ${pending === 1 ? 'is' : 'are'} scheduled or being played now.`
         : `No games in the last ${c.windowDays} days.`);
-      // ⭐ `quiet` MEANS THE LEAGUE LISTED NO GAMES -- we looked, recently, and
-      // the window was empty -- so it is the one state where "no games" is a
-      // fact about hockey rather than a symptom of us. That distinction is why
-      // the season sentence could be attached here and to neither `stalled` nor
-      // `halted`, which would have pinned a cheerful date onto a sentence about
-      // our own failure with the reader unable to tell which half to believe.
-      //
-      // IT IS STILL NOT A DIAGNOSIS, which is this file's standing rule. The
-      // page does not say "the season is over" -- that is a conclusion, and this
-      // state is equally what a mid-season league-wide pause looks like.
       return { state: 'quiet', lines };
     }
     if (held < played) {
-      // "Still loading" would promise progress we cannot guarantee — a claim
-      // about a future rather than a count. The duller sentence is the true one.
       lines.push(`We have ${held} of the ${played} games played in ` +
         `the last ${c.windowDays} days.`);
-      // ⛔ A "REFUSED" SENTENCE STOOD HERE AND COULD NEVER FIRE — removed
-      // 2026-10-12. It read `coverage.refusedInWindow`, which the fetcher
-      // declared and never incremented: the fetcher cannot refuse a game,
-      // derive.py does, later. Unreadable means we never fetched, because the
-      // league lists the game in a state we cannot interpret as over.
       if (unread > 0) {
         lines.push(`${unread} ${unread === 1 ? 'is' : 'are'} listed in a ` +
           `state we don't recognise yet, so we haven't read ${unread === 1 ? 'it' : 'them'}.`);
@@ -1078,70 +458,11 @@ function describe(index, now) {
   return { state: 'current', lines };
 }
 
-/**
- * The one element on the front door whose content is a function of the date.
- *
- * docs/front-door.md §3 stated the finding as an invariant rather than a
- * preference: BEFORE THIS, NO ELEMENT ABOVE THE FOLD CHANGED FROM ONE DAY TO
- * THE NEXT. The hero moves when the archive gains a game, which in season is
- * most mornings and for four months is never; everything else on the page is a
- * fact about the collection. A visitor had no way to tell a return visit from a
- * first one, which is the whole of the recurrence problem.
- *
- * ⭐ THREE STATES, AND THE DATA PICKS WHICH — there is no empty state, because
- * every branch here is a real sentence. `recent.json` says what the nightly just
- * measured; `schedule.json` says what the league has listed ahead. Between them
- * there is always something true to say, and the fourth branch (`none`) is not a
- * state of hockey but the shape of a page whose documents did not load.
- *
- * ⛔ IT PRINTS COUNTS AND NEVER A RATE. This is CHENG's ruling of 2026-09-09 and
- * it is not the `a fraction never a percentage` convention, which guards
- * PRECISION a small n cannot carry. The danger here is ADJACENCY: put `5 of 8`
- * beside the archive's 54.3% and the reader performs the division we declined to
- * print, gets 62.5%, and concludes last night was unusual. Eight games cannot
- * support "unusual". The archive figure keeps its own home under the hero, where
- * its n is four thousand. Nothing in this file may ever compute a rate, and the
- * reason it may not is that the two figures would be one scroll apart.
- *
- * ⚠️ AND THE STALENESS CHECK TRAVELS WITH THE BLOCK THAT SAYS "LAST NIGHT".
- * `describe()` reports on the pipeline; this reports on the games. If they were
- * allowed to disagree — a stalled ingest at the bottom of the page and a
- * confident "last night" at the top — the page would carry its own contradiction
- * above its own admission of it. So the phrase "Last night" is earned from the
- * GAME DATES themselves and not from any timestamp: if the newest game we hold
- * was not played yesterday, the block names the day it was, and the claim
- * degrades instead of going false. That is the same instrument reporting a
- * different fact, rather than two instruments reporting the same one.
- */
 
 
 
-/**
- * ⛔ HOW MANY DOORS THE BLOCK PRINTS, AND THE NUMBER IS A MEASUREMENT.
- *
- * The block sits in the sixth row of the hero's grid, and that row's height is
- * SLACK — what is left of column one after the frame has set the card's height.
- * Measured at 1900 with the real card: about 440px, of which the kicker and the
- * sentence take ~100 and each row is 42. So six rows fill it and the card keeps
- * the shape it has on a quiet night.
- *
- * ⚠️ WITHOUT A CAP THE LAYOUT FAILS ON THE ORDINARY CASE, and only looking found
- * it. A sixteen-game night — the league's maximum, and 13 January 2024 is a real
- * one — grew the card from 800px to 1,230px and left roughly 1,250 x 480 of
- * empty white beside the list, because the rink does not grow with it. Every
- * unit test was green through that, as they had to be: they cannot see a pixel.
- *
- * THE REST ARE NOT LOST. `calendar.html?date=` already renders a whole night and
- * shows more than this block can — the games we hold but cannot publish appear
- * there and can never appear here. So the tail is a better door than the rows it
- * replaces, not a truncation apologising for itself.
- */
 const SHOWN = 6;
 
-/** "2026-06-14" one day earlier, in the same date-only arithmetic the league's
- *  own fields use. `Date` is deliberately kept out of it: a date with no
- *  timezone put through the viewer's offset can slip a day westward, and this
- *  comparison decides whether the page prints the word "Last night". */
 function dayBefore(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
   if (!m) return null;
@@ -1149,15 +470,6 @@ function dayBefore(iso) {
   return new Date(d).toISOString().slice(0, 10);
 }
 
-/**
- * The games on the newest date the slate holds.
- *
- * `recent.json` is written from whatever the nightly's backwards window
- * happened to contain, which is up to fourteen days of games after a run that
- * caught up from a failure. "Last night" is a suffix of that list — `slateOf`
- * sorts by date for exactly this — and taking the whole file would report a
- * fortnight as a night.
- */
 function newestDay(games) {
   const rows = (games || []).filter(g => g && typeof g.date === 'string');
   if (!rows.length) return { date: null, rows: [] };
@@ -1165,17 +477,6 @@ function newestDay(games) {
   return { date, rows: rows.filter(g => g.date === date) };
 }
 
-/**
- * ⛔ COUNTS ONLY. Returns how many of these games had an attempts leader at all,
- * and how many times that leader lost. It returns no rate and the caller cannot
- * derive one it is willing to print — see this file's header.
- *
- * A GAME WITH THE ATTEMPTS TIED IS NOT A GAME THE CLAIM IS ABOUT, so it leaves
- * the denominator rather than being counted as a win for either side. That is
- * the same handling `archive.js` gives a tie, and it is why the sentence prints
- * its own n instead of reusing the night's game count: on a night where one game
- * ties, "5 of the 8" would be false and "5 of the 7" is not the headline number.
- */
 function attemptsTally(rows) {
   let n = 0, lost = 0;
   for (const g of rows) {
@@ -1192,43 +493,12 @@ function attemptsTally(rows) {
   return { n, lost };
 }
 
-/**
- * The next fixture the league has listed and we have not yet played past.
- *
- * ⚠️ THE FILTER IS `startTimeUTC > now`, NOT "everything in the document".
- * `upcoming` is rebuilt each run from the games the payload reported in a state
- * we could not read as final, and a game stuck in such a state does not leave
- * that list by being played. Announcing it as "next" would put a fixture from
- * last Tuesday on the front door under the word "next", which is the stale-date
- * failure `whenHockeyReturns` was written to avoid, arriving through the other
- * door.
- *
- * ⚠️ AND THE DATE IS NOT COMPUTED HERE. An NHL game starting at 7pm Eastern is
- * 23:00Z the same day; one starting at 10:30pm Pacific is 05:30Z the NEXT day.
- * So there is no UTC date that names "the night of the 29th", and any grouping
- * or day-name this module produced would be wrong for roughly half the slate.
- * The instant is returned verbatim and the RENDERER localises it, which is the
- * only place that knows the reader's timezone and is therefore the only place
- * that can be right.
- */
 function nextFixture(schedule, now) {
-  /* ⚠️ THE FILTER IS `startTimeUTC > now`, AND IT BELONGS HERE RATHER THAN IN
-     `upcomingFrom`. `upcoming` is rebuilt each run from games the payload
-     reported in a state we could not read as final, and such a game does not
-     leave that list by being played — so the single-fixture sentence would put
-     last Tuesday's game on the front door under the word "Next". A NIGHT keeps
-     its started games (see `nextNight`); a sentence naming one game may not. */
   return upcomingFrom(schedule, now).filter(g => g.startTimeUTC > now)[0] || null;
 }
 
-/** The fixtures ahead of `now`, soonest first, ties by id so two runs agree. */
 function upcomingFrom(schedule, now) {
   return ((schedule && schedule.upcoming) || [])
-    /* ⚠️ AND IT MUST PARSE. The renderer's only job with this value is
-       `new Date(startTimeUTC).toLocaleString(...)`, which answers "Invalid Date"
-       rather than throwing — so an unparseable instant would reach the front
-       door as a sentence, not as an error. A value this module will not vouch
-       for is not handed on. */
     .filter(g => g && typeof g.startTimeUTC === 'string'
       && Number.isFinite(Date.parse(g.startTimeUTC)))
     .sort((a, b) => (a.startTimeUTC === b.startTimeUTC
@@ -1236,31 +506,6 @@ function upcomingFrom(schedule, now) {
       : (a.startTimeUTC < b.startTimeUTC ? -1 : 1)));
 }
 
-/**
- * ⭐⭐ THE NEXT NIGHT — every game the league lists for it, not the first one.
- *
- * The block used to name one fixture, and `docs/front-door.md` §12.3 is why: a
- * count over a window we cannot date honestly is a number with no population, and
- * no UTC date names an NHL night — a 7pm Eastern game is 23:00Z the same day, a
- * 10:30pm Pacific one 05:30Z the next.
- *
- * ⭐ THE LEAGUE DATES IT AND WE WERE THROWING THAT AWAY. `classify()` in
- * `fetch_nhl.py` attaches `week.date` to every game; the loop building `upcoming`
- * copied seven fields and not that one. So the night's population is the league's
- * own label, quoted — nothing here reads a clock, and §12.3's reasoning survives
- * intact: this still formats no time and names no day.
- *
- * ⛔ A GAME UNDER WAY IS STILL TONIGHT. Selecting the night needs a fixture that
- * has not started; PRINTING it does not. Dropping the started ones would shrink
- * the list from under a reader at 9pm and make the count disagree with the rows.
- *
- * ⚠️ AND AN UNDATED DOCUMENT IS THE OLD SHAPE, ALL OF IT. The site deploys on
- * push and the pipeline lands at the next ingest, so for up to a day these
- * fixtures carry no `date`. The caller gets `null` and falls back to the single
- * fixture, which is TODAY'S BEHAVIOUR rather than an error or an empty block. One
- * undated fixture is enough: a night whose count is quietly short is worse than
- * the sentence it replaces, and the ingest refuses to publish that shape anyway.
- */
 function nextNight(schedule, now) {
   const rows = upcomingFrom(schedule, now);
   if (!rows.length) return null;
@@ -1276,47 +521,12 @@ function nextNight(schedule, now) {
   return {
     date,
     count: fixtures.length,
-    /* THE COUNT IS THE NIGHT AND THE CAP IS THE LAYOUT — §12.2's rule, one state
-       over: a block saying "6 games" on a sixteen-game night would be a false
-       claim about hockey made to save a card's height. */
     fixtures: fixtures.slice(0, SHOWN),
-    /* ⛔ THE REST ARE RETURNED, NOT COUNTED, and that is the difference from the
-       slate's tail. The slate's overflow has somewhere to go — `calendar.html`
-       renders a whole night we HOLD — and a future night is by definition games
-       we do not hold, so there is no page to link and the remainder opens in
-       place. A count alone would leave the renderer with nothing to open. */
     rest: fixtures.slice(SHOWN),
-    /* ⛔ EVERY game, not the first one. A late-September night mixes preseason
-       and regular season, and one word for both is wrong for half of it. */
     preseason: fixtures.every(g => g.gameType === 1),
   };
 }
 
-/**
- * ⭐ WHEN HOCKEY COMES BACK, IN THE LEAGUE'S OWN WORDS.
- *
- * The league puts `preSeasonStartDate` and `regularSeasonStartDate` on every
- * schedule payload, INCLUDING the empty ones it answers with all summer, and the
- * nightly copies them into schedule.json. So this is a quotation, not a calendar
- * of ours and not a forecast: the one thing on this site that is about the
- * future is a date the league published.
- *
- * IT IS ALSO WHY THE DATE IS NEVER TYPED. `docs/next-game.md` recorded "the
- * regular season 2026-10-08" on 2026-08-17 from one week's payload; the league's
- * own field said 2026-09-29 three weeks later. A constant that goes wrong once a
- * year with nobody touching it is exactly what this project instruments against.
- *
- * ONLY DATES THAT HAVE NOT ARRIVED. A boundary in the past is not news, and
- * naming one would leave the front page announcing an opening night that already
- * happened.
- *
- * ⚠️ THE COMPARISON IS DATE-TO-DATE AND DELIBERATELY COARSE. The league's dates
- * carry no timezone and `now` is an instant, so a reader west of the venue can
- * see "opens 29 September" for a few hours of their 29 September. `>=` rather
- * than `>` for the same reason: dropping the sentence on the very day it becomes
- * true would be the worse error, and by the day games are actually played there
- * is a fixture in `upcoming` and this branch no longer runs.
- */
 function whenHockeyReturns(schedule, now) {
   const s = (schedule && schedule.season) || {};
   const today = String(now || '').slice(0, 10);
@@ -1327,33 +537,12 @@ function whenHockeyReturns(schedule, now) {
     .sort((a, b) => (s[a[0]] < s[b[0]] ? -1 : 1));
 
   if (!ahead.length) return null;
-  // The verb is stated once and the rest of the list hangs off it, so two dates
-  // are one sentence rather than two: "Preseason opens 19 September 2026, the
-  // regular season 29 September 2026."
   const [[firstKey, firstLabel], ...rest] = ahead;
   const head = firstLabel[0].toUpperCase() + firstLabel.slice(1);
   return `${head} opens ${formatDate(s[firstKey])}`
     + rest.map(([k, label]) => `, ${label} ${formatDate(s[k])}`).join('') + '.';
 }
 
-/**
- * @param recent    the parsed recent.json, or null if it could not be loaded
- * @param schedule  the parsed schedule.json, or null
- * @param now       ISO instant, injected so this is testable and deterministic
- *
- * @returns {{state, kicker, count, lines, games, next}}
- *   state   'slate' | 'upcoming' | 'offseason' | 'none'
- *   kicker  the label above the block, or null
- *   count   how many games the kicker's day holds, or null
- *   lines   COMPLETE sentences, ready to print as written
- *   games   the slate's rows to print, capped at `SHOWN` — see there for why
- *   more    how many of that night's games the cap left out, for the tail link
- *   date    the night the rows are from, for `calendar.html?date=`
- *   next    the fixture whose start instant only the browser can localise, or
- *           null. ⚠️ IT IS THE ONE PIECE `lines` DOES NOT CARRY — see
- *           `nextFixture` for why a date cannot be computed here — so a renderer
- *           that ignores it prints a state with no "when" in it.
- */
 function daily(recent, schedule, now) {
   const none = { state: 'none', kicker: null, count: null, lines: [], games: [],
     date: null, more: 0, next: null, night: null };
@@ -1361,32 +550,16 @@ function daily(recent, schedule, now) {
   const { date, rows } = newestDay(recent && recent.games);
   if (rows.length) {
     const yesterday = dayBefore(String(now || '').slice(0, 10));
-    // The word is earned from the games, not from a clock. See the header.
     const kicker = date === yesterday ? 'Last night' : formatDate(date);
     if (!kicker) return none;
     const lines = [];
     const { n, lost } = attemptsTally(rows);
-    // n === 0 means every game we hold for that day had the attempts tied or
-    // arrived without them. There is no sentence to write, and the count plus
-    // the list are still a real block.
     if (n > 0) {
-      // ⛔ ONE FORM, AND IT DOES NOT SOFTEN AT THE EDGES. "lost 0 of the 8" is
-      // duller than "won every one", and duller is the point: §5.2.1 requires
-      // this to read as a tally rather than as a measurement moving, and a tally
-      // that changes its wording when it hits zero reads as a different
-      // instrument each morning. The only variation permitted is the clause
-      // below, which exists because without it the sentence would be false.
       const tail = n === rows.length
         ? `the ${n}.`
         : `the ${n} where one team had more.`;
       lines.push(`The team with more shot attempts lost ${lost} of ${tail}`);
     }
-    /* ⭐ AND THE SLATE LOOKS FORWARD TOO, which is the defect that arrives with
-       the regular season. This branch fires whenever recent.json holds games and
-       it used to carry nothing about what is on tonight — invisible all
-       preseason, because preseason is out of scope for recent.json and the
-       `upcoming` branch was what a reader saw. From the first morning of the
-       regular season most days hold results, and the forward look vanished. */
     return { state: 'slate', kicker, count: rows.length, lines, date,
       games: rows.slice(0, SHOWN), more: Math.max(0, rows.length - SHOWN),
       next: null, night: nextNight(schedule, now) };
@@ -1394,25 +567,6 @@ function daily(recent, schedule, now) {
 
   const next = nextFixture(schedule, now);
   if (next) {
-    /* ⛔ IT DOES NOT SAY "NO GAMES LAST NIGHT", and the draft in
-       docs/front-door.md §5.1 did. `measureAll` gates its records on `inScope`,
-       so recent.json holds NHL regular season and playoff games and nothing
-       else — an empty slate is therefore also what a night of PRESEASON looks
-       like, and what the Olympic break looks like, and on those nights the
-       sentence would be a false claim about hockey.
-       ⭐ IT IS THE DENOMINATOR MISTAKE AGAIN, WHICH THIS PROJECT HAS PAID FOR
-       ONCE. `describe()` used to divide by the games it had managed to read and
-       announced "no games in the last 14 days" over a full preseason slate; the
-       rule that came out of it is that THE DENOMINATOR IS THE HOCKEY, NOT OUR
-       COMPREHENSION OF IT. Absence of a record is not absence of a game, so the
-       block claims no absence at all and answers the question a reader on a dark
-       night is actually asking, which is when the next one is. */
-    /* ⛔ THE TWO SHAPES ARE EXCLUSIVE, so a renderer can never print both. With
-       the league's dates the block shows the NIGHT and names no single game;
-       without them it degrades to the one fixture and the sentence it has always
-       written. `kicker` goes with it: "Next" belongs to the sentence, while a
-       night's kicker needs the reader's own date to know whether the word is
-       "Tonight", and only the browser knows that. */
     const night = nextNight(schedule, now);
     return { state: 'upcoming', kicker: night ? null : 'Next', count: null,
       lines: [], games: [], date: null, more: 0,
@@ -1421,124 +575,29 @@ function daily(recent, schedule, now) {
 
   const back = whenHockeyReturns(schedule, now);
   if (back) {
-    // NO "no games last night" HERE. In July that sentence is technically true
-    // and reads as a fault report; the ledger line at the foot of the page
-    // already states what we hold and that the window is empty, and this block's
-    // job in the off-season is the half that looks forward. Splitting it that
-    // way is CHENG's q4 ruling, and printing both halves in both places is what
-    // it ruled against.
     return { state: 'offseason', kicker: 'Next', count: null,
       lines: [back], games: [], date: null, more: 0, next: null, night: null };
   }
 
   return none;
 }
-/**
- * WHICH COMPETITION A GAME BELONGS TO, and whether it counts.
- *
- * The league carries `gameType` as a bare integer in characters 4–6 of the game
- * id and names it nowhere in the feed, so a human has to — in
- * `data/competitions.json`, which `derive.py` walks the whole archive against.
- * This file is the only code that reads a game's type or turns one into words.
- *
- * WHY IT IS ITS OWN MODULE. Three surfaces need it and they do not overlap: the
- * calendar names a night's competition, the verdict card says why a game gets no
- * comparison, and `archive.js` decides what enters a base rate. Each of them had
- * its own spelling of `String(id).slice(4, 6)` — `archive.js::inScope`,
- * `calendar.js::competitionOf` and a private `TYPE` map in `sentence.js` that
- * knew about preseason and nothing else. Three readings of one field is three
- * chances for them to disagree about the same game.
- *
- * NO TABLE LIVES HERE EITHER. `names` is passed in, from the JSON, because a
- * copy in JavaScript is the defect this project keeps almost building. Every
- * builder inlines the same file.
- */
 
-/** The league's own gameType, read off the id. Never a lookup, never a date. */
 function typeOf(gameId) {
   return Number(String(gameId).slice(4, 6));
 }
 
-/**
- * Regular season (02) and playoffs (03) — the population every rate covers.
- *
- * Preseason, the all-star games, the Olympics and the 4 Nations Face-Off are
- * archived, derived and viewable, and never enter a computed number. A rate
- * pooled across preseason split squads, national sides under different roster
- * rules and an all-star exhibition is not a claim about NHL hockey; it is an
- * average over four competitions.
- */
 function isLeague(type) {
   return type === 2 || type === 3;
 }
 
-/**
- * NHL CLUBS PLAYING EACH OTHER — preseason (01) as well as 02 and 03.
- *
- * ⭐ A DIFFERENT QUESTION FROM `isLeague`, and the reason it exists as its own
- * name rather than an inline `type <= 3`. `isLeague` answers *may a RATE pool
- * this*; this answers *are these the clubs this site is about*. Preseason is
- * NHL clubs in NHL sweaters on half-strength rosters — worth showing, never
- * worth averaging. The all-star games, the Olympics and the 4 Nations Face-Off
- * are not clubs at all.
- *
- * Kevin, 2026-09-21, ruling that the front door's showcase replay may be a
- * preseason game: "preseason game can be a front-door hero." Widening `hero`
- * with a bare `g.v` instead let the fixture's OLYMPIC game take the door, which
- * is a thing nobody ruled — the tests caught it. So the line being drawn is
- * club hockey, and it is drawn once, here.
- *
- * ⛔ NOT A VISIBILITY RULE EITHER. A club page lists what the club played and
- * filters on the abbreviation, which no country code can match; it needs no
- * predicate and must not grow one.
- */
 function isClubGame(type) {
   return type === 1 || type === 2 || type === 3;
 }
 
-/**
- * The label for a competition, from the table in `data/competitions.json`.
- *
- * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
- * derive run loudly; this exists so that in the window between the league
- * inventing one and a human naming it, a reader sees `game type 21` rather than
- * `undefined`. Rendering raw was briefly the whole answer and that was wrong:
- * `gameType` is a small closed enum, so a value nobody has seen is an EVENT, not
- * the open-ended vocabulary a missed-shot reason is.
- *
- * Naming is not cosmetic. Lumping these under "preseason" — the tempting
- * shorthand, since 320 of 361 are — would be false on every Olympic and
- * 4 Nations night, which is 38 of the 60 dates the calendar makes visible at all.
- */
 function competitionOf(type, names) {
-  // `names[type]` and not `names[String(type)]`: object keys ARE strings and the
-  // lookup coerces, so the second form was a branch no mutation could reach.
-  // The table arrives from JSON with string keys and the catalog carries `t` as
-  // a number; that is one expression, not two.
   return (names && names[type]) || `game type ${type}`;
 }
 
-/**
- * ⭐ THE COMPETITIONS THIS SITE DELIBERATELY LEAVES OUT, named from the table.
- *
- * WHY THIS IS DERIVED AND NOT WRITTEN. The front door's limits block read
- * "Preseason, the Olympics and the 4 Nations Face-Off", and it had been wrong
- * since February 2024: the archive also holds four ALL-STAR games, which that
- * sentence never named. Nothing could see it — the sentence is prose in a
- * builder, and prose cannot be compared to a table by anything but a person
- * remembering to.
- *
- * That is the same shape as the deploy gate that exempted two pages by filename
- * and the night list that labelled a group only when it was not alone: a rule
- * written against the cases that existed, silently wrong when a fourth arrived.
- * The league mints a competition whenever it invents one — 19 and 20 in February
- * 2025, 9 in February 2026, both after this archive started — so a hand-written
- * list here is a claim with an expiry date nobody is told about.
- *
- * DISTINCT NAMES, because two types can share one: 4 and 12 are both all-star,
- * 19 and 20 are both 4 Nations. Ordered by the lowest type carrying each name,
- * so the order is stable and derived rather than chosen.
- */
 function excludedCompetitions(names) {
   const seen = new Map();
   for (const key of Object.keys(names || {})) {
@@ -1550,44 +609,7 @@ function excludedCompetitions(names) {
   return [...seen].sort((a, b) => a[1] - b[1]).map(([name]) => name);
 }
 
-/**
- * Team identity — the one table on this site that is not derived from the feed.
- *
- * WHAT THIS IS AND IS NOT. Colours and names are public reference data, entered by
- * hand (Kevin, 2026-08-11). Nothing here is a measurement, so nothing here can be
- * wrong in the way a number can be wrong — but it CAN be incomplete, and that is
- * the failure this file's test exists to catch.
- *
- * NO LEAGUE OR CLUB MARKS. Colours and three-letter abbreviations identify a team;
- * logos and wordmarks do not appear anywhere on this site and must not be added
- * here. The site says so on its own front page.
- *
- * THIRTY-THREE, NOT THIRTY-TWO. Arizona relocated to Utah inside the window this
- * archive covers: ARI played 82 games in 2023-24 and none after, UTA begins in
- * 2024-25. A "32 NHL clubs" list would have been wrong on the first day. The set
- * the page renders is read from the CATALOG, never from this file — this file only
- * has to be able to answer for whatever the catalog contains.
- *
- * ⚠️ THIS PARAGRAPH USED TO END "the next relocation or expansion team fails
- * loudly instead of rendering a blank chip", AND THAT WAS NOT TRUE. The
- * completeness test compares this table to a hand-pinned fixture, so a new club
- * would have rendered as a grey chip and every check would have stayed green
- * until a human re-pinned the list. It failed loudly only AFTER somebody noticed,
- * which is the opposite of what the sentence promised.
- *
- * It is true now, and not because of that test. `builders/measure.mjs` walks
- * every extract, collects the abbreviations the archive actually contains, and
- * exits non-zero naming any club with no entry here — after writing measures.json
- * and teams.json, because a missing NAME cannot change a number and withholding
- * the archive over one would be the mistake the 73 refused games already were.
- * The unit test below is the edit-time half; that is the day-it-happens half.
- *
- * The rule it came from, which cost a day to learn: A VALUE THE LEAGUE CAN
- * INVENT NEEDS A CHECK WHERE THE WHOLE ARCHIVE IS WALKED, not a unit test
- * holding a copy of last year's answer. See data/competitions.json.
- */
 
-/** ab -> { name, colour }. `colour` is the club's primary, for a chip background. */
 const TEAMS = {
   ANA: { name: 'Anaheim Ducks',          colour: '#F47A38' },
   ARI: { name: 'Arizona Coyotes',        colour: '#8C2633' },
@@ -1624,18 +646,11 @@ const TEAMS = {
   WSH: { name: 'Washington Capitals',    colour: '#C8102E' },
 };
 
-/**
- * A note a team's own page owes the reader, or null.
- *
- * Only where the archive itself would otherwise mislead: a fan clicking ARI finds
- * one season and then nothing, and the honest answer is a fact, not an empty page.
- */
 const NOTES = {
   ARI: 'Relocated to Utah after the 2023-24 season.',
   UTA: 'Began play in 2024-25, after the Arizona team relocated.',
 };
 
-/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
 function luminance(hex) {
   const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
     .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -1646,68 +661,16 @@ function contrast(a, b) {
   return Math.max(x, y) / Math.min(x, y);
 }
 
-/**
- * Readable ink for a chip of this colour — MEASURED, not guessed.
- *
- * This used to pick by Rec. 601 luma against a threshold of 0.6, and 0.6 was a
- * number we chose. It cost real contrast: Anaheim's orange got white ink at
- * **2.73:1**, below WCAG's 3:1 floor for even large text, and Vegas 2.79 and
- * Philadelphia 3.55 were not much better. The heuristic was answering a question
- * ("is this colour light?") next to the one that matters ("which ink can be read
- * on it?").
- *
- * Asking the real question needs no threshold at all: take whichever ink
- * contrasts more. The worst case across the 33 clubs goes from 2.73:1 to
- * **4.96:1**, and three clubs change ink — Anaheim 2.73 → 6.45, Vegas 2.79 →
- * 6.30, Philadelphia 3.55 → 4.96.
- *
- * Same species of fix as the goalie card's `thin = f < 20`: a chosen constant
- * dissolves when you measure the thing it was standing in for.
- */
 function inkOn(hex) {
   return contrast('#0f1a23', hex) >= contrast('#ffffff', hex) ? '#0f1a23' : '#ffffff';
 }
 
-/** The label for a team, falling back to the abbreviation we were given. */
 function nameOf(ab) {
   return (TEAMS[ab] && TEAMS[ab].name) || ab;
 }
 
-/**
- * Nobody's colour. Used for the 42 games in the archive whose teams this table
- * cannot answer for — national sides at the 4 Nations Face-Off and the Olympics
- * (CAN, USA, FIN, SWE, SVK, SUI, CZE, GER, ITA, FRA, LAT, DEN) and the All-Star
- * squads (MCD, MAT, MKN, HGS, KNG, KLS, MUN).
- *
- * A slate grey ON PURPOSE and not a guess at a flag. Those competitions are
- * deliberately outside every computed number on this site, and inventing colours
- * for them would be adding reference data for teams we have decided not to make
- * claims about. The game page can still open them; it just does not pretend to
- * know what colour they wear.
- */
 const NEUTRAL = '#5b6d7a';
 
-/**
- * ⭐ THE SIDES WE HAVE DELIBERATELY NOT NAMED — as a list the code can read.
- *
- * The paragraph above has always said which teams these are, and a paragraph is
- * not a check. `measure.mjs` walks every extract and reports any club `TEAMS`
- * cannot answer for, so that a relocation or an expansion team fails loudly
- * instead of arriving as a grey chip nobody notices. Fired against the real
- * archive it names CAN, FIN, HGS, KLS, KNG, MAT, MCD, MKN, SWE and USA — every
- * one of them a side this file has decided, on the record, not to describe.
- *
- * ⛔ A GUARD THAT FIRES ON EVERY RUN IS A GUARD SOMEBODY SWITCHES OFF. Its own
- * test says so — *"a check that fired on every run would be turned off within a
- * week, and then the expansion team would arrive invisibly"* — and until
- * 2026-09-09 it never got the chance, because `main()` threw a ReferenceError
- * two lines before the exit code that was supposed to be the alert.
- *
- * SO THE EXCEPTION IS NAMED, NOT INFERRED. Membership here is a decision with a
- * reason attached, and `test/teams.test.js` requires every entry to be a side
- * `TEAMS` really does not name — an entry that shadowed a real club would be a
- * hole in the check rather than an exception to it.
- */
 const NATIONAL = 'a national side — the 4 Nations Face-Off and the Olympics are '
   + 'outside every computed number here, so we do not invent a badge for them';
 const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a team';
@@ -1719,101 +682,28 @@ const NOT_A_CLUB = new Map([
   ['KNG', ALLSTAR], ['KLS', ALLSTAR], ['MUN', ALLSTAR],
 ]);
 
-/**
- * The colour to paint this team, or NEUTRAL if it is not one of the 33 clubs.
- *
- * NEVER THROWS AND NEVER RETURNS UNDEFINED. `nameOf` falls back to the
- * abbreviation, which reads fine as text; a colour has no such fallback, and
- * `undefined` reaching a CSS custom property is an invisible mark rather than a
- * loud failure.
- */
 function colourOf(ab) {
   return (TEAMS[ab] && TEAMS[ab].colour) || NEUTRAL;
 }
 
-/**
- * A team's colour when it can be READ as text on white, and plain ink when it
- * cannot.
- *
- * Six of the 33 primaries fail: Boston and Nashville gold at 1.73:1, Pittsburgh
- * 1.79, Utah 2.34, Anaheim 2.73, Vegas 2.79. Gold text on a white card is a
- * decision to make a number harder to read in order to decorate it.
- *
- * THE THRESHOLD IS NOT OURS. 3:1 is WCAG 2.1's minimum for large text and for
- * graphical objects (SC 1.4.3, 1.4.11) — a published standard, cited, in the way
- * a stoppage sentence cites NHL Rule 81. This project refuses numbers it chose
- * itself; this is a number somebody else chose and wrote down.
- *
- * Identity does not depend on this. The abbreviation chip carries the true colour
- * with `inkOn` deciding its ink, so a team whose gold cannot be read as text is
- * still shown IN gold — on a chip, where it has a background to be read against.
- */
 function readableInk(hex, on = '#ffffff') {
   return contrast(hex, on) >= 3 ? hex : '#0f1a23';
 }
 
-/**
- * WHICH GAMES COUNT, AND WHAT TO CALL THE SET THEY MAKE.
- *
- * ⭐⭐ SPLIT OUT OF `archive.js` SO A LIST PAGE CAN CARRY IT, 2026-09-28 — the
- * second time this exact surgery has been done and the first one wrote down why:
- * `distribution.js` says *"SPLIT OUT OF archive.js SO THE GAME PAGE CAN CARRY IT
- * … the MECHANISM lives here, small enough to ship."* Same reasoning, different
- * mechanism.
- *
- * ⛔ WHAT IT COST BEFORE THE SPLIT. The front door and the calendar each inlined
- * the whole of `archive.js` — every season-wide rate, histogram and base rate —
- * to call `inScope`, a one-line predicate. `archive.js` imports `rink.js` and
- * `distribution.js`, so those came too. Measured on the built front door: the
- * three modules are 21,426 bytes gzipped, **27.1% of the page a stranger lands
- * on**, and neither page computes a single archive-wide figure.
- *
- * ⚠️ THE LINE IS A SUBJECT, NOT A SIZE. What lives here is *which games are in
- * the population and how that population is named* — the question a LIST asks.
- * What stays in `archive.js` is *what the population says* — the question a
- * summary asks. A cut made to hit a byte target would put `disputedCount` here
- * too, and that is a different subject; it has its own file for the same reason.
- *
- * `archive.js` re-exports all of these, so nothing that imported them from there
- * had to move.
- */
 
 
-/**
- * Regular season (02) and playoffs (03), read from the id — never a lookup.
- *
- * The reading of the field moved to competitions.js, where the calendar and the
- * verdict card read it too; this stays exported because half the repo imports
- * `inScope` from here and moving the NAME would be churn for no gain. What went
- * away is the third spelling of `String(id).slice(4, 6)`.
- */
 function inScope(gameId) {
   return isLeague(typeOf(gameId));
 }
 
-/** Playoffs (03), read from the same field, because the OTL bucket turns on it. */
 function isPlayoff(gameId) {
   return typeOf(gameId) === 3;
 }
 
-/**
- * The season a game belongs to, read from the id — never a lookup and never a
- * date. A season spans two calendar years, so a date would need a cutover rule
- * and the cutover moves; the id's first four digits are the league's own answer.
- */
 function season(gameId) {
   return String(gameId).slice(0, 4);
 }
 
-/**
- * How a season is WRITTEN: 2023 -> '2023-24'. Takes the season, not a game.
- *
- * HERE RATHER THAN IN A PAGE because two pages now print it — the team browse
- * and the calendar's season tabs — and a season written '2023-2024' on one and
- * '2023-24' on the other is the kind of divergence nobody files a bug about and
- * everybody notices. Accepts a string or a number, because `season()` above
- * returns a string and a page reading the id itself has a number.
- */
 function seasonLabel(y) {
   const n = Number(y);
   return `${n}-${String(n + 1).slice(2)}`;
@@ -1821,114 +711,21 @@ function seasonLabel(y) {
 
 const POPULATION = 'NHL regular season and playoffs';
 
-/**
- * HOW A LIST DISCLOSES A SHOT COUNT THE LEAGUE DISAGREES WITH ITSELF ABOUT.
- *
- * ⭐⭐ SPLIT OUT OF `archive.js`, 2026-09-28, beside `scope.js` and for the same
- * reason — but they are two files and not one, because they answer two
- * questions. `scope.js` is *which games are in the population*. This is *how a
- * row admits that one of its figures is contested*. Merging them would make a
- * "things the list pages happen to need" module, which is a bag named after its
- * consumers rather than its subject, and the next thing a list page needs would
- * land in it by default.
- *
- * ⚠️ IT IS PRESENTATION, AND THAT IS WHY IT LEFT `archive.js`. Nothing here
- * measures anything: it is a mark, a count of rows carrying the mark, and the
- * sentence that explains the mark. The archive-wide figures it used to sit
- * among are a different kind of thing entirely.
- *
- * `archive.js` re-exports all three, so nothing that imported them from there
- * had to move.
- */
 
-/**
- * ⭐ THE SHOT COUNT ON A LIST ROW IS THE LEAGUE'S, AND ON 73 GAMES IT IS THE
- * ONE THE GAME PAGE DISCLOSES AS DISPUTED (D10).
- *
- * `derive.py` puts `u: 1` on a catalog row when the league's play-by-play and
- * the league's own boxscore disagree about shots on goal, and its comment says
- * exactly why the flag exists:
- *
- *   "`u` so a LIST can mark it without opening the extract. The calendar and
- *    the team page both show many games at once and neither fetches an extract
- *    to draw a row; without this the disclosure would exist only on the page
- *    you already committed to opening."
- *
- * THAT SENTENCE WAS TRUE. The flag was populated on 73 rows, correct, and read
- * by exactly one thing in the repo -- `builders/health.mjs`, counting it for the
- * build list. The reader it was created for was never written.
- *
- * AND THE GAP IS NOT COSMETIC, because `ash`/`hsh` are the BOXSCORE's numbers.
- * The game page shows the event log, which is what a replay IS. So the two
- * surfaces printed different figures for the same game with nothing anywhere
- * saying why -- measured on four of the 73:
- *
- *   VAN at FLA  list 31-36   page 31-37
- *   COL at NYI  list 38-32   page 39-32
- *   COL at ARI  list 31-32   page 31-33
- *   FLA at CGY  list 34-24   page 34-25
- *
- * That is C7's defect already shipped: two figures that look like one claim,
- * and a reader who notices concludes we cannot count.
- *
- * ONE WORDING, TWO SURFACES. The calendar's night list and the team browse
- * render the same row from the same field; giving each its own sentence is how
- * the next one gets written unamended, which is the rule the game page's own
- * standing sentence was built on.
- *
- * A MARK ON THE NUMBER AND A NOTE UNDER THE LIST, which is the idiom both pages
- * already use for the dashed out-of-scope count. The mark sits ON the figure it
- * qualifies rather than beside the row, because the claim is about that figure
- * and nothing else on the line.
- */
 const DISPUTED_MARK = '*';
 
-/** How many rows on this list carry a disputed SHOT figure.
- *
- * ⛔ `us`, NOT `u` — 2026-10-12. `u` is the ledger's flag for a disagreement of
- * ANY kind; a list marks the shot figure it prints, and four games disputed
- * only on faceoffs carried the shot asterisk while this read `u`. */
 function disputedCount(rows) {
   return (rows || []).filter(g => g && g.us === 1 && g.v === 1).length;
 }
 
-/**
- * The note, once, under a list that contains at least one.
- *
- * IT NAMES WHOSE NUMBER IS ON SCREEN. "The population is welded to the number"
- * is the fix that has now worked six times, and here the population is a
- * DOCUMENT: the figure in the row is the boxscore's, and the game page shows
- * the event log. Saying only "these disagree" would leave the reader unable to
- * tell which one they are looking at, which is the whole defect.
- */
 function disputedNote(n) {
   if (!n) return null;
-  // ⭐ KEYED TO THE MARK, NOT TO A POSITION. The first wording said "the figure
-  // ABOVE is the boxscore's", which was true only while the note sat under the
-  // list -- and looking at it showed why it cannot: on a team page with 82 rows
-  // the note landed at y=7401 on a 390px phone, seven thousand pixels below the
-  // mark it explains. That is D9's y=1222 one page over.
-  //
-  // So the note goes ABOVE the list, where a reader meets it on the way down,
-  // and the sentence names the mark instead of pointing at a neighbour. A
-  // sentence whose truth depends on where it is printed is a sentence that goes
-  // wrong the first time anything moves.
   return `${DISPUTED_MARK} In ${n} ${n === 1 ? 'game' : 'games'} below, the `
     + `league's own event log and boxscore disagree about the shot count. `
     + `A shot figure marked ${DISPUTED_MARK} is the boxscore's; open the game `
     + `and it shows both, and says which one it replays.`;
 }
 
-/* NOTHING ON THIS PAGE IS BAKED IN.
-   Pages serves CODE and R2 serves DATA. The team set, the games, the freshness
-   line and the three rates are all read at load time, because the nightly
-   deliberately does not trigger a deploy -- so anything compiled in here would be
-   a lie by the next morning. The page shipped a hard-coded date once already.
-
-   A failure is a STATE, not an exception. If a document does not arrive the page
-   says which one and why, rather than rendering an empty shell that looks broken
-   for no stated reason. Opened from disk, every fetch fails and the page says so,
-   which is honest: a saved copy genuinely has no archive behind it. */
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var ORIGIN = "https://data.readthegame.co";
@@ -1950,9 +747,6 @@ function disputedNote(n) {
     if (text != null) n.textContent = text;
     return n;
   }
-  /* THE TEAM SET IS A FACT ABOUT THE ARCHIVE, never a typed list. It is 33 today
-     because Arizona relocated to Utah inside our window, and a "32 NHL clubs"
-     constant would have been wrong on the first day. */
   function teamsIn(games) {
     var seen = {};
     games.forEach(function (g) {
@@ -1979,36 +773,9 @@ function disputedNote(n) {
     $('bydate').hidden = false;
   }
 
-  /* A team's games, newest first. The first VIEWABLE one is the thing you press
-     play on, so a cold visitor reaches a game in two clicks.
-
-     REFUSED GAMES ARE LISTED, greyed, with the check that stopped them. Hiding
-     them would make this a map of our successes -- Doctrine 9 -- and inside the
-     scope that reasoning is unchanged. */
-  /* THE SEASON IS THE UNIT A HOCKEY FAN THINKS IN, and it is also what keeps this
-     page to the brief. Buffalo have 259 games in the archive; rendering all of
-     them is a wall, which is the opposite of what was asked for. Read from the
-     game id -- 2025020123 is season 2025-26 -- so it needs no lookup and cannot
-     disagree with the id. */
   function seasonOf(id) { return +String(id).slice(0, 4); }
-  /* `seasonLabel` is in archive.js, because the calendar's season tabs print
-     the same string and two spellings of it is one page saying 2023-2024. */
 
   function drawTeam(ab, games, want) {
-    /* ⛔⛔ NOT `inScope`, AND THIS IS THE THIRD PLACE THAT PREDICATE WAS DOING A
-       JOB IT IS NOT FOR. Kevin, 2026-09-21: "I would have expected preseason
-       game(s) to appear in the game list (even though we don't count them in any
-       numbers)" — and that parenthesis is the whole distinction. `isLeague` says
-       these competitions are "archived, derived and VIEWABLE, and never enter a
-       computed number"; a LIST OF GAMES A CLUB PLAYED is not a computed number.
-       ⚠️ THE RULE WAS ALREADY WRITTEN INTO THIS FILE on 2026-09-20, ~560 lines
-       down, when the front door said the archive stopped in June: "inScope IS A
-       PREDICATE ABOUT NUMBERS AND THIS IS NOT A NUMBER". The sweep that day
-       reported the rest sound and did not reach this function. Writing a rule
-       down is not the same as applying it.
-       MEASURED before changing: WSH goes 260 → 279 rows, all 19 of them
-       gameType 1, 18 viewable. No Olympic or 4 Nations game can appear on a club
-       page anyway — those carry country codes, so `g.a === ab` never matches. */
     var all = games.filter(function (g) {
       return g.a === ab || g.h === ab;
     }).sort(function (x, y) { return x.d === y.d ? y.id - x.id : (x.d < y.d ? 1 : -1); });
@@ -2019,9 +786,6 @@ function disputedNote(n) {
       if (seasons.indexOf(s) === -1) seasons.push(s);
     });
     seasons.sort(function (a, b) { return b - a; });
-    /* Default to the newest season this team actually has, not to the newest in
-       the archive: Arizona's last is 2023-24, and defaulting to 2025-26 would
-       show a fan an empty page for a team we hold 82 games of. */
     var season = seasons.indexOf(want) === -1 ? seasons[0] : want;
     var mine = all.filter(function (g) { return seasonOf(g.id) === season; });
 
@@ -2040,27 +804,12 @@ function disputedNote(n) {
     main.appendChild(head);
     if (NOTES[ab]) main.appendChild(el('p', 'note', NOTES[ab]));
 
-    /* ⭐ WHAT THIS CLUB PLAYS NEXT, which is the question a club page has never
-       answered. Everything else here is the past; a fan who asked for WSH is
-       asking about WSH now, and this is also the only thing on the page that
-       differs from one morning to the next.
-       ⛔ THE FIXTURE IS THE SCHEDULE'S, NOT OURS. `nextNight` picks a night for
-       the whole league; this wants the soonest fixture involving THIS club, which
-       is a min over start times and belongs where it is read (fetch_nhl.py's own
-       note). A club with nothing listed gets no line rather than an empty one. */
     var ahead = ((SCHEDULE && SCHEDULE.upcoming) || []).filter(function (g) {
       return (g.away === ab || g.home === ab) && g.startTimeUTC;
     }).sort(function (x, y) { return x.startTimeUTC < y.startTimeUTC ? -1 : 1; })[0];
     if (ahead) {
       var nx = el('p', 'teamnext');
       nx.appendChild(el('span', 'k', 'Next'));
-      /* ⚠️ NOT `var when`, AND THIS FILE HAS PAID FOR IT ONCE ALREADY. The page
-         defines `when(date)` as its date formatter; a `var when` here shadows it
-         for the whole of `drawTeam` and `var` hoisting makes it `undefined` on
-         every path above this line — which is every team page whose club has no
-         fixture listed. `drawDaily` carries the same warning 700 lines up, from
-         2026-09-11, and I wrote this shadow anyway. The suite went red on four
-         team-page tests in one run. */
       var startsAt = new Date(ahead.startTimeUTC).toLocaleString(undefined,
         { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       var to = el('a', null, (ahead.away === ab ? 'at ' + nameOf(ahead.home)
@@ -2087,9 +836,6 @@ function disputedNote(n) {
       return;
     }
 
-    /* D10's note goes BEFORE the list, and that is a measurement rather than a
-       preference: under an 82-row team page it rendered at y=7401 on a 390px
-       phone -- seven thousand pixels below the mark it explains. */
     var note = disputedNote(disputedCount(mine));
     if (note) main.appendChild(el('p', 'disputed', note));
 
@@ -2112,10 +858,6 @@ function disputedNote(n) {
       }
       row.appendChild(el('span', 'd', when(g.d)));
       row.appendChild(el('span', 'm', g.v ? line : line));
-      /* D10, and the same wording the calendar uses -- see
-         archive.js::disputedNote. The mark goes on the shot figure because
-         `ash`/`hsh` are the BOXSCORE's numbers and the game page replays the
-         event log, so on these rows the two surfaces genuinely differ. */
       row.appendChild(el('span', 'r', g.v
         ? (home ? g.hs + '–' + g.as : g.as + '–' + g.hs)
             + '  ·  ' + (home ? g.hsh + '–' + g.ash : g.ash + '–' + g.hsh) + ' shots'
@@ -2128,91 +870,9 @@ function disputedNote(n) {
   }
 
 
-  /* ONE GAME, READ FROM THE ARCHIVE, NEVER TYPED.
-     `featured` is the archive's own ranking -- teams that controlled play while
-     the score was level AND LOST, sorted by the size of that edge -- and the
-     catalog is already in memory for the grid, so the opponent, the date and
-     the score cost nothing. A hero compiled into this builder would be the same
-     defect as the hard-coded date we pulled out of game.html. */
-  /* THE MOST RECENT GAME, NOT THE SHARPEST ONE.
-     The hero used to be `featured[0]` -- the archive's largest level-control
-     upset -- and only 2 games in 4,119 clear that threshold, so the slot would
-     have read "19 February 2024" for years. A rule that updates twice per three
-     seasons is a literal with extra steps, which is the exact defect
-     docs/homepage.md §1 flagged in the hard-coded hero before it.
-     Recency is MORE deterministic, not less: it is the same rule the game page
-     already uses to choose a game, it cannot be typed, and it refreshes itself
-     nightly with no deploy. And choosing what to SHOW by date biases no
-     measurement -- the base rates still run over all 4,119 in-scope games, and
-     nothing is computed from the selection. */
-  /* ⭐ AND IT SHOWS A GOAL, WHICH IS A SELECTION AND NEVER A JUMP.
-     Kevin: "we should show the goal during the first ten seconds of the hero
-     game -- that's where the most visualization takes place", and then "let's
-     end the hero replay right after the goal". He is right about the renderer: a
-     goal is the only event with a real treatment (r 3.2 against 1.7, a 0.7s
-     flare from 3.6x, a 1.3s net flash, the siren caption) and the preview
-     otherwise shows a stranger dots appearing.
-
-     THE OBVIOUS IMPLEMENTATION IS THE WRONG ONE. Starting the preview AT the
-     goal would break the thing the preview exists to demonstrate: the counter is
-     watched from zero, because "a counter you join at 24-11 is a number you did
-     not watch being built" (src/app.js). So the goal has to come to us, and the
-     LOOP ENDS ON IT instead of running out a budget.
-     ⚠️ THAT REASON EXPIRED ON 2026-09-17 (the hero shows no counter), AND THE RULE
-     WAS KEPT ON ITS OWN MERITS. Kevin, asked whether the loop should start nearer
-     the goal: "I don't mind a longer-ish loop, so no." And the same day, the other
-     end: "start the hero at the opening faceoff -- that level sets everything and
-     it's what a novice fan would expect." The loop runs from the faceoff to the
-     goal.
-
-     `hl` IS THE FIRST GOAL'S INDEX AMONG THE PLAYS, which since 2026-09-17 is the
-     loop exactly, because the loop starts at play zero. (Before, it opened one
-     play before the first attempt, and `hl` was the distance from there.)
-
-     THE WINDOW IS KEVIN'S TEN SECONDS, MEASURED OUTWARDS. At the replay's own
-     pace 30s buys a median 16 plays, so ten seconds is about five. [3,8] is
-     6-15s around that, and it is the range where the cost stops being free:
-     across 4,192 in-scope games the newest qualifying game is a MEDIAN OF 0 DAYS
-     behind the newest game (p90 3, p99 20), where the tighter [4,6] is p90 SEVEN
-     and p99 forty-eight. ⚠️ THOSE WERE MEASURED UNDER THE OLD START (one play before
-     the first attempt). ✅ RE-MEASURED 2026-09-17 FROM THE FACEOFF, on the catalog
-     the hand-run derive published (4,192 in-scope games, 1,829 with a loop, 429
-     inside [3,8]), walking all 667 game dates and taking the newest qualifying game
-     on or before each: median 1 day behind, p90 5, p99 128 -- and the p99 is the
-     season openers (8 of the 10 dates over 20 days are October, reaching back to
-     the spring). [4,6] is median 2, p90 11. The method differs from the figures
-     above, so compare within a line, not across. Kevin: "let's start with that and work outwards (if
-     needed)" -- so the two numbers are here, together, to be moved together.
-
-     ⏹ `hl` WAS AN ESTIMATE UNTIL 2026-09-17 -- derive.py found the first attempt
-     by event type, the page by the layer's reducer -- and the floor of 3 was said
-     to absorb the difference. From the faceoff there is nothing to estimate; the
-     floor stays 3 as the lower edge of Kevin's ten seconds.
-
-     AND IT FALLS BACK RATHER THAN FAILING. If nothing qualifies -- an archive
-     too small, a run of goalless openings -- the hero is the newest game, which
-     is exactly what it was before, and the preview runs its budget the way it
-     always did. A front door with no game is worse than one that opens quietly.
-
-     ⏹ A THIRD CONDITION LIVED HERE UNTIL 2026-09-17: `ha >= 3`, the attempts
-     inside the loop, so "the counter has something to show". The hero has shown
-     no counter since 2026-09-09, so the rule was choosing front doors for a
-     number nobody could see. Kevin: drop it. The measured table that justified
-     the floor of 3 is in git history (`git log -S counter -- builders/build_index.py`). */
   var HERO_LOOP = { min: 3, max: 8 };
 
   function hero(games) {
-    /* ⭐ PRESEASON MAY BE THE HERO — Kevin, 2026-09-21: "preseason game can be a
-       front-door hero." This filtered `inScope` too, which is a predicate about
-       which games a RATE may pool; choosing a showcase replay is curation, and
-       the hero quotes no rate. The cost of the old rule was visible every
-       September: measured 2026-09-21, the hero was CAR at VGK from 9 JUNE while
-       the archive held last night's game.
-       ⚠️ `g.hl` still gates it, and that is the real filter — a game reaches the
-       front door only if the distance from the preview's opening frame to its
-       first goal falls in HERO_LOOP. 133 of 334 preseason games carry an `hl` at
-       all and 24 sit in the window, so this widens the pool rather than handing
-       the door to whatever happened last. */
     var v = games.filter(function (g) { return g.v && isClubGame(typeOf(g.id)); });
     v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
     for (var k = v.length - 1; k >= 0; k--) {
@@ -2220,76 +880,16 @@ function disputedNote(n) {
       if (typeof n === 'number' && n >= HERO_LOOP.min && n <= HERO_LOOP.max)
         return { game: g, toGoal: true };
     }
-    /* ⭐ AND OUTWARDS BEFORE GIVING UP ON A GOAL. Kevin, 2026-09-17: "the hero
-       always needs to end with a goal." When nothing in the archive is inside the
-       window, the newest game with ANY loop -- a first goal within HERO_LOOP_CAP
-       plays of the faceoff, derive.py -- is still a loop that ends on a goal,
-       where the newest game may not have one to end on. Longer or shorter than a
-       taste, but it keeps the promise the kicker makes. */
     for (var j = v.length - 1; j >= 0; j--)
       if (typeof v[j].hl === 'number') return { game: v[j], toGoal: true };
-    /* THE LAST FALLBACK IS NAMED, not left to be inferred from a null. No game in
-       the archive has a first goal within the cap -- a catalog not yet derived, or
-       an archive too small -- and a front door with no game is worse than one that
-       opens quietly. The kicker says which rule ran. */
     return v.length ? { game: v[v.length - 1], toGoal: false } : null;
   }
 
 
-  /* THE SENTENCE UNDER THE RINK, ON THE MEASURE THE BAR ABOVE IT SHOWS.
-     Kevin: "we show Control in the replay loop but describe shots on goal in the
-     text below the rink, those should be consistent... they need to be the same
-     measure." It used to read off `ash`/`hsh`, which are the LEAGUE's shots on
-     goal quoted into the catalog, while the loop counted attempts -- two
-     measures on one screen with nothing saying they were different.
-
-     IT IS ABSENT UNTIL THE NUMBER EXISTS, and that is the site's own idiom
-     rather than a compromise: the verdict card is absent until the horn, the
-     whistle layer's why-line stays empty. A sentence that renders on shots and
-     then rewrites itself to attempts would be worse than either.
-
-     THE COST, STATED: this sentence now depends on the preview frame having
-     booted. That is a real coupling and it is the one this project has flagged
-     hardest before -- if the frame ever goes, this goes with it. */
   function sayHero(g, measures, att) {
     var a = att.a, h = att.h;
-    if (!a && !h) return;                 /* nothing counted: say nothing */
-    /* ⚠️ NAMED, NOT ABBREVIATED, BECAUSE THE LINE ABOVE IT IS. The headline reads
-       "Carolina Hurricanes" and this read "CAR took more shot attempts" directly
-       under it -- the same club, two vocabularies, one inch apart. Seen only by
-       looking at the rendered card. The SCOREBOARD inside the frame still shows
-       the three-letter badge, and that is the point rather than a leftover: the
-       code and the name are on screen together, which is how a newcomer learns
-       that MTL is Montreal. */
+    if (!a && !h) return; 
     var lead = a === h ? null : nameOf(a > h ? g.a : g.h);
-    /* ⭐ AND IT NO LONGER SAYS WHO WON.
-       Kevin, reading the front door after the score came off the line above:
-       "VGK took more shot attempts, 50 to 44, and lost ... i.e. we still give
-       away the outcome of the game." He is right, and the margin coming off
-       while the RESULT stayed was half a fix -- the visitor still knew how it
-       ended before pressing anything.
-       THE ARGUMENT SURVIVES INTACT, and it is stronger as a question than as a
-       statement. The pitch was `... and lost. That is the usual outcome.` --
-       a tension raised and resolved in the same breath, with nothing left for
-       the button to answer. What replaces it raises the tension and stops:
-       the attempts, then the archive's own rate, then `Watch the whole game`.
-       NOTHING IS HIDDEN, and nothing here is newly withheld that the scoreboard
-       does not fill in as the game plays. */
-    /* ⛔⛔ THE SCOPE IS STATED, BECAUSE THE PICTURE BESIDE IT SHOWS A FRACTION OF
-       IT. CHENG, 2026-09-11: *"82 to 45 is 127 attempts before the first goal.
-       Those are whole-game totals, not loop totals — the scoreboard reads 0-0 at
-       19:46 of the first period, so almost none of those 127 have happened yet.
-       A reader who joins them concludes the loop is about to show 127
-       attempts."* He is right, and the comment below has said WHOLE GAME, NOT THE
-       LOOP'S WINDOW all along — to the code, never to the reader.
-       ⛔ AND HIS OTHER SUGGESTED FIX WOULD HAVE BROKEN SOMETHING. Moving the
-       sentence under `Watch the whole game`, where whole-game scope is implied,
-       separates it from the archive rate that follows — and that rate is
-       CONDITIONED ON FINAL TOTALS (see below, and CHENG's own earlier ruling that
-       it must never sit beside a LIVE count). The pairing is the argument; only
-       the scope was missing.
-       ⚠️ NOT "Across", which is how the archive sentence two lines down opens.
-       Two adjacent sentences beginning with the same word read as one list. */
     if (lead == null) {
       $('herosub').textContent =
         'Over the whole game, both teams took ' + a + ' shot attempts.';
@@ -2299,73 +899,10 @@ function disputedNote(n) {
         + ' took more shot attempts, ' + hi + ' to ' + lo + '.';
     }
 
-    /* IS THIS THE USUAL CASE? COMPUTED, NEVER WRITTEN -- unchanged in shape from
-       the shots version, because the reason for that shape did not change. The
-       hero is the most recent game, so some nights the attempts leader won and
-       some nights it lost; a hand-written clause here would be copy asserting a
-       relationship the data is free to invert overnight.
-       SAID EITHER WAY ROUND, because naming the relationship only when the game
-       is the exception is Doctrine 9's selective honesty.
-       NOTHING IS SAID WHEN NOTHING WAS COUNTED, and that is now the only gate:
-       the `return` above, on zero attempts either side. This line used to read
-       "a tie in the measure has no leader and a tie on the scoreboard has no
-       outcome" -- both true, neither a reason, and the second half had already
-       been retired when the outcome clause went. See below.
-       AND THE RATE APPLIES HERE. It is conditioned on FINAL totals, which is
-       what this is -- the game is over. (CHENG: that is why this does not
-       collide with his ruling that the rate must not sit beside a LIVE count.) */
     var at = measures && measures.baseRates && measures.baseRates.moreAttemptsLost;
     var rel = $('herorel');
-    rel.textContent = '';                 /* a second message must not append twice */
-    /* `won` IS GONE FROM THIS BRANCH TOO, and with it the condition that a level
-       game gets silence. That rule existed because there was an OUTCOME to
-       classify and a draw could not be classified; the rate is a fact about the
-       archive, not a verdict on this game.
-       ⭐⭐ AND ON 2026-09-09 THE LAST CONDITION WENT THE SAME WAY, FOR THE SAME
-       REASON, ONE STEP LATER. It read `lead != null` -- no attempts leader, no
-       rate -- and that was the classifying caption's logic surviving the
-       classifying caption. It is only coherent if the rate is ABOUT this game:
-       once the sentence describes the archive and nothing else, a tie here is
-       not a fact about the archive and cannot withhold one.
-       ⛔ THE COST WAS LIVE AND NOBODY HAD COSTED IT. Kevin's screenshot of the
-       front door: `Both teams took 52 shot attempts.` and then nothing. The hero
-       is CAR at VGK, 9 June 2026, tied 52-52 on attempts -- so the site's
-       flagship finding, the one thing here a reader cannot get anywhere else,
-       rendered EMPTY. The hero only changes when the archive does, and the
-       archive does not move again until the season opens, so this was the front
-       door's whole claim for three months. A condition whose failure mode is
-       "the site states no finding at all" is too expensive for the tidiness of
-       not naming a leader that does not exist.
-       WHAT STILL WITHHOLDS IT is the `return` above: no attempts counted, no
-       sentence and no rate -- because the rate belongs under a count of this
-       game's attempts, and alone it is a statistic with nothing to be about.
-       THE DIRECTION IS STILL READ, NEVER ASSUMED. The archive publishes every
-       rate as "lost", so a caption saying the leader WINS must print 100 minus
-       that -- a correct sentence with the wrong number welded to it is the
-       failure this shape exists to prevent. */
-    /* ⭐⭐ AND THE ANSWER, FROM THE SAME DOCUMENT AND THE SAME FUNCTION.
-       `moreLevelControlLost` was computed, published, and read by NOTHING until
-       2026-09-10. Stating the paradox alone teaches a novice that shot counts
-       are meaningless, which is the opposite of the truth from entirely true
-       data -- the same failure as a filtered list with no base rate, and we held
-       the correction the whole time.
-       ⛔ FRACTIONS, AND HERE IT IS CORRECTNESS RATHER THAN HOUSE STYLE. The two
-       rates have DIFFERENT denominators -- a game with no level-play edge is
-       dropped from the second -- so two percentages side by side would print one
-       `n` between them and hide the one thing a reader has to see. This line used
-       to say "loses 54.3% of the time". */
+    rel.textContent = ''; 
     var lv = measures && measures.baseRates && measures.baseRates.moreLevelControlLost;
-    /* THE DIRECTION IS READ FOR EACH HALF SEPARATELY, never assumed -- the
-       archive publishes every rate as "lost", and a caption asserting a REVERSAL
-       that the archive has stopped showing is the welded-wrong-number failure the
-       comment above already names. So the verb comes from the data and the
-       connective comes from whether the two verbs differ. */
-    /* ⛔ PRESENT TENSE, AND IT IS LOAD-BEARING. `homepage.test.js` forbids the
-       tokens `won` and `lost` here and allows `loses` and `wins`, which is not
-       fussiness: the hero previews a game the visitor has NOT watched, and a past
-       tense verb beside it reads as the result. Kevin, on the front door: *"we
-       still give away the outcome of the game."* The first draft of this change
-       printed "lost 2,194 of 4,029" and the guard caught it. */
     var side = function (r) {
       return r.count / r.n > 0.5 ? ['loses', r.count] : ['wins', r.n - r.count];
     };
@@ -2383,33 +920,6 @@ function disputedNote(n) {
         rel.appendChild(el('b', null,
           b[0] + ' ' + b[1].toLocaleString() + ' of ' + lv.n.toLocaleString() + '.'));
       }
-      /* ⭐⭐ WHY THREE TOTALS, AND THE READER CAN SEE ALL THREE OF THEM.
-         The page says "over 4,192 games" a few lines up and then quotes 4,100
-         and 3,925 here — three populations, one archive, and until 2026-09-15
-         only the first explained itself. For a site whose whole pitch is CHECK
-         OUR WORK, three unexplained denominators invite "well, which is it?",
-         and that is a correctness problem wearing a legibility costume. Kevin
-         asked for the clause; this is it.
-
-         THE RULE IS `eligible()` IN `src/lib/archive.js`, and it is one line:
-         a game LEVEL on a measure is dropped from that measure, because a tie
-         is not a case for "the leader lost" in either direction. Nothing is
-         being hidden — the games are simply not evidence about a leader they
-         do not have.
-
-         ⭐ AND THE TWO GAPS DIFFER FOR A REASON A READER CAN CHECK. Attempts
-         over a whole game are large numbers and rarely tie; attempts taken only
-         while the score was LEVEL are a smaller count, so they tie more often.
-         Anyone who doubts it can subtract: the totals are all on this line.
-
-         ⛔ COMPUTED, NEVER TYPED. `prose-constants.test.js` forbids writing a
-         number the code owns into the sentence describing it, and all three of
-         these belong to the archive. `measured` is the same population the
-         rates are drawn from — `measure.mjs` filters with `inScope` BEFORE
-         pushing, so `summarise`'s own `records.filter(inScope)` is a no-op and
-         the subtraction is honest. That was checked rather than assumed: the
-         two could have been different populations, and `measured` is
-         `records.length` unfiltered. */
       if (measures.measured && measures.measured >= at.n) {
         var gap = ' Totals differ because a game level on a measure is not a case '
           + 'for it: of ' + measures.measured.toLocaleString() + ' games measured, '
@@ -2427,35 +937,16 @@ function disputedNote(n) {
     var pick = hero((cat && cat.games) || []);
     if (!pick) return;
     var g = pick.game;
-    /* WHAT THE VISITOR IS ABOUT TO WATCH, in the words the branch earns. The
-       goal branch is the common one and says what the loop actually does; the
-       fallback says the older, weaker thing, which is still true of it. */
-    /* ⭐ THE DATE MOVED UP HERE, AND THE REASON IS TYPOGRAPHY THAT ONLY LOOKING
-       SHOWS. With the clubs spelled out, "Montreal Canadiens at Carolina
-       Hurricanes — 21 May 2026" ran to THREE lines on a 390px phone and broke as
-       "... — 21 / May 2026", orphaning the day from its month in the largest type
-       on the page. This line was already the provenance line; the date is
-       provenance, and it costs no height here because the kicker was one line
-       with room to spare. The headline is now the two clubs and nothing else.
-       BOTH BRANCHES KEEP THEIR OWN WORDS -- the kicker says which selection rule
-       ran, and that is the thing a fixed string got wrong once already. */
     $('herokick').textContent = when(g.d) + ' \u00b7 ' + (pick.toGoal
       ? 'up to its first goal'
       : 'the most recent game in the archive');
 
-    /* THE FIVE-SECOND TASTE, and it is this site's own renderer in a frame.
-       Created here rather than in the markup so it cannot load for a visitor who
-       never gets a game, and so the id comes from the catalog instead of being
-       typed. */
     var f = document.createElement('iframe');
     f.src = 'game.html?game=' + g.id + '&preview=1';
     f.setAttribute('title', 'A few seconds of ' + nameOf(g.a) + ' at ' + nameOf(g.h) + ', playing');
     f.setAttribute('loading', 'lazy');
     f.setAttribute('scrolling', 'no');
     f.setAttribute('tabindex', '-1');
-    /* THE NUMBER ARRIVES FROM THE FRAME, and the listener is attached BEFORE the
-       frame is, so a fast boot cannot beat it. Origin and source are both
-       checked: same-origin only, and only from the frame we made. */
     window.addEventListener('message', function (e) {
       if (e.origin !== location.origin || e.source !== f.contentWindow) return;
       var m = e.data;
@@ -2463,98 +954,28 @@ function disputedNote(n) {
       sayHero(g, measures, m);
     });
     $('heroframe').appendChild(f);
-    /* THE RECTANGLE, over the frame rather than around it -- see `.herohit`.
-       Built here and not in the markup for the same reason the frame is: it
-       carries the chosen game's id, and a visitor who never gets a game must
-       not be handed a link to `game.html` with nothing after it. */
     var hit = el('a', 'herohit');
     hit.href = 'game.html?game=' + g.id;
     hit.setAttribute('aria-hidden', 'true');
     hit.setAttribute('tabindex', '-1');
     $('heroframe').appendChild(hit);
 
-    /* ⭐ AND IT DOES NOT SAY HOW THE GAME ENDS.
-       This read "CAR 5, VGK 3 — 9 June 2026" directly under a loop that now
-       builds to a goal, in the largest type on the block. The loop was rebuilt
-       to make a stranger want to press the button; the line under it answered
-       the question the button asks. Same fix as the game line above the rink
-       (src/app.js), same reason, and the pair is the point -- a replay that
-       prints its ending before you press play is a recap.
-       THE LISTS KEEP THEIR SCORES. Browsing is a choice and a visitor may well
-       be looking for that 6-5 game; the hero is handed to you. The score
-       appears where it was asked for, not where a game was chosen for you.
-       ⚠️ THE SENTENCE BELOW THIS ONE STILL CAN. `sayHero` says "and won" or "and
-       lost" when the attempts leader is decided, because that IS the site's
-       argument and removing it would gut the pitch. So this is the margin
-       withheld, not the outcome -- stated here rather than left to be
-       discovered, because the two lines are eight pixels apart. */
     $('heroline').textContent = nameOf(g.a) + ' at ' + nameOf(g.h);
 
     $('herogo').href = 'game.html?game=' + g.id;
 
-    /* THERE IS NO SECOND LINK TO THIS GAME, and that is the fix rather than an
-       omission. A separate "New to hockey? Start with the game at the top"
-       sat 2.4 screens below this button, pointing at the same destination and
-       telling the reader to scroll back up -- a page apologising for its own
-       order. It also spent a week pointing at a DIFFERENT game, because its
-       href was set from featured[0] while the hero moved to most-recent.
-       With the one sentence above and the game here, the claim and the
-       invitation are adjacent and one button is the whole funnel. Whether a
-       novice needs to be addressed by name is for the tester, not a leftover. */
     $('hero').hidden = false;
   }
 
-  var SCHEDULE = null;           // set when the documents land; see below
+  var SCHEDULE = null; 
   var team = (/[?&]team=([A-Za-z]{2,3})/.exec(location.search) || [])[1];
   if (team) team = team.toUpperCase();
-  /* A URL THAT NAMES A CLUB HAS ALREADY ASKED. This is an INTENT signal, not a
-     returning-visitor one -- which is why it is read here and not out of
-     localStorage the way the game page retires its greeting. Someone who names
-     a club has told us what they want whether or not they have been here
-     before, and intent should not have to wait for storage to agree.
-     WHAT STAYS IS WHAT THE SITE *IS*: the h1 and the one sentence under it,
-     76px at 1100 and 127px at 390. What goes is the ARGUMENT FOR WHY YOU
-     SHOULD CARE, 414px and 622px, which is read once. Same split R made below
-     the rink. Set before the fetch, so it does not depend on a network. */
   var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
-  /* THE DAILY BLOCK. `daily()` decides WHICH of the three states fires and
-     writes every complete sentence; this writes them into the card and builds
-     the list of doors. The split is the usual one -- the module is pure and
-     tested against fixtures for branches the calendar cannot reach until the end
-     of September, and everything that needs a DOM or a timezone is here.
-
-     ⚠️ THE FIXTURE'S TIME IS FORMATTED HERE AND CANNOT BE FORMATTED THERE. An
-     NHL game at 7pm Eastern is 23:00Z the same day; one at 10:30pm Pacific is
-     05:30Z the NEXT day, so no UTC date names "the night of the 16th" and any
-     day-name the module produced would be wrong for about half a slate. The
-     browser is the only party that knows the reader's timezone, so `daily`
-     hands back the instant and this is the one line that reads it. */
   function drawDaily(slate, schedule, games) {
     var d = daily(slate, schedule, new Date().toISOString());
-    /* ⭐ IT ANSWERS WHETHER IT RENDERED, because the freshness line below now
-       depends on the answer and `$('daily').hidden` is the wrong way to ask.
-       The markup carries `hidden`, so a browser reports `true` here -- but the
-       unit DOM makes elements on demand and its `hidden` is `undefined`, which
-       is falsy, so a check reading the property would have believed the card was
-       on screen in every test where it is not. A fake that cannot express the
-       state is the defect this file's own `getElementById` comment was written
-       about. A return value is true in both. */
     if (d.state === 'none') return false;
 
-    /* ⭐ "TONIGHT" IS EARNED, THE SAME WAY "LAST NIGHT" IS. §12.5 reads that
-       phrase from the game dates rather than from a timestamp; this reads it from
-       the LEAGUE's date for the night against the READER's own calendar date. A
-       reader in Europe, for whom a 7pm Eastern game starts after midnight, is not
-       having their tonight and gets the day's name instead — which is correct
-       rather than a shortfall.
-       ⚠️ THE LOCAL DATE IS BUILT FROM PARTS, never parsed. `new Date('2026-01-16')`
-       is UTC midnight, which in every western timezone renders as the 15th — the
-       off-by-one this whole feature exists to avoid, one line lower. */
-    /* THE READER'S OWN CALENDAR DAY FOR AN INSTANT. Built from parts for the
-       reason stated above — `new Date('2026-01-16')` is UTC midnight and renders
-       as the 15th west of Greenwich — and shared by the three callers below so
-       there is one spelling of "which day is this, for this reader". */
     function ymd(t) {
       var pad = function (n) { return (n < 10 ? '0' : '') + n; };
       return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
@@ -2565,46 +986,16 @@ function disputedNote(n) {
       return new Date(+p[0], +p[1] - 1, +p[2])
         .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
     }
-    /* ⛔⛔ THE TIME WAS THE READER'S AND DID NOT SAY SO, which the first outside
-       review caught (2026-10-07): it read `11:30 PM` and `2:00 AM` and had no way
-       to know whose clock that was. `toLocaleTimeString(undefined, …)` renders in
-       the viewer's zone by design — that is the right choice and the whole reason
-       `daily` hands back an instant — but an unlabelled time under a heading that
-       names a DAY is a figure with no units.
-       ⚠️ `timeZoneName: 'short'` IS THE READER'S OWN ZONE, NOT EASTERN. That is
-       deliberate: printing the league's zone would make every reader do the
-       arithmetic this function exists to do for them. */
     function clockOf(iso) {
       return new Date(iso).toLocaleTimeString(undefined,
         { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     }
-    /* ⛔⛔⛔ AND A LABEL ALONE DOES NOT FIX IT, WHICH IS THE HALF WORTH WRITING
-       DOWN. `nightWord` already earns the word "Tonight" against the READER's
-       calendar, so the heading is right. But a single night's slate spans the
-       league's evening, and west of the Atlantic that crosses midnight: under
-       `TZ=UTC` the heading said *Tonight · 3 games* and a row said `2:00 AM`,
-       which for that reader is TOMORROW. The heading and the row were each
-       correct and together they were false — the shape this project logs as *the
-       gap between two correct things*.
-       ⭐ SO THE ROW CARRIES THE DAY ONLY WHEN IT DISAGREES WITH THE NIGHT. Saying
-       it on every row would be noise for the Eastern reader it is already right
-       for, and a reader who needs it is told exactly once, where the confusion
-       is. */
     function dayNote(iso, nightDate) {
       if (!nightDate || ymd(new Date(iso)) === nightDate) return '';
       return ' \u00b7 ' + new Date(iso).toLocaleDateString(undefined, { weekday: 'long' })
              + ' where you are';
     }
     function fixtureRow(g, nightDate) {
-      /* ⭐ NOW A DOOR, AND IT WAS TEXT FOR EIGHT HOURS ON PURPOSE. A fixture had
-         nothing to open — `game.html` is a replay and there is nothing to replay —
-         so `docs/front-door-tonight.md` §4 Q1 ruled it text "until the preview
-         ships", which is what `/preview.html?game=` now is. The row still carries
-         its own class rather than `.drow`: a preview is not a replay, and the two
-         must not read as the same promise. */
-      /* "started", not "under way", the same correction the preview page took:
-         nothing here learns that a game has ENDED, so a status claim goes false
-         by itself and a fact about the clock cannot. */
       var row = el('a', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
         + dayNote(g.startTimeUTC, nightDate)
         + (g.started ? ' \u00b7 started' : ''));
@@ -2623,17 +1014,6 @@ function disputedNote(n) {
 
     var lines = d.lines.slice();
     if (d.next) {
-      /* ⚠️ NOT `when`, AND THE RENAME IS A BUG FIX RATHER THAN TIDINESS. This
-         was `var when`, a STRING, inside a function whose enclosing scope
-         defines `when(date)` as the page's date formatter -- so the formatter is
-         shadowed for the whole of `drawDaily`, and `var` hoisting means it is
-         shadowed by `undefined` on every path where `d.next` is null, which is
-         every dark night. Calling the formatter here is a TypeError that takes
-         `$('daily').hidden = false` down with it and renders NOTHING, silently.
-         Found by adding the door below and watching the block vanish. */
-      /* ⚠️ THIS ONE ALREADY NAMED THE WEEKDAY, so it was never ambiguous about
-         the DAY — but it was about the clock, and one page may not label two of
-         its own times differently. */
       var startsAt = new Date(d.next.startTimeUTC).toLocaleString(undefined,
         { weekday: 'long', month: 'long', day: 'numeric',
           hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
@@ -2645,9 +1025,6 @@ function disputedNote(n) {
     d.games.forEach(function (g) {
       var row = el('a', 'drow');
       row.href = 'game.html?game=' + g.id;
-      /* A ROW WITHOUT ITS NUMBERS IS STILL A DOOR. recent.json is our own
-         document, but a malformed field must degrade to the clubs rather than
-         print a zero somebody could read as a score. */
       var sc = g.score, at = g.attempts;
       row.appendChild(el('span', 'dscore',
         sc && isFinite(sc.a) && isFinite(sc.h)
@@ -2659,13 +1036,6 @@ function disputedNote(n) {
     });
     if (night && d.state !== 'slate') {
       night.fixtures.forEach(function (g) { list.appendChild(fixtureRow(g, night.date)); });
-      /* ⭐ THE REST OPENS IN PLACE, because there is nowhere to send it. The
-         slate's tail links to `calendar.html?date=`, which renders a night we
-         HOLD; a night still to be played is by definition games we do not hold,
-         and giving the calendar a second data source would give it a second
-         notion of what a game is. CLOSED on first paint — that is the height
-         §12.2's budget applies to — and the summary carries the count, which is
-         the difference between a disclosure and a mystery box. */
       if (night.rest.length) {
         var det = el('details', 'dmoretonight');
         det.appendChild(el('summary', null, night.rest.length + ' more tonight'));
@@ -2673,13 +1043,6 @@ function disputedNote(n) {
         list.appendChild(det);
       }
     }
-    /* ⭐⭐ AND IN SEASON THE BLOCK KEEPS LOOKING FORWARD — one line, not rows.
-       `slate` fires whenever we hold last night's games, and it used to say
-       nothing about tonight: invisible through preseason, and from 29 September
-       the state a reader meets on most mornings. The rows are the slate's, which
-       already spend the slack beside the rink (§12.2, ~440px at 1900 and 42px a
-       row), so tonight gets ONE line and the doors stay with the games that have
-       one. Kevin, 2026-09-22: "one line is fine." */
     if (night && d.state === 'slate') {
       list.appendChild(el('p', 'dtonight', nightWord(night.date) + ' \u00b7 ' + night.count
         + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games')
@@ -2687,11 +1050,6 @@ function disputedNote(n) {
         + dayNote(night.fixtures[0].startTimeUTC, night.date) + '.'));
     }
 
-    /* ⭐ THE REST OF THE NIGHT, AND IT IS A BETTER DOOR THAN THE ROWS IT
-       REPLACES. `calendar.html?date=` renders the whole slate including the
-       games we hold and cannot publish, which this list can never show. So the
-       tail is not an apology for the cap -- it is the only link on the page that
-       reaches a night in full. */
     if (d.more > 0) {
       var all = el('a', 'dmore',
         d.more + ' more that night \u2014 see the whole slate \u2192');
@@ -2699,49 +1057,7 @@ function disputedNote(n) {
       list.appendChild(all);
     }
 
-    /* ⭐⭐ AND THE DARK STATES GET A DOOR, WHICH THEY HAD NONE OF.
-       `slate` renders six rows and a tail link; `upcoming` and `offseason`
-       rendered one sentence and stopped. Measured on the phone before this: that
-       sentence -- "Preseason opens 19 September 2026, the regular season 29
-       September 2026." -- was the LAST THING above an 844px fold, so the block
-       whose whole job is to change from one morning to the next ended the first
-       screen on a dead end.
-
-       THE LAST NIGHT WE HOLD, and it is a real destination rather than a second
-       copy of one. `/calendar.html` is already reachable from the nav AND from
-       "Or browse by date" under the team grid; a third link to the same place is
-       the duplicate-funnel defect this project has now removed twice. A specific
-       NIGHT is somewhere neither of those goes.
-
-       ⚠️ COMPUTED FROM THE SAME POPULATION THE HERO PICKS FROM -- published, in
-       scope -- rather than from `index.json`'s through-date. Those two can differ
-       (one is what we ingested, the other what we publish), and a front door
-       naming two different "last" dates in two places is the seam this page keeps
-       being audited for.
-       ⛔ AND IT LIVES HERE RATHER THAN IN `daily()`. That module is pure and
-       tested against fixtures for branches the calendar cannot reach until the
-       end of September; this needs the catalog, which is the renderer's to hold.
-       The same split the timezone line above already documents. */
     if (d.state === 'upcoming' || d.state === 'offseason') {
-      /* ⛔⛔ VIEWABLE, NOT IN SCOPE — corrected 2026-09-20, and it was live and
-         self-contradictory. This read `g.v && inScope(g.id)`, and on 20 September
-         the front door said "Next CAR at FLA, Sunday, September 20" and, in the
-         same breath, "The last night we hold is 14 June 2026" — while the
-         archive held games from the 19th and the 20th and `/game` opened one.
-
-         ⭐ `inScope` IS A PREDICATE ABOUT NUMBERS AND THIS IS NOT A NUMBER.
-         `competitions.js::isLeague` says it exactly: preseason, the all-star
-         games, the Olympics and the 4 Nations Face-Off are "archived, derived
-         and VIEWABLE, and never enter a computed number". A rate may not pool
-         them; a sentence about what this archive HOLDS must not exclude them, or
-         it is false. The bug was a rates rule applied to a factual claim.
-
-         ⚠️ IT WAS LATENT FOR THREE YEARS. The archive has held viewable
-         preseason games since 2023-09-23 (294 of them); what changed is that the
-         NEWEST viewable game became one, which happens for about two weeks every
-         September. Same root as the `sitecopy` failure the same day: one
-         question answered by two rules that agreed only while hockey was out of
-         season. */
       var last = null;
       (games || []).forEach(function (g) {
         if (g.v && (!last || g.d > last)) last = g.d;
@@ -2757,112 +1073,28 @@ function disputedNote(n) {
     return true;
   }
 
-  /* ⭐ schedule.json JOINS THE FETCH, AND IT IS THE DOCUMENT'S FIRST READER.
-     It has been published on every run since the forward window shipped and
-     nothing has ever read it -- the D10 shape, a field written for a purpose no
-     reader served. What it carries that this page needs is the league's own
-     season-opening dates, which is the difference between a front door that ends
-     on "No games in the last 14 days" and one that says when there will be.
-     THE COST IS ONE REQUEST OF ABOUT A HUNDRED BYTES, in parallel with a 467 KB
-     catalog that dominates the wait entirely, and `grab` already answers null
-     for anything that 404s or fails -- so the page renders exactly as it did
-     before if this document is ever missing. */
   Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json'),
                grab('schedule.json'), grab('recent.json')])
     .then(function (r) {
       var cat = r[0], measures = r[1], index = r[2], schedule = r[3], slate = r[4];
-      /* ⚠️ HOISTED FOR `drawTeam`, which is called below and needs the fixtures
-         for its "Next" line. Passing it as a sixth argument would thread it
-         through a signature three other callers do not need. */
       SCHEDULE = schedule;
       var games = (cat && cat.games) || [];
-      /* ⚠️ DECLARED OUT HERE, not in the branch that sets it. The card is drawn
-         on the front door only; a team page and a failed catalog never reach
-         `drawDaily` at all, and on those the line below is the only thing on the
-         page that says how current any of this is. */
       var dailyShown = false;
       if (!games.length) {
         $('teams').appendChild(el('p', 'note',
           'The archive could not be loaded, so there are no teams to show.'));
       } else if (team) {
         drawTeam(team, games, season);
-        /* ⛔ AND THE PICKER GOES WITH THE REST OF THE FRONT DOOR. Kevin, from the
-           live site, 2026-09-20: "why does it say 'pick your team' in the middle
-           of it?" -- at the bottom of a WSH page.
-
-           `drawTeam` rebuilds `#main` and nothing else, and this section sits
-           outside it, so a team page ended with a heading telling you to pick a
-           team, the paragraph explaining the grid, and an EMPTY div. Empty
-           because `drawGrid` is the thing that fills it -- and the same function
-           reveals "Or browse by date", which is why that line was missing too.
-           A section inviting a choice you have already made, with nothing in it
-           to choose, reads as a page that failed to load.
-
-           THE RULING IS ALREADY MADE, twice, in the two blocks below: "a fan who
-           asked for BUF is not looking for a Dallas game" and "a team page is a
-           question already asked". The grid is the same case and was simply
-           never asked the question, because it is markup rather than a call.
-           ⏸ WHAT STAYS, and it is deliberate: the lessons and the limits. A club
-           link is a front door for whoever follows it, and those two are the
-           page explaining itself rather than offering a route already taken. */
-        /* ⛔ AND THE PUCK NOTE, WHICH IS EXPLAINING A PICTURE THAT IS NOT THERE.
-           Kevin, same message: "the 'puck only appears....' text is definitely
-           out of place". Its own comment gives the argument against it — it was
-           justified as costing nothing because it sits "directly above the
-           rink", and on a team page `#hero` is still `hidden`, because
-           `drawHero` is front-door only. So it describes a rink the reader
-           cannot see, which is this project's own rule about a sentence
-           belonging beside the thing it is about, failing in the one direction
-           nobody checked. */
         ['teams-h', 'teams-note', 'teams', 'pucknote']
           .forEach(function (id) { $(id).hidden = true; });
       } else {
         drawGrid(games);
-        /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a
-           Dallas game; the hero exists for the visitor who has not chosen. */
         drawHero(cat, measures);
-        /* SAME GATE, AND FOR A SECOND REASON. A team page is a question already
-           asked, so a league-wide slate is an interruption there -- and the
-           block is placed in the hero's sixth grid row, which on a team page has
-           no card to sit in. */
         dailyShown = drawDaily(slate, schedule, games);
       }
-      /* ⚠️ TWO ARGUMENTS, NOT THREE. `describe` took the schedule for one day,
-         when the quiet state was the only forward-looking sentence on the page
-         and therefore the only slot the season dates could land in. The daily
-         block is that slot now and CHENG's q4 ruling split the two: what is
-         NEXT goes up into the card, what we HOLD stays down here. */
       var s = describe(index, new Date().toISOString());
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
-      /* ⭐⭐ HEALTH IS NOT NEWS, AND IT WAS BEING PRINTED TWICE.
-         Kevin, on the live page: "this copy stayed in, I don't think we need it
-         anymore, since we have 'Next' up at the top: Data through 14 June 2026.
-         No games in the last 14 days."
-         He is right about the observable. In the dark states the card above
-         already says "The last night we hold is 14 June 2026 - see it ->" with a
-         door on it, and "Preseason opens 19 September 2026" - so this line
-         repeated the same date in duller words and then restated the emptiness
-         the card had just explained. The builder's own note two hundred lines up
-         warns about "a front door naming two different last dates in two
-         places"; naming the SAME one twice is the same seam, one degree milder.
-
-         ⛔ BUT THE ELEMENT DOES NOT GO, AND THAT IS THE WHOLE POINT.
-         `describe()` has seven states and this is the site's only monitoring
-         surface -- src/lib/ingest-state.js: "a stalled pipeline becomes
-         something users and we can see... with no monitoring service in
-         existence", Doctrine 3. Deleting the line would delete `halted`
-         ("Updates paused 3 March. The league's feed contains something we don't
-         recognise yet"), `stalled` ("Last checked 4 days ago") and `behind` ("We
-         have 7 of the 12 games played in the last 14 days") -- the three that
-         report a limit, none of which can be seen in June, which is exactly when
-         the decision to remove it would be made.
-
-         SO THE RULE IS THE ONE THE MODULE ALREADY IMPLIES: the line speaks when
-         it has something the page is not otherwise saying. `current` and `quiet`
-         are the two states that announce that nothing is wrong, and only those
-         two go quiet -- and only where the card is actually on screen to carry
-         the fact instead. */
       var SAME_NEWS = { current: 1, quiet: 1 };
       $('state').hidden = !!(SAME_NEWS[s.state] && dailyShown);
     });

@@ -146,6 +146,9 @@ sub-count is attempts), `through` (archive for teams, latest season for players)
 - ✅ 2 — `0aef016`: catalog `us` marks shot disputes only (78 `u`, 74 `us`,
   the four faceoff-only preseason games now unmarked on the live calendar);
   `teams.archive` and its wrong "7.8%" deleted (it had no reader).
+- ✅ 3 — built pages ship without comments (script, CSS, HTML); the source
+  keeps them. The game page is 238 KB decoded, down from 1,021 KB. Stripping
+  them exposed two tests that had been passing on COMMENT text.
 
 Ordered by what a reader is told wrong first, then bytes, then hygiene.
 
@@ -159,3 +162,11 @@ Ordered by what a reader is told wrong first, then bytes, then hygiene.
 8. **Re-copy the stale fixtures** and guard their vintage.
 9. **Pipeline**: measure incrementally rather than pulling 376 MB; send `Accept-Encoding` to the league; skip uploads when nothing changed.
 10. Wording: D4, D7, D8; `recent.json`'s two jobs.
+11. **Comments out of the source** (Kevin, 2026-10-12: *"don't think (excessive)
+    narrative belongs in code comments"*). 71–81% of `src/` and `builders/` is
+    comment. File by file, largest first: keep WHAT and a one-line why or trap;
+    move narrative to the commit or `docs/` after checking it is there; fix
+    `tools/quoted-figures.mjs`, which writes figures INTO `src/lib` comments.
+12. **Reduced motion on the replay** — found while stripping comments: the
+    game page has twelve animations and its reduced-motion rule stops only the
+    play-button pulse. What reduced motion should do to the replay is a ruling.

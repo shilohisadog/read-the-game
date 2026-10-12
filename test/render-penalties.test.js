@@ -233,7 +233,8 @@ test('the short-handed tag fires on a short-handed goal and not on a pulled goal
   assert.match(label, /playSaid\(e\)/, 'a located goal no longer says what playSaid says');
   const said = /function playSaid\(e\)\{[\s\S]*?\n\}/.exec(app)[0];
   assert.match(said, /shortHanded\(e\)/, 'a located goal is never told it was short-handed');
-  const cap = /function caption\(e,kind\)\{[\s\S]*?\n \/\*/.exec(app)[0];
+  // Ends at the next top-level function: the comment it used to end at no longer ships.
+  const cap = /function caption\(e,kind\)\{[\s\S]*?\n(?:function |const |let )/.exec(app)[0];
   assert.match(cap, /shortHanded\(e\)/, 'an unplaced goal is never told it was short-handed');
   // ⛔⛔ AND THE LINE ABOVE IS A GREP, WHICH IS WHY A PLANTED DEFECT WALKED PAST IT.
   // `s916-...`/`s20260916-81` inverted `kind==='goal'` to `kind!=='goal'` in exactly

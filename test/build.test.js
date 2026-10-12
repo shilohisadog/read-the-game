@@ -9,6 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { declarations } from '../tools/jslex.mjs';
+import { stripJs } from '../tools/strip-comments.mjs';
 
 const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
 const app = read('../src/read-the-game.html');
@@ -65,7 +66,8 @@ test('the shipped app carries the library verbatim, not a copy', () => {
      typed. The list is read from the builder now, so a module added to the
      bundle is covered the moment it is added. */
   for (const name of [...bundled(), 'rinkart.js']) {
-    for (const line of substantive(read(`../src/lib/${name}`))) {
+    // The page ships without comments (2026-10-12), so the CODE is compared.
+    for (const line of substantive(stripJs(read(`../src/lib/${name}`)))) {
       assert.ok(app.includes(line),
         `${name}: line missing from the bundle, so the shipped code has drifted `
         + `from the tested source -> ${line.trim().slice(0, 60)}`);
@@ -189,7 +191,10 @@ test('the teaching claim and the arithmetic agree', () => {
   // The SAFEGUARD is not about a surface -- it is that the page must not tell a
   // reader how attribution works while the reducer does something else -- so what
   // this test follows is the sentence, wherever the sentence is.
-  assert.ok(app.includes('All credited to the shooter.'),
+  // ⛔ This read 'All credited to the shooter.' and passed for weeks on a
+  // COMMENT recording that the old panel used to say it; stripping comments
+  // from the built page (2026-10-12) exposed it. The claim lives in the layer.
+  assert.ok(app.includes('A blocked attempt is credited to the team that shot it'),
     'nothing on the page still tells the reader who a blocked attempt belongs to');
   assert.ok(app.includes('corsiTeam(e,R)'),
     'and Corsi resolves through the shooter, which is what makes the claim true');

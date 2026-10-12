@@ -16,7 +16,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 import { furniture, boardsY, SX } from '../src/lib/rinkart.js';
 import { TEAMS, NEUTRAL } from '../src/lib/teams.js';
@@ -526,12 +526,26 @@ test('⭐ reduced motion stops ANIMATION, not only transitions', () => {
      in question is not a check.
      THE PAIR MATTERS. Asserting the rule alone would pass on a page with nothing
      to stop, so the second half asserts the page does have animation to stop. */
-  const m = /@media \(prefers-reduced-motion:reduce\)\{\*\{([^}]*)\}/.exec(learn);
-  assert.ok(m, 'the learn page carries no reduced-motion rule at all');
-  assert.match(m[1], /animation:none!important/,
-    'reduced motion does not stop animation, and the rule diagrams animate');
-  assert.ok(/@keyframes /.test(learn),
-    'the page has no animation to stop, so the rule above proves nothing');
+  /* ⛔ The second half used to read the LESSONS page, which has never
+     animated: its only `@keyframes` was the word inside a comment, so the
+     check passed on prose. Stripping comments from the built pages
+     (2026-10-12) exposed it. It now asks every page that animates. */
+  const animated = readdirSync(new URL('../src/', import.meta.url))
+    .filter(f => f.endsWith('.html'))
+    .map(f => [f, readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8')])
+    .filter(([, h]) => /@keyframes /.test(h))
+    /* ⚠️ THE REPLAY IS NAMED AS AN EXCEPTION, NOT FIXED HERE. It has twelve
+       animations and its reduced-motion rule stops only the play-button pulse —
+       found by this check on its first honest run, 2026-10-12, and logged as
+       its own item in docs/data-model-review.md: the replay's motion is the
+       product, so what reduced motion should do to it is Kevin's ruling. */
+    .filter(([f]) => f !== 'game.html' && f !== 'read-the-game.html');
+  assert.ok(animated.length, 'no page animates, so the rule below proves nothing');
+  for (const [f, h] of animated) {
+    const m = /@media \(prefers-reduced-motion:reduce\)\{[^{}]*\{([^}]*)\}/.exec(h);
+    assert.ok(m, `${f} animates and carries no reduced-motion rule`);
+    assert.match(m[1], /animation:none!important/, `${f}: reduced motion does not stop its animation`);
+  }
 });
 
 test('⭐ a diagram carries no tint of ours — the rulebook does not borrow our claims', () => {

@@ -1119,6 +1119,7 @@ def build():
     # the check meant to hold it.
     html = P.document(body, title=TITLE, description=DESC, chrome="full", tip=False,
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
+    html = P.strip(html)
     return html.replace("__CSP__", P.csp(html))
 
 
@@ -1148,6 +1149,7 @@ def build_shell():
     html = P.document(body, title=TITLE, description=DESC,
                       url="https://readthegame.co/game", chrome="full", tip=False,
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
+    html = P.strip(html)
     return html.replace("__CSP__", _csp(html))
 
 def main():

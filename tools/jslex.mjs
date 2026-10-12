@@ -83,7 +83,10 @@ export function lex(src) {
  * from `str` so that no existing caller's behaviour moves: `lex` filters to `id`,
  * and `specifiers` skips it explicitly rather than by luck.
  */
-export function walk(src, emit) {
+export function walk(src, emit, { comments = false } = {}) {
+  // `comments`: also emit {t:'comment', start, end} for top-level comments.
+  // Off by default — a comment token would interrupt callers that read
+  // adjacent tokens (a declaration list, an import).
   let prev = null;            // last significant token, for the regex/divide call
   let i = 0;
   const n = src.length;
@@ -93,11 +96,19 @@ export function walk(src, emit) {
 
     if (/\s/.test(c)) { i++; continue; }
 
-    if (c === '/' && src[i + 1] === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && src[i + 1] === '/') {
+      const s = i;
+      while (i < n && src[i] !== '\n') i++;
+      if (comments) emit({ t: 'comment', start: s, end: i });
+      continue;
+    }
     if (c === '/' && src[i + 1] === '*') {
+      const s = i;
       i += 2;
       while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
-      i += 2; continue;
+      i += 2;
+      if (comments) emit({ t: 'comment', start: s, end: Math.min(i, n) });
+      continue;
     }
 
     if (c === '"' || c === "'") {

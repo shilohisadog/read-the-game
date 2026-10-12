@@ -29,7 +29,7 @@ So the shell is centralised rather than copied into eight builders: one
 definition, one place to fix, and `test/document.test.js` asserts every page in
 `src/` came through here.
 """
-import base64, hashlib, json, pathlib, re
+import base64, hashlib, json, pathlib, re, subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -47,6 +47,18 @@ def competitions():
     """
     names = json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
     return json.dumps(names, sort_keys=True, separators=(",", ":"))
+
+
+def strip(html):
+    """The page without comments (script, stylesheet, HTML), for the reader.
+
+    The source keeps its comments; what ships does not. Runs before `csp`, so
+    the hashes pin the bytes a browser actually receives. One implementation,
+    `tools/strip-comments.mjs`, built on the project's JavaScript lexer.
+    """
+    root = pathlib.Path(__file__).resolve().parent.parent
+    return subprocess.run(["node", str(root / "tools" / "strip-comments.mjs")],
+                          input=html, capture_output=True, text=True, check=True).stdout
 
 
 def csp(html, *, connect=None, images=None):
