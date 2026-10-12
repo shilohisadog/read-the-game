@@ -605,7 +605,7 @@ test('⛔ the front door has ONE door to the methods page, in the block that ask
 
   /* AND THE SECTION STILL SAYS WHAT IT IS. A door added to a block whose heading
      had drifted would be a door in the wrong room. */
-  assert.match(html, /<h2>What this does and does not claim<\/h2>/);
+  assert.match(html, /<h2>What this site does and does not claim<\/h2>/);
 });
 
 test('⛔⛔ every "see question N" resolves to a question that exists on the page', () => {

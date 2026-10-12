@@ -939,10 +939,10 @@ __FRONT_RULES__
      about hockey that a newcomer cannot get by watching, which is the only kind
      worth spending the front door on. -->
 <section class="countsin">
-<h2 id="counts-h">What we counted</h2>
+<h2 id="counts-h">What we count</h2>
 __FRONT_COUNTS__
 </section>
-<h2>What this does and does not claim</h2>
+<h2>What this site does and does not claim</h2>
 <ul class="limits">
 __LIMITS__
 </ul>
@@ -2815,7 +2815,6 @@ def _front_counts():
     kinds = {c[1]: c[0] for c in LEARN_CARDS}
     titles = {c[1]: c[2] for c in LEARN_CARDS}
     blurbs = {c[1]: c[3] for c in LEARN_CARDS}
-    doors = json.loads((ROOT / "data" / "learn-doors.json").read_text())["doors"]
     figures, arch = _fig_json(), _archive()
     # THE NOTE IS BUILT HERE, NOT IN THE MARKUP, because it carries a figure
     # too — the archive's own size — and the body template substitutes only the
@@ -2869,7 +2868,7 @@ def _front_counts():
         work = _work_line(line, cid)
         for tok, val in arch.items():
             line = line.replace(tok, val)
-        card = (f'<a class="ccard" href="{_card_href(cid, doors)}">'
+        card = (f'<a class="ccard" href="{_lesson_href(cid)}">'
                 f'<span class="lt">{titles[cid]}</span>'
                 f'<span class="ld">{line}</span></a>')
         # ⭐ WRAPPED, BECAUSE THE TILE IS ITSELF A LINK. An anchor inside an
@@ -2879,6 +2878,23 @@ def _front_counts():
         out.append(f'<div class="cardw">{card}{work}</div>' if work else card)
     out.append("</div>")
     return "\n".join(out)
+
+
+def _lesson_href(cid):
+    """Where a front-door card leads: to its LESSON, never to the replay.
+
+    ⛔⛔ KEVIN, 2026-10-12: *"each of the cards go directly to a replay, that's
+    unexpected and I am not sure that's correct."* It was not. The strip says
+    "Each one opens the lesson behind it", and three of four used `_card_href`,
+    which is the lessons PAGE's rule: there the card IS the lesson, and ends
+    "Period 1 · 09:06 left" so a reader knows the link is a replay moment. Here
+    the card is one sentence of that lesson with no destination stated, so the
+    same href skipped the lesson and dropped a stranger into a 2023 game.
+    ⭐ So a card with its own page opens it, and the rest open their card on the
+    lessons page, whose own link then goes to the moment. `_card_href` is
+    untouched: it is right for every surface where the card is the whole lesson.
+    """
+    return f"/{cid}.html" if cid in _fig_json() else f"/what-you-can-see.html#{cid}"
 
 
 def _front_rules():

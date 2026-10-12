@@ -1102,8 +1102,8 @@ test('⛔⛔⛔ the novice path runs unbroken: lessons, then a game, then the co
     ['the hero', /<h1[^>]*>/],
     ['New to hockey?', /<section class="learnin"/],
     ['Pick your team', /<h2 id="teams-h"/],
-    ['What we counted', /<section class="countsin"/],
-    ['what this does and does not claim', /<h2>What this does and does not claim<\/h2>/],
+    ['What we count', /<section class="countsin"/],
+    ['what this does and does not claim', /<h2>What this site does and does not claim<\/h2>/],
   ];
   const at = order.map(([name, re]) => {
     const m = re.exec(html);
@@ -2374,4 +2374,35 @@ test('⚠️ a schedule with no league dates still says when the next game is', 
   assert.equal(r.ids.daily.hidden, false);
   assert.match(r.ids.dailykick.textContent, /^Next$/);
   assert.match(r.ids.dailysay.textContent, /BUF at PIT/, 'the one fixture, as before');
+});
+
+/**
+ * ⛔⛔ EVERY MEASUREMENT CARD OPENS THE LESSON IT SAYS IT OPENS — Kevin,
+ * 2026-10-12, reading the front door: *"each of the cards go directly to a
+ * replay, that's unexpected and I am not sure that's correct."*
+ *
+ * The strip's own line says "Each one opens the lesson behind it", and three of
+ * four opened a replay frame of one 2023 game. They borrowed the lessons page's
+ * href — right THERE, where the card IS the lesson and ends "Period 1 · 09:06
+ * left" to say where it goes, and wrong here, where the card is one sentence of
+ * it with no destination stated. The promise is checked against the PAGES: a
+ * card lands on a lesson page that exists, or on a lesson anchor that exists on
+ * the lessons page — never on a replay.
+ */
+test('⛔ every front-door measurement card opens its lesson, not a replay', () => {
+  const strip = /<section class="countsin"[^>]*>([\s\S]*?)<\/section>/.exec(html)[1];
+  assert.match(strip, /opens the lesson behind it/, 'the promise this test holds the cards to has moved');
+  const hrefs = [...strip.matchAll(/<a class="ccard" href="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(hrefs.length, 4, 'the strip lost its cards, so this test saw nothing');
+  const learn = PAGE_SRC.get('what-you-can-see.html');
+  for (const h of hrefs) {
+    assert.doesNotMatch(h, /game\.html/, `${h} drops the reader into a replay`);
+    const m = /^\/what-you-can-see\.html#([a-z0-9-]+)$/.exec(h);
+    if (m) {
+      assert.ok(new RegExp(`id="${m[1]}"`).test(learn), `${h} names a lesson the lessons page does not have`);
+    } else {
+      const page = /^\/([a-z0-9-]+\.html)$/.exec(h);
+      assert.ok(page && PAGE_SRC.get(page[1]), `${h} is neither a lesson page nor a lesson on the lessons page`);
+    }
+  }
 });
