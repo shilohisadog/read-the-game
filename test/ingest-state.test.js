@@ -18,7 +18,7 @@ const idx = (o = {}) => ({
   lastRun: '2026-01-15T11:00:00Z',
   halted: null,
   coverage: { windowDays: 14, finalInWindow: 7, heldInWindow: 7,
-              erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0,
+              erroredInWindow: 0, unknownStateInWindow: 0,
               asOf: '2026-01-15T11:00:00Z' },
   games: [],
   ...o,
@@ -48,7 +48,7 @@ test('healthy with no hockey: says so, and is NOT reported as stale', () => {
   // with different sentences.
   const r = describe(idx({ dataThrough: '2023-11-10',
     coverage: { windowDays: 14, finalInWindow: 0, heldInWindow: 0,
-                erroredInWindow: 0, refusedInWindow: 0 } }), NOW);
+                erroredInWindow: 0 } }), NOW);
   assert.equal(r.state, 'quiet');
   assert.match(text(r), /Data through 10 November 2023\./);
   assert.match(text(r), /No games in the last 14 days\./);
@@ -82,7 +82,7 @@ test('the staleness threshold is a boundary, not a vibe', () => {
 
 test('behind: the count of what we have against what was played', () => {
   const r = describe(idx({ coverage: {
-    windowDays: 14, finalInWindow: 7, heldInWindow: 3, erroredInWindow: 4, refusedInWindow: 0 } }), NOW);
+    windowDays: 14, finalInWindow: 7, heldInWindow: 3, erroredInWindow: 4 } }), NOW);
   assert.equal(r.state, 'behind');
   assert.match(text(r), /We have 3 of the 7 games played in the last 14 days\./);
 });
@@ -90,22 +90,25 @@ test('behind: the count of what we have against what was played', () => {
 test('behind never says "still loading"', () => {
   // It promises progress we cannot guarantee — a claim about a future rather
   // than a count, the same class of error as "Buffalo had stopped trying to
-  // score". A refused game will never load, and telling a novice to wait for it
-  // is worse than saying nothing.
+  // score".
   const r = describe(idx({ coverage: {
-    windowDays: 14, finalInWindow: 7, heldInWindow: 3, erroredInWindow: 3, refusedInWindow: 1 } }), NOW);
+    windowDays: 14, finalInWindow: 7, heldInWindow: 3, erroredInWindow: 4 } }), NOW);
   assert.doesNotMatch(text(r), /still loading|loading|coming soon|shortly/i);
-  assert.match(text(r), /1 is not published/, 'a refusal is named as a refusal');
 });
 
-test('a refused game is reported separately from a missing one', () => {
-  const refused = describe(idx({ coverage: {
-    windowDays: 14, finalInWindow: 7, heldInWindow: 6, erroredInWindow: 0, refusedInWindow: 1 } }), NOW);
-  const errored = describe(idx({ coverage: {
-    windowDays: 14, finalInWindow: 7, heldInWindow: 6, erroredInWindow: 1, refusedInWindow: 0 } }), NOW);
-  assert.match(text(refused), /not published/);
-  assert.doesNotMatch(text(errored), /not published/,
-    'a fetch that may retry must not be described as a refusal');
+/* ⛔⛔ TWO TESTS STOOD HERE AND BOTH PINNED A SENTENCE THAT COULD NEVER APPEAR —
+   removed 2026-10-12. They asserted "1 is not published — the league's feed
+   contains something we don't recognise" from a fixture carrying
+   `refusedInWindow: 1`. The pipeline never produced that value: fetch_nhl's
+   `Report.refused` was declared and emitted and never incremented, because the
+   fetcher cannot refuse a game — derive.py does, later. A fixture typed from
+   the assumption cannot test the assumption; the tests were green over a
+   sentence no reader could ever see. The field is gone from `coverage`, and so
+   is the sentence. */
+test('the coverage block carries no refusal figure, and the page invents none', () => {
+  const r = describe(idx({ coverage: {
+    windowDays: 14, finalInWindow: 7, heldInWindow: 6, erroredInWindow: 1 } }), NOW);
+  assert.doesNotMatch(text(r), /not published/);
 });
 
 test('a night we could not read never reports as "no games"', () => {
@@ -117,7 +120,7 @@ test('a night we could not read never reports as "no games"', () => {
   // all 56 preseason games are in state FINAL, which we had never seen.
   const r = describe(idx({
     coverage: { windowDays: 14, gamesInWindow: 56, finalInWindow: 0, heldInWindow: 0,
-                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 56 },
+                erroredInWindow: 0, unknownStateInWindow: 56 },
   }), NOW);
   assert.equal(r.state, 'behind', 'games were played; this is not a quiet night');
   assert.doesNotMatch(text(r), /No games in the last/,
@@ -133,7 +136,7 @@ test('the denominator is what the league played, not what we understood', () => 
   // you have" is asking about the hockey.
   const r = describe(idx({
     coverage: { windowDays: 14, gamesInWindow: 100, finalInWindow: 10, heldInWindow: 10,
-                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 90 },
+                erroredInWindow: 0, unknownStateInWindow: 90 },
   }), NOW);
   assert.equal(r.state, 'behind');
   assert.match(text(r), /10 of the 100 games/);
@@ -145,7 +148,7 @@ test('a genuinely quiet window still reads as quiet', () => {
   // against zero games. Nothing was played, so nothing is missing.
   const r = describe(idx({
     coverage: { windowDays: 14, gamesInWindow: 0, finalInWindow: 0, heldInWindow: 0,
-                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0 },
+                erroredInWindow: 0, unknownStateInWindow: 0 },
   }), NOW);
   assert.equal(r.state, 'quiet');
   assert.match(text(r), /No games in the last 14 days/);
@@ -158,23 +161,20 @@ test('an index written before gamesInWindow existed still renders truthfully', (
   // indexes that predate the fix.
   const r = describe(idx({
     coverage: { windowDays: 14, finalInWindow: 4, heldInWindow: 4,
-                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 3 },
+                erroredInWindow: 0, unknownStateInWindow: 3 },
   }), NOW);
   assert.equal(r.state, 'behind');
   assert.match(text(r), /4 of the 7 games/, 'reconstructed as final + unknown');
 });
 
-test('refused and unreadable are different facts and get different sentences', () => {
-  // Refused: we hold the bytes and the event vocabulary defeated us.
+test('an unreadable game is named as one', () => {
   // Unknown state: we never fetched, because we could not tell the game was over.
-  // Folding them together would report a cause we have not established.
   const r = describe(idx({
-    coverage: { windowDays: 14, gamesInWindow: 10, finalInWindow: 8, heldInWindow: 6,
-                erroredInWindow: 0, refusedInWindow: 2, unknownStateInWindow: 2 },
+    coverage: { windowDays: 14, gamesInWindow: 10, finalInWindow: 8, heldInWindow: 8,
+                erroredInWindow: 0, unknownStateInWindow: 2 },
   }), NOW);
   const t = text(r);
-  assert.match(t, /6 of the 10 games/);
-  assert.match(t, /2 are not published/);
+  assert.match(t, /8 of the 10 games/);
   assert.match(t, /2 .*state we don't recognise/);
 });
 
@@ -263,7 +263,7 @@ const summerIdx = (over = {}) => idx({
   dataThrough: '2026-06-14',
   lastRun: '2026-09-09T11:00:00Z',
   coverage: { windowDays: 14, gamesInWindow: 0, finalInWindow: 0, heldInWindow: 0,
-              erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0 },
+              erroredInWindow: 0, unknownStateInWindow: 0 },
   ...over,
 });
 
@@ -335,7 +335,7 @@ test('a third argument is ignored rather than obeyed', () => {
  */
 const nightOfTheNineteenth = {
   windowDays: 14, gamesInWindow: 14, finalInWindow: 8, heldInWindow: 8,
-  erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0,
+  erroredInWindow: 0, unknownStateInWindow: 0,
   pendingInWindow: 6, asOf: '2026-01-15T11:00:00Z',
 };
 
@@ -378,7 +378,7 @@ test("⚠️ and an empty scoreboard does not say \"no games\" over a full slate
      the same shape of false sentence the denominator was changed to stop. */
   const r = describe(idx({ coverage: {
     windowDays: 14, gamesInWindow: 7, finalInWindow: 0, heldInWindow: 0,
-    erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0,
+    erroredInWindow: 0, unknownStateInWindow: 0,
     pendingInWindow: 7, asOf: '2026-01-15T11:00:00Z' } }), NOW);
   assert.doesNotMatch(text(r), /No games in the last 14 days/,
     'seven games are scheduled today and the page says the calendar is empty');

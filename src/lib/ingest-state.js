@@ -180,14 +180,11 @@ export function describe(index, now) {
       // about a future rather than a count. The duller sentence is the true one.
       lines.push(`We have ${held} of the ${played} games played in ` +
         `the last ${c.windowDays} days.`);
-      // Two different facts, so two sentences. Refused means we hold the bytes
-      // and the event vocabulary defeated us; unreadable means we never fetched,
-      // because the league lists the game in a state we cannot interpret as
-      // over. Folding them together would report a cause we have not established.
-      if (c.refusedInWindow > 0) {
-        lines.push(`${c.refusedInWindow} ${c.refusedInWindow === 1 ? 'is' : 'are'} ` +
-          `not published — the league's feed contains something we don't recognise.`);
-      }
+      // ⛔ A "REFUSED" SENTENCE STOOD HERE AND COULD NEVER FIRE — removed
+      // 2026-10-12. It read `coverage.refusedInWindow`, which the fetcher
+      // declared and never incremented: the fetcher cannot refuse a game,
+      // derive.py does, later. Unreadable means we never fetched, because the
+      // league lists the game in a state we cannot interpret as over.
       if (unread > 0) {
         lines.push(`${unread} ${unread === 1 ? 'is' : 'are'} listed in a ` +
           `state we don't recognise yet, so we haven't read ${unread === 1 ? 'it' : 'them'}.`);

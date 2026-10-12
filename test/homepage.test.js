@@ -116,7 +116,7 @@ const MEASURES = {
 const INDEX = {
   dataThrough: '2026-06-14', lastRun: new Date().toISOString(), halted: null,
   coverage: { windowDays: 14, finalInWindow: 0, gamesInWindow: 0,
-              heldInWindow: 0, erroredInWindow: 0, refusedInWindow: 0 },
+              heldInWindow: 0, erroredInWindow: 0 },
 };
 
 const ORIGIN = 'https://readthegame.co';
@@ -2053,11 +2053,11 @@ const FRESH_CASES = [
     quiet: true, says: /Data through 14 June 2026\./ },
   { name: 'current, with a slate above it',
     index: { ...INDEX, coverage: { windowDays: 14, finalInWindow: 2, gamesInWindow: 2,
-                                   heldInWindow: 2, refusedInWindow: 0 } },
+                                   heldInWindow: 2 } },
     recent: RECENT, quiet: true, says: /Data through 14 June 2026\./ },
   { name: 'behind — a limit the card never mentions',
     index: { ...INDEX, coverage: { windowDays: 14, finalInWindow: 12, gamesInWindow: 12,
-                                   heldInWindow: 7, refusedInWindow: 0 } },
+                                   heldInWindow: 7 } },
     recent: RECENT, quiet: false, says: /We have 7 of the 12 games played/ },
   { name: 'stalled — nothing else on the site can say this',
     at: STALLED_AT, index: { ...INDEX, lastRun: STALLED_RUN },

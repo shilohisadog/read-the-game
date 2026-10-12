@@ -18,7 +18,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole, measuredThrough } from '../builders/measure.mjs';
+import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole, measuredThrough, newestNight } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
 import { summarise, slotShare, perGame, reachOf, goalieNight, dataThrough } from '../src/lib/archive.js';
 import { distribution, quantile, shareAtOrBelow, sitsIn } from '../src/lib/distribution.js';
@@ -442,7 +442,10 @@ test('⛔⛔⛔ a job that measures the ARCHIVE must have the whole archive', ()
     for (let k = 0; k < names.length; k++) {
       const job = jobs.slice(names[k].index,
         k + 1 < names.length ? names[k + 1].index : jobs.length);
-      const runs = [...job.matchAll(/measure\.mjs[^\n]*/g)].map(m => m[0]);
+      /* ⚠️ `--newest-night` IS A QUERY, NOT A MEASUREMENT — it prints the slate
+         night's ids and writes nothing (2026-10-12), so it is not counted. */
+      const runs = [...job.matchAll(/measure\.mjs[^\n]*/g)].map(m => m[0])
+        .filter(r => !/--newest-night/.test(r));
       if (!runs.length) continue;
       const where = `${f} / job \`${names[k][1]}\``;
       assert.ok(runs.length === 1, `${where} invokes measure.mjs ${runs.length} times`);
@@ -1680,4 +1683,47 @@ test('⭐ the CLI writes the stamp, and the run’s own log prints it', () => {
      only ever have been a bug in one of two copies. */
   assert.equal(JSON.parse(readFileSync(join(out, 'teams.json'), 'utf8')).through,
                doc.dataThrough, 'teams.json and measures.json disagree about the same games');
+});
+
+/**
+ * ⛔⛔ "LAST NIGHT" VANISHED EVERY MORNING — found 2026-10-12 by the data-model
+ * inventory, and live: the home page said "Tonight · 3 games" with no word of
+ * the three played the night before. `recent.json` was the games derived by the
+ * LATEST run; the 06:47 UTC run derived last night and published it, and the
+ * 08:17 run found nothing new and published an empty slate over it.
+ *
+ * ⭐ So the slate is now measured over the NEWEST IN-SCOPE NIGHT THE CATALOG
+ * PUBLISHES inside the fetch window — a property of the archive, not of the run.
+ * The window keeps the offseason rule the empty write was for: once the newest
+ * night is older than the window, nothing is selected and the slate is empty.
+ */
+const ROWS = [
+  { id: 2026020084, d: '2026-10-11', t: 2, v: 1 },
+  { id: 2026020085, d: '2026-10-11', t: 2, v: 1 },
+  { id: 2026020086, d: '2026-10-11', t: 2, v: 0 },   // refused: no extract to measure
+  { id: 2026020070, d: '2026-10-10', t: 2, v: 1 },
+  { id: 2026010099, d: '2026-10-12', t: 1, v: 1 },   // preseason: out of scope
+];
+
+test('⭐ the slate night is the newest published in-scope night, every game of it', () => {
+  assert.deepEqual(newestNight(ROWS, '2026-10-12', 14), [2026020084, 2026020085]);
+});
+
+test('⛔ a run that derived nothing still selects last night', () => {
+  /* The defect itself: the choice reads the CATALOG, which every run carries
+     whole, so it cannot depend on what this run happened to derive. Same rows,
+     same answer, whatever the run did. */
+  assert.deepEqual(newestNight(ROWS, '2026-10-12', 14), newestNight([...ROWS].reverse(), '2026-10-12', 14));
+});
+
+test('⛔ outside the window there is no slate night — the offseason rule', () => {
+  assert.deepEqual(newestNight(ROWS, '2026-11-30', 14), []);
+  assert.deepEqual(newestNight(ROWS, '2026-10-24', 14), [2026020084, 2026020085],
+    'the 14th day of the window, inclusive, still counts');
+  assert.deepEqual(newestNight(ROWS, '2026-10-25', 14), []);
+});
+
+test('a game dated AFTER the window end is not last night', () => {
+  /* A dispatch with `--end` in the past must not pick a later night. */
+  assert.deepEqual(newestNight(ROWS, '2026-10-10', 14), [2026020070]);
 });

@@ -657,6 +657,31 @@ export function measuredThrough(out, records, readJson) {
     + '. The extracts on disk are older than the catalog beside them.';
 }
 
+/**
+ * WHICH GAMES ARE "LAST NIGHT": every published, in-scope game of the newest
+ * night the catalog holds inside the fetch window, ascending by id.
+ *
+ * ⛔⛔ IT USED TO BE "WHATEVER THIS RUN DERIVED", and the home page lost last
+ * night every morning — found 2026-10-12. The 06:47 UTC run derived the night
+ * and published it; the 08:17 run derived nothing and published an empty slate
+ * over it. The catalog is carried whole by every run, so a choice read off it
+ * cannot depend on what one run happened to do.
+ * ⭐ THE WINDOW IS THE OFFSEASON RULE the empty write exists for (see `main`):
+ * once the newest night is older than the window there is nothing to select,
+ * and the slate is empty rather than advertising April's games in August.
+ * `end` is inclusive and so is the window's first day — fetch_nhl.py's
+ * `dates_in_window`, the window the run fetched.
+ */
+export function newestNight(rows, end, days) {
+  const first = new Date(Date.parse(`${end}T00:00:00Z`) - (days - 1) * 86400000)
+    .toISOString().slice(0, 10);
+  const ok = (rows || []).filter(r => r && r.v === 1 && inScope(r.id)
+    && typeof r.d === 'string' && r.d >= first && r.d <= end);
+  if (!ok.length) return [];
+  const night = ok.reduce((m, r) => (r.d > m ? r.d : m), ok[0].d);
+  return ok.filter(r => r.d === night).map(r => r.id).sort((a, b) => a - b);
+}
+
 function main(argv) {
   const flag = name => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
   const out = flag('--out') || 'ingest';
@@ -665,6 +690,15 @@ function main(argv) {
      always has, byte for byte. A new mode that altered the old one would be a
      change to the weekly archive smuggled in as a change to the nightly. */
   const slate = argv.includes('--slate');
+  /* ⭐ PRINT THE SLATE NIGHT'S IDS AND STOP — the workflow pulls those extracts
+     before `--slate` measures, so the slate is the archive's newest night and
+     not this run's derivations. See `newestNight`. */
+  if (argv.includes('--newest-night')) {
+    const cat = JSON.parse(readFileSync(join(out, 'catalog.json'), 'utf8'));
+    for (const id of newestNight(cat.games, flag('--end'), Number(flag('--days'))))
+      console.log(id);
+    return;
+  }
   const now = flag('--now')
     || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const dir = join(out, 'extract');

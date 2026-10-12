@@ -1,0 +1,104 @@
+# Keep the RAW league archive off the public data domain.
+#
+# Run manually: Actions -> "raw is private" -> Run workflow. Idempotent; the
+# verify step runs either way and fails while /raw/ is still public.
+#
+# ⭐ WHY — found 2026-10-12 by the data-model inventory, and Kevin ruled it:
+# `https://data.readthegame.co/raw/<gid>/latest.json` answered 200, and so did
+# every blob it names — ~426 KB a game, the league's own documents, for anyone
+# who asked. `box-rail-witness.yml` said the opposite ("/raw/ answers 404"), so
+# the belief was written down and false. Nothing READS raw over HTTP: every
+# pipeline reads it through the authenticated S3 API. The pages read only
+# `extract/`, the catalog, the index and the published measurements.
+#
+# ⛔ A FIREWALL RULE, NOT A BUCKET CHANGE. The R2 custom domain serves the whole
+# bucket; moving `raw/` to a second bucket would touch every pipeline for the
+# same effect. One zone rule blocks the prefix at the edge and nothing else
+# changes.
+#
+# ⚠️ THE RULESET IS SHARED, SO THIS NEVER REPLACES IT. A PUT on the phase
+# entrypoint would overwrite every custom rule the zone has. This reads the
+# entrypoint, updates OUR rule by its description if it exists, and adds it
+# otherwise.
+#
+# ⚠️ THE TOKEN MAY NOT BE ALLOWED TO. It needs Zone:Read and Zone WAF:Edit on
+# readthegame.co; r2-cors.yml already found one capability our token lacks. A
+# refusal is reported as one, with the dashboard equivalent, rather than as a
+# rule that "already exists".
+name: raw is private
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Create or update the rule. Verify runs either way.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  ZONE: readthegame.co
+  DESC: 'readthegame: raw league archive is not public'
+  EXPR: '(http.host eq "data.readthegame.co" and starts_with(http.request.uri.path, "/raw/"))'
+
+jobs:
+  raw:
+    runs-on: ubuntu-latest
+    steps:
+      - name: block /raw/ on the data domain
+        if: inputs.apply
+        shell: bash
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          API=https://api.cloudflare.com/client/v4
+          auth=(-H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json")
+          zid=$(curl -sS "${auth[@]}" "$API/zones?name=${ZONE}" | jq -r '.result[0].id // empty')
+          if [ -z "$zid" ]; then
+            echo "::error::the token cannot read the zone ${ZONE} (needs Zone:Read). Dashboard equivalent: Security -> WAF -> Custom rules -> block, expression ${EXPR}"
+            exit 1
+          fi
+          ep=$(curl -sS "${auth[@]}" "$API/zones/${zid}/rulesets/phases/http_request_firewall_custom/entrypoint")
+          rule=$(jq -n --arg d "$DESC" --arg e "$EXPR" '{description:$d, expression:$e, action:"block", enabled:true}')
+          if [ "$(echo "$ep" | jq -r .success)" = "true" ]; then
+            rs=$(echo "$ep" | jq -r .result.id)
+            rid=$(echo "$ep" | jq -r --arg d "$DESC" '.result.rules[]? | select(.description==$d) | .id' | head -1)
+            if [ -n "$rid" ]; then
+              echo "  updating our rule ${rid} in ruleset ${rs}"
+              r=$(curl -sS -X PATCH "${auth[@]}" "$API/zones/${zid}/rulesets/${rs}/rules/${rid}" --data "$rule")
+            else
+              echo "  adding our rule to ruleset ${rs} ($(echo "$ep" | jq '.result.rules | length') rule(s) already there, untouched)"
+              r=$(curl -sS -X POST "${auth[@]}" "$API/zones/${zid}/rulesets/${rs}/rules" --data "$rule")
+            fi
+          elif [ "$(echo "$ep" | jq -r '.errors[0].code // empty')" = "10003" ] || echo "$ep" | jq -e '.errors[]? | select(.message|test("not found";"i"))' >/dev/null; then
+            echo "  the zone has no custom ruleset yet; creating it with our one rule"
+            r=$(curl -sS -X PUT "${auth[@]}" "$API/zones/${zid}/rulesets/phases/http_request_firewall_custom/entrypoint" \
+                  --data "$(jq -n --argjson r "$rule" '{rules:[$r]}')")
+          else
+            echo "::error::cannot read the zone's custom rules (needs Zone WAF:Edit). Dashboard equivalent: Security -> WAF -> Custom rules -> block, expression ${EXPR}"
+            echo "$ep" | jq -r '.errors[]? | "  \(.code): \(.message)"'
+            exit 1
+          fi
+          if [ "$(echo "$r" | jq -r .success)" != "true" ]; then
+            echo "::error::the rule was not written"
+            echo "$r" | jq -r '.errors[]? | "  \(.code): \(.message)"'
+            exit 1
+          fi
+          echo "  rule written"
+
+      # ⭐ THE CLAIM IS CHECKED FROM OUTSIDE, BOTH WAYS. /raw/ must be refused
+      # AND /extract/ must still be served — a rule that blocked the whole
+      # domain would pass the first half and take every game page down.
+      - name: raw is refused, the published data is not
+        shell: bash
+        run: |
+          sleep 20
+          cb=$(date +%s)
+          raw=$(curl -s -o /dev/null -w '%{http_code}' "https://data.readthegame.co/raw/2026020084/latest.json?cb=$cb")
+          ext=$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://readthegame.co' "https://data.readthegame.co/extract/2026020084.json?cb=$cb")
+          cat=$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://readthegame.co' "https://data.readthegame.co/catalog.json?cb=$cb")
+          echo "  raw/…/latest.json -> ${raw}   extract/…json -> ${ext}   catalog.json -> ${cat}"
+          [ "$ext" = 200 ] && [ "$cat" = 200 ] || { echo "::error::the published data is no longer served"; exit 1; }
+          [ "$raw" = 403 ] || { echo "::error::the raw archive is still public (HTTP ${raw})"; exit 1; }

@@ -15,8 +15,9 @@
 # already in our own bucket.
 #
 # ⚠️ IT CANNOT RUN FROM A DEV MACHINE. There are no R2 credentials there and the
-# raw archive is not publicly readable (`/raw/...` answers 404 where
-# `/extract/...` answers 200). The measurement runs where the raw is.
+# raw archive is not meant to be publicly readable. ⛔ This line used to say
+# `/raw/...` answers 404 — it answered 200 (found 2026-10-12); `r2-raw-private.yml`
+# is what makes the sentence true. The measurement runs where the raw is.
 #
 # ⛔ A MEASUREMENT, NOT A GATE. It publishes nothing, writes nothing to the
 # bucket, and is never scheduled — the same standing Kevin's other measurement

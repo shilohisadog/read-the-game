@@ -311,6 +311,32 @@ jobs:
       # AN EMPTY WINDOW WRITES AN EMPTY DOCUMENT rather than skipping: a run that
       # found no hockey and left last night's games published would advertise
       # them forever, which is schedule.json's argument one file over.
+      # ⛔⛔ AND THE SLATE IS THE ARCHIVE'S NEWEST NIGHT, NOT THIS RUN'S WORK —
+      # 2026-10-12. `ingest/extract` holds only what this run derived, so the
+      # 08:17 UTC run, which derives nothing, published an empty slate over the
+      # one the 06:47 run had just published, and the home page lost "Last night"
+      # every morning. The night is chosen from the merged catalog (the same
+      # window the fetch used, so the offseason still empties it) and any of its
+      # extracts this run did not derive are pulled first. See `newestNight`.
+      - name: the newest night's extracts, for the slate
+        if: steps.fetch.outputs.code != '2'
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          END="${{ inputs.end }}"
+          [ -n "$END" ] || END=$(date -u +%F)
+          node builders/measure.mjs --out ingest --newest-night --end "$END" --days "${WINDOW}" > night.txt
+          echo "  slate night: $(wc -l < night.txt) game(s)"
+          mkdir -p ingest/extract
+          while read -r id; do
+            [ -f "ingest/extract/${id}.json" ] && continue
+            aws s3 cp "s3://${BUCKET}/extract/${id}.json" "ingest/extract/${id}.json" \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress --quiet
+          done < night.txt
+
       - name: measure the slate
         if: steps.fetch.outputs.code != '2'
         shell: bash
@@ -359,15 +385,16 @@ jobs:
               sys.exit(f"::error::index is missing {missing}")
           c = i['coverage']
           held, err = c['heldInWindow'], c['erroredInWindow']
-          refused = c['refusedInWindow']
-          if c['finalInWindow'] != held + err + refused:
+          # ⛔ `refusedInWindow` WAS A THIRD TERM, ALWAYS 0 — the fetcher cannot
+          # refuse a game (derive.py does, later). Removed 2026-10-12.
+          if c['finalInWindow'] != held + err:
               sys.exit(f"::error::coverage ledger does not close: {c}")
           undated = [g['id'] for g in i['games'] if not g.get('date')]
           if undated:
               sys.exit(f"::error::games without a date, so dataThrough is unreliable: {undated[:5]}")
           print(f"  {len(i['games'])} games | dataThrough={i.get('dataThrough')} "
                 f"| lastRun={i['lastRun']} | halted={bool(i.get('halted'))}")
-          print(f"  ledger closes: {c['finalInWindow']} = {held} + {err} + {refused}")
+          print(f"  ledger closes: {c['finalInWindow']} = {held} + {err}")
 
           # ⭐ THE FIXTURES CARRY THE LEAGUE'S OWN NIGHT, OR WE DO NOT PUBLISH.
           # The front door names a whole night from `date`, and without it the page

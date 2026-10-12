@@ -243,7 +243,6 @@ class Report:
     fetched: int = 0        # games stored for the first time
     unchanged: int = 0      # games whose bytes were already held
     amended: int = 0        # games the league has changed since we stored them
-    refused: int = 0        # games rejected by the extraction vocabulary gate
     unknown_state: int = 0  # games whose gameState we do not recognise
     # Scheduled or under way. NOT a failure to read the feed, and kept apart
     # from `unknown_state` so neither the halt nor the front page can mistake
@@ -282,7 +281,7 @@ class Report:
 
     def as_dict(self):
         return {"fetched": self.fetched, "unchanged": self.unchanged,
-                "amended": self.amended, "refused": self.refused,
+                "amended": self.amended,
                 "unknownState": self.unknown_state, "finalInWindow": self.final_in_window,
                 "pendingInWindow": self.pending_in_window,
                 "pendingStates": self.pending_states,
@@ -574,7 +573,7 @@ def _write_index(store, rep, now, coverage=True):
     TWO LEDGERS, BECAUSE THERE ARE TWO QUESTIONS:
 
         gamesInWindow = finalInWindow + pendingInWindow + unknownStateInWindow
-        finalInWindow = heldInWindow + erroredInWindow + refusedInWindow
+        finalInWindow = heldInWindow + erroredInWindow
 
     The second is the original, the same conservation discipline as
     `counted + excluded` in the layers, pointed at the pipeline instead of the
@@ -644,7 +643,6 @@ def _write_index(store, rep, now, coverage=True):
             "finalInWindow": rep.final_in_window,
             "heldInWindow": rep.fetched + rep.amended + rep.unchanged,
             "erroredInWindow": rep.errored,
-            "refusedInWindow": rep.refused,
             "unknownStateInWindow": rep.unknown_state,
             # Games the league listed that have not been played: scheduled, or
             # under way. Neither held nor missing — not yet.

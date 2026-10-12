@@ -929,7 +929,7 @@ class Report(unittest.TestCase):
         store = DictStore()
         t = transport_for({"/v1/schedule/": (200, schedule_payload("2026-01-10", []))})
         rep = F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
-        self.assertEqual((rep.fetched, rep.unchanged, rep.amended, rep.refused), (0, 0, 0, 0))
+        self.assertEqual((rep.fetched, rep.unchanged, rep.amended), (0, 0, 0))
         # An empty night writes the two documents that describe TIME, and no
         # game data. The earlier rule -- write nothing at all -- existed only to
         # stop one conflated field advancing while no data arrived; lastRun and
@@ -948,6 +948,16 @@ class Report(unittest.TestCase):
         idx = json.loads(store.get("index.json").decode())
         self.assertEqual(idx["lastRun"], "2026-01-11T11:00:00Z")
         self.assertEqual(idx["coverage"]["finalInWindow"], 0)
+
+    def test_coverage_carries_no_refusal_figure(self):
+        """The fetcher cannot refuse a game -- derive.py does, later -- so the
+        `refusedInWindow` it published was declared, emitted and never
+        incremented: 0 on every run. Removed 2026-10-12."""
+        store = DictStore()
+        t = transport_for({**feed_routes(), "/v1/schedule/": (200, schedule_payload(
+            "2026-01-10", [game(2026020001)]))})
+        F.ingest("2026-01-10", 1, t, store, now="2026-01-11T09:00:00Z")
+        self.assertNotIn("refusedInWindow", json.loads(store.get("index.json"))["coverage"])
 
     def test_the_state_is_recorded_so_staleness_can_be_shown(self):
         # The front page renders this. A stalled pipeline becomes visible to
@@ -1056,7 +1066,7 @@ class IngestState(unittest.TestCase):
         F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
         c = self.index(store)["coverage"]
         self.assertEqual(c["finalInWindow"],
-                         c["heldInWindow"] + c["erroredInWindow"] + c["refusedInWindow"],
+                         c["heldInWindow"] + c["erroredInWindow"],
                          f"the ledger must close: {c}")
 
     def test_the_second_law_puts_unrecognised_games_inside_an_equation(self):
@@ -1073,7 +1083,7 @@ class IngestState(unittest.TestCase):
         # could read, how many did we get". So there are two.
         #
         #     gamesInWindow = finalInWindow + pendingInWindow + unknownStateInWindow
-        #     finalInWindow = heldInWindow + erroredInWindow + refusedInWindow
+        #     finalInWindow = heldInWindow + erroredInWindow
         #
         # ⭐ THE THIRD TERM ARRIVED 2026-09-20. "Every game the league listed"
         # includes the ones starting tonight, and the only surface that consumes
