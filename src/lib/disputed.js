@@ -60,9 +60,13 @@
  */
 export const DISPUTED_MARK = '*';
 
-/** How many rows on this list carry the disagreement. */
+/** How many rows on this list carry a disputed SHOT figure.
+ *
+ * ⛔ `us`, NOT `u` — 2026-10-12. `u` is the ledger's flag for a disagreement of
+ * ANY kind; a list marks the shot figure it prints, and four games disputed
+ * only on faceoffs carried the shot asterisk while this read `u`. */
 export function disputedCount(rows) {
-  return (rows || []).filter(g => g && g.u === 1 && g.v === 1).length;
+  return (rows || []).filter(g => g && g.us === 1 && g.v === 1).length;
 }
 
 /**

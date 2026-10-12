@@ -426,7 +426,7 @@ test('EVERY SURFACE THAT PRINTS THE LEAGUE SHOT COUNT CONSULTS THE FLAG', () => 
     // complete it; `assert` on the window rather than the line because the
     // renderers are wrapped.
     const window = lines.slice(l.n - 1, l.n + 2).join('\n');
-    assert.match(window, /g\.u === 1|DISPUTED_MARK/,
+    assert.match(window, /g\.us === 1|DISPUTED_MARK/,
       `build_index.py:${l.n} prints the league's shot count and never asks `
       + `whether the league agrees with itself about it (D10)`);
   }
@@ -494,7 +494,8 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
   // reason it is an assertion and not a comment. The `hl` entry in the must-list
   // further down reaches the field set ONLY through this scan, so a pattern that
   // narrows again fails there too.
-  const fragSrc = [...derive.matchAll(/return \{"[a-z]{1,3}": [a-z_]+(?:, "[a-z]{1,3}": [a-z_]+)*\}/g)]
+  // ⚠️ AND A LITERAL VALUE, since 2026-10-12: `_flags` returns `{"u": 1, "us": 1}`.
+  const fragSrc = [...derive.matchAll(/return \{"[a-z]{1,3}": [a-z_0-9]+(?:, "[a-z]{1,3}": [a-z_0-9]+)*\}/g)]
     .map(m => m[0]).join('\n');
   assert.ok(fragSrc.length, 'the row-fragment scan found no helper — it has lost its subject');
   const fields = new Set([...(rowSrc + boxSrc + fragSrc).matchAll(/"([a-z]{1,3})":/g)].map(m => m[1]));
@@ -504,7 +505,7 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
   assert.ok(fields.size >= 10,
     `only ${fields.size} row fields found — this check has lost its subject`);
   // `ha` LEFT THIS LIST ON 2026-09-17 with the rule that read it (docs/status.md).
-  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h', 'hl'])
+  for (const must of ['id', 'd', 't', 'v', 'u', 'us', 'r', 'a', 'h', 'hl'])
     assert.ok(fields.has(must), `the field scan missed \`${must}\``);
 
   const strip = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
@@ -515,7 +516,18 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
       .filter(f => f.endsWith('.js'))
       .map(f => strip(readFileSync(new URL(`../src/lib/${f}`, import.meta.url), 'utf8'))));
 
+  /* ⭐ ONE FIELD IS THE PIPELINE'S, NAMED WITH ITS READER — 2026-10-12. `u` is
+     the LEDGER's flag (a league disagreement of any kind), counted into
+     `archive.unreconciled` and the health line; the lists read `us`. A reader
+     outside src/ is allowed only by name, and only if that file really reads
+     it — an allowance that could not go stale silently. */
+  const PIPELINE = { u: 'builders/ledger.py' };
+  for (const [f, file] of Object.entries(PIPELINE)) {
+    const src = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.match(src, new RegExp(`get\\("${f}"\\)`), `${file} no longer reads \`${f}\`, so nothing does`);
+  }
   for (const f of fields) {
+    if (PIPELINE[f]) continue;
     // The forms a row field is actually read by in this codebase: `g.u`, `r.v`,
     // `row.t`, `x.d`, or a bracket lookup.
     const pat = new RegExp(`\\b[a-z]\\w*\\.${f}\\b|\\['${f}'\\]|\\["${f}"\\]`);

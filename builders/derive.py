@@ -456,6 +456,24 @@ class Report:
         }
 
 
+def _flags(notes):
+    """The catalog row's disclosure flags, from the extract's `unreconciled`.
+
+    ⛔ TWO FACTS, TWO READERS, AND THEY SHARED ONE FLAG UNTIL 2026-10-12.
+    `u` is the LEDGER's: the game carries a league disagreement of any kind
+    (`archive.unreconciled`, the health line). `us` is the LIST's: the SHOT
+    figure this row prints (`ash`/`hsh`) is the one in dispute. With one flag,
+    four preseason games that disagree only on faceoffs carried the shot-count
+    asterisk on the calendar and team lists, under a sentence saying the
+    documents "disagree about the shot count". Found by the data-model review.
+    """
+    if not notes:
+        return {}
+    if any(n.get("kind") == "sog" for n in notes):
+        return {"u": 1, "us": 1}
+    return {"u": 1}
+
+
 def _refuse(gate, detail):
     return {"gate": gate, "detail": detail}
 
@@ -627,7 +645,7 @@ def derive(store, end=None, days=None, now=None):
                     # is a field every game loses on the next nightly, and the
                     # catalog would quietly heal itself into having no heroes.
                     rows[gid] = {**row, "v": 1,
-                                 **({"u": 1} if was.get("unreconciled") else {}),
+                                 **_flags(was.get("unreconciled")),
                                  **_hl(was.get("events"))}
                     rep.unreconciled += 1 if was.get("unreconciled") else 0
                     continue
@@ -651,7 +669,7 @@ def derive(store, end=None, days=None, now=None):
         # extract to draw a row; without this the disclosure would exist only on
         # the page you already committed to opening.
         rows[gid] = {**row, "v": 1,
-                     **({"u": 1} if rich.get("unreconciled") else {}),
+                     **_flags(rich.get("unreconciled")),
                      **_hl(rich.get("events"))}
         rich["game"] = {"id": int(gid), "date": g.get("date"),
                         "type": g.get("type"), "src": digests, "ex": E.SCHEMA}

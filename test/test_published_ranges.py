@@ -35,7 +35,7 @@ CLEAN = {
         "shooter": {"D": {"share": 0.325, "blocked": 0.375, "onGoal": 0.384, "missed": 0.2, "goal": 0.041},
                     "unknown": {"share": 0, "blocked": None, "onGoal": None, "missed": None, "goal": None}},
     },
-    "teams": {"archive": {"slotShare": {"count": 2205, "n": 4641, "rate": 2205 / 4641}},
+    "teams": {"seasons": {"slotShare": {"count": 2205, "n": 4641, "rate": 2205 / 4641}},
               "goalies": [{"faced": 1343, "saves": 1192, "games": 46}]},
 }
 
@@ -70,11 +70,11 @@ class EachEscapedShapeFails(unittest.TestCase):
         self.assertIn(words, out)
 
     def test_a_negative_n_the_team_season_escape(self):
-        def e(d): d["teams"]["archive"]["slotShare"].update(n=-4641, rate=-0.475)
+        def e(d): d["teams"]["seasons"]["slotShare"].update(n=-4641, rate=-0.475)
         self.red(e, "negative")
 
     def test_a_share_of_eight_point_seven(self):
-        def e(d): d["teams"]["archive"]["slotShare"].update(n=253, rate=8.715)
+        def e(d): d["teams"]["seasons"]["slotShare"].update(n=253, rate=8.715)
         self.red(e, "more than its n")
 
     def test_a_rate_that_is_not_count_over_n(self):

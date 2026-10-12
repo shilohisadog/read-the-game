@@ -262,12 +262,6 @@ jobs:
           t = json.load(open('ingest/teams.json'))
           if not t.get('seasons'):
               sys.exit("::error::teams.json carries no seasons")
-          for k, r in t['archive'].items():
-              if not r.get('what'):
-                  sys.exit(f"::error::{k} is published with no statement of what it counts")
-              if r['rate'] is not None and not r['n']:
-                  sys.exit(f"::error::{k} has a rate over an empty population")
-              print(f"  archive {k}: {r['count']} of {r['n']}")
           for yr, teams in sorted(t['seasons'].items()):
               # Every game a team played must land in exactly one bucket. A record
               # that is quietly out by one is the failure this cannot see any

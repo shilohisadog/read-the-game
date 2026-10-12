@@ -3556,7 +3556,7 @@ function blockedSay(e,named){
   const b=R[e.blk],sh=R[e.actor];
   const bt=b?(b.tid===AID?AAB:b.tid===HID?HAB:null):null;
   const mate=b&&sh&&b.tid===sh.tid;
-  // 7.8% of blocks across the archive are by the shooter's own side, so "the
+  // About 8% of blocks (8.36% archive-wide, 2026-10-12) are by the shooter's own side, so "the
   // other team blocked it" would be false about one block in thirteen.
   if(!b)return 'Blocked — no blocker recorded';
   if(mate)return named?`Blocked by a teammate — ${b.nm}`:'Blocked by a teammate';
@@ -4045,7 +4045,7 @@ function drawBlocked(B,L,slice){
        bucket in words true of everything inside it. */
     {k:'m',lab:'missed the net or hit the frame',v:g.m}])
   :`<p class="bksay">Nothing shot yet — no attempts in what you have watched so far.</p>`;
- // 7.8% of blocks across the archive are by the shooter's own side. It is real
+ // About 8% of blocks (8.36% archive-wide, 2026-10-12) are by the shooter's own side. It is real
  // hockey and it is the thing a novice has never considered, so it is stated
  // rather than folded into a total nobody can take apart.
  // AND THE WORDING HAD TO CHANGE WITH THE BAR, not just shorten. It said these
@@ -4535,7 +4535,7 @@ function lboxFor(id,at,L){
   /* ⭐ AND THE BLOCKS CREDITED TO NOBODY ARE NAMED, because the ledger line now
      joins the club figures with a `+`. Under a slash they were two figures side
      by side and 18 + 22 against 44 counted was nobody's claim; under a plus it
-     is an equation, and 7.8% of blocks are by a TEAMMATE — a point shot off
+     is an equation, and about 8% of blocks are by a TEAMMATE — a point shot off
      your own winger's shin — which this layer counts and credits to neither
      club, deliberately and out loud. The caption says why; the line has to say
      where they went, or the arithmetic a reader can do comes up short. */

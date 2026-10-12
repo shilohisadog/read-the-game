@@ -848,8 +848,6 @@ function main(argv) {
       [y, `${Object.keys(t).length} teams`])),
     clubs: [...new Set(records.flatMap(r => [r.homeAb, r.awayAb]))].length,
     unnamedClubs,
-    archive: Object.fromEntries(Object.entries(teams.archive).map(([k, v]) =>
-      [k, v.rate == null ? null : `${(v.rate * 100).toFixed(2)}% of ${v.n}`])),
     /* PRINTED, because a number nobody reads is a number nobody checks. These
        are the four claims the census exists to settle, in the run's own log. */
     census: {

@@ -820,15 +820,6 @@ test('seasons never pool, and out-of-scope games never enter', () => {
   assert.equal(t.seasons['2024'].HME.games, 1);
 });
 
-test('⭐ the archive baseline is the SAME number in both documents', () => {
-  // Two documents publishing one quantity is the shape this project keeps
-  // repairing. They are equal because one function computes it, and this test
-  // fails the moment somebody re-derives either side.
-  const rs = [{ ...measureGame(SEASON_GAME) }];
-  assert.deepEqual(teamSeasons(rs).archive.saveFraction,
-                   summarise(rs).attemptMix.saveFraction);
-});
-
 test('⭐ the archive save fraction is NOT the division the counts beside it invite', () => {
   // 5.0% of goals in play are scored into an empty net. SEASON_GAME contains
   // exactly one, so the seductive division is available here and must not match.
@@ -843,19 +834,15 @@ test('⭐ the archive save fraction is NOT the division the counts beside it inv
     'the wrong division has to be named where the right answer is published');
 });
 
-test('every published team share states the unit its n counts', () => {
-  const arch = teamSeasons([measureGame(SEASON_GAME)]).archive;
-  for (const [k, v] of Object.entries(arch)) {
-    assert.match(v.what, /n counts (ATTEMPTS|SHOTS FACED), not games/, `${k} does not say what its n counts`);
-    assert.doesNotMatch(v.what, /\bwon\b|\blost\b|\bwin\b/i, `${k} describes an outcome`);
-  }
+test('⛔ teams.json publishes no archive block — it had no reader', () => {
+  /* Deleted 2026-10-12: a second copy of saveFraction, a second implementation
+     of the slot share, and a typed "7.8%" its own counts contradicted (8.36%). */
+  assert.equal(teamSeasons([measureGame(SEASON_GAME)]).archive, undefined);
 });
 
 test('an empty archive measures NOTHING per team, rather than zero', () => {
   const t = teamSeasons([]);
   assert.deepEqual(t.seasons, {});
-  assert.equal(t.archive.saveFraction.rate, null);
-  assert.equal(t.archive.slotShare.rate, null);
 });
 
 

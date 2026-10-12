@@ -1141,7 +1141,7 @@ __HELPERS__
       row.appendChild(el('span', 'r', g.v
         ? (home ? g.hs + '–' + g.as : g.as + '–' + g.hs)
             + '  ·  ' + (home ? g.hsh + '–' + g.ash : g.ash + '–' + g.hsh) + ' shots'
-            + (g.u === 1 ? DISPUTED_MARK : '')
+            + (g.us === 1 ? DISPUTED_MARK : '')
         : (g.r || 'refused')));
       li.appendChild(row);
       list.appendChild(li);
@@ -3850,7 +3850,7 @@ __HELPERS__
          in question. See archive.js::disputedNote. */
       row.appendChild(el('span', 'r', g.shown
         ? g.as + '–' + g.hs + '  ·  ' + g.ash + '–' + g.hsh + ' shots'
-            + (g.u === 1 ? DISPUTED_MARK : '')
+            + (g.us === 1 ? DISPUTED_MARK : '')
         : 'Cannot be shown — ' + gateOf(g.r)));
       li.appendChild(row);
       ul.appendChild(li);

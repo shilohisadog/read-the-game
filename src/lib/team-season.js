@@ -12,7 +12,7 @@
  * The rules it needs stay in archive.js and are imported, never restated: what
  * is in scope, what a season is, and the one sanctioned save fraction.
  */
-import { inScope, isPlayoff, season, share, saveShare, dataThrough, POPULATION } from './archive.js';
+import { inScope, isPlayoff, season, dataThrough, POPULATION } from './archive.js';
 
 /** A team's season, before anything has been added to it. */
 function blankTeam() {
@@ -175,24 +175,13 @@ export function teamSeasons(records) {
   return {
     scope: POPULATION,
     through,
-    // The reference class for every fraction on a team's row, computed from the
-    // same games in the same pass. See the note above.
-    archive: {
-      saveFraction: saveShare(games),
-      slotShare: share(
-        games.reduce((n, g) => n + (g.slot ? g.slot.h + g.slot.a : 0), 0),
-        games.reduce((n, g) => n + (g.located ? g.located.h + g.located.a : 0), 0),
-        'of the unblocked attempts whose location the feed records, this many came '
-        + 'from the slot (n counts ATTEMPTS, not games — a blocked shot has no shot '
-        + 'location and is in neither part)'),
-      blocksCredited: share(
-        games.reduce((n, g) => n + (g.blocks ? g.blocks.h + g.blocks.a : 0), 0),
-        games.reduce((n, g) => n + g.attempts.h + g.attempts.a, 0),
-        'of all shot attempts, this many were blocked by an OPPONENT and credited '
-        + 'to them — lower than the blocked share in attemptMix, which also counts '
-        + 'the 7.8% of blocks made by a teammate and credited to nobody '
-        + '(n counts ATTEMPTS, not games)'),
-    },
+    /* ⛔ AN `archive` BLOCK STOOD HERE AND NO PAGE READ IT — deleted 2026-10-12
+       by the data-model review. It published `saveFraction` (the same function
+       measures.json already publishes), a second implementation of the slot
+       share, and `blocksCredited`, whose text said "7.8% of blocks" are by a
+       teammate while the two published counts gave 8.36%. preview.js says it
+       deliberately does not read it; its only consumers were a log line and a
+       weekly check. A figure nobody reads is a figure nobody checks. */
     seasons,
   };
 }

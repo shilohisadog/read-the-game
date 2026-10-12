@@ -2378,3 +2378,36 @@ class ExtractorSchemaBackfills(unittest.TestCase):
             rep = D.derive(store)
             self.assertEqual((rep.derived, rep.unchanged), (0, 1),
                              "the archive re-derives itself on every run")
+
+
+class ShotFlag(unittest.TestCase):
+    """⛔ `u` MEANT ANY DISAGREEMENT AND ITS LIST READERS SAID "SHOT COUNT" —
+    found by the data-model review, 2026-10-12. Four preseason games disagree
+    with the league only on FACEOFFS, and the calendar and team lists marked
+    their shot figure `*` under "the league's own event log and boxscore
+    disagree about the shot count". Two facts, two readers: `u` is the ledger's
+    (the game carries a note of any kind) and `us` is the list's (the SHOT
+    figure on this row is disputed)."""
+
+    def test_a_faceoff_only_note_flags_the_game_and_not_its_shots(self):
+        self.assertEqual(D._flags([{"kind": "faceoffWins"}]), {"u": 1})
+
+    def test_a_shot_note_flags_both(self):
+        self.assertEqual(D._flags([{"kind": "faceoffWins"}, {"kind": "sog"}]),
+                         {"u": 1, "us": 1})
+
+    def test_no_note_no_flag(self):
+        self.assertEqual(D._flags(None), {})
+        self.assertEqual(D._flags([]), {})
+
+    def test_the_catalog_row_carries_the_shot_flag_on_both_paths(self):
+        """Fresh AND unchanged: the second run takes the fast path, which reads
+        the flags back off the stored extract — a flag set only on the fresh
+        path is one every game loses on the next nightly."""
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=99, home_sog=0, away_score=1, home_score=0))
+        for run in ("fresh", "unchanged"):
+            D.derive(store)
+            row = next(r for r in json.loads(store.get("catalog.json").decode())["games"]
+                       if str(r["id"]) == "2025020001")
+            self.assertEqual((row.get("u"), row.get("us")), (1, 1), f"the {run} path dropped a flag")

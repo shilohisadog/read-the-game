@@ -147,7 +147,7 @@ export function workMarkup({ id, L, sl, name, lds, lat, work, box: b, cards, mod
     figures do not account for everything counted became visible the moment the
     separator changed: Goaltending shows FRACTIONS, where the denominators sum
     to the counted events and a reader adding numerators is one short per goal;
-    Blocked credits a teammate's block to NEITHER club, 7.8% of them. So a layer
+    Blocked credits a teammate's block to NEITHER club, about 8% of them (8.36% archive-wide, 2026-10-12). So a layer
     says what its figures add to (`sums`) and what is credited to nobody
     (`rest`), and the one thing a `+` may never do here is invite a sum that
     does not close. */

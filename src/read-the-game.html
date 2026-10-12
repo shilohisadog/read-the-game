@@ -45,7 +45,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yNi9msjDZIWVwrTUOTISnBTeTwEhCA+OsZhmXTch3c4=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-sTM8E5uqo8CY5jXyPqtTzvcHJ252mHR1R0V2rEQRZ3I='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-crmiMTZmUyRKcARN4JYrFee7RhYQat+W6y7znXAPcXc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-sTM8E5uqo8CY5jXyPqtTzvcHJ252mHR1R0V2rEQRZ3I='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -6358,7 +6358,7 @@ function workMarkup({ id, L, sl, name, lds, lat, work, box: b, cards, mode, when
     figures do not account for everything counted became visible the moment the
     separator changed: Goaltending shows FRACTIONS, where the denominators sum
     to the counted events and a reader adding numerators is one short per goal;
-    Blocked credits a teammate's block to NEITHER club, 7.8% of them. So a layer
+    Blocked credits a teammate's block to NEITHER club, about 8% of them (8.36% archive-wide, 2026-10-12). So a layer
     says what its figures add to (`sums`) and what is credited to nobody
     (`rest`), and the one thing a `+` may never do here is invite a sum that
     does not close. */
@@ -8375,7 +8375,7 @@ const blocked = {
       const shooter = roster[e.actor], blocker = roster[e.blk];
       if (e.blk == null || !blocker) { unknown.push(id); return; }
 
-      // 7.8% OF BLOCKS ARE BY A TEAMMATE — 202 of 2,599 — and they are real
+      // 7.8% OF BLOCKS ARE BY A TEAMMATE IN AN 80-GAME SAMPLE — 202 of 2,599; 8.36% archive-wide on 2026-10-12 — and they are real
       // hockey: a point shot hits the winger screening the goalie. The shot is
       // still blocked and still an attempt, but NOBODY DEFENDED IT, so crediting
       // a team here would hand the shooting side a defensive block of its own
@@ -15001,7 +15001,7 @@ function blockedSay(e,named){
   const b=R[e.blk],sh=R[e.actor];
   const bt=b?(b.tid===AID?AAB:b.tid===HID?HAB:null):null;
   const mate=b&&sh&&b.tid===sh.tid;
-  // 7.8% of blocks across the archive are by the shooter's own side, so "the
+  // About 8% of blocks (8.36% archive-wide, 2026-10-12) are by the shooter's own side, so "the
   // other team blocked it" would be false about one block in thirteen.
   if(!b)return 'Blocked — no blocker recorded';
   if(mate)return named?`Blocked by a teammate — ${b.nm}`:'Blocked by a teammate';
@@ -15490,7 +15490,7 @@ function drawBlocked(B,L,slice){
        bucket in words true of everything inside it. */
     {k:'m',lab:'missed the net or hit the frame',v:g.m}])
   :`<p class="bksay">Nothing shot yet — no attempts in what you have watched so far.</p>`;
- // 7.8% of blocks across the archive are by the shooter's own side. It is real
+ // About 8% of blocks (8.36% archive-wide, 2026-10-12) are by the shooter's own side. It is real
  // hockey and it is the thing a novice has never considered, so it is stated
  // rather than folded into a total nobody can take apart.
  // AND THE WORDING HAD TO CHANGE WITH THE BAR, not just shorten. It said these
@@ -15980,7 +15980,7 @@ function lboxFor(id,at,L){
   /* ⭐ AND THE BLOCKS CREDITED TO NOBODY ARE NAMED, because the ledger line now
      joins the club figures with a `+`. Under a slash they were two figures side
      by side and 18 + 22 against 44 counted was nobody's claim; under a plus it
-     is an equation, and 7.8% of blocks are by a TEAMMATE — a point shot off
+     is an equation, and about 8% of blocks are by a TEAMMATE — a point shot off
      your own winger's shin — which this layer counts and credits to neither
      club, deliberately and out loud. The caption says why; the line has to say
      where they went, or the arithmetic a reader can do comes up short. */

@@ -168,7 +168,7 @@ export const blocked = {
       const shooter = roster[e.actor], blocker = roster[e.blk];
       if (e.blk == null || !blocker) { unknown.push(id); return; }
 
-      // 7.8% OF BLOCKS ARE BY A TEAMMATE — 202 of 2,599 — and they are real
+      // 7.8% OF BLOCKS ARE BY A TEAMMATE IN AN 80-GAME SAMPLE — 202 of 2,599; 8.36% archive-wide on 2026-10-12 — and they are real
       // hockey: a point shot hits the winger screening the goalie. The shot is
       // still blocked and still an attempt, but NOBODY DEFENDED IT, so crediting
       // a team here would hand the shooting side a defensive block of its own

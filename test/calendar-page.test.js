@@ -309,7 +309,7 @@ test('A NIGHT MARKS THE GAMES THE LEAGUE DISAGREES WITH ITSELF ABOUT', async () 
   // said 31–36 and the page said 31–37; 38–32 against 39–32; 31–32 against
   // 31–33; 34–24 against 34–25. Two figures that look like one claim, which is
   // C7's defect already shipped.
-  const games = [NHL(1, '2026-02-02'), NHL(2, '2026-02-02', { u: 1 })];
+  const games = [NHL(1, '2026-02-02'), NHL(2, '2026-02-02', { u: 1, us: 1 })];
   const { ids, settle } = run(games, '?date=2026-02-02');
   await settle();
   const marked = walk(ids.main).filter(x => /shots\*/.test(x.textContent || ''));
@@ -349,7 +349,7 @@ test('a refused row is never counted as disputed', async () => {
   // counting it would put "in 1 game here" above a list where no such figure
   // appears — a note whose antecedent is not on the page.
   const games = [NHL(1, '2026-02-02'),
-                 NHL(2, '2026-02-02', { u: 1, v: 0, r: 'validation' })];
+                 NHL(2, '2026-02-02', { u: 1, us: 1, v: 0, r: 'validation' })];
   const { ids, settle } = run(games, '?date=2026-02-02');
   await settle();
   assert.doesNotMatch(textOf(ids.main), /disagree/i);
@@ -360,12 +360,25 @@ test('THE COUNT IN THE NOTE IS THE COUNT ON THE PAGE', async () => {
   // rows actually rendered, it would be a figure describing a different
   // population than its sentence implies — which is D8, exactly, one layer down
   // and in prose instead of JSON.
-  const games = [NHL(1, '2026-02-02', { u: 1 }), NHL(2, '2026-02-02', { u: 1 }),
-                 NHL(3, '2026-02-02'), OLY(4, '2026-02-02', { u: 1 })];
+  const games = [NHL(1, '2026-02-02', { u: 1, us: 1 }), NHL(2, '2026-02-02', { u: 1, us: 1 }),
+                 NHL(3, '2026-02-02'), OLY(4, '2026-02-02', { u: 1, us: 1 })];
   const { ids, settle } = run(games, '?date=2026-02-02');
   await settle();
   const marks = walk(ids.main).filter(x => /shots\*/.test(x.textContent || '')).length;
   assert.equal(marks, 3, 'the fixture must actually contain three of them');
   assert.match(textOf(ids.main), /In 3 games below/,
     'the note counted something other than what it is standing over');
+});
+
+test('⛔ a game that disagrees only on FACEOFFS does not mark its shots', async () => {
+  /* Found by the data-model review, 2026-10-12: `u` meant ANY disagreement,
+     and four preseason games disputed only on faceoffs carried the shot-count
+     asterisk under "disagree about the shot count". The list reads `us`, the
+     flag for the figure it prints. MUTATION: read `u` again and this fires. */
+  const { ids, settle } = run([NHL(1, '2026-02-02'), NHL(2, '2026-02-02', { u: 1 })],
+                              '?date=2026-02-02');
+  await settle();
+  const text = textOf(ids.main);
+  assert.doesNotMatch(text, /shots\*/, 'a faceoff disagreement marked a shot figure');
+  assert.doesNotMatch(text, /disagree about the shot count/);
 });

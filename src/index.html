@@ -46,7 +46,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BG82sWTRmXzLYR+YjQa2QmqjaXFX3PCo0WLcj11NCSs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4462uA/qEJ9qHeYK5Rg6uD0cvFWFT7CsC+LAN2P9b6I=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1883,9 +1883,13 @@ const POPULATION = 'NHL regular season and playoffs';
  */
 const DISPUTED_MARK = '*';
 
-/** How many rows on this list carry the disagreement. */
+/** How many rows on this list carry a disputed SHOT figure.
+ *
+ * ⛔ `us`, NOT `u` — 2026-10-12. `u` is the ledger's flag for a disagreement of
+ * ANY kind; a list marks the shot figure it prints, and four games disputed
+ * only on faceoffs carried the shot asterisk while this read `u`. */
 function disputedCount(rows) {
-  return (rows || []).filter(g => g && g.u === 1 && g.v === 1).length;
+  return (rows || []).filter(g => g && g.us === 1 && g.v === 1).length;
 }
 
 /**
@@ -2115,7 +2119,7 @@ function disputedNote(n) {
       row.appendChild(el('span', 'r', g.v
         ? (home ? g.hs + '–' + g.as : g.as + '–' + g.hs)
             + '  ·  ' + (home ? g.hsh + '–' + g.ash : g.ash + '–' + g.hsh) + ' shots'
-            + (g.u === 1 ? DISPUTED_MARK : '')
+            + (g.us === 1 ? DISPUTED_MARK : '')
         : (g.r || 'refused')));
       li.appendChild(row);
       list.appendChild(li);
