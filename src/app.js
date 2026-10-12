@@ -1802,10 +1802,19 @@ function renderSum(){
     no season — and the date it is followed by is the season's own. ⛔ WHAT IT
     COSTS, stated so the next reader of this line can weigh it: "the 34 games we
     have measured" no longer says 34 of WHAT, and the archive holds 4,585. The
-    span is what keeps it from reading as the whole of our work. */
+    span is what keeps it from reading as the whole of our work.
+    ⭐⭐ AND THE SEASON IS BACK, NAMED — Kevin, 2026-10-12, having now read that
+    cost on the live page: *"'86 games we have measured' ... is rather
+    ambiguous, maybe '86 games for this season we have measured'."* NAMED rather
+    than `this`, because over a 2023 replay "this season" reads as the current
+    one — and named off the archive's own `population`, the rule `when` in the
+    Is-that-a-lot panel already keeps. No population, no season: the page does
+    not supply a provenance the document did not. */
+ const seasonName=ref&&ref.population?String(ref.population).split(', ').pop():'';
  sub.textContent='— all situations, power plays included'
   +(ref?', against the '+N(ref.of)+' game'+(ref.of===1?'':'s')
-       +' we have measured'+SPAN(own&&own.dataThrough):'');
+       +' we have measured'+(seasonName?' for the '+seasonName+' season':'')
+       +SPAN(own&&own.dataThrough):'');
  const ul=document.createElement('ul');
  ul.className='srows';
  /* ⭐ DRIVEN BY `LENS`, which is the one place a lens id is typed — so a seventh
@@ -2876,8 +2885,12 @@ setGear(gear);
    ⚠️ THE PREVIEW CARD STILL SAYS `WHAT THIS GAME WAS`. That is a different
    surface and a different claim — a VERDICT about the game, not these counts —
    and renaming it was not asked for. Said here because the two used to be one
-   phrase and a future reader will wonder whether the split was an accident. */
-const SUM_DOOR='Game metrics';
+   phrase and a future reader will wonder whether the split was an accident.
+   ⭐ `Whole-game metrics` SINCE 2026-10-12. Kevin: *"'Game metrics' ... is rather
+   ambiguous ... something that indicates these are the metrics for the whole
+   game."* The door is open from the first frame, so a label without "whole"
+   reads as the game so far — the reason the panel's heading already says it. */
+const SUM_DOOR='Whole-game metrics';
 function setOverlay(which){
  workOpen=which==='work';
  archOpen=which==='alot';

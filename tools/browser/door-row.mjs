@@ -147,7 +147,7 @@ export function readDoors(html) {
  * working site, which is how `preview-fits` learned to state `booted` first.
  */
 /* ⭐ THE DOOR'S OPENING LABEL IS READ OFF THE PAGE, NOT RETYPED HERE. It was
-   `What this game was` and is `Game metrics` since 2026-10-04 (Kevin: *"can we
+   `What this game was` and was `Game metrics` from 2026-10-04 (`Whole-game metrics` since 2026-10-12) (Kevin: *"can we
    change the name of the summary button"*), and this probe held a THIRD copy of
    it beside the two the page already ships — so a rename that was correct
    everywhere failed the release gate. The claim this makes is "the door shows

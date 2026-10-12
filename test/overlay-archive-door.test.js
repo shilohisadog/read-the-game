@@ -1429,3 +1429,54 @@ test('⛔⛔ a row with no scale to draw still opens to how it was counted', () 
     `${rows._kids.length - doors} row(s) printed a count with no way to how it was counted, `
     + 'on a night the measurement had not caught up');
 });
+
+/**
+ * ⭐⭐ THE SUMMARY SAYS WHICH SEASON ITS GAMES ARE — Kevin, 2026-10-12, reading
+ * SEA at WSH: *"it says '.....86 games we have measured....' which again is
+ * rather ambiguous, maybe something like '....86 games for this season we have
+ * measured...'"*
+ *
+ * ⚠️ THIS UNDOES A RULING OF 2026-10-04 IN PART, AND ON PURPOSE. He asked then
+ * to remove "for that season", because `that` had no antecedent on the card; the
+ * comment beside the sentence recorded the cost — "the 34 games we have measured"
+ * no longer says 34 of WHAT. He has now read that cost on the live page. The
+ * season comes back NAMED, from the archive's own `population`, rather than as
+ * a pronoun: "this season" over a 2023 replay would read as the current one.
+ */
+test('⭐ the summary names the season its population is drawn from', () => {
+  const y = String(rich.game.id).slice(0, 4);
+  const pg = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']
+    .map(k => [k, { ...measuredOver(86, 'things'),
+                    population: 'NHL regular season and playoffs, 1999-00' }]));
+  const a = boot(rich, { ...MEASURES, perGame: { [y]: pg } });
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  a.$('sum').click();
+  const said = panelText(a, 'sumBody');
+  assert.match(said, /86 games we have measured for the 1999-00 season/,
+    `the season is not named beside its population. Got: ${said.slice(0, 240)}`);
+});
+
+test('⛔ a population with no season named is not given one', () => {
+  /* The name comes off the document. A distribution published without a
+     population says nothing about its season, and a sentence that guessed one
+     from the game id would be the page stating a provenance the archive does
+     not carry — `quoted.src`'s rule, applied to prose. */
+  const y = String(rich.game.id).slice(0, 4);
+  const pg = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']
+    .map(k => [k, { ...measuredOver(86, 'things'), population: null }]));
+  const a = boot(rich, { ...MEASURES, perGame: { [y]: pg } });
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  a.$('sum').click();
+  const said = panelText(a, 'sumBody');
+  assert.match(said, /86 games we have measured/);
+  assert.doesNotMatch(said, /measured for the/, 'a season was invented');
+});
+
+test('⭐ the door says the counts are of the WHOLE game', () => {
+  /* Kevin, 2026-10-12: *"the button says 'Game metrics', which is rather
+     ambiguous ... something that indicates these are the metrics for the whole
+     game."* The door is open from the first frame, so a label that does not
+     say "whole" reads as the game SO FAR — the same reasoning that changed the
+     panel's own heading to "the whole game" on 2026-10-04. */
+  assert.match(SUM_DOOR, /whole.game/i, `the door reads "${SUM_DOOR}"`);
+});
