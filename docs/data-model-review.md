@@ -21,7 +21,7 @@ Raw-archive privacy is waiting on a Cloudflare dashboard rule.
 
 | document | who writes it | who reads it | wire / decoded |
 |---|---|---|---|
-| `raw/{gid}/{sha}/{feed}.json` + `latest.json` | fetch_nhl.py | derive.py, two dispatch-only tools | ~426 KB a game, **public today** ✔ |
+| `raw/{gid}/{sha}/{feed}.json` + its `raw/{gid}/latest.json` pointer | fetch_nhl.py | derive.py, two dispatch-only tools | ~426 KB a game, **public today** ✔ |
 | `extract/{gid}.json` | derive.py (from extract.py) | game page, measure.mjs | ~14 KB / ~80 KB |
 | `catalog.json` | derive.py | home, team, calendar, preview, game page (no id) | 75 KB / 483 KB |
 | `index.json` | fetch_nhl.py, then derive.py | home + team (4 fields), pipeline | 13 KB / 383 KB |
