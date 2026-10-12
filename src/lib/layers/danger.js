@@ -35,7 +35,7 @@
  * it is not rendered. So this one moved with the label; the rest did not.
  */
 import { shootingTeam, SHOT_TYPES } from '../attribution.js';
-import { attackDirection, distanceToNet, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../rink.js';
+import { attackDirection, distanceToNet, isHighDanger, NET_X, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../rink.js';
 import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 
@@ -79,7 +79,7 @@ export const danger = {
      middle … this is our own geometric rule, not a model and not anybody else's
      statistic."* Both numbers interpolated, so `test/prose-constants.test.js`
      can see them. */
-  counts: `attempts from within ${HIGH_DANGER_FT} ft of the net and ${SLOT_HALF_WIDTH} ft either side of the middle`,
+  counts: `attempts from within ${HIGH_DANGER_FT} ft of the net, ${SLOT_HALF_WIDTH} ft either side of the middle, and in front of the goal line`,
   credits: 'Credited to the team that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.',
   id: 'slot',
   label: '＋ Shots from the slot',
@@ -156,11 +156,21 @@ export const danger = {
         return;
       }
 
-      const d = distanceToNet(e.x, e.y, attackDirection(team, ctx.homeId));
+      const dir = attackDirection(team, ctx.homeId);
+      const d = distanceToNet(e.x, e.y, dir);
       const near = d <= HIGH_DANGER_FT;
       const central = Math.abs(e.y) <= SLOT_HALF_WIDTH;
+      const inFront = e.x * dir <= NET_X;
 
-      if (near && central) {
+      /* ⛔⛔ `isHighDanger`, THE FUNCTION THE ICE IS DRAWN FROM — 2026-10-12.
+         This tested `near && central` while the painted slot, the why-popup,
+         the goaltending split and the slot lesson all carried Kevin's third
+         clause, "not valid behind the net". A shot from behind the goal line
+         was counted under a region that excludes it, and every published slot
+         figure inherited it (1.62% of slot attempts when the clause was added).
+         Kevin: "consistency and transparency are paramount". The three local
+         flags stay only to say WHICH clause excluded an attempt. */
+      if (isHighDanger(e.x, e.y, dir)) {
         counted.push(id);
         if (e.type === 'missed-shot') {
           surprising.push({
@@ -187,12 +197,16 @@ export const danger = {
          33 teaches the rule better than the rule statement does" -- survives,
          once per group instead of once per shot. */
       push(id,
-        { geometry: !near && !central
+        { geometry: near && central && !inFront
+              ? 'behind the goal line — the slot stops at the line'
+          : !near && !central
               ? `outside the slot on both counts — beyond ${HIGH_DANGER_FT} ft and wide of it`
           : !near
               ? `outside the ${HIGH_DANGER_FT} ft line`
               : `in close but wide of the slot — the slot reaches ${SLOT_HALF_WIDTH} ft either side` },
-        !near && !central
+        near && central && !inFront
+              ? `${(e.x * dir - NET_X).toFixed(0)} ft behind the goal line`
+          : !near && !central
               ? `${d.toFixed(0)} ft out and ${Math.abs(e.y)} ft off centre`
           : !near
               ? `${d.toFixed(0)} ft from the net`

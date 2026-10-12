@@ -542,3 +542,43 @@ test('⭐⭐ each rung of the counting ladder is a subset of the one above', () 
   press('all');
   assert.match(String(a.$('zCountOn').textContent), /all situations/i);
 });
+
+/* ⛔⛔ THE LAYER COUNTS EXACTLY WHAT THE ICE PAINTS — 2026-10-12, found by the
+   data-model review. Kevin ruled in September that the slot stops at the goal
+   line ("I don't consider the slot to be valid behind the net"), and the ice,
+   the why-popup, the goaltending split and the slot lesson all say three
+   clauses. `danger.reduce` — which feeds the Slot shots count AND every
+   published slot figure through measure.mjs — still tested two, so a mark
+   behind the net was counted under a painted region that excludes it. Kevin,
+   on the fix: "consistency and transparency are paramount".
+   ⭐ So the rule is held across the seam, not restated: every counted attempt
+   must satisfy `isHighDanger`, the function the ice is drawn from. */
+import { isHighDanger, attackDirection, NET_X } from '../src/lib/rink.js';
+import { shootingTeam } from '../src/lib/attribution.js';
+
+test('⛔ every slot attempt the layer counts is inside the slot the ice paints', () => {
+  const { counted } = danger.reduce(EVENTS, ctx);
+  assert.ok(counted.length > 20, 'the fixture lost its slot attempts, so this proves nothing');
+  for (const id of counted) {
+    const e = EVENTS[id];
+    const dir = attackDirection(shootingTeam(e, ctx.roster), ctx.homeId);
+    assert.ok(isHighDanger(e.x, e.y, dir), `event ${id} is counted and lies outside the painted slot`);
+  }
+});
+
+test('⛔ a shot from behind the goal line is excluded, and the ledger says why', () => {
+  const { counted } = danger.reduce(EVENTS, ctx);
+  const id = counted[0];
+  const e = EVENTS[id];
+  const dir = attackDirection(shootingTeam(e, ctx.roster), ctx.homeId);
+  const behind = { ...e, x: (NET_X + 3) * dir, y: 0 };   // close, centred, behind the line
+  assert.ok(!isHighDanger(behind.x, behind.y, dir), 'the fixture is not behind the line');
+  const after = danger.reduce(EVENTS.map((x, i) => (i === id ? behind : x)), ctx);
+  assert.equal(after.counted.length, counted.length - 1, 'a shot from behind the net was counted');
+  const why = new Map(after.excluded.map(x => [x.id, x.why]));
+  assert.match(why.get(id) || '', /goal line/, `the exclusion must name the goal line — got "${why.get(id)}"`);
+});
+
+test('the layer and the published slot figure describe the same three clauses', () => {
+  assert.match(danger.counts, /goal line/, `the layer's own description omits the third clause: "${danger.counts}"`);
+});

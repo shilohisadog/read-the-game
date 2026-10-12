@@ -129,8 +129,13 @@ export function distanceToNet(x, y, dir) {
  * WHAT IT COSTS, MEASURED BEFORE IT CHANGED, over 4,192 in-scope games:
  *   262,539 attempts met the old rule; 4,249 of them (1.62%) were behind the
  *   goal line. Of 19,304 high-danger goals, 171 (0.89%). About one mark a game.
- * Nothing archive-wide moves: neither builders/measure.mjs nor src/lib/archive.js
- * reads this function, so no published rate or base rate is derived from it.
+ * ⛔⛔ THIS SAID "NOTHING ARCHIVE-WIDE MOVES" AND IT WAS FALSE FOR A MONTH. It is
+ * true that neither measure.mjs nor archive.js called this function — and that
+ * was the defect: they called `danger.reduce`, which tested only the first two
+ * clauses, so the Slot shots layer and every published slot figure kept the old
+ * rule while the ice drew the new one. Found by the data-model review,
+ * 2026-10-12; `danger.reduce` now calls this, and test/layers.test.js holds
+ * every counted attempt inside it.
  *
  * AND IT IS STILL A RULE YOU CAN CHECK WITH A RULER, which is the whole of
  * Doctrine 7. Three clauses, all geometric, none of them fitted to an outcome.

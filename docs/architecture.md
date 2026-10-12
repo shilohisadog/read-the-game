@@ -41,7 +41,7 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 787 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 1,455 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 814 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (49 modules) | 11,980 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (49 modules) | 11,999 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 960 |
 | **presentation** | generates the pages | `build_*.py` (8) | 7,985 |
 | **the app** | **the one exception — see §2** | `src/app.js` | 5,123 |

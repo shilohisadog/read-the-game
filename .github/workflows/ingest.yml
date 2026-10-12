@@ -66,6 +66,15 @@ on:
         description: 'Seconds to wait after each request. Use ~0.3 for a season backfill.'
         default: '0'
         required: false
+      # ⭐ A RULE CHANGE IN CODE NEEDS A RE-MEASURE, AND NOTHING ELSE TRIGGERS
+      # ONE — 2026-10-12. `measure` runs only when a game changed, so when the
+      # slot layer took Kevin's goal-line clause the published slot figures
+      # would have kept describing the old rule until some game happened to be
+      # amended. This forces the job over an unchanged archive.
+      remeasure:
+        description: 'Re-measure the archive even if no game changed (after a rule change in src/lib).'
+        type: boolean
+        default: false
 
 concurrency:
   group: ingest
@@ -856,7 +865,8 @@ jobs:
     # game and its job was cancelled for want of a runner. The sync step carries
     # the whole reasoning, including the two wrong signals I tried first.
     if: ${{ !cancelled() && needs.ingest.outputs.synced == '1'
-            && needs.ingest.outputs.changed == '1' && needs.ingest.outputs.code != '2' }}
+            && (needs.ingest.outputs.changed == '1' || inputs.remeasure == true)
+            && needs.ingest.outputs.code != '2' }}
     permissions:
       contents: write      # data/measures.json, the learn pages' build input
       actions: write       # dispatch the deploy; a GITHUB_TOKEN push cannot

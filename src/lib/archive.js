@@ -590,8 +590,8 @@ export function slotShare(records) {
       cGoalsPlaced += g.goals.placed;
     }
   }
-  const GEOM = `within ${HIGH_DANGER_FT} ft of the attacking net `
-             + `and inside ${SLOT_HALF_WIDTH} ft of centre`;
+  const GEOM = `within ${HIGH_DANGER_FT} ft of the attacking net, `
+             + `inside ${SLOT_HALF_WIDTH} ft of centre, and in front of the goal line`;
   return {
     ...share(goalsIn, goalsPlaced,
       'of the goals scored in play whose location the feed records, this many were '
