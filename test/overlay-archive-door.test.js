@@ -1480,3 +1480,60 @@ test('⭐ the door says the counts are of the WHOLE game', () => {
      panel's own heading to "the whole game" on 2026-10-04. */
   assert.match(SUM_DOOR, /whole.game/i, `the door reads "${SUM_DOOR}"`);
 });
+
+/**
+ * ⭐⭐ THE SCALES SAY WHAT THEY ARE — Kevin, 2026-10-12: *"on the scale
+ * associated with each metric, we don't explain what the numbers below the
+ * scale are. It's somewhat obvious that those are the range of measured results
+ * for the current season, but we don't say that."*
+ *
+ * Nor did it say what the shaded part was, or that the rows are TWO kinds of
+ * scale: five run over single TEAMS in a game (172 team-games on 2026-10-12, so
+ * 34–95 attempts) and Stoppages over WHOLE games (86, so 34–65). One key, said
+ * once — six repeats of it would be the sentence a reader learns to skip.
+ * ⚠️ NO NUMBERS IN IT. Every number on this page opens to how it was counted;
+ * a key that only names parts adds none that would need a door.
+ */
+const keyOf = a => {
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  const k = (a.$('sumBody')._kids || []).find(n => n.className === 'skey');
+  return k ? String(k.textContent || '') : null;
+};
+
+test('⭐ the card says what the ends, the shading and the dots are', () => {
+  const key = keyOf(page());
+  assert.ok(key, 'the card drew scales and no key to them');
+  assert.match(key, /fewest/, 'the low end is not named');
+  assert.match(key, /most/, 'the high end is not named');
+  assert.match(key, /middle half/, 'the shading is not named');
+  assert.match(key, /a team/, 'the five team rows are scales of single TEAMS and the key does not say so');
+  assert.match(key, /whole game/, 'and the whole-game row is a different scale and the key does not say so');
+  assert.doesNotMatch(key, /\d/, 'a number in the key would be a number with no door');
+});
+
+test('⭐ the key sits ABOVE the rows it explains', () => {
+  const a = page();
+  keyOf(a);
+  const kids = a.$('sumBody')._kids || [];
+  const k = kids.findIndex(n => n.className === 'skey');
+  const r = kids.findIndex(n => n.className === 'srows');
+  assert.ok(k >= 0 && r >= 0 && k < r, `key at ${k}, rows at ${r}`);
+});
+
+test('⛔ no scale, no key', () => {
+  /* A season with no reference class draws no rails; a key to rails that are not
+     there is a legend for nothing. MUTATION: draw the key unconditionally. */
+  const a = boot(rich, { ...MEASURES, perGame: {}, perTeamGame: {} });
+  assert.equal(keyOf(a), null);
+});
+
+test('⛔ with no per-team classes, the key does not claim the scales are of teams', () => {
+  /* The degraded form — a published document that has not caught up — draws
+     every row on the GAME class. A key saying "a team" over it would be the
+     two-populations defect this card's own comments call its oldest. */
+  const a = boot(rich, { ...MEASURES, perTeamGame: {} });
+  const key = keyOf(a);
+  assert.ok(key, 'game rows still have scales, so they still need a key');
+  assert.doesNotMatch(key, /a team/);
+  assert.match(key, /fewest/);
+});

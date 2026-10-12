@@ -1822,6 +1822,8 @@ function renderSum(){
     linger in the summary — the rule `LENSCOUNTS` was rewritten to follow before
     it was deleted, and this is now the only reader of `LENS` that draws rows. */
  let placed=0;
+ // Which KIND of scale each drawn rail is, for the key below the heading.
+ let scTeam=0,scWhole=0;
  /* ⭐⭐ THIS LENS, PER CLUB, AND IT IS THE QUANTITY `perTeamGame` IS BUILT FROM.
     The mapping is `measure.mjs`'s, restated nowhere: Control and Blocked and Zone
     starts each carry a `t` keyed by club; the slot is split by SHOOTER, the way
@@ -1918,6 +1920,7 @@ function renderSum(){
      every game in the archive. */
   const ref0=marks[0]&&marks[0].at;
   if(ref0&&ref0.max>ref0.min){
+   if(split)scTeam++;else scWhole++;
    /* ⭐ ONE BOX STATES THE WIDTH AND THE RAIL AND ITS ENDS BOTH FILL IT — see
       `.sscale`. They each carried `max-width:34ch` and `ch` is relative to the
       element's own font-size, so the smaller ends row came out 78% as wide and
@@ -1968,6 +1971,23 @@ function renderSum(){
    d.innerHTML=doors.map(w=>`<a href="/how-we-measure.html#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('');
    li.appendChild(d);}
   ul.appendChild(li);});
+ /* ⭐⭐ THE KEY TO THE SCALES, SAID ONCE ABOVE THEM — Kevin, 2026-10-12: *"we
+    don't explain what the numbers below the scale are."* Nor the shading, nor
+    that the card carries TWO kinds of scale: a club's row runs over single teams
+    in a game (Attempts 34–95 on 2026-10-12) and Stoppages over whole games
+    (34–65). Counted off the rails actually DRAWN, so a card in its degraded form
+    — every row on the game class — is never told its scales are of teams.
+    ⚠️ NO NUMBERS IN IT, so it adds nothing that would need a door to its work. */
+ if(scTeam||scWhole){
+  const key=document.createElement('p');
+  key.className='skey';
+  key.textContent=scTeam
+   ?'Each scale runs from the fewest to the most a team has had in one of those games; '
+    +'the shaded part is the middle half, and each dot is a team in this game.'
+    +(scWhole?' A row counted for the whole game is scaled against whole games.':'')
+   :'Each scale runs from the fewest to the most in one of those games; '
+    +'the shaded part is the middle half, and the dot is this game.';
+  host.appendChild(key);}
  host.appendChild(ul);
  /* ⭐⭐⭐ AND THE WAY TO THE LEAGUE'S VIDEO IS IN HERE, because at the horn this
     panel covers the page. Kevin, 2026-10-01: *"when the what this game was card

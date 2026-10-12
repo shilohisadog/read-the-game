@@ -1798,8 +1798,21 @@
    both halves are left-aligned at the panel's padding and both keep the 56ch
    measure, because the reason for 56ch is reading length and that did not move. */
 #rg #sumPanel .verdict{padding:0;border:0;background:none;box-shadow:none;margin:0}
-#rg #sumBody{max-width:56ch}
-#rg .srows{margin:10px 0 0;padding-left:20px}
+/* ⭐⭐ TWO COLUMNS OF ROWS, THE PROSE STILL AT 56ch — Kevin, 2026-10-12: *"the
+   amount of white space on the summary card. Does it make any sense to surface
+   the metrics in a two column format?"* Measured at 1440x900 before changing it:
+   each row was 550px wide around a 310px scale, and the panel showed 607px of
+   938px — half the rows behind a scrollbar. Two columns put the content at 675px
+   and pair the rows exactly as the layer buttons are paired in the sidebar.
+   ⚠️ 56ch IS A READING LENGTH, so it stays on what is READ — the heading and the
+   key — and leaves the rows, which are scales. `auto-fit` with a 34ch floor (the
+   scale's own width) falls back to ONE column wherever two will not fit, which
+   is a landscape phone's 515px panel: no breakpoint anybody tuned. */
+#rg #sumBody>h2,#rg #sumBody>.skey{max-width:56ch}
+#rg #sumBody .skey{margin:6px 0 0;font-size:.84rem;line-height:1.5;color:var(--muted)}
+#rg .srows{margin:10px 0 0;padding-left:20px;display:grid;column-gap:32px;max-width:84ch;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,34ch),1fr))}
+#rg .srows li{min-width:0}
 #rg .srows li{margin:0 0 11px;font-size:.9rem;line-height:1.5;color:var(--muted)}
 /* ⭐ THE PER-ROW SCALE. Same vocabulary as the verdict dot above it on purpose:
    a rail, a band, a dot. The BAND is the middle half the sentence names, so the
