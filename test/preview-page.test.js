@@ -1377,3 +1377,40 @@ test('⭐⭐ where the league’s boxscores differ, the card says their figure a
   assert.doesNotMatch(said, /Captain \d+ in 11 games \(the league/, 'a player with no difference says nothing extra');
   assert.equal((said.match(/boxscores say/g) || []).length, 1, 'only the shots row differs');
 });
+
+/* ------------------------------------------------------ THE TEAMS' RECORDS */
+
+const withRecords = (standings) => ({ through: '2026-10-12', ...(standings ? { standings } : {}),
+  seasons: { 2026: {
+    BUF: club({ record: { reg: { w: 3, l: 3, otl: 0, undecided: 0 }, post: { w: 0, l: 0, undecided: 0 } } }),
+    PIT: club({ games: 11, record: { reg: { w: 3, l: 2, otl: 1, undecided: 0 }, post: { w: 0, l: 0, undecided: 0 } } }) } } });
+const clubsText = ids => textOf(clubsIn(ids));
+
+test('⭐ the two teams open with their records, dated, and say what a record is', async () => {
+  // Kevin, 2026-10-13: the record as the intro to the team rows.
+  const { ids, settle } = run({ 'teams.json': withRecords() }, `?game=${GID}`, '2026-10-13T12:00:00Z');
+  await settle();
+  assert.match(clubsText(ids), /Buffalo Sabres 3–3–0 and Pittsburgh Penguins 3–2–1 this regular season, through 12 October 2026\. The record says who won; the rows below say how each team plays\./);
+  assert.doesNotMatch(clubsText(ids), /standings say/, 'standings that agree add nothing');
+});
+
+test('⭐⭐ where the league’s standings differ, the card says both', async () => {
+  const st = { date: '2026-10-12', season: '2026', src: 'standings',
+               teams: { BUF: [4, 2, 0, 6], PIT: [3, 2, 1, 6] } };
+  const { ids, settle } = run({ 'teams.json': withRecords(st) }, `?game=${GID}`, '2026-10-13T12:00:00Z');
+  await settle();
+  assert.match(clubsText(ids), /Buffalo Sabres 3–3–0 \(the league’s standings say 4–2–0\) and Pittsburgh Penguins 3–2–1 this/);
+});
+
+test('⛔ standings for another season are not compared', async () => {
+  const st = { date: '2026-04-15', season: '2025', src: 'standings', teams: { BUF: [40, 30, 12, 82] } };
+  const { ids, settle } = run({ 'teams.json': withRecords(st) }, `?game=${GID}`, '2026-10-13T12:00:00Z');
+  await settle();
+  assert.doesNotMatch(clubsText(ids), /standings say/);
+});
+
+test('⛔ with no regular-season result yet there is no record line', async () => {
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  assert.doesNotMatch(clubsText(ids), /this regular season, through|record says who won/);
+});

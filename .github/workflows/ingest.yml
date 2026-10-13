@@ -953,6 +953,11 @@ jobs:
       # code we decline or a club we cannot name, and `| tee measured.json`
       # returns tee's zero — which is how a `ReferenceError` in this exact driver
       # reported success for five weeks. derive.yml had to be repaired for it.
+      # The league's standings on our newest regular-season date, read by
+      # measure.mjs as a witness to the records it counts. Optional.
+      - name: the league's standings, as a witness to the records
+        run: python3 builders/standings.py ingest
+
       - name: measure the archive
         shell: bash
         run: node builders/measure.mjs --out ingest

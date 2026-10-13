@@ -831,7 +831,9 @@ test('⛔⛔⛔ every document the measure step WRITES is published by some work
 
      MUTATION: drop a name from either `for f in …` list and this fires. */
   const measure = readFileSync(new URL('../builders/measure.mjs', import.meta.url), 'utf8');
-  const written = [...measure.matchAll(/join\(out, '([a-z.]+\.json)'\)/g)].map(m => m[1]);
+  // WRITES only: `join(out, …)` alone also matches a file measure.mjs READS
+  // (standings.json, which travels inside teams.json).
+  const written = [...measure.matchAll(/writeFileSync\(join\(out, '([a-z.]+\.json)'\)/g)].map(m => m[1]);
   const docs = [...new Set(written)].sort();
   assert.ok(docs.length >= 4,
     `only ${docs.length} documents found in measure.mjs — the pattern has lost its subject`);

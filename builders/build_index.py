@@ -3948,6 +3948,7 @@ PREVCSS = r"""<style>
  font-size:1.5rem;line-height:1;font-weight:800;
  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .pvwatch{margin:10px 0 0;font-size:.85rem;color:var(--muted);line-height:1.45}
+.pvrecord{margin:4px 0 12px;line-height:1.5}
 /* ⭐ A HUNDRED DOTS, BECAUSE THE UNIT IS LITERALLY "OF EVERY 100". This is the one
    league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
    novice can count; a rate per game is not out of anything and gets a numeral. */
@@ -4422,6 +4423,21 @@ __HELPERS__
 
     var sect = el('section', 'pvclubs');
     sect.appendChild(el('p', 'pvkick', 'The two teams'));
+    // The records as an intro to the rows: counted from our games through
+    // `teams.json`'s date, with the league's standings where they differ.
+    var rec = function (r) { return r.w + '\u2013' + r.l + '\u2013' + r.otl; };
+    var recs = ['away', 'home'].map(function (side) {
+      var c = p.clubs[side], r = c.record;
+      if (!r) return null;
+      return nameOf(c.ab) + ' ' + rec(r)
+        + (r.league ? ' (the league\u2019s standings say ' + rec(r.league) + ')' : '');
+    }).filter(function (x) { return x; });
+    var thru = (p.clubs.away.record || p.clubs.home.record || {}).through;
+    if (recs.length) {
+      sect.appendChild(el('p', 'pvrecord', recs.join(' and ') + ' this regular season'
+        + (thru ? ', through ' + formatDate(thru) : '') + '. The record says who won; '
+        + 'the rows below say how each team plays.'));
+    }
     /* ⭐ MEASURE-FIRST, NOT CLUB-FIRST, AND THAT IS THE STRUCTURAL REPAIR. This
        was two stacked club blocks, so the one comparison the card exists to make
        -- how do these two differ, and from normal -- was the one thing the layout

@@ -178,6 +178,11 @@ jobs:
       # whole archive and produces the number that decides what a novice sees
       # first, so it runs on every extract or not at all -- a partial ranking is
       # worse than none, because it looks like an answer.
+      # The league's standings on our newest regular-season date, read by
+      # measure.mjs as a witness to the records it counts. Optional.
+      - name: the league's standings, as a witness to the records
+        run: python3 builders/standings.py ingest
+
       - name: measure the archive
         # ⛔ `shell: bash` IS LOAD-BEARING, not tidiness. The default shell for a
         # `run:` block is `bash -e {0}` WITHOUT `-o pipefail`, so a pipeline

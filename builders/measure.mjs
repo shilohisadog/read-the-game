@@ -768,6 +768,11 @@ function main(argv) {
   // read by one surface that neither of them shows. Freshness is index.json's
   // job here too — no timestamp, keys sorted, same extracts in, same bytes out.
   const teams = teamSeasons(records);
+  // The league's standings, as a witness to the records above, when the
+  // standings step wrote them for a season this document holds.
+  const st = existsSync(join(out, 'standings.json'))
+    ? JSON.parse(readFileSync(join(out, 'standings.json'), 'utf8')) : null;
+  if (st && teams.seasons && teams.seasons[st.season]) teams.standings = st;
   writeFileSync(join(out, 'teams.json'), stable(teams));
   /* ⭐ AND A THIRD, FOR THE SAME REASON AS THE SECOND. The preview's player block
      is read by ONE page; folding a few hundred player rows into `measures.json`

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ink7+MoVH5UVz1KKDB7rjVyGJe1tcD+nsriQjpNGC14=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xUQkT+PQAAqmt1NOO6BrKmH8dxnuvLIat5iZN44wdRQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -791,6 +791,19 @@ function needsFrom(measures) {
   return out;
 }
 
+function recordFor(ab, season, teams) {
+  const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab];
+  const r = base && base.record && base.record.reg;
+  if (!r || r.w + r.l + r.otl === 0) return null;
+  const out = { w: r.w, l: r.l, otl: r.otl, through: (teams && teams.through) || null };
+  const st = teams && teams.standings;
+  const lg = st && st.season === season && st.teams && st.teams[ab];
+  if (lg && (lg[0] !== r.w || lg[1] !== r.l || lg[2] !== r.otl)) {
+    out.league = { w: lg[0], l: lg[1], otl: lg[2], date: st.date };
+  }
+  return out;
+}
+
 function rowsFor(ab, season, teams, recent, league, needs) {
   const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab] || null;
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
@@ -819,7 +832,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
     }
   }
 
-  return { ab, games, rows: tally.map(t => ({ ...t, games,
+  return { ab, games, record: recordFor(ab, season, teams), rows: tally.map(t => ({ ...t, games,
     league: (league && league[t.key]) ?? null,
     value: t.n > 0 ? t.count / t.n : null,
     settled: t.need != null && games >= t.need })) };

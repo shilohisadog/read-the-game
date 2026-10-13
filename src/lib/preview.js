@@ -385,6 +385,24 @@ function needsFrom(measures) {
 }
 
 /** A club's season row, plus the games played since the weekly table was built. */
+/**
+ * A team's regular-season record as `teams.json` counts it from our games,
+ * through `teams.through`, with the league's standings beside it where they
+ * differ. Null before the team has a regular-season result.
+ */
+export function recordFor(ab, season, teams) {
+  const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab];
+  const r = base && base.record && base.record.reg;
+  if (!r || r.w + r.l + r.otl === 0) return null;
+  const out = { w: r.w, l: r.l, otl: r.otl, through: (teams && teams.through) || null };
+  const st = teams && teams.standings;
+  const lg = st && st.season === season && st.teams && st.teams[ab];
+  if (lg && (lg[0] !== r.w || lg[1] !== r.l || lg[2] !== r.otl)) {
+    out.league = { w: lg[0], l: lg[1], otl: lg[2], date: st.date };
+  }
+  return out;
+}
+
 function rowsFor(ab, season, teams, recent, league, needs) {
   const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab] || null;
   /* ⛔⛔ NO CURRENT SEASON MEANS NO FIGURES, AND NOTHING BORROWED. Our numbers
@@ -434,7 +452,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
     }
   }
 
-  return { ab, games, rows: tally.map(t => ({ ...t, games,
+  return { ab, games, record: recordFor(ab, season, teams), rows: tally.map(t => ({ ...t, games,
     league: (league && league[t.key]) ?? null,
     /* A SHARE IS COUNT OVER COUNT and the row carries both, so the card can print
        its own evidence: "320 of 1,000 attempts" beside the league's figure. */

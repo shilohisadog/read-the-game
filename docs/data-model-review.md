@@ -173,7 +173,9 @@ sub-count is attempts), `through` (archive for teams, latest season for players)
   rows and the rail's power play into each extract; the comparing is the
   site's own JS (`src/lib/league.js`), shown on the preview's player rows, the
   methods page's power-play working and the game page's disputed-shot note.
-  Team records (W-L-OTL) have no reader: moved to item 6.
+  Team records (W-L-OTL) had no reader; Kevin asked for them on the preview, so
+  they now open its team section, witnessed nightly by the league's standings
+  (32 of 32 agree on 2026-10-12).
 
 Ordered by what a reader is told wrong first, then bytes, then hygiene.
 
