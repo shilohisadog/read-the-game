@@ -162,7 +162,7 @@ sub-count is attempts), `through` (archive for teams, latest season for players)
   fail if a refused game still has a published extract (read-only; deleting
   one is Kevin's call).
 
-- ⏳ 5 — measured first (`league-witness.yml`, 4,281 games): goals, assists and
+- ✅ 5 — `60e13b6` + full re-derive, verified live. Measured first (`league-witness.yml`, 4,281 games): goals, assists and
   saves agree with the boxscore on every game; skater shots and goalie shots
   faced are ours +1 on 73 and 60 player-games, all inside the 74 games already
   carrying the shot asterisk; power plays differed by DEFINITION. Kevin ruled

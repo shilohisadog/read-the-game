@@ -40,12 +40,19 @@ ordered list, what is done (with commits), and what each remaining item needs.
 Kevin's ruling on order: *"get our arms wrapped around everything then start
 fixing"*, and on the slot: *"consistency and transparency are paramount"*.
 
-### ⏭ NEXT: item 5, wire the free witnesses
+### ⏭ NEXT: item 6, delete what has no reader
 
-Boxscore player rows for goals, assists and shots; goaltender saves; standings
-for records; the rail's `powerPlay` (D2). See the review §6.
+`gshots` in every extract, the `app.js` score fallback that counts shootout
+goals, and team records (W-L-OTL) in teams.json, which no page shows. See the
+review §6.
 
 ### ✅ DONE 2026-10-12/13, each verified on the live site
+
+- **League witness** (item 5: `60e13b6`, full re-derive): power plays counted the
+  league's way (4,280/4,281 games vs the boxscore; 87/89 and 592 = 592 vs the
+  rail); SCHEMA 6 copies the boxscore's player rows and the rail's power play;
+  the preview, methods page and game page show the league's figure wherever it
+  differs from our play-by-play count.
 
 - **One document per page** (item 4: `f7d0c2e`, `0b047a7`, `f558ba7`): `front.json`,
   `team/{AB}.json`, `calendar/{YYYY-MM}.json`, verbatim projections of the catalog
