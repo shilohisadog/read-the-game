@@ -34,35 +34,29 @@ This section is the orientation. Everything below §0 is the detail, organised b
 state.
 ## ⏭ 0.00 PICK UP HERE — 2026-10-13 (evening)
 
-### ⏭ NEXT: the preview's team section grows from three rows to seven — Kevin ruled
+### ⏭ NEXT: data-model fix list, item 6
 
-Kevin: rows "similar" to possession can still help a novice read the game, as
-long as each one **settles** (that condition stays). He chose **full cards for
-every row** ("we can always trim if the mobile experience isn't viewed
-favorably"). Evidence: `node tools/candidates.mjs <dir-with-extract/>` and
-[`docs/what-settles.md`](what-settles.md) §2a.
+`gshots`, and the `app.js` fallback that counts shootout goals; see
+[`docs/data-model-review.md`](data-model-review.md) §6. **Item 12 still needs a
+ruling**: the replay has twelve animations and reduced motion stops only the
+play-button pulse.
 
-The section, in order:
+### ✅ DONE 2026-10-13 (evening): the preview's team section is seven rows
 
-1. The records intro (live).
-2. **Possession**, one group: CF% while the score was level (headline, 35 games),
-   then shots-on-goal share (37 games, r 0.85 with the headline), attempts
-   against per game (33, r −0.81), blocked shots per game (33, r −0.61), with one
-   sentence saying they are views of the same thing and how closely they move.
-3. Defencemen (as now). 4. Slot (as now).
-5. **Average shift length, new**: settles in 12 games, independent of the other
-   three (|r| ≤ 0.07), and couples the same at home (0.54) and on the road (0.57),
-   so it is the shared stoppages and not an arena's scorer.
+Kevin ruled full cards for every row ("we can always trim if the mobile
+experience isn't viewed favorably"). Live, `07eda34` plus a dispatched derive:
 
-Each new row needs a `CLUB_ROWS` entry (`of` and `ofGame`), its per-game fields in
-`measureGame`, `teamSeasons` and the nightly slate tail, its reliability published
-by `measure.mjs` (and passing the 41-game admission), and a `DERIVATION` entry for
-the methods page.
-
-Then the data-model fix list resumes at **item 6** (`gshots`, the `app.js`
-fallback that counts shootout goals); see [`docs/data-model-review.md`](data-model-review.md) §6.
-**Item 12 still needs a ruling**: the replay has twelve animations and reduced
-motion stops only the play-button pulse.
+- **Who had the puck**, one heading and one sentence (from `settle.family`, 96
+  team-seasons): 5-on-5 CF% level (35 games), shots-on-goal share (37, r 0.85),
+  attempts against per game (33, r −0.81), attempts blocked per game (33,
+  r −0.61). Then defencemen (23), slot (39), **average shift length** (12, new).
+- Each row declares a `unit` (share, perGame, seconds) and the per-game `fields`
+  it reads; value, axis, league reference and footnote all read in that unit.
+- Methods page: a derivation per new row, ranges in the row's unit (it would
+  have printed "4820%"), and the family section rewritten for a shown group.
+- Verified on readthegame.co, BUF at MTL, desktop and 390px phone: every value
+  matches its own footnote (302 in 6 = 50.3; 71,463 s over 1,501 shifts =
+  47.6 s), no horizontal scroll.
 
 ### ✅ DONE 2026-10-12/13, each verified on the live site
 

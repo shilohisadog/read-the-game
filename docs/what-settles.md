@@ -346,16 +346,19 @@ demanding, not partisan.
 
 ## 7. ⏭ Open
 
-- **`avgShiftLen` (12 games)** is the one genuinely new club row that survives
-  every control: orthogonal (|r| ≤ 0.16 to the possession family), immune to the
-  centring bug (league level flat: 47.89 / 47.85 / 48.24), home/away agreement
-  0.950, road-only 8 games, and the extremes name the same clubs every year —
-  shortest OTT 43.2 / 43.4, longest MIN 53.8 / 53.2 / 52.5. ⚠️ Needs per-club
-  shift plumbing, and **57 consecutive 2024-25 games (2024021235–2024021291) carry
-  no shift block** — they must be excluded from the denominator, not read as zero.
+- ✅ **BUILT 2026-10-13 as the card's `shiftLength` row** (`07eda34`). Through
+  the card's own `ofGame` (zero-length shifts dropped) it still settles in 12
+  games; its venue coupling is 0.52 home / 0.56 road. A game with no shift block
+  (the 57-game 2024-25 run included) adds 0 of 0, so it leaves the denominator.
 - **`ozStartShare` (35 games)** is a judgement call: a partly new axis but 0.82
   with Fenwick. Its honest label is "where its draws happen", not "where the coach
   starts it".
-- **Do not add Fenwick / 5v5 Corsi / SF% / attempt differential.** They qualify and
-  they are the row the card already has. Saying so is a stronger answer to a critic
-  than adding four rows that agree with each other.
+- ✅ **Kevin ruled the other way on part of this, 2026-10-13**: similar rows still
+  help a novice read the game, as long as each settles. The card now shows a
+  possession GROUP (`level5`, `sogShare`, `attemptsAgainst`, `blocks`) introduced
+  once with how closely they move (from `settle.family`), so four rows are not
+  read as four pieces of evidence. Fenwick and all-situations Corsi stay withheld:
+  they show nothing a newcomer could see that the group does not.
+- The `--json` names in the tables above are the measurement's; the card's row
+  keys are `sogShare`, `attemptsAgainst` (`attemptsAgainstPerGame`), `blocks`
+  (`blocksPerGame`) and `shiftLength` (`avgShiftLen`).
