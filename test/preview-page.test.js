@@ -1414,3 +1414,19 @@ test('⛔ with no regular-season result yet there is no record line', async () =
   await settle();
   assert.doesNotMatch(clubsText(ids), /this regular season, through|record says who won/);
 });
+
+test('⛔ two team values that round alike still read differently, and the axis ends stay whole', async () => {
+  // Kevin, 2026-10-13, from the live card: WSH 57 of 104 and CAR 113 of 204 both
+  // read "55%" while their marks sat ~50px apart. One decimal on every value.
+  const teams = { through: '2026-10-01', seasons: { 2026: {
+    BUF: club({ level5: { for: 57, against: 47 } }),
+    PIT: club({ games: 11, level5: { for: 113, against: 91 } }) } } };
+  const { ids, settle } = run({ 'teams.json': teams }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const vals = walk(clubsIn(ids)).filter(x => hasCls(x, 'pvv')).map(x => x.textContent);
+  assert.ok(vals.includes('54.8%') && vals.includes('55.4%'), `values were ${vals.join(', ')}`);
+  for (const v of vals) assert.match(v, /^\d+\.\d%$|^no games yet$/, `${v} is not one decimal`);
+  const ends = walk(clubsIn(ids)).filter(x => hasCls(x, 'pvlo') || hasCls(x, 'pvhi')).map(x => x.textContent);
+  for (const e of ends) assert.match(e, /^\d+%$/, `the axis end ${e} gained a decimal`);
+  assert.match(textOf(clubsIn(ids)), /league \d+\.\d%/, 'the league reference matches its values');
+});

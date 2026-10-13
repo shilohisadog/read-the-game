@@ -830,10 +830,13 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
      beside the bar and the ends of the axis. A row that forgot to spell its own
      values would fall back to the share, which is the safe direction for a club
      row and is why the player row's override is pinned separately below. */
-  assert.match(html, /var fmt = row\.fmt \|\| function \(v\) \{ return pct\(v\) \+ '%'; \}/,
+  // Values carry one decimal (Kevin, 2026-10-13); the axis ends stay whole.
+  assert.match(html, /var fmt = row\.fmt \|\| function \(v\) \{ return pct1\(v\) \+ '%'; \}/,
     'the club figure lost its unit again — the default spelling is the share');
+  assert.match(html, /var endFmt = row\.fmt \|\| function \(v\) \{ return pct\(v\) \+ '%'; \}/,
+    'the axis ends lost their unit, or the player row no longer overrides them');
   assert.match(html, /fmt\(s\.value\)/, 'the value beside the bar is no longer spelled by the row');
-  assert.match(html, /fmt\(lo\)/, 'the axis lost its unit again');
+  assert.match(html, /endFmt\(lo\)/, 'the axis lost its unit again');
   assert.match(html, /trackFor\(\{ range: r\.range, fmt: dec, tick: 'typical skater' \}/,
     'the player row no longer overrides the share spelling, so its rates read as percentages');
   /* ⭐⭐ AND THE PICTURE SAYS WHAT IT IS — IN THE PICTURE. Nothing in it has a

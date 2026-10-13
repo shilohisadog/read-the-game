@@ -445,3 +445,36 @@ test('⛔ a game already published is listed once, as a result, not as a fixture
     'the held game (2025020010) is a result row, not a second listing');
   assert.match(textOf(ids.main), /3 games/, 'two held and one still to be played');
 });
+
+/* ⭐ THE MONTH SHOWS WHAT IS STILL TO BE PLAYED. Kevin, 2026-10-13: tonight's
+   games belong on the calendar too, marked as tonight's. */
+const localToday = () => { const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+test('⭐ a scheduled date is an outlined door with its count, and today says Tonight', async () => {
+  const today = localToday(), month = today.slice(0, 7);
+  const later = `${month}-${today.slice(8) === '28' ? '27' : '28'}`;
+  const games = [row(2025020001, `${month}-01`)];
+  const sched = { 'schedule.json': { upcoming: [
+    { id: 9, date: today, away: 'BUF', home: 'TOR', startTimeUTC: `${today}T23:00:00Z`, gameType: 2 },
+    { id: 10, date: today, away: 'PIT', home: 'MTL', startTimeUTC: `${today}T23:00:00Z`, gameType: 2 },
+    { id: 11, date: later, away: 'BOS', home: 'NYR', startTimeUTC: `${later}T23:00:00Z`, gameType: 2 }] } };
+  const { ids, settle } = run(games, `?month=${month}`, sched);
+  await settle();
+  const sch = withClass(ids.main, 'sched');
+  const tonight = sch.find(c => c.href === `?date=${today}`);
+  assert.ok(tonight, 'today is not marked');
+  assert.deepEqual(walk(tonight).map(x => x.textContent).filter(Boolean).slice(1), ['2', 'Tonight']);
+  const other = sch.find(c => c.href === `?date=${later}`);
+  assert.ok(other && !walk(other).some(x => x.textContent === 'Tonight'), 'only today says Tonight');
+  assert.match(textOf(ids.main), /An outlined date has games the league has scheduled/);
+  assert.ok(withClass(ids.main, 'cell').some(c => c.href === `?date=${month}-01` && !/sched/.test(c.className)),
+    'a held date is still a plain cell');
+});
+
+test('⛔ a month with nothing scheduled carries no outline note', async () => {
+  const { ids, settle } = run(MONTH, '?month=2026-02');
+  await settle();
+  assert.equal(withClass(ids.main, 'sched').length, 0);
+  assert.doesNotMatch(textOf(ids.main), /An outlined date/);
+});

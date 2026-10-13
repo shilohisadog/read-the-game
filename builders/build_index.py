@@ -582,6 +582,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  font-variant-numeric:tabular-nums}
 .cell.pad{background:transparent;border:0}
 .cell.void{background:transparent;border-color:transparent}
+/* Scheduled, not yet held: an outline, never the dashed edge, which means
+   "not counted" on this grid. */
+.cell.sched{background:transparent;border:1.5px solid var(--blue)}
+.cell.sched .n{color:var(--blue);font-weight:600}
+.cell.sched .tn{font-size:.56rem;letter-spacing:.06em;text-transform:uppercase;
+ color:var(--blue);font-weight:700;line-height:1}
 a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
  box-shadow:0 4px 12px rgba(58,90,156,.14)}
 /* A cell is 48px square-ish on a phone, which is all there is. Given room it
@@ -3620,7 +3626,16 @@ __HELPERS__
     return box;
   }
 
-  function drawMonth(games, month, months, asked, monthsHeld) {
+  function drawMonth(games, month, months, asked, monthsHeld, schedule) {
+    // Scheduled games per date, and the reader's own date for "Tonight".
+    var sched = {};
+    ((schedule && schedule.upcoming) || []).forEach(function (g) {
+      if (g && g.date) sched[g.date] = (sched[g.date] || 0) + 1;
+    });
+    var now = new Date();
+    var today = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2)
+      + '-' + ('0' + now.getDate()).slice(-2);
+    var anySched = false;
     var main = $('main');
     main.textContent = '';
     /* NO CRUMB ON THE MONTH VIEW. The chrome directly above it already says
@@ -3702,6 +3717,21 @@ __HELPERS__
       week.forEach(function (c) {
         if (!c) { cal.appendChild(el('span', 'cell pad')); return; }
         if (!c.held) {
+          // A date the league has scheduled and we do not hold yet: outlined,
+          // and a door to the date's page, which lists each game's preview.
+          var due = sched[c.date];
+          if (due) {
+            var f = el('a', 'cell sched');
+            f.href = '?date=' + c.date;
+            f.appendChild(el('span', 'dy', String(c.day)));
+            f.appendChild(el('span', 'n', String(due)));
+            if (c.date === today) f.appendChild(el('span', 'tn', 'Tonight'));
+            f.setAttribute('aria-label', (c.date === today ? 'Tonight. ' : when(c.date) + '. ')
+              + plural(due, 'game') + ' still to be played.');
+            cal.appendChild(f);
+            anySched = true;
+            return;
+          }
           var v = el('span', 'cell void');
           v.appendChild(el('span', 'dy', String(c.day)));
           cal.appendChild(v);
@@ -3736,6 +3766,11 @@ __HELPERS__
       });
     });
     main.appendChild(cal);
+    if (anySched) {
+      main.appendChild(el('p', 'offnote', 'An outlined date has games the league has '
+        + 'scheduled that are still to be played; it opens the list, and each game '
+        + 'opens its preview.'));
+    }
 
     /* THE DASHED COUNT, NAMED. Nine months in the archive hold out-of-scope
        games and every one of them holds exactly ONE competition (0 of 9 mix,
@@ -3910,7 +3945,7 @@ __HELPERS__
   };
   var gamesOf = function (doc) { return (doc && doc.games) || []; };
   Promise.all([grab('front.json'), want ? grab('calendar/' + want + '.json') : null,
-               askedDate ? grab('schedule.json') : null])
+               grab('schedule.json')])
     .then(function (r) {
       var cal = r[0] && r[0].calendar;
       var months = (cal && cal.months) || [];
@@ -3923,7 +3958,7 @@ __HELPERS__
           // A month that holds games must have its document; an empty month has none.
           if (!doc && held.indexOf(month) !== -1) { unloaded(); return; }
           if (askedDate) { drawNight(gamesOf(doc), askedDate, months, r[2]); return; }
-          drawMonth(gamesOf(doc), month, months, askedMonth, held);
+          drawMonth(gamesOf(doc), month, months, askedMonth, held, r[2]);
         });
     });
 })();
@@ -4149,6 +4184,9 @@ __HELPERS__
   }
 
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + ''; }
+  // Team-row values and their league reference carry one decimal (Kevin,
+  // 2026-10-13), so two marks that differ never share a label.
+  function pct1(v) { return v == null ? '—' : (v * 100).toFixed(1); }
   function num(n) { return (n || 0).toLocaleString(); }
 
   /* ⛔ AN EMPTY COLUMN SAYS WHEN, NOT ONLY THAT IT IS EMPTY. The date is the
@@ -4186,7 +4224,8 @@ __HELPERS__
        running "39%" under a heading that says "goals a game" would be a number
        that is wrong by a factor of a hundred and looks fine. The default is the
        share, so no existing caller changed. */
-    var fmt = row.fmt || function (v) { return pct(v) + '%'; };
+    var fmt = row.fmt || function (v) { return pct1(v) + '%'; };
+    var endFmt = row.fmt || function (v) { return pct(v) + '%'; };
     /* ⛔ AND WHAT THE TICK IS, which is not always the league. On a club row it is
        the league figure and the word is right; on a player row it is the MEDIAN
        SKATER, and labelling that "league" tells a reader the mark beside it is a
@@ -4310,8 +4349,8 @@ __HELPERS__
     wrap.appendChild(el('span'));
     var ends = el('div', 'pvends');
     /* The axis names its own ends, WITH the unit — the same repair as the value. */
-    ends.appendChild(el('span', 'pvlo', fmt(lo)));
-    ends.appendChild(el('span', 'pvhi', fmt(hi)));
+    ends.appendChild(el('span', 'pvlo', endFmt(lo)));
+    ends.appendChild(el('span', 'pvhi', endFmt(hi)));
     /* ⭐ AND THE TICK NAMES ITSELF. It is placed by the same `at()` the tick is
        placed by, so the label cannot drift from the thing it names.
        ⛔ SUPPRESSED NEAR EITHER END, because the label is centred on the tick and
@@ -4889,7 +4928,7 @@ __HELPERS__
     var head = el('div', 'pvmh');
     head.appendChild(el('p', 'pvlab', ar.label));
     head.appendChild(el('span', 'pvref', ar.league == null
-      ? 'no league figure yet this season' : 'league ' + pct(ar.league) + '%'));
+      ? 'no league figure yet this season' : 'league ' + pct1(ar.league) + '%'));
     box.appendChild(head);
 
     var sides = [ar, hr].map(function (r, i) {
