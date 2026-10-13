@@ -217,51 +217,46 @@ const WITHHELD = [
  * and nobody has to compose that pairing at the call site.
  */
 /**
- * ⭐⭐⭐ THE ONE JUDGEMENT ON THE PLAYER BLOCK, DECLARED SO IT CAN BE ARGUED WITH.
+ * The player block's pick: each team's leading goalscorer this season among the
+ * skaters who can be shown to be playing. For a game already played that is its
+ * own dressed roster (`dressed`, a set of player ids); otherwise it is whoever
+ * dressed for the team's last game (`last === lastGame[ab]`). A document without
+ * those dates names nobody rather than a player who may be out.
  *
- * **Each team's leading goalscorer this season.** Kevin, 2026-10-07, on which
- * figures a novice engages with: *"attempts, shots on goal, assists and goals …
- * I would lean toward those."*
- *
- * ⭐ IT IS A FACT, NOT A FORECAST, and that is what makes it publishable at all.
- * "He has scored the most goals for this team this season" is true of games
- * already played; it predicts nothing about tonight, so none of the
- * regression-to-the-mean trouble that comes with picking an extreme applies to
- * the CLAIM. What the reliability work governs is whether the FIGURES beside him
- * mean anything, and all four clear the 0.7 target inside the club admission.
- *
- * ⛔ NOTHING ABOUT THE PREVIEWED GAME IS USED. `players.json` is built from games
- * already in the archive, so a preview of a game not yet played cannot leak it,
- * and a preview of one already played does not quietly become a report on it.
- *
- * ⚠️ TIES GO TO THE LOWER PLAYER ID, which is arbitrary and is stated: it is a
- * tiebreak, not a second opinion about who is better. Early in a season several
- * players share the lead and something has to be stable across renders.
+ * Ties go to the lower player id: a stable tiebreak, not a judgement.
+ * Nothing from the previewed game feeds the figures; `dressed` only filters.
  */
-export function watchFor(players, awayAb, homeAb) {
+export function watchFor(players, awayAb, homeAb, dressed = null) {
   if (!players || !players.clubs) return null;
+  const lastGame = players.lastGame || {};
+  const playing = ab => dressed
+    ? r => dressed.has(r.p)
+    : r => !!r.last && r.last === lastGame[ab];
   const pick = ab => {
-    const roster = players.clubs[ab];
-    if (!roster || !roster.length) return null;
+    const roster = (players.clubs[ab] || []).filter(playing(ab));
+    if (!roster.length) return null;
     return roster.slice().sort((x, y) => y.g - x.g || x.p - y.p)[0];
   };
   const away = pick(awayAb), home = pick(homeAb);
   if (!away || !home) return null;          // one side missing is no comparison
-  /* ⛔ THE DATE TRAVELS WITH THE FIGURES. Every other surface on this site that
-     quotes an archive figure says what it counted through -- the static pages in
-     a banner, the front door in its own sentence -- and this block did not,
-     which made it the only dateless number on the site. It matters more here
-     than anywhere: these rows are rebuilt WEEKLY by `derive.yml`, never by the
-     nightly, so they are the figures most able to be days behind the scoreboard
-     a reader just looked at. */
+  // `basis` is what the card says about why we believe each man is playing.
+  const basis = dressed ? { game: true }
+    : { game: false, away: lastGame[awayAb], home: lastGame[homeAb] };
   return { season: players.season, through: players.through || null,
            range: players.range, need: players.need,
-           away, home,
+           away, home, basis,
            rows: PLAYER_ROWS.map(r => ({
              ...r,
              range: players.range ? players.range[r.fig] : null,
              need: players.need ? players.need[r.fig] : null,
              away: rate(away, r.fig), home: rate(home, r.fig) })) };
+}
+
+/** The skaters an extract says dressed; an empty set when it is missing, so a
+ *  played game whose lineup we cannot read names nobody. */
+export function dressedIn(extract) {
+  const roster = (extract && extract.roster) || {};
+  return new Set(Object.entries(roster).filter(([, r]) => r.pos !== 'G').map(([p]) => Number(p)));
 }
 
 /** One player's per-game rate for one figure, with the counts that made it. */
@@ -517,5 +512,5 @@ export function preview(id, docs, now) {
     /* ⭐ WHO TO WATCH, OR NULL. Built here rather than in the renderer so the
        SELECTION -- the one judgement on this block -- is a function of published
        data that a test can drive, not a branch inside a DOM builder. */
-    watch: watchFor(d.players, away, home) };
+    watch: watchFor(d.players, away, home, state === 'played' ? dressedIn(d.game) : null) };
 }

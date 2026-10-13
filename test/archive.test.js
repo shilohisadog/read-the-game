@@ -298,3 +298,19 @@ test('⭐ the published policy is carried, never re-chosen', () => {
   assert.equal(out.qualify, 7, 'the admission handed in is the one published');
   assert.equal(out.target, TARGET, 'and the target is reliability.js’s, not a second one');
 });
+
+test('⭐ each row carries its latest game, each club its own, and a dressed scorer is kept', async () => {
+  // The preview names only a player whose `last` equals his club's `lastGame`.
+  // Five AAA players outscore #9 overall; only #9 dressed for the last game, so
+  // he must survive the top-three cut or the preview has nobody to name.
+  const dg = (id, date, rows) => ({ id, date, homeAb: 'AAA', awayAb: 'BBB', players: rows });
+  const out = playerSeasons([
+    dg(2026020001, '2026-10-01', [1, 2, 3, 4, 5].map(p => sk(p, { g: 3, a: 3, s: 9, c: 9 }))),
+    dg(2026020002, '2026-10-03', [sk(9, { g: 1 })]),
+  ], 1);
+  assert.deepEqual(out.lastGame, { AAA: '2026-10-03', BBB: '2026-10-03' });
+  const nine = out.clubs.AAA.find(r => r.p === 9);
+  assert.ok(nine, 'the only skater who dressed last game was cut from the document');
+  assert.equal(nine.last, '2026-10-03');
+  assert.equal(out.clubs.AAA.find(r => r.p === 1).last, '2026-10-01');
+});

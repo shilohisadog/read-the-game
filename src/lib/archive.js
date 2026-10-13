@@ -790,6 +790,7 @@ export function playerSeasons(records, qualify) {
       const row = was || { p: r.p, gp: 0, g: 0, a: 0, s: 0, c: 0, each: [] };
       row.each.push({ g: r.g, a: r.a, s: r.s, c: r.c });
       row.nm = r.nm; row.n = r.n; row.pos = r.pos; row.t = r.t;
+      if (g.date && !(row.last > g.date)) row.last = g.date;
       row.gp += 1; row.g += r.g; row.a += r.a; row.s += r.s; row.c += r.c;
       season.set(r.p, row);
     }
@@ -834,15 +835,29 @@ export function playerSeasons(records, qualify) {
   for (const row of (bySeason.get(latest) || new Map()).values()) {
     (clubs[row.t] ||= []).push(row);
   }
+  // Each club's latest game this season. A player whose `last` equals it
+  // dressed for that game; the preview names only such a player.
+  const lastGame = {};
+  for (const g of games) {
+    if (seasonOfId(g.id) !== latest || !g.date) continue;
+    for (const ab of [g.homeAb, g.awayAb]) {
+      if (ab && !(lastGame[ab] > g.date)) lastGame[ab] = g.date;
+    }
+  }
   /* ⭐ THE TOP THREE ON EACH FIGURE, NOT THE TOP THREE OVERALL. The card leads on
      goals today and the figure it leads on is a product decision that can change;
      publishing only one measure's leaders would make that change a re-derive of
      the whole archive. Deduplicated, so a player who leads on three costs one row. */
+  // Also the top three among those who dressed for the club's last game, so a
+  // leader who is out does not leave the preview with nobody published to name.
   for (const ab of Object.keys(clubs)) {
     const keep = new Map();
+    const dressed = clubs[ab].filter(r => r.last && r.last === lastGame[ab]);
     for (const { key } of PLAYER_FIGURES) {
-      clubs[ab].slice().sort((x, y) => y[key] - x[key] || x.p - y.p)
-        .slice(0, 3).forEach(r => keep.set(r.p, r));
+      for (const pool of [clubs[ab], dressed]) {
+        pool.slice().sort((x, y) => y[key] - x[key] || x.p - y.p)
+          .slice(0, 3).forEach(r => keep.set(r.p, r));
+      }
     }
     // ⛔ `each` NEVER REACHES THE ARCHIVE. It is one object per game per player —
     // the thing this document exists not to publish — and it is only here because
@@ -860,7 +875,7 @@ export function playerSeasons(records, qualify) {
      it counted. These rows move WEEKLY -- `derive.yml`, not the nightly -- so
      they are the figures on the site most able to be a week behind. */
   const through = dataThrough(games.filter(g => seasonOfId(g.id) === latest));
-  return { season: latest, through, qualify, target: TARGET, range, need, clubs };
+  return { season: latest, through, qualify, target: TARGET, range, need, clubs, lastGame };
 }
 
 /**

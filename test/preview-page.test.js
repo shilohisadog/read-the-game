@@ -88,9 +88,7 @@ const PLAYERS = {
   season: '2026', qualify: 41, target: 0.7,
   /* ⚠️ A DATE THAT IS NOT THE FIXTURE GAME'S DATE, deliberately. If both were
      the same string, a renderer printing the GAME's date instead of the
-     measurement's would pass — and those are different facts: the slate is
-     rehydrated nightly and these rows weekly, which is the whole reason the
-     line exists. */
+     measurement's would pass. */
   through: '2026-09-28',
   range: { g: { min: 0, max: 0.8, median: 0.13, n: 600 },
            a: { min: 0, max: 1.1, median: 0.22, n: 600 },
@@ -98,13 +96,18 @@ const PLAYERS = {
            c: { min: 0, max: 7.9, median: 2.88, n: 600 } },
   need: { g: 33, a: 24, s: 10, c: 6 },
   clubs: {
-    BUF: [{ p: 20, nm: 'Playmaker', n: 20, pos: 'C', gp: 10, g: 2, a: 9, s: 18, c: 30 },
+    BUF: [{ p: 20, nm: 'Playmaker', n: 20, pos: 'C', gp: 10, g: 2, a: 9, s: 18, c: 30,
+            last: '2026-09-28' },
           /* `mug: 1` is written by `builders/mugs.py` onto the players it found a
              headshot for. It is ABSENT, never false, for a man the league has not
              shot — a rookie or a mid-season callup. */
-          { p: 11, nm: 'Scorer', n: 11, pos: 'L', gp: 10, g: 7, a: 3, s: 25, c: 44, mug: 1 }],
-    PIT: [{ p: 30, nm: 'Captain', n: 87, pos: 'C', gp: 11, g: 5, a: 8, s: 29, c: 51, mug: 1 }],
+          { p: 11, nm: 'Scorer', n: 11, pos: 'L', gp: 10, g: 7, a: 3, s: 25, c: 44, mug: 1,
+            last: '2026-09-28' }],
+    PIT: [{ p: 30, nm: 'Captain', n: 87, pos: 'C', gp: 11, g: 5, a: 8, s: 29, c: 51, mug: 1,
+            last: '2026-09-27' }],
   },
+  // Each club's latest game; a row whose `last` matches dressed for it.
+  lastGame: { BUF: '2026-09-28', PIT: '2026-09-27' },
 };
 
 /* ⚠️ THE CLUBS SECTION, NOT THE WHOLE CARD. The player block draws the same
@@ -1289,4 +1292,65 @@ test('⛔ one side with no players is no comparison, so no block', async () => {
   await settle();
   assert.ok(!walk(ids.pv).some(x => hasCls(x, 'pvwatchers')),
     'a one-sided player block was drawn');
+});
+
+/* ------------------------------------------- WHO IS NAMED MUST BE PLAYING */
+
+const blockText = ids => {
+  const b = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
+  return b ? textOf(b) : null;
+};
+
+test('⛔⛔ a leader who did not dress for his team\u2019s last game is not named', async () => {
+  // Kevin, 2026-10-13: naming a player who is out is embarrassing. Over 2025-26
+  // the season leader missed 196 of 2,592 team-games; this filter cuts it to 60.
+  const docs = playersWith(d => {
+    d.clubs.BUF.push({ p: 5, nm: 'Injured', n: 5, pos: 'R', gp: 4, g: 9, a: 1, s: 20, c: 30,
+                       last: '2026-09-20' });
+  });
+  const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = blockText(ids);
+  assert.ok(said, 'the block must still draw from the players who are playing');
+  assert.doesNotMatch(said, /Injured/, 'the leader who sat out was named');
+  assert.match(said, /#11 Scorer/, 'the next scorer who dressed is the pick');
+  assert.match(said, /among the players it dressed for its last game/);
+  assert.match(said, /Buffalo Sabres last played 28 September 2026, Pittsburgh Penguins 27 September 2026/);
+  assert.match(said, /ruled out since then could still be named/, 'the residual risk is stated');
+});
+
+test('⛔ a players document without game dates names NOBODY', async () => {
+  // The document published before 2026-10-13 cannot show who is playing.
+  const docs = playersWith(d => {
+    delete d.lastGame;
+    for (const rows of Object.values(d.clubs)) for (const r of rows) delete r.last;
+  });
+  const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  assert.equal(blockText(ids), null, 'a player was named with nothing to show he is playing');
+  assert.match(textOf(ids.pv), /5-on-5 CF% while the score was level/, 'the rest of the card draws');
+});
+
+const PLAYED = { 'catalog.json': { games: [{ id: GID, v: 1, a: 'BUF', h: 'PIT',
+  d: '2026-10-02', t: 2, as: 2, hs: 3 }] } };
+
+test('⛔⛔ a played game names only skaters who dressed for THAT game', async () => {
+  // BUF's leader (#11) sat this one out; the roster, not the last game, decides.
+  const roster = { 20: { pos: 'C', tid: 7 }, 30: { pos: 'C', tid: 5 }, 1: { pos: 'G', tid: 7 } };
+  const { ids, settle } = run({ ...PLAYED, [`${GID}.json`]: { roster } },
+                              `?game=${GID}`, '2026-10-05T12:00:00Z');
+  await settle();
+  const said = blockText(ids);
+  assert.ok(said, 'no block for a played game whose lineup we hold');
+  assert.doesNotMatch(said, /Scorer/, 'a skater who did not dress was named');
+  assert.match(said, /#20 Playmaker/);
+  assert.match(said, /among the players who dressed for this game/);
+  assert.doesNotMatch(said, /last played/, 'the last-game line belongs to an unplayed game');
+});
+
+test('⛔ a played game whose lineup cannot be read names NOBODY', async () => {
+  const { ids, settle } = run(PLAYED, `?game=${GID}`, '2026-10-05T12:00:00Z');
+  await settle();
+  assert.equal(blockText(ids), null, 'named a player for a game whose lineup we never read');
+  assert.match(textOf(ids.pv), /5-on-5 CF% while the score was level/, 'the rest of the card draws');
 });

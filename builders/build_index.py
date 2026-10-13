@@ -4187,9 +4187,16 @@ __HELPERS__
     Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
                  grab('recent.json'), grab('catalog.json'), grab('players.json')])
       .then(function (r) {
-        draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
-                          recent: r[3], catalog: r[4], players: r[5] },
-                     new Date().toISOString()));
+        var docs = { schedule: r[0], teams: r[1], measures: r[2],
+                     recent: r[3], catalog: r[4], players: r[5] };
+        // A played game's own lineup decides who may be named; see `watchFor`.
+        var held = ((r[4] || {}).games || []).some(function (g) {
+          return g && String(g.id) === q && g.v; });
+        return (held ? grab('extract/' + q + '.json') : Promise.resolve(null))
+          .then(function (x) {
+            docs.game = x;
+            draw(preview(q, docs, new Date().toISOString()));
+          });
       });
   }
 
@@ -4796,32 +4803,18 @@ __HELPERS__
          word for a reader is TEAM; club is what we say to each other and in the
          code. A gate for a vocabulary rule is worth more than the rule, because
          the rule is the thing everybody forgets while writing a sentence. */
-      + ' \u2014 each his team\u2019s leading goalscorer so far this season.'));
-    /* ⛔⛔ THE DATE, BECAUSE THIS WAS THE ONLY DATELESS FIGURE ON THE SITE. Found
-       by fetching the live card rather than by a failing test: the static pages
-       carry a snapshot banner and the front door states what it counted, and
-       this block said "so far this season" over numbers with no asOf at all.
-       ⭐ AND IT IS THE FIGURE THAT NEEDS IT MOST, which is why the sentence names
-       the cadence instead of only the date. These rows are rebuilt by
-       `derive.yml` -- WEEKLY, `47 15 * * 1` -- while the slate above them is
-       rehydrated nightly, so the card can legitimately show a scorer who has
-       played four games since. A reader comparing the two needs to be told.
-       ⚠️ ABSENT, NOT GUESSED, when the document carries no date: an older
-       players.json has no `through` and inventing one from today's clock would
-       say when we LOOKED, which is the distinction the stamp exists to make. */
+      + ' \u2014 each his team\u2019s leading goalscorer this season among the players '
+      + (w.basis.game ? 'who dressed for this game.' : 'it dressed for its last game.')));
+    if (!w.basis.game) {
+      sect.appendChild(el('p', 'pvwatch',
+        nameOf(p.clubs.away.ab) + ' last played ' + formatDate(w.basis.away) + ', '
+        + nameOf(p.clubs.home.ab) + ' ' + formatDate(w.basis.home)
+        + '. A player ruled out since then could still be named here.'));
+    }
+    // The date the figures are counted through; absent rather than guessed.
     var through = w.through ? formatDate(w.through) : null;
     if (through) {
       sect.appendChild(el('p', 'pvwatch',
-        /* ⛔⛔ THIS SENTENCE SAID "refreshed weekly" AND WENT FALSE THE HOUR
-           THE NIGHTLY STARTED PUBLISHING `players.json`. A caption is a SECOND
-           SURFACE describing a first, and nothing goes red when the first one
-           moves — the shape this repo has logged in CSS, in a legend, and in a
-           memory index. The cadence moved, so the sentence moved with it.
-           ⚠️ AND THE CAVEAT IS NOW ABOUT THE DATE, NOT ABOUT TONIGHT. It read
-           "a game played since tonight's slate was listed", which is wording
-           for a FUTURE game — and this same card renders for games already
-           played, where it is simply false. Stated against `through` it is true
-           either way. */
         'Counted through ' + through + ', and refreshed each night — a game '
         + 'played after that date is not in these numbers yet.'));
     }

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-US29cvjrGJ06Rq18mjTCfV2C3YZbg/657+2Q7WBrJh8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-41Y+CSBBq7Kb/B1p5a5ydBeKdeB8llskSz0xdH/38Aw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -694,23 +694,34 @@ const WITHHELD = [
       ? { count: v[side], n: v.h + v.a } : { count: 0, n: 0 };
   } }));
 
-function watchFor(players, awayAb, homeAb) {
+function watchFor(players, awayAb, homeAb, dressed = null) {
   if (!players || !players.clubs) return null;
+  const lastGame = players.lastGame || {};
+  const playing = ab => dressed
+    ? r => dressed.has(r.p)
+    : r => !!r.last && r.last === lastGame[ab];
   const pick = ab => {
-    const roster = players.clubs[ab];
-    if (!roster || !roster.length) return null;
+    const roster = (players.clubs[ab] || []).filter(playing(ab));
+    if (!roster.length) return null;
     return roster.slice().sort((x, y) => y.g - x.g || x.p - y.p)[0];
   };
   const away = pick(awayAb), home = pick(homeAb);
   if (!away || !home) return null; 
+  const basis = dressed ? { game: true }
+    : { game: false, away: lastGame[awayAb], home: lastGame[homeAb] };
   return { season: players.season, through: players.through || null,
            range: players.range, need: players.need,
-           away, home,
+           away, home, basis,
            rows: PLAYER_ROWS.map(r => ({
              ...r,
              range: players.range ? players.range[r.fig] : null,
              need: players.need ? players.need[r.fig] : null,
              away: rate(away, r.fig), home: rate(home, r.fig) })) };
+}
+
+function dressedIn(extract) {
+  const roster = (extract && extract.roster) || {};
+  return new Set(Object.entries(roster).filter(([, r]) => r.pos !== 'G').map(([p]) => Number(p)));
 }
 
 function rate(p, fig) {
@@ -839,7 +850,7 @@ function preview(id, docs, now) {
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures),
-    watch: watchFor(d.players, away, home) };
+    watch: watchFor(d.players, away, home, state === 'played' ? dressedIn(d.game) : null) };
 }
 
 
