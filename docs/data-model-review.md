@@ -13,7 +13,7 @@ the headline claims of each re-checked by hand before they were written here
 Already fixed the same day, from the inventory, and not repeated below:
 "Last night" lost every morning (`b71e107`, verified live), and
 `coverage.refusedInWindow`, a field that was always 0 (`b71e107`).
-Raw-archive privacy is waiting on a Cloudflare dashboard rule.
+Raw-archive privacy: ✅ 2026-10-13, a Cloudflare WAF rule Kevin added in the dashboard; `r2-raw-private.yml` (verify-only) confirms `/raw/` answers 403 while `/extract/` and `catalog.json` answer 200.
 
 ---
 
