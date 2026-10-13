@@ -525,7 +525,11 @@ test('⭐ the nightly publishes the documents it writes, and re-uploads the arch
      what the pattern's subject is, not whether it finds the names you expected. */
   const written = [...new Set(
     [...measure.matchAll(/writeFileSync\(join\(out, '([a-z.]+\.json)'\)/g)]
-      .map(m => m[1]))].filter(d => d !== 'recent.json').sort();
+      .map(m => m[1]))].filter(d => d !== 'recent.json');
+  // And the lesson picks, which the same job writes beside the measurement.
+  const lessons = readFileSync(new URL('../builders/lessons.mjs', import.meta.url), 'utf8');
+  written.push(...[...lessons.matchAll(/writeFileSync\(join\(dir, '([a-z.]+\.json)'\)/g)].map(m => m[1]));
+  written.sort();
   /* ⚠️ AND THE LIST IS READ OUT OF THE PUBLISH STEP, not off the first `for f in`
      in the job — that one is the archive PULL, and matching it had this test
      reporting that the nightly publishes `catalog.json index.json`. */

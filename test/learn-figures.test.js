@@ -608,6 +608,9 @@ test('⭐ the clip ids are namespaced, or the second figure steals the first one
   }
 });
 
+const LESSONS = JSON.parse(/const LESSONS = (\{.*?\});\n/.exec(
+  readFileSync(new URL('../src/game.html', import.meta.url), 'utf8'))[1]);
+
 test('⭐ the card leads to the diagram, and the diagram leads to the game', () => {
   /* Kevin: *"I want the diagram in place of the game replay we currently get
      when the offside card is clicked."* The real moment must not be lost with
@@ -620,7 +623,9 @@ test('⭐ the card leads to the diagram, and the diagram leads to the game', () 
     assert.equal(c[1], `/${id}.html`, `the ${id} card no longer opens its diagram`);
     const d = /<a class="rgo" href="([^"]+)">([^<]+)</.exec(page);
     assert.ok(d, `the ${id} diagram carries no way through to the replay`);
-    assert.match(d[1], /^\/game\.html\?game=\d+/, `${id}'s door points at ${d[1]}`);
+    // A lesson door; the replay resolves it, falling back to the baked reference.
+    assert.equal(d[1], `/game.html?lesson=${id}`, `${id}'s door points at ${d[1]}`);
+    assert.match(LESSONS[id].ref, /^\?game=\d+/, `${id}'s fallback reaches no game`);
   }
   const card = /<a class="card" id="offside" href="([^"]+)"/.exec(learn);
   const door = /<a class="rgo" href="([^"]+)">([^<]+)</.exec(rule);
@@ -633,8 +638,8 @@ test('⭐ the card leads to the diagram, and the diagram leads to the game', () 
   assert.match(door[2], /restart/i, `the offside door says "${door[2].trim()}", not what it opens`);
   assert.doesNotMatch(door[2], /a real game|the offside|the crossing/i,
     `the offside door promises "${door[2].trim()}", which is not what lies through it`);
-  assert.match(door[1], /^\/game\.html\?game=\d+/, `the door points at ${door[1]}`);
-  assert.match(door[1], /layer=whistle/, 'the door does not turn on the layer that marks the call');
+  assert.equal(door[1], '/game.html?lesson=offside', `the door points at ${door[1]}`);
+  assert.match(LESSONS.offside.ref, /layer=whistle/, 'the door does not turn on the layer that marks the call');
 });
 
 test('⛔ no door says "real" or "live" — what lies through it is a recording', () => {

@@ -961,6 +961,9 @@ jobs:
       - name: measure the archive
         shell: bash
         run: node builders/measure.mjs --out ingest
+      # Each learn-page lesson's game: the newest one where its moment happens.
+      - name: the lessons' games
+        run: node builders/lessons.mjs ingest
 
       # ⭐ THE INVARIANT, BEFORE ANYTHING IS PUBLISHED. Local tree: the catalog we
       # just pulled, the document we just wrote, the index beside them. A span
@@ -996,7 +999,7 @@ jobs:
       # recent.json they have no ordering constraint against the extracts.
       - name: publish the measurement
         run: |
-          for f in measures.json teams.json players.json; do
+          for f in measures.json teams.json players.json lessons.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
               --cache-control no-cache \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress

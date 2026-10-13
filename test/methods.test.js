@@ -1024,7 +1024,7 @@ test('⛔⛔ every door the site writes was found by this file, not most of them
   assert.equal(found.length, onDisk,
     `${onDisk} work doors are on disk and these patterns match ${found.length} `
     + `(${found.map(d => d.where).join(', ')})`);
-  assert.ok(onDisk >= 12, `only ${onDisk} doors on the whole site`);
+  assert.ok(onDisk >= 11, `only ${onDisk} doors on the whole site`);
 });
 
 test('⛔⛔⛔ EVERY WORK DOOR ON THE SITE LANDS ON A SECTION THAT EXISTS', async () => {
@@ -1044,7 +1044,7 @@ test('⛔⛔⛔ EVERY WORK DOOR ON THE SITE LANDS ON A SECTION THAT EXISTS', asy
      fires, because the page's ids move and the builder's hrefs do not. Change
      `METHODS_ANCHOR` in the builder and it fires from the other side. */
   const doors = everyDoor().map(d => 'm-' + d.key);
-  assert.ok(doors.length >= 12, `only ${doors.length} work doors across the site`);
+  assert.ok(doors.length >= 11, `only ${doors.length} work doors across the site`);
 
   const page = render('how-we-measure.html', { 'measures.json': MEASURES });
   await page.settle();
@@ -1111,7 +1111,7 @@ test('⛔⛔⛔ a door opens the work behind THE NUMBER THE CARD PRINTS', async 
   const ONE_GAME = /never reached the goaltender/;
 
   const doors = everyDoor();
-  assert.ok(doors.length >= 12, `only ${doors.length} doors found — the markup moved`);
+  assert.ok(doors.length >= 11, `only ${doors.length} doors found — the markup moved`);
 
   for (const { copy, key, where } of doors) {
     const text = copy.replace(/&[a-z]+;/g, ' ');

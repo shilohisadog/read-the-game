@@ -191,3 +191,28 @@ counter-argument is not weak.
    `docs/one-measure.md` §8 parked it here — *a box score counts shots on goal,
    and 51.9% of attempts never reach the goalie* — and it is a ninth card in a
    page that is being rebuilt as cards.
+
+
+## 9. ✅ Ruled 2026-10-13: many games, re-picked nightly
+
+Kevin chose spread across the archive, re-picked every night, *"to show the
+breadth of the archive and show that the archive is current"*, and asked that
+the replay explain the lesson the reader came for.
+
+- **The rule** (`src/lib/lessons.js::pickLessons`): each lesson, in the learn
+  page's order, opens the newest published game in which its moment happens and
+  which no earlier lesson took. `builders/lessons.mjs` writes `lessons.json` in
+  the nightly measure job and the weekly derive.
+- **The doors** are `/game.html?lesson=<id>`. The replay reads `lessons.json`,
+  rewrites the address to the picked moment (so a shared link opens the same
+  frame), and falls back to this file's reference door when it cannot.
+- **On arrival** a strip above the rink names the lesson, carries the card's own
+  sentence, says which game the example is from, and links back; Close or Play
+  puts it away.
+- **Found by picking across real games:** the empty-net rule ("the first event
+  with a goalie pulled") matched a delayed-penalty pull one minute into a game.
+  It is now the first third-period event with a goalie pulled by a team that is
+  behind, which is what the card says ("losing late"). Over 4,281 games every
+  rule finds its moment without error; the rarest is overtime (15.5%).
+- The blocked-shot card's per-game figure ("X of Y attempts in this game") is
+  gone: it described the reference game and nothing else.

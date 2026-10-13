@@ -193,6 +193,10 @@ jobs:
         shell: bash
         run: node builders/measure.mjs --out ingest | tee measured.json
 
+      # Each learn-page lesson's game: the newest one where its moment happens.
+      - name: the lessons' games
+        run: node builders/lessons.mjs ingest
+
       # ⭐ AND THE SPAN IT CLAIMS MUST BE THE ARCHIVE'S — added 2026-10-03, and
       # found missing by the gate written for the nightly rather than by reading
       # this file. The weekly re-extracts and measures, so it writes the same
@@ -399,7 +403,7 @@ jobs:
           # written. `test/workflows.test.js` now derives the set from what
           # `measure.mjs` actually writes, so the next new document cannot be
           # forgotten quietly.
-          for f in catalog.json measures.json teams.json players.json index.json; do
+          for f in catalog.json measures.json teams.json players.json lessons.json index.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
               --cache-control no-cache \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress

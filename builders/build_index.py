@@ -2288,7 +2288,7 @@ def _learn():
     the only fix that cannot rot is to derive it from the list being rendered.
     """
     d = json.loads((ROOT / "data" / "learn-doors.json").read_text())
-    doors, g, fig = d["doors"], d["game"], d["figures"]
+    doors = d["doors"]
     arch = _archive()
     figures = _figures()
 
@@ -2330,8 +2330,6 @@ def _learn():
             # measurement it is and "46" could be anything. The token is the only
             # form in which a figure names itself.
             blurb_raw = blurb
-            blurb = (blurb.replace("__UNREACHED__", str(fig["unreached"]["count"]))
-                          .replace("__ATTEMPTS__", str(fig["unreached"]["n"])))
             for tok, val in arch.items():
                 blurb = blurb.replace(tok, val)
             # The moment is shown, not just linked: a reader can see the card
@@ -2357,7 +2355,7 @@ def _learn():
                 # via the doors artifact -- not a second naming rule here. It
                 # reads "Period 1" in regulation and "Overtime · 3-on-3" in the
                 # one card that needed a different game.
-                at = f'{door["label"]} &middot; {door["rem"]} left'
+                at = "A real example from the newest games"
             card = (f'<a class="card" id="{cid}" href="{href}">'
                     f'<p class="t">{title}</p><p>{blurb}</p>'
                     f'<p class="at">{at}</p></a>')
@@ -2379,58 +2377,11 @@ def _learn():
                 out.append(f'    {card}')
         out.append("  </div>")
 
-    p1 = sum(1 for c in LEARN_CARDS if doors[c[1]]["per"] == 1)
-    # `_when`, not a third inline format. See its header.
-    when = _when(g["date"])
-    # ⚠️⚠️ THIS SENTENCE CONTRADICTED A CARD SITTING TWO ELEMENTS ABOVE IT.
-    # It read "Every one of them is a toggle on a real game", and the empty-net
-    # card's own blurb says "Nothing is toggled here -- the goalie is simply no
-    # longer on the ice." `empty-net` is the one door with `layers: []`, and
-    # test/learn.test.js asserts that ten lines above the test that guards this
-    # paragraph. Both were green, on a page a reader can catch by reading.
-    #
-    # ⭐⭐ THE GUARD WATCHED THE ARITHMETIC AND NEVER THE CLAIM. It checked that
-    # "9" matches the card count and "8" matches the period-1 doors -- and its
-    # own comment says "this page has already broken exactly that way once",
-    # which is true of the numbers and blind to the assertions around them. An
-    # instrument aimed at one axis reads as coverage for all of them.
-    #
-    # ⭐ AND THE SECOND CLAUSE HAD DRIFTED THE SAME WAY. "Every one shows the
-    # events it counted and the events it did not" is true of the measurement
-    # layers and of nothing else -- it is already the `ours` group's own heading
-    # ("each showing its work"), so it was a claim about half the page, made
-    # about all of it, in the one place it was not needed.
-    # "These N moments" went for a third reason: 6 of the 9 cards now lead to a
-    # DIAGRAM, and each says so in its own `at` line, so the page called them
-    # moments while labelling them drawings.
-    #
-    # WHAT IS LEFT IS WHAT SURVIVES BEING CHECKED: every card does reach a real
-    # game (directly, or through the diagram's door -- the build already refuses
-    # a card without one), they are all from the one night, and the front page
-    # is where the rest live.
-    # ⚠️⚠️ "THEY ARE ALL FROM ONE NIGHT" STOPPED BEING TRUE ON 2026-09-10, and it
-    # is amended rather than deleted. The overtime card needs a game that reached
-    # overtime and the reference game never leaves regulation, so a second one
-    # joined -- and a sentence true of eleven cards out of twelve is exactly the
-    # shape the seamlessness audit exists to catch. The count is COMPUTED from
-    # the doors rather than typed, so a third game could never make it false
-    # silently.
-    other = [d for d in doors.values() if d.get("game")]
-    ot = d.get("ot") or {}
-    ow = _when(ot.get("date"))
-    n_other = len(other)
-    WORDS = {1: "one", 2: "two", 3: "three"}
-    said = WORDS.get(n_other, str(n_other))
-    rest = (f' The {"one that cannot" if n_other == 1 else f"{said} that cannot"} '
-            f'be shown there &mdash; a game has to reach overtime to teach it '
-            f'&mdash; {"opens" if n_other == 1 else "open"} {ot.get("away")} at '
-            f'{ot.get("home")}, {ow}.') if other else ''
     out.append(
-        f'  <p class="cnote">Every one of these leads to a real game, and all '
-        f'but {said} are from one night &mdash; {g["away"]} at '
-        f'{g["home"]}, {when} &mdash; with {p1} of the {len(LEARN_CARDS)} in '
-        f'the first period alone.{rest} Every other game we hold is '
-        f'reachable from <a href="/">the front page</a>.</p>')
+        '  <p class="cnote">Every one of these opens a real game: for each lesson, the '
+        'newest game we hold in which that moment happens, a different game for each, '
+        'picked again every night. Every other game we hold is reachable from '
+        '<a href="/">the front page</a>.</p>')
     return ('<h1>What you can see here</h1>\n<div class="conc">\n'
             + "\n".join(out) + "\n</div>")
 
@@ -2492,7 +2443,7 @@ def _card_href(cid, doors):
     `test/preview-page.test.js` pins the answer per row rather than accepting
     either shape of href.
     """
-    return f"/{cid}.html" if cid in _fig_json() else f'/game.html{doors[cid]["href"]}'
+    return f"/{cid}.html" if cid in _fig_json() else f'/game.html?lesson={cid}'
 
 
 # WHAT THE ARCHIVE SAYS, ON THE FRONT DOOR. Three measured sentences, each a door
@@ -2649,8 +2600,6 @@ FIGURE_DERIVATION = {
     # and are substituted a few lines below it, which is exactly why they are
     # listed here: a figure is a figure whatever published it, and the one that
     # arrives by a different route is the one a token-based gate would miss.
-    "__UNREACHED__":          "attempts",
-    "__ATTEMPTS__":           "attempts",
     # ⭐ THE SAME DERIVATION FROM THE OTHER DIRECTION. The two above are ONE
     # GAME's unreached attempts, printed on the `blocked` card; these three are
     # the ARCHIVE's three-way split, printed in the `control` figure's note.
@@ -3032,8 +2981,7 @@ LEARN_CARDS = [
      "reached the goaltender, missed the net, or a body blocked it on the way."),
     ("ours", "blocked", "The attempt that never arrived",
      "A body got in front of this one before it reached the goaltender, and it "
-     "counts as an attempt all the same &mdash; __UNREACHED__ of __ATTEMPTS__ "
-     "attempts in this game never reached the goaltender at all."),
+     "counts as an attempt all the same."),
     # ⭐⭐ THE PILOT FOR THE MEASUREMENT CARDS, and what it changes is the ORDER.
     # This read "A geometric rule of ours, not a model: close in, and between the
     # faceoff dots. This is the first shot that qualifies." -- a definition and a
@@ -3430,8 +3378,6 @@ def build_learn():
 def build_rule(cid):
     """One rule, drawn — the destination a learn card with a diagram opens."""
     fig = _fig_json()[cid]
-    doors = json.loads((ROOT / "data" / "learn-doors.json").read_text())
-    door, g = doors["doors"][cid], doors["game"]
     title = next(t for _, c, t, _ in LEARN_CARDS if c == cid)
     blurb = next(b for _, c, _, b in LEARN_CARDS if c == cid)
     # ⚠️ THE RULE PAGE IS A SECOND READER OF THE SAME BLURB, and the first version
@@ -3444,7 +3390,6 @@ def build_rule(cid):
     raw_blurb = blurb
     for tok, val in arch.items():
         blurb = blurb.replace(tok, val)
-    y, m, day = g["date"].split("-")
     # ⭐⭐ TWO DOORS, BECAUSE THIS PAGE CAN PRINT TWO MEASUREMENTS. `slot.html`
     # states how often a shot from the slot goes in (its lede) and how many
     # attempts are taken from there (the note under the drawing) -- two
@@ -3460,13 +3405,12 @@ def build_rule(cid):
             .replace("__RULE_WORK_LEDE__", lede_work)
             .replace("__RULE_WORK_FIG__", fig_work)
             .replace("__RULE_FIG__", _figures()[cid])
-            .replace("__RULE_HREF__", door["href"])
+            .replace("__RULE_HREF__", f"?lesson={cid}")
             # THE PROMISE IS THE FIGURE'S, not this template's: what lies
             # through the door differs per rule, and the rule knows.
             .replace("__RULE_DOOR__", fig["door"])
-            .replace("__RULE_AT__", f'{g["away"]} at {g["home"]}, {int(day)} '
-                                    f'{MONTHS[int(m) - 1]} {y} &middot; period {door["per"]}, '
-                                    f'{door["rem"]} left'))
+            .replace("__RULE_AT__", "From the newest game we hold where it happens, "
+                                    "picked again every night."))
     # AND AGAIN OVER THE WHOLE PAGE, because a figure's `note` is rendered inside
     # `__RULE_FIG__` and never passes through `blurb`. Idempotent: a token
     # replaced once is not there to replace twice.

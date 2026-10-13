@@ -84,7 +84,7 @@ class WorkDoors(unittest.TestCase):
             door = B._how_door(blurb, cid)
             if door:
                 expected[cid] = door
-        self.assertTrue(len(expected) >= 6,
+        self.assertTrue(len(expected) >= 5,
                         f"only {len(expected)} cards print a figure — the map is not being read")
 
         # The wrapper holds the card and its door, so the pairing is read out of

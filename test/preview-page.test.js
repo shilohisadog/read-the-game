@@ -855,8 +855,11 @@ test('⛔ the CF% row reaches the Control layer — now through the diagram', as
   assert.equal(onward.length, 1,
     `control.html offers ${onward.length} ways into the replay — "then a real `
     + 'example" is one example, and two would need a sentence saying which is which');
-  assert.match(onward[0], /layer=corsi/,
-    `the diagram sends the reader to ${onward[0]}, which does not turn the Control `
+  assert.equal(onward[0], '/game.html?lesson=control');
+  const ref = JSON.parse(/const LESSONS = (\{.*?\});\n/.exec(
+    readFileSync(new URL('../src/game.html', import.meta.url), 'utf8'))[1]).control.ref;
+  assert.match(ref, /layer=corsi/,
+    `the diagram sends the reader to ${ref}, which does not turn the Control `
     + 'layer on — the page explains what an attempt is and then shows one being missed');
 });
 

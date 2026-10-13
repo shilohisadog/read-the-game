@@ -22,6 +22,7 @@ import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { doors } from '../builders/learn-doors.mjs';
+import { LESSON_ORDER } from '../src/lib/lessons.js';
 import { playable } from '../src/lib/layer.js';
 import { icingRestarts } from '../src/lib/layers/whistle.js';
 import { isEven } from '../src/lib/strength.js';
@@ -40,6 +41,15 @@ const richOt = JSON.parse(readFileSync(new URL('../data/rich-ot.json', import.me
 const gameOf = href => String(parse(query(href)).game) === String(richOt.game.id) ? richOt : rich;
 const built = JSON.parse(readFileSync(new URL('../data/learn-doors.json', import.meta.url)));
 const html = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
+/* A card links to `?lesson=<id>`; with no nightly pick the replay opens the
+   reference door baked into the game page's LESSONS table, which is what these
+   tests follow. */
+const LESSONS = JSON.parse(/const LESSONS = (\{.*?\});\n/.exec(
+  readFileSync(new URL('../src/game.html', import.meta.url), 'utf8'))[1]);
+const viaLesson = h => {
+  const m = /^\/game\.html\?lesson=([a-z-]+)$/.exec(h);
+  return m && LESSONS[m[1]] ? `/game.html${LESSONS[m[1]].ref}` : h;
+};
 
 const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id,
               roster: rich.roster, evenOnly: false };
@@ -51,7 +61,7 @@ const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id,
  *  wrong lesson. Reading it here is what lets the next test say so. */
 const raw = [...html.matchAll(
   /<a class="card" id="([^"]+)" href="([^"]+)"><p class="t">([^<]+)<\/p>/g)]
-  .map(m => ({ id: m[1], href: m[2].replace(/&amp;/g, '&'), title: m[3] }));
+  .map(m => ({ id: m[1], href: viaLesson(m[2].replace(/&amp;/g, '&')), title: m[3] }));
 
 /* ⭐ A DOOR MAY NOW BE TWO HOPS, AND THE CLAIM IS UNCHANGED.
  *
@@ -75,7 +85,7 @@ const cards = raw.map(c => {
   catch { hopProblems.push(`"${c.title}" opens ${c.href}, which is not a file we build`); return c; }
   const door = /<a class="rgo" href="([^"]+)"/.exec(page);
   if (!door) { hopProblems.push(`"${c.title}" opens ${c.href}, which carries no way through to a game`); return c; }
-  return { ...c, href: door[1].replace(/&amp;/g, '&'), via: c.href };
+  return { ...c, href: viaLesson(door[1].replace(/&amp;/g, '&')), via: c.href };
 });
 
 /** The href a card carries, minus the page, as parse() wants it. */
@@ -256,15 +266,16 @@ test('the empty-net door names no layer, because the base view already shows it'
             `the moment must actually have a goalie pulled, and sit is ${e && e.sit}`);
 });
 
-test('the closing sentence counts the cards it is standing next to', () => {
-  // PROSE THAT REFERS TO ANOTHER ELEMENT BY COUNT has a dependency nothing in a
-  // text file can see, and this page has already broken exactly that way once.
+test('the closing sentence states the nightly rule, and the rule covers every card', () => {
+  // The note says how each card's game is chosen; the pick must cover exactly
+  // the cards on the page, or a card would open nothing new.
   const note = /<p class="cnote">([\s\S]*?)<\/p>/.exec(html)[1];
-  const first = Number(/with (\d+) of the (\d+)/.exec(note)[1]);
-  const total = Number(/with (\d+) of the (\d+)/.exec(note)[2]);
-  assert.equal(total, cards.length, 'the sentence must count the cards on the page');
-  const inP1 = Object.values(built.doors).filter(d => d.per === 1).length;
-  assert.equal(first, inP1, 'and the first-period claim must be the real one');
+  assert.match(note, /the newest game we hold in which that moment happens/);
+  assert.match(note, /a different game for each/);
+  assert.match(note, /picked again every night/);
+  assert.deepEqual([...LESSON_ORDER].sort(), raw.map(c => c.id).sort(),
+    'the nightly pick and the cards on the page are different lists');
+  for (const c of raw) assert.ok(LESSONS[c.id], `the replay cannot resolve the ${c.id} lesson`);
 });
 
 test('⛔ and the closing sentence makes no UNIVERSAL claim the cards contradict', () => {
@@ -308,7 +319,7 @@ test('⛔ and the closing sentence makes no UNIVERSAL claim the cards contradict
 
   // ⭐ AND THE CLAIM THAT REPLACED THEM IS CHECKED, not merely shorter: every
   // card really does reach a game, through its own door or its figure's.
-  assert.match(note, /leads to a real game/, 'the surviving claim has been reworded');
+  assert.match(note, /opens a real game/, 'the surviving claim has been reworded');
   for (const [id, d] of doors)
     assert.match(d.href, /^\?game=\d+&at=/, `${id}'s door does not reach a game`);
 });
@@ -588,9 +599,9 @@ test('⛔ a card footer names the moment in the PAGE\'S own words, not a second 
       continue;
     }
     assert.match(c.href, /game\.html/, `${c.id} has a moment footer but opens no game`);
-    assert.ok(footer.startsWith(door.label.replace(/&/g, '&amp;')),
-      `the ${c.id} card's footer ("${footer}") does not open with the page's own `
-      + `name for the moment ("${door.label}")`);
+    // The game changes nightly, so the footer may name no period or clock.
+    assert.doesNotMatch(footer, /Period|Overtime|left/,
+      `the ${c.id} card's footer ("${footer}") names a moment in one game`);
   }
   // AND THE ONE THAT PROVES IT IS NOT ALL "Period N": the overtime card must
   // carry a label the old rule could never have produced.

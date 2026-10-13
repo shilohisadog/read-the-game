@@ -238,12 +238,18 @@ function run({ search = '', responses = {} } = {}) {
      visitor is actually served -- really sends them, rather than only the
      inlined build doing so. */
   const posted = [];
+  // `history.replaceState` rewrites this location, as a browser's would.
+  const location = { search, origin: 'https://x', pathname: '/game.html' };
+  const history = { replaceState(_s, _t, url) { location.search = url.slice(url.indexOf('?')); } };
   new Function('document', 'fetch', 'location', 'matchMedia', 'setTimeout', 'clearTimeout',
-               'window', scriptOf(shell))(
-    document, fetch, { search, origin: 'https://x' }, () => ({ matches: false }),
-    () => 0, () => {}, { parent: { postMessage: (m, o) => posted.push({ m, o }) } });
-  return { asked, said, posted, els, settle: () => new Promise(r => setTimeout(r, 0)) };
+               'window', 'history', scriptOf(shell))(
+    document, fetch, location, () => ({ matches: false }),
+    () => 0, () => {}, { parent: { postMessage: (m, o) => posted.push({ m, o }) } }, history);
+  return { asked, said, posted, els, location,
+           settle: () => new Promise(r => setTimeout(r, 0)) };
 }
+
+const LESSONS_BAKED = JSON.parse(/const LESSONS = (\{.*?\});\n/.exec(shell)[1]);
 
 const CATALOG = { games: [
   { id: 2025020001, d: '2026-01-10', v: 1 },
@@ -1045,4 +1051,40 @@ test('no link describes the front door as a collection or a newest anything', ()
     }
   }
   assert.ok(seen >= 10, `only ${seen} links to the front door across the site`);
+});
+
+
+/* --------------------------------------------- A LESSON DOOR, ?lesson=<id> */
+
+test('a lesson door opens the game the nightly pick names, and the address becomes that moment', () => {
+  const pick = { lessons: { icing: { href: '?game=2023020204&at=1-09:09&layer=whistle&strength=all' } } };
+  const r = run({ search: '?lesson=icing',
+                  responses: { 'lessons.json': pick, 'extract/2023020204.json': EXTRACT,
+                               'measures.json': {} } });
+  return r.settle().then(() => {
+    assert.equal(r.asked[0], 'https://data.readthegame.co/lessons.json');
+    assert.match(r.asked[1], /extract\/2023020204\.json$/);
+    assert.equal(r.location.search,
+      '?game=2023020204&at=1-09:09&layer=whistle&strength=all&lesson=icing',
+      'the address must be the moment, so a shared link opens the same frame');
+  });
+});
+
+test('⛔ with no nightly pick, a lesson door opens the reference game rather than nothing', () => {
+  const ref = LESSONS_BAKED.icing.ref;
+  const id = /game=(\d+)/.exec(ref)[1];
+  const r = run({ search: '?lesson=icing',
+                  responses: { [`extract/${id}.json`]: EXTRACT, 'measures.json': {} } });
+  return r.settle().then(() => {
+    assert.match(r.asked[1], new RegExp(`extract/${id}\\.json$`),
+      'a missing lessons.json must fall back to the baked reference door');
+    assert.equal(r.location.search, ref + '&lesson=icing');
+  });
+});
+
+test('an unknown lesson is no lesson: the page opens the newest game as usual', () => {
+  const r = run({ search: '?lesson=nonsense', responses: { 'front.json': frontOf(CATALOG) } });
+  return r.settle().then(() => {
+    assert.equal(r.asked[0], 'https://data.readthegame.co/front.json');
+  });
 });

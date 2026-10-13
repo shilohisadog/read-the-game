@@ -49,7 +49,7 @@ import { blocked } from './lib/layers/blocked.js';
 import { zonestart } from './lib/layers/zonestart.js';
 import { periodLabel } from './lib/period.js';
 import { onIce } from './lib/onice.js';
-import { colourOf, inkOn, readableInk } from './lib/teams.js';
+import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -2678,7 +2678,7 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
    screen until the NEXT render, which at 3600ms is up to three and a half
    seconds of a list that is no longer true. Neither transition produces a frame
    of its own, so both have to say so. */
-function play(){if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
+function play(){closeLesson();if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
 /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
@@ -3115,6 +3115,20 @@ const WHEN=formatDate(G.game&&G.game.date)||'';
 const line=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
 $('gl').textContent=line;
 document.title=`${line} — Read the Game`;
+/* The lesson this visit came from (`?lesson=`, a learn-page door): its name, what
+   to look for, which game this example is, and the way back. `LESSONS` is baked
+   from the learn cards; closed by its button or by pressing play. */
+const LESSON=LINK.lesson&&typeof LESSONS!=='undefined'?LESSONS[LINK.lesson]||null:null;
+function closeLesson(){const box=$('lesson');if(box)box.hidden=true;}
+(function drawLesson(){const box=$('lesson');if(!box)return;
+ if(!LESSON){box.hidden=true;return;}
+ box.innerHTML='<p class="lsk">Lesson · '+ESC(LESSON.title)+'</p>'
+  +'<p class="lsay">'+ESC(LESSON.says)+'</p>'
+  +'<p class="lfrom">This example: '+ESC(nameOf(AAB)+' at '+nameOf(HAB))+(WHEN?', '+ESC(WHEN):'')
+  +'. <a href="'+ESC(LESSON.back)+'">Back to the lesson</a>'
+  +' <button type="button" class="lclose" id="lclose">Close</button></p>';
+ box.hidden=false;
+ $('lclose').addEventListener('click',closeLesson);})();
 // THE PER-GAME SENTENCE. A summary of a FINISHED game, so it sits with the game
 // line at the foot rather than beside the scoreboard, which counts up as the
 // replay plays. It discloses nothing the page has not already said -- #gl states

@@ -125,6 +125,8 @@ __CSS__</style>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
 </div>
 <p class="atnote" id="atnote"></p>
+<!-- The lesson a learn-page door brought the reader here for (app.js fills it). -->
+<div class="lesson" id="lesson" hidden></div>
 <!-- ⭐ THE ICE HAS AN ID BECAUSE IT IS A CONTROL NOW (2026-09-11): a tap on
      it plays and pauses. `$('ice')` rather than a `.rinkbox>svg` selector --
      every other element this app binds is reached by id, and the one query
@@ -839,6 +841,8 @@ def _lib():
     # what an all-star game is.
     out.append("/* --- data/competitions.json --- */\n"
                "const COMPETITIONS = " + P.competitions() + ";")
+    out.append("/* --- the learn page's lessons, for ?lesson= --- */\n"
+               "const LESSONS = " + json.dumps(_lessons(), separators=(",", ":")) + ";")
     out.append("/* --- which learn cards teach which layer --- */\n"
                "const LEARNCARDS = "
                + json.dumps(_learn_by_layer(), separators=(",", ":")) + ";")
@@ -863,6 +867,30 @@ def _layer_work():
     d = json.loads((ROOT / "data" / "layer-rules.json").read_text())
     return {l["id"]: [{"anchor": w["anchor"], "label": w["label"]} for w in l["work"]]
             for l in d["layers"]}
+
+
+def _lessons():
+    """{lessonId: {title, says, back, ref}} for the replay's lesson strip.
+
+    `says` is the card's own sentence as plain text, figures substituted; `back`
+    is where the card lives; `ref` is the reference game's door, used when the
+    nightly `lessons.json` cannot be read.
+    """
+    import html as H
+    import build_index as B          # builders/, guarded by __main__, no cycle
+    doors = json.loads((ROOT / "data" / "learn-doors.json").read_text())["doors"]
+    arch, figs = B._archive(), B._fig_json()
+    out = {}
+    for _, cid, title, blurb in B.LEARN_CARDS:
+        for tok, val in arch.items():
+            blurb = blurb.replace(tok, val)
+        if "__" in blurb:
+            raise SystemExit(f"lessons: the {cid} card still carries a token: {blurb}")
+        out[cid] = {"title": H.unescape(re.sub(r"<[^>]+>", "", title)),
+                    "says": H.unescape(re.sub(r"<[^>]+>", "", blurb)),
+                    "back": f"/{cid}.html" if cid in figs else f"/what-you-can-see.html#{cid}",
+                    "ref": doors[cid]["href"]}
+    return out
 
 
 def _learn_by_layer():
@@ -1013,7 +1041,19 @@ function newest(f){
 var LINK0=parse(location.search);
 var want=LINK0.game;
 say('Loading…');
-(want?Promise.resolve(want):grab(ORIGIN+'/front.json').then(newest))
+// A LESSON DOOR (`?lesson=icing`, no game): the nightly lessons.json names the
+// game and the moment; the reference game's door stands in when it cannot be
+// read. The address becomes that moment, so the page and a shared link agree.
+function lessonGame(id){
+  return grab(ORIGIN+'/lessons.json')
+    .then(function(d){var l=d&&d.lessons&&d.lessons[id];if(!l||!l.href)throw new Error('no pick');return l.href;})
+    .catch(function(){return LESSONS[id].ref;})
+    .then(function(href){
+      history.replaceState(null,'',location.pathname+href+'&lesson='+id);
+      LINK0=parse(location.search);want=LINK0.game;return want;});}
+(want?Promise.resolve(want)
+  :LINK0.lesson&&LESSONS[LINK0.lesson]?lessonGame(LINK0.lesson)
+  :grab(ORIGIN+'/front.json').then(newest))
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
   // THE RATES ARE OPTIONAL AND MUST NEVER BLOCK THE GAME. measures.json is an
   // archive-level document, republished whenever the archive changes; the game

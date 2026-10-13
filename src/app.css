@@ -249,6 +249,12 @@
    and the first one's note is why it took a minute rather than a session. */
 #rg .endpill[hidden]{display:none}
 #rg .atnote:empty{display:none}
+#rg .lesson{margin:0 0 10px;padding:11px 14px;border-radius:9px;border:1px solid var(--edge);border-left:4px solid var(--blue);background:#fff;color:var(--ink);font-size:.92rem;line-height:1.45}
+#rg .lesson[hidden]{display:none}
+#rg .lesson .lsk{margin:0 0 4px;font-weight:700}
+#rg .lesson .lsay{margin:0 0 6px}
+#rg .lesson .lfrom{margin:0;color:var(--muted);font-size:.85rem}
+#rg .lesson .lclose{margin-left:8px;font:inherit;font-size:.82rem;padding:2px 9px;border-radius:6px;border:1px solid var(--edge);background:#f4f7fa;color:var(--ink);cursor:pointer}
 #rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
 /* ⭐ "PRESS PLAY", ON THE ICE. Kevin, looking at the pre-game frame: "we should
    overlay 'Press Play' onto the rink, in rather large lettering, so the first

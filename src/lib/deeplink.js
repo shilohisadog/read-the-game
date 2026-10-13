@@ -186,7 +186,12 @@ export function parse(search) {
      ⚠️ AND IT IS READ STRICTLY. Anything other than `1` is absent rather than
      truthy, so `summary=0` and `summary=yes` both open nothing — the same rule
      `preview` has followed since it was written. */
-  return { game, at, layers, strength, ends,
+  // A learn-page lesson this visit came from; its id is checked against the
+  // page's own list where it is used.
+  const rawLesson = once('lesson');
+  const lesson = rawLesson !== null && /^[a-z-]+$/.test(rawLesson) ? rawLesson : null;
+  if (rawLesson !== null && lesson === null) problems.push(`lesson: "${rawLesson}" is not a lesson`);
+  return { game, at, layers, strength, ends, lesson,
            preview: once('preview') === '1',
            summary: once('summary') === '1', problems };
 }
