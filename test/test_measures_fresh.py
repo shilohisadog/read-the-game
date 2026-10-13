@@ -116,7 +116,8 @@ class WhereItRuns(unittest.TestCase):
         """The post-copy call is a different question — did the publish land —
         and it is worth keeping. Both must be present."""
         y = self.step("ingest.yml")
-        self.assertIn("python3 tools/measures_fresh.py\n", y)
+        # Inside the refresh function it carries `|| return 1` (set -e is off there).
+        self.assertRegex(y, r"python3 tools/measures_fresh\.py( \|\| return 1)?\n")
 
     def test_the_deploy_hard_fails_on_a_stale_repo(self):
         """⛔ THE LOAD-BEARING ONE. `src/` BAKES archive figures and the front door

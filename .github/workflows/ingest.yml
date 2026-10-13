@@ -1066,68 +1066,86 @@ jobs:
           # `--report`, never a hard fail: the lines below are what FIXES this,
           # and a gate in front of a repair that stops the repair is not a gate.
           python3 tools/measures_fresh.py --report
-          cp ingest/measures.json data/measures.json
-          if git diff --quiet -- data/measures.json; then
-            echo "  data/measures.json is unchanged — nothing to commit"
-            exit 0
-          fi
-          # AND AGAIN AFTER THE COPY, where it is a different question: did the
-          # document we just PUBLISHED arrive intact? That is the only thing the
-          # post-copy position can tell you, and it is worth knowing.
-          python3 tools/measures_fresh.py
-          # THE FIGURES src/lib ARGUES FROM, WRITTEN FROM THE DOCUMENT. First,
-          # because the build inlines these files and the CSP hashes the result.
-          node tools/quoted-figures.mjs
-          # EVERYTHING DERIVED FROM IT, REGENERATED. Each of these is a generated
-          # block or a built page; none is a judgement.
-          node tools/snapshots.mjs
-          # ⛔⛔⛔ THE BUILD COMES BEFORE THE HEALTH BLOCK, AND IT DID NOT ON
-          # 2026-10-04. `health.mjs` RUNS THE SUITE to count it, and the suite
-          # reads the BUILT pages — which at this point were still built from the
-          # measurement this step has just replaced. One test compared a stale page
-          # against the fresh document and failed, so the block was written with a
-          # pass count one short, and `npm run gates` then went red on
-          # `health --check` disagreeing with its own suite. The archive, the
-          # publish and the measurement were all correct; the only thing wrong was
-          # the order of two lines.
-          npm run build
-          node builders/health.mjs
-          # AND THE TREE MUST PASS BEFORE IT IS PUSHED. See the step header.
-          # ⚠️ THE MESSAGE DOES NOT DIAGNOSE, AND THE FIRST VERSION DID — WRONGLY.
-          # It asserted the cause was a stale figure in `sentence.js` or
-          # `blocked.js`. The first real failure was a SHALLOW CLONE breaking
-          # `refcheck`, and the message named two files that were perfectly fine
-          # while the actual tool had already printed both the cause and the fix
-          # twenty lines above it. A guard that guesses sends the next reader to
-          # the wrong file with the right answer already on screen.
-          if ! npm run gates; then
-            echo "::error::the refreshed measurement does not pass the gates, so it was "\
-                 "NOT committed. The archive and the published measurement are current and "\
-                 "correct — what is stale is the committed copy. The failing gate names "\
-                 "itself in the log directly above this line; read that rather than "\
-                 "guessing. The figures src/lib argues from are no longer a candidate: "\
-                 "tools/quoted-figures.mjs rewrote them from the published document a few "\
-                 "steps above, and test/quoted-figures.test.js is the check on that writer. "\
-                 "If THAT is what went red, a sentence has been reworded out of reach of its "\
-                 "own pattern, and the writer has been maintaining nothing."
-            exit 1
-          fi
           git config user.name  'readthegame-ingest'
           git config user.email 'ingest@readthegame.co'
-          THROUGH=$(node -e "process.stdout.write(require('./data/measures.json').dataThrough)")
-          N=$(node -e "process.stdout.write(String(require('./data/measures.json').measured))")
-          # NAMED PATHS, not `-A`: everything above regenerates into `data/`,
-          # `docs/` and `src/`, and a blanket add would carry anything else a
-          # future step happens to leave behind.
-          git add data/measures.json docs src
-          # The span is IN the message, because this is the one commit nobody
-          # writes by hand and the thing a reader of the history wants to know is
-          # which hockey it measured.
-          git commit -m "measure: the archive up to ${THROUGH} — ${N} games" \
-                     -m "Written by the nightly ingest, with everything generated from it: the snapshot banners, the health block and the built pages. data/measures.json is the build input for the six learn pages, which carry no scripts and cannot fetch the archive." \
-                     -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
-          git push
-          echo "pushed=1" >> "$GITHUB_OUTPUT"
+          # The refresh, as one unit, so it can be redone on a newer main: a push
+          # that loses a race with another commit leaves the bucket ahead of the
+          # repo (2026-10-13, 16:29 UTC), and a rebase could conflict on the
+          # regenerated pages, so the whole refresh is rebuilt instead.
+          refresh() {
+            cp ingest/measures.json data/measures.json
+            if git diff --quiet -- data/measures.json; then
+              echo "  data/measures.json is unchanged — nothing to commit"
+              return 2
+            fi
+            # AND AGAIN AFTER THE COPY, where it is a different question: did the
+            # document we just PUBLISHED arrive intact? That is the only thing the
+            # post-copy position can tell you, and it is worth knowing.
+            python3 tools/measures_fresh.py || return 1
+            # THE FIGURES src/lib ARGUES FROM, WRITTEN FROM THE DOCUMENT. First,
+            # because the build inlines these files and the CSP hashes the result.
+            node tools/quoted-figures.mjs || return 1
+            # EVERYTHING DERIVED FROM IT, REGENERATED. Each of these is a generated
+            # block or a built page; none is a judgement.
+            node tools/snapshots.mjs || return 1
+            # ⛔⛔⛔ THE BUILD COMES BEFORE THE HEALTH BLOCK, AND IT DID NOT ON
+            # 2026-10-04. `health.mjs` RUNS THE SUITE to count it, and the suite
+            # reads the BUILT pages — which at this point were still built from the
+            # measurement this step has just replaced. One test compared a stale page
+            # against the fresh document and failed, so the block was written with a
+            # pass count one short, and `npm run gates` then went red on
+            # `health --check` disagreeing with its own suite. The archive, the
+            # publish and the measurement were all correct; the only thing wrong was
+            # the order of two lines.
+            npm run build || return 1
+            node builders/health.mjs || return 1
+            # AND THE TREE MUST PASS BEFORE IT IS PUSHED. See the step header.
+            # ⚠️ THE MESSAGE DOES NOT DIAGNOSE, AND THE FIRST VERSION DID — WRONGLY.
+            # It asserted the cause was a stale figure in `sentence.js` or
+            # `blocked.js`. The first real failure was a SHALLOW CLONE breaking
+            # `refcheck`, and the message named two files that were perfectly fine
+            # while the actual tool had already printed both the cause and the fix
+            # twenty lines above it. A guard that guesses sends the next reader to
+            # the wrong file with the right answer already on screen.
+            if ! npm run gates; then
+              echo "::error::the refreshed measurement does not pass the gates, so it was "\
+                   "NOT committed. The archive and the published measurement are current and "\
+                   "correct — what is stale is the committed copy. The failing gate names "\
+                   "itself in the log directly above this line; read that rather than "\
+                   "guessing. The figures src/lib argues from are no longer a candidate: "\
+                   "tools/quoted-figures.mjs rewrote them from the published document a few "\
+                   "steps above, and test/quoted-figures.test.js is the check on that writer. "\
+                   "If THAT is what went red, a sentence has been reworded out of reach of its "\
+                   "own pattern, and the writer has been maintaining nothing."
+              return 1
+            fi
+            # (set -e is off inside a function called from `||`, hence each `|| return 1`)
+            THROUGH=$(node -e "process.stdout.write(require('./data/measures.json').dataThrough)")
+            N=$(node -e "process.stdout.write(String(require('./data/measures.json').measured))")
+            # NAMED PATHS, not `-A`: everything above regenerates into `data/`,
+            # `docs/` and `src/`, and a blanket add would carry anything else a
+            # future step happens to leave behind.
+            git add data/measures.json docs src || return 1
+            # The span is IN the message, because this is the one commit nobody
+            # writes by hand and the thing a reader of the history wants to know is
+            # which hockey it measured.
+            git commit -m "measure: the archive up to ${THROUGH} — ${N} games" \
+                       -m "Written by the nightly ingest, with everything generated from it: the snapshot banners, the health block and the built pages. data/measures.json is the build input for the six learn pages, which carry no scripts and cannot fetch the archive." \
+                       -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>" || return 1
+          }
+          for attempt in 1 2 3; do
+            rc=0; refresh || rc=$?
+            [ "$rc" = 2 ] && exit 0
+            [ "$rc" = 0 ] || exit 1
+            if git push; then
+              echo "pushed=1" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::warning::main moved during the refresh (attempt $attempt); redoing it on the newest main"
+            git fetch -q origin main && git reset -q --hard origin/main
+          done
+          echo "::error::the refreshed measurement could not be pushed in three attempts; the published copy is ahead of the repo"
+          exit 1
 
       # ⛔⛔ A PUSH MADE WITH THE GITHUB_TOKEN DOES NOT TRIGGER A WORKFLOW. That
       # is GitHub's documented behaviour and it exists to stop recursion, so the
