@@ -110,6 +110,37 @@ the boxscore.)*
 
 ---
 
+## 2a. Re-measured 2026-10-13 — both splits, and a venue check with a control
+
+Kevin asked to re-run every candidate with every-other-game halves as well as
+chronological ones. The throwaway script behind §2 was gone, so it is now a tool:
+, every candidate computed through
+the site's own code and measured by  (both splits) and
+ (overlap with the three shown rows). It reproduces §2 to within a game
+or two; the slot measures moved with the three-clause slot rule (fix list item 1).
+
+⭐ **The venue check now has a control.**  is how a club's figure moves with
+its opponents' in its own building;  is the same in its road games. An
+arena's scorer moves the first only. Something both teams share in every game —
+the stoppages that end everyone's shifts — moves both.
+
+
+
+What it says:
+
+- **Shift length is a real team trait**: settles in 12 games, unrelated to the
+  three shown rows (|r| ≤ 0.07), and its coupling is the same at home (0.54) and on
+  the road (0.57), so it is the shared stoppages, not an arena.
+- **Takeaways, giveaways, puck-win share, hits and missed shots couple at home
+  only** (e.g. takeaways 0.76 home, −0.02 road): the arena's scorer, now measured
+  rather than suspected.
+- **Every-other-game halves add nothing clean.** What they lift over the line is
+  either the possession family again (, ,
+  , ) or an arena-scored figure
+  ( 47 → 12, , ). The one oddity is
+  , 106 → 40: faceoff ability holds within a stretch of a season and
+  not across it, which fits a roster that changes.
+
 ## 3. ⛔ Most of what qualifies is ONE measurement wearing different hats
 
 Pearson between full-season club figures, n = 96:
