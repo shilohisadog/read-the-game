@@ -44,10 +44,9 @@ const recent = (games = []) => ({ asOf: NOW, games });
 const played = (o = {}) => ({ id: 2025020500, date: '2026-01-15', awayAb: 'BUF', homeAb: 'PIT',
   score: { a: 2, h: 3 }, attempts: { a: 55, h: 61 }, slot: { a: 12, h: 15 },
   located: { a: 30, h: 33 }, dAtt: { a: 18, h: 20 }, lvl5: { a: 30, h: 35 }, ...o });
-const catalog = (games = []) => ({ games });
 
 const docs = (o = {}) => ({ schedule: schedule(), teams: teams(), measures: measures(),
-  recent: recent(), catalog: catalog(), ...o });
+  recent: recent(), ...o });
 
 /* ------------------------------------------------------------- THE STATES */
 
@@ -106,18 +105,27 @@ test('a schedule with no season block promises nothing rather than inventing a d
   assert.equal(p.counting.started, false);
 });
 
+/** A published extract in the shape derive.py writes, reduced to what the preview reads. */
+const extract = (id, o = {}) => ({ game: { id, date: '2026-01-15', type: 2 },
+  teams: { away: { ab: 'BUF', id: 7 }, home: { ab: 'PIT', id: 5 } },
+  quoted: { away: { score: 2 }, home: { score: 3 } }, roster: {}, ...o });
+
 test('⭐⭐ ONCE IT IS PLAYED THE SAME URL OPENS THE REPLAY — the reason this is one page', () => {
-  /* A link posted at 6pm is read at 6pm and again next week. A page built for
-     tonight's fixtures could not answer the second reading; this one can, because
-     the catalog is the witness that the game exists.
-     MUTATION: decide the state from the clock instead of the catalog, and a game
-     that was postponed reads as played. */
-  const p = preview(2025020500, docs({ catalog: catalog([
-    { id: 2025020500, d: '2026-01-15', a: 'BUF', h: 'PIT', as: 2, hs: 3, v: 1, t: 2 }]) }),
-    '2026-01-20T00:00:00Z');
+  /* The published extract is the witness that the game was played, not the
+     clock. MUTATION: decide the state from the clock and a postponed game reads
+     as played. */
+  const p = preview(2025020500, docs({ game: extract(2025020500) }), '2026-01-20T00:00:00Z');
   assert.equal(p.state, 'played');
   assert.deepEqual(p.result.score, { a: 2, h: 3 });
+  assert.equal(p.game.date, '2026-01-15', 'the date comes from the extract');
   assert.equal(p.result.watch, 'game.html?game=2025020500', 'the door to the replay');
+});
+
+test('⛔ a past start with no extract is not played, and another game\u2019s extract is not this one', () => {
+  const past = preview(2025020500, docs(), '2026-06-01T00:00:00Z');
+  assert.notEqual(past.state, 'played', 'the clock alone made a game played');
+  const other = preview(2025020500, docs({ game: extract(2025020999) }), '2026-06-01T00:00:00Z');
+  assert.notEqual(other.state, 'played', 'an extract for a different game was taken as this one');
 });
 
 test('a game we cannot find at all is a state, not a crash', () => {

@@ -252,6 +252,15 @@ export function watchFor(players, awayAb, homeAb, dressed = null) {
              away: rate(away, r.fig), home: rate(home, r.fig) })) };
 }
 
+/** The catalog-row view of a published extract, or null when there is none. */
+export function heldFrom(extract, gid) {
+  const g = extract && extract.game;
+  if (!g || Number(g.id) !== gid) return null;
+  const q = extract.quoted || {};
+  return { id: gid, a: extract.teams.away.ab, h: extract.teams.home.ab, d: g.date, t: g.type,
+           v: 1, as: (q.away || {}).score, hs: (q.home || {}).score };
+}
+
 /** The skaters an extract says dressed; an empty set when it is missing, so a
  *  played game whose lineup we cannot read names nobody. */
 export function dressedIn(extract) {
@@ -465,10 +474,9 @@ export function preview(id, docs, now) {
   const gid = Number(id);
   const d = docs || {};
   const fix = (((d.schedule || {}).upcoming) || []).find(g => g && Number(g.id) === gid) || null;
-  /* ⭐ THE CATALOG IS THE WITNESS THAT A GAME WAS PLAYED, not the clock. A
-     postponed game whose start has passed is not a game we hold, and deciding
-     from `now` would open a replay that does not exist. */
-  const held = (((d.catalog || {}).games) || []).find(g => g && Number(g.id) === gid) || null;
+  // The game's published extract is the witness that it was played, not the
+  // clock: derive publishes one only for a game it accepted.
+  const held = heldFrom(d.game, gid);
 
   if (!fix && !held) return { state: 'unknown', game: null, result: null, clubs: null, league: [] };
 

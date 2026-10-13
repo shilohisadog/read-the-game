@@ -15,6 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { pageDocs } from '../src/lib/page-docs.js';
 
 const html = readFileSync(new URL('../src/calendar.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
@@ -73,11 +74,17 @@ const NHL = (n, d, extra) => row(2025020000 + n, d, extra);
 const PRE = (n, d, extra) => row(2025010000 + n, d, extra);
 const OLY = (n, d, extra) => row(2025090000 + n, d, extra);
 
+/* The page reads what the pipeline publishes: the fixture catalog through the
+   real projection (src/lib/page-docs.js), served by path. */
 function run(games, search = '') {
   const { ids, document } = fakeDom();
-  const fetch = url => Promise.resolve(url.includes('catalog.json')
-    ? { ok: true, json: () => Promise.resolve({ games }) }
-    : { ok: false, json: () => Promise.resolve(null) });
+  const docs = pageDocs({ games }, {});
+  const fetch = url => {
+    const body = docs[url.replace(/^.*?readthegame\.co\//, '')];
+    return Promise.resolve(body
+      ? { ok: true, json: () => Promise.resolve(body) }
+      : { ok: false, json: () => Promise.resolve(null) });
+  };
   new Function('document', 'fetch', 'location', script)(
     document, fetch, { search, origin: 'https://readthegame.co' });
   return { ids, settle: () => new Promise(r => setTimeout(r, 0)) };
@@ -381,4 +388,26 @@ test('⛔ a game that disagrees only on FACEOFFS does not mark its shots', async
   const text = textOf(ids.main);
   assert.doesNotMatch(text, /shots\*/, 'a faceoff disagreement marked a shot figure');
   assert.doesNotMatch(text, /disagree about the shot count/);
+});
+
+test('⛔ the calendar never downloads the whole catalog', () => {
+  // Data-model item 4: front.json lists the months, each month is its own document.
+  assert.doesNotMatch(script, /catalog\.json/, 'the built calendar fetches catalog.json again');
+});
+
+test('⛔ a month that holds games but whose document fails says it could not load', async () => {
+  // Not "No games in the archive this month": front.json says this month holds some.
+  const { ids, document } = fakeDom();
+  const docs = pageDocs({ games: MONTH }, {});
+  const fetch = url => {
+    const body = /front\.json$/.test(url) ? docs['front.json'] : null;
+    return Promise.resolve(body ? { ok: true, json: () => Promise.resolve(body) }
+                                : { ok: false, json: () => Promise.resolve(null) });
+  };
+  new Function('document', 'fetch', 'location', script)(
+    document, fetch, { search: '?month=2026-02', origin: 'https://readthegame.co' });
+  await new Promise(r => setTimeout(r, 0));
+  const said = textOf(ids.main);
+  assert.match(said, /could not be loaded/);
+  assert.doesNotMatch(said, /No games in the archive this month/);
 });

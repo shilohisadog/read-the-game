@@ -1000,13 +1000,10 @@ function draw(g,rates){
   boot(g,rates);}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
-function pick(c){
-  // Most recent VIEWABLE game. A refused game is listed in the catalog on
-  // purpose, and landing on one would be an empty theatre.
-  var v=c.games.filter(function(g){return g.v;});
-  if(!v.length)throw new Error('the catalog lists no game we can show');
-  v.sort(function(a,b){return a.d===b.d?a.id-b.id:(a.d<b.d?-1:1);});
-  return v[v.length-1].id;
+// The newest viewable game; front.json carries it (src/lib/front.js::newestOf).
+function newest(f){
+  if(!f||!f.newest)throw new Error('the archive lists no game we can show');
+  return f.newest.id;
 }
 // THE SAME PARSER THE RENDERER USES. This was `location.search.match(/[?&]game=
 // (\d+)/)` here and a preview regex twice more below and above -- three reads,
@@ -1014,7 +1011,7 @@ function pick(c){
 var LINK0=parse(location.search);
 var want=LINK0.game;
 say('Loading…');
-(want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
+(want?Promise.resolve(want):grab(ORIGIN+'/front.json').then(newest))
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
   // THE RATES ARE OPTIONAL AND MUST NEVER BLOCK THE GAME. measures.json is an
   // archive-level document, republished whenever the archive changes; the game

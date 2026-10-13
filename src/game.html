@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bWbkn4h6bIJoMzq3EWTj01TdaAPN0JL1tswe02NKmoc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-COsQhtOjN32aX3BmijXf6YE7R4R7LyhyMCzvcMAXAPQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZBXmA70iIqZ3sP6T3V86CnI1s+cSahIMA9jkyhhUcBA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-COsQhtOjN32aX3BmijXf6YE7R4R7LyhyMCzvcMAXAPQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -4931,16 +4931,14 @@ function draw(g,rates){
   boot(g,rates);}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
-function pick(c){
-  var v=c.games.filter(function(g){return g.v;});
-  if(!v.length)throw new Error('the catalog lists no game we can show');
-  v.sort(function(a,b){return a.d===b.d?a.id-b.id:(a.d<b.d?-1:1);});
-  return v[v.length-1].id;
+function newest(f){
+  if(!f||!f.newest)throw new Error('the archive lists no game we can show');
+  return f.newest.id;
 }
 var LINK0=parse(location.search);
 var want=LINK0.game;
 say('Loading…');
-(want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
+(want?Promise.resolve(want):grab(ORIGIN+'/front.json').then(newest))
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
   .then(function(g){
     if(LINK0.preview){reveal();draw(g,null);return null;}

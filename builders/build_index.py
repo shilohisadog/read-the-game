@@ -712,8 +712,10 @@ HELPERS = r"""  var $ = function (id) { return document.getElementById(id); };
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
     return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
   }
+  // Default caching: every document is uploaded `no-cache` with an ETag, so the
+  // browser revalidates each time and an unchanged one costs a 304.
   function grab(name) {
-    return fetch(ORIGIN + '/' + name, { cache: 'no-store' })
+    return fetch(ORIGIN + '/' + name)
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   }
@@ -983,10 +985,10 @@ __HELPERS__
     return a;
   }
 
-  function drawGrid(games) {
+  function drawGrid(teams) {
     var box = $('teams');
     box.textContent = '';
-    teamsIn(games).forEach(function (ab) { box.appendChild(chip(ab)); });
+    teams.forEach(function (ab) { box.appendChild(chip(ab)); });
     $('bydate').hidden = false;
   }
 
@@ -1156,7 +1158,6 @@ __HELPERS__
      nightly with no deploy. And choosing what to SHOW by date biases no
      measurement -- the base rates still run over all 4,119 in-scope games, and
      nothing is computed from the selection. */
-  // `heroOf` and HERO_LOOP are src/lib/front.js, shared with the pipeline.
 
 
   /* THE SENTENCE UNDER THE RINK, ON THE MEASURE THE BAR ABOVE IT SHOWS.
@@ -1346,8 +1347,8 @@ __HELPERS__
     }
   }
 
-  function drawHero(cat, measures) {
-    var pick = heroOf((cat && cat.games) || []);
+  // `pick` is front.json's `hero` (src/lib/front.js::heroOf).
+  function drawHero(pick, measures) {
     if (!pick) return;
     var g = pick.game;
     /* WHAT THE VISITOR IS ABOUT TO WATCH, in the words the branch earns. The
@@ -1453,7 +1454,7 @@ __HELPERS__
      day-name the module produced would be wrong for about half a slate. The
      browser is the only party that knows the reader's timezone, so `daily`
      hands back the instant and this is the one line that reads it. */
-  function drawDaily(slate, schedule, games) {
+  function drawDaily(slate, schedule, newest) {
     var d = daily(slate, schedule, new Date().toISOString());
     /* ⭐ IT ANSWERS WHETHER IT RENDERED, because the freshness line below now
        depends on the answer and `$('daily').hidden` is the wrong way to ask.
@@ -1665,10 +1666,7 @@ __HELPERS__
          September. Same root as the `sitecopy` failure the same day: one
          question answered by two rules that agreed only while hockey was out of
          season. */
-      var last = null;
-      (games || []).forEach(function (g) {
-        if (g.v && (!last || g.d > last)) last = g.d;
-      });
+      var last = newest ? newest.d : null;
       if (last) {
         var back = el('a', 'dmore',
           'The last night we hold is ' + when(last) + ' \u2014 see it \u2192');
@@ -1690,21 +1688,27 @@ __HELPERS__
      catalog that dominates the wait entirely, and `grab` already answers null
      for anything that 404s or fails -- so the page renders exactly as it did
      before if this document is ever missing. */
-  Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json'),
-               grab('schedule.json'), grab('recent.json')])
+  // front.json is the front door and the status line; a team view adds its own
+  // rows (src/lib/page-docs.js).
+  Promise.all([grab('front.json'), team ? grab('team/' + team + '.json') : null,
+               grab('schedule.json'), team ? null : grab('recent.json'),
+               team ? null : grab('measures.json')])
     .then(function (r) {
-      var cat = r[0], measures = r[1], index = r[2], schedule = r[3], slate = r[4];
+      var front = r[0] || {}, schedule = r[2], slate = r[3], measures = r[4];
       /* ⚠️ HOISTED FOR `drawTeam`, which is called below and needs the fixtures
          for its "Next" line. Passing it as a sixth argument would thread it
          through a signature three other callers do not need. */
       SCHEDULE = schedule;
-      var games = (cat && cat.games) || [];
+      var games = team ? ((r[1] && r[1].games) || []) : [];
       /* ⚠️ DECLARED OUT HERE, not in the branch that sets it. The card is drawn
          on the front door only; a team page and a failed catalog never reach
          `drawDaily` at all, and on those the line below is the only thing on the
          page that says how current any of this is. */
       var dailyShown = false;
-      if (!games.length) {
+      // A team front.json lists must have its document; a missing one is a
+      // failed download, never "we hold no games".
+      var lost = team && !r[1] && (front.teams || []).indexOf(team) !== -1;
+      if (!(front.teams || []).length || lost) {
         $('teams').appendChild(el('p', 'note',
           'The archive could not be loaded, so there are no teams to show.'));
       } else if (team) {
@@ -1740,22 +1744,22 @@ __HELPERS__
         ['teams-h', 'teams-note', 'teams', 'pucknote']
           .forEach(function (id) { $(id).hidden = true; });
       } else {
-        drawGrid(games);
+        drawGrid(front.teams);
         /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a
            Dallas game; the hero exists for the visitor who has not chosen. */
-        drawHero(cat, measures);
+        drawHero(front.hero, measures);
         /* SAME GATE, AND FOR A SECOND REASON. A team page is a question already
            asked, so a league-wide slate is an interruption there -- and the
            block is placed in the hero's sixth grid row, which on a team page has
            no card to sit in. */
-        dailyShown = drawDaily(slate, schedule, games);
+        dailyShown = drawDaily(slate, schedule, front.newest);
       }
       /* ⚠️ TWO ARGUMENTS, NOT THREE. `describe` took the schedule for one day,
          when the quiet state was the only forward-looking sentence on the page
          and therefore the only slot the season dates could land in. The daily
          block is that slot now and CHENG's q4 ruling split the two: what is
          NEXT goes up into the card, what we HOLD stays down here. */
-      var s = describe(index, new Date().toISOString());
+      var s = describe(front.status || null, new Date().toISOString());
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
       /* ⭐⭐ HEALTH IS NOT NEWS, AND IT WAS BEING PRINTED TWICE.
@@ -1895,7 +1899,7 @@ def _lib(*names):
                                  # find out whether this page used `archive.js`
                                  # was to delete it and watch the page throw.
                                  # `test/page-weight.test.js` now holds the size.
-                                 "teams.js", "scope.js", "disputed.js", "front.js")))
+                                 "teams.js", "scope.js", "disputed.js")))
 
 
 def _competitions():
@@ -3591,7 +3595,7 @@ __HELPERS__
 
   /* ---- the month ------------------------------------------------------- */
 
-  function drawMonth(games, month, months, asked) {
+  function drawMonth(games, month, months, asked, monthsHeld) {
     var main = $('main');
     main.textContent = '';
     /* NO CRUMB ON THE MONTH VIEW. The chrome directly above it already says
@@ -3618,8 +3622,9 @@ __HELPERS__
         'We hold nothing for ' + monthName(asked) + '. This is ' + monthName(month) + '.'));
     }
 
+    // Which months hold games is archive-wide; `front.json` carries it.
     var withGames = {};
-    nights.forEach(function (n, d) { withGames[monthOf(d)] = 1; });
+    monthsHeld.forEach(function (m) { withGames[m] = 1; });
 
     var seasons = [], cur = seasonOfMonth(month);
     months.forEach(function (m) {
@@ -3860,21 +3865,30 @@ __HELPERS__
   var askedMonth = param(/[?&]month=(\d{4}-\d{2})(?!\d)/);
   var askedDate = param(/[?&]date=(\d{4}-\d{2}-\d{2})/);
 
-  grab('catalog.json').then(function (cat) {
-    var games = (cat && cat.games) || [];
-    if (!games.length) {
-      $('main').appendChild(el('p', 'note',
-        'The archive could not be loaded, so there are no dates to show.'));
-      return;
-    }
-    var months = monthsIn(games);
-    if (askedDate) { drawNight(games, askedDate, months); return; }
-    /* THE DEFAULT IS THE MOST RECENT MONTH WE HOLD A GAME IN. `monthsIn` spans
-       the archive, so its last entry is that month by construction -- the rule
-       cannot be typed, and it moves itself when the nightly lands. */
-    var month = months.indexOf(askedMonth) === -1 ? months[months.length - 1] : askedMonth;
-    drawMonth(games, month, months, askedMonth);
-  });
+  /* front.json carries the month list; each month's rows are their own
+     document (src/lib/page-docs.js). The asked-for month is fetched alongside. */
+  var want = askedDate ? askedDate.slice(0, 7) : askedMonth;
+  var unloaded = function () {
+    $('main').appendChild(el('p', 'note',
+      'The archive could not be loaded, so there are no dates to show.'));
+  };
+  var gamesOf = function (doc) { return (doc && doc.games) || []; };
+  Promise.all([grab('front.json'), want ? grab('calendar/' + want + '.json') : null])
+    .then(function (r) {
+      var cal = r[0] && r[0].calendar;
+      var months = (cal && cal.months) || [];
+      if (!months.length) { unloaded(); return; }
+      var held = cal.held || [];
+      var month = askedDate ? want
+        : (months.indexOf(askedMonth) === -1 ? months[months.length - 1] : askedMonth);
+      return (month === want ? Promise.resolve(r[1]) : grab('calendar/' + month + '.json'))
+        .then(function (doc) {
+          // A month that holds games must have its document; an empty month has none.
+          if (!doc && held.indexOf(month) !== -1) { unloaded(); return; }
+          if (askedDate) { drawNight(gamesOf(doc), askedDate, months); return; }
+          drawMonth(gamesOf(doc), month, months, askedMonth, held);
+        });
+    });
 })();
 </script>"""
 
@@ -4085,19 +4099,14 @@ __HELPERS__
        on any error, and `watchFor` answers null without it, so a reader on a day
        the archive has no `players.json` gets the card without the player block
        rather than a card that does not draw. */
+    // The extract answers whether the game was played (a 404 means not held)
+    // and who dressed for it; see `heldFrom` and `watchFor`.
     Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
-                 grab('recent.json'), grab('catalog.json'), grab('players.json')])
+                 grab('recent.json'), grab('extract/' + q + '.json'), grab('players.json')])
       .then(function (r) {
-        var docs = { schedule: r[0], teams: r[1], measures: r[2],
-                     recent: r[3], catalog: r[4], players: r[5] };
-        // A played game's own lineup decides who may be named; see `watchFor`.
-        var held = ((r[4] || {}).games || []).some(function (g) {
-          return g && String(g.id) === q && g.v; });
-        return (held ? grab('extract/' + q + '.json') : Promise.resolve(null))
-          .then(function (x) {
-            docs.game = x;
-            draw(preview(q, docs, new Date().toISOString()));
-          });
+        draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
+                          recent: r[3], game: r[4], players: r[5] },
+                     new Date().toISOString()));
       });
   }
 

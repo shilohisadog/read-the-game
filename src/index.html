@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-v0/6lRdM7HXs8EZdxI+ynIWQ/0obaTdMzPXRZSuXZco=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-V77IOu7Rr3I59/RIbjvqS7R0/rZngn0sX+zQhRFFsF8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -726,45 +726,6 @@ function disputedNote(n) {
     + `and it shows both, and says which one it replays.`;
 }
 
-
-
-
-function teamsIn(games) {
-  const seen = {};
-  for (const g of games || []) {
-    if (!inScope(g.id)) continue;
-    if (g.a) seen[g.a] = 1;
-    if (g.h) seen[g.h] = 1;
-  }
-  return Object.keys(seen).sort();
-}
-
-const HERO_LOOP = { min: 3, max: 8 };
-
-function heroOf(games) {
-  const v = (games || []).filter(g => g.v && isClubGame(typeOf(g.id)));
-  v.sort((a, b) => (a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1)));
-  for (let k = v.length - 1; k >= 0; k--) {
-    const g = v[k];
-    if (typeof g.hl === 'number' && g.hl >= HERO_LOOP.min && g.hl <= HERO_LOOP.max)
-      return { game: g, toGoal: true };
-  }
-  for (let k = v.length - 1; k >= 0; k--) {
-    const g = v[k];
-    if (typeof g.hl === 'number') return { game: g, toGoal: true };
-  }
-  return v.length ? { game: v[v.length - 1], toGoal: false } : null;
-}
-
-function newestOf(games) {
-  let best = null;
-  for (const g of games || []) {
-    if (!g.v) continue;
-    if (!best || g.d > best.d || (g.d === best.d && g.id > best.id)) best = g;
-  }
-  return best;
-}
-
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var ORIGIN = "https://data.readthegame.co";
@@ -776,7 +737,7 @@ function newestOf(games) {
     return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
   }
   function grab(name) {
-    return fetch(ORIGIN + '/' + name, { cache: 'no-store' })
+    return fetch(ORIGIN + '/' + name)
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   }
@@ -797,10 +758,10 @@ function newestOf(games) {
     return a;
   }
 
-  function drawGrid(games) {
+  function drawGrid(teams) {
     var box = $('teams');
     box.textContent = '';
-    teamsIn(games).forEach(function (ab) { box.appendChild(chip(ab)); });
+    teams.forEach(function (ab) { box.appendChild(chip(ab)); });
     $('bydate').hidden = false;
   }
 
@@ -950,8 +911,7 @@ function newestOf(games) {
     }
   }
 
-  function drawHero(cat, measures) {
-    var pick = heroOf((cat && cat.games) || []);
+  function drawHero(pick, measures) {
     if (!pick) return;
     var g = pick.game;
     $('herokick').textContent = when(g.d) + ' \u00b7 ' + (pick.toGoal
@@ -989,7 +949,7 @@ function newestOf(games) {
   if (team) team = team.toUpperCase();
   var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
-  function drawDaily(slate, schedule, games) {
+  function drawDaily(slate, schedule, newest) {
     var d = daily(slate, schedule, new Date().toISOString());
     if (d.state === 'none') return false;
 
@@ -1075,10 +1035,7 @@ function newestOf(games) {
     }
 
     if (d.state === 'upcoming' || d.state === 'offseason') {
-      var last = null;
-      (games || []).forEach(function (g) {
-        if (g.v && (!last || g.d > last)) last = g.d;
-      });
+      var last = newest ? newest.d : null;
       if (last) {
         var back = el('a', 'dmore',
           'The last night we hold is ' + when(last) + ' \u2014 see it \u2192');
@@ -1090,14 +1047,16 @@ function newestOf(games) {
     return true;
   }
 
-  Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json'),
-               grab('schedule.json'), grab('recent.json')])
+  Promise.all([grab('front.json'), team ? grab('team/' + team + '.json') : null,
+               grab('schedule.json'), team ? null : grab('recent.json'),
+               team ? null : grab('measures.json')])
     .then(function (r) {
-      var cat = r[0], measures = r[1], index = r[2], schedule = r[3], slate = r[4];
+      var front = r[0] || {}, schedule = r[2], slate = r[3], measures = r[4];
       SCHEDULE = schedule;
-      var games = (cat && cat.games) || [];
+      var games = team ? ((r[1] && r[1].games) || []) : [];
       var dailyShown = false;
-      if (!games.length) {
+      var lost = team && !r[1] && (front.teams || []).indexOf(team) !== -1;
+      if (!(front.teams || []).length || lost) {
         $('teams').appendChild(el('p', 'note',
           'The archive could not be loaded, so there are no teams to show.'));
       } else if (team) {
@@ -1105,11 +1064,11 @@ function newestOf(games) {
         ['teams-h', 'teams-note', 'teams', 'pucknote']
           .forEach(function (id) { $(id).hidden = true; });
       } else {
-        drawGrid(games);
-        drawHero(cat, measures);
-        dailyShown = drawDaily(slate, schedule, games);
+        drawGrid(front.teams);
+        drawHero(front.hero, measures);
+        dailyShown = drawDaily(slate, schedule, front.newest);
       }
-      var s = describe(index, new Date().toISOString());
+      var s = describe(front.status || null, new Date().toISOString());
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
       var SAME_NEWS = { current: 1, quiet: 1 };

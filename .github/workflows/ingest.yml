@@ -668,14 +668,16 @@ jobs:
           # decoration, which is a false red, and false reds are how a working
           # gate gets ignored. Anything worth printing here is worth checking.
 
-      - name: the page documents are the projection of what was published
+      - name: the page documents and the extracts agree with what was published
         if: hashFiles('pages/front.json') != ''
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
           S3_ENDPOINT: ${{ secrets.S3_API_ENDPOINT }}
-        run: tools/page-docs-publish.sh verify
+        run: |
+          tools/page-docs-publish.sh verify
+          tools/refused-extracts-check.sh ingest/index.json
 
       # ⭐ AND THE ARCHIVE LEDGER ANSWERS TO THE CATALOG -- ON THE NIGHTLY,
       # WHICH IS THE RUN THAT BROKE.

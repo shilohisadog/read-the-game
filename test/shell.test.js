@@ -20,6 +20,7 @@ import { boot } from './helpers/page.js';
 import { createHash } from 'node:crypto';
 import { GAME_LINE, usable, judgeLine } from '../tools/browser/watch-a-game.mjs';
 import { probeHtml } from '../tools/browser/verdict-dot.mjs';
+import { pageDocs } from '../src/lib/page-docs.js';
 
 const SRC = new URL('../src/', import.meta.url);
 const shell = readFileSync(new URL('game.html', SRC), 'utf8');
@@ -250,10 +251,13 @@ const CATALOG = { games: [
   { id: 2025090030, d: '2026-02-22', v: 0, r: 'validation' },
 ]};
 
-test('with no game named, it asks the catalog and takes the most recent', () => {
-  const r = run({ search: '', responses: { 'catalog.json': CATALOG } });
+/** front.json as the pipeline would publish it for a catalog (src/lib/page-docs.js). */
+const frontOf = catalog => pageDocs(catalog, {})['front.json'];
+
+test('with no game named, it asks front.json and takes the most recent', () => {
+  const r = run({ search: '', responses: { 'front.json': frontOf(CATALOG) } });
   return r.settle().then(() => {
-    assert.equal(r.asked[0], 'https://data.readthegame.co/catalog.json');
+    assert.equal(r.asked[0], 'https://data.readthegame.co/front.json');
     assert.match(r.asked[1], /extract\/2025030416\.json$/,
       'the Cup final is the most recent — and "most recent" is READ, never baked in');
   });
@@ -267,7 +271,7 @@ test('it will not land you on a game it cannot show', () => {
     { id: 2025020001, d: '2026-01-10', v: 1 },
     { id: 2025090030, d: '2026-12-31', v: 0, r: 'validation' },
   ]};
-  const r = run({ responses: { 'catalog.json': newestIsRefused } });
+  const r = run({ responses: { 'front.json': frontOf(newestIsRefused) } });
   return r.settle().then(() => {
     assert.match(r.asked[1], /extract\/2025020001\.json$/,
       'the newest VIEWABLE game, not the newest row');
@@ -495,7 +499,7 @@ test('a game that DOES load reveals the app — the paired half', () => {
 });
 
 test('an empty catalog is a stated condition, not a crash', () => {
-  const r = run({ responses: { 'catalog.json': { games: [] } } });
+  const r = run({ responses: { 'front.json': frontOf({ games: [] }) } });
   return r.settle().then(() => {
     assert.match(r.said[r.said.length - 1], /no game we can show/i);
   });

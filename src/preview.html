@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AHCJlSsBhymSoCD3kgrGNrTo8sji1Spqdfyn82Ce/94=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-Yz+0oNLnc7pWy6LDgoDGDWg86CCFZQBH/x0wxCpUzeM='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9DNPQ8DxnfwOzCZdCXRHI/5FcPB4edXJaMt+/gOLVvY=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-Yz+0oNLnc7pWy6LDgoDGDWg86CCFZQBH/x0wxCpUzeM='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -598,6 +598,14 @@ function watchFor(players, awayAb, homeAb, dressed = null) {
              away: rate(away, r.fig), home: rate(home, r.fig) })) };
 }
 
+function heldFrom(extract, gid) {
+  const g = extract && extract.game;
+  if (!g || Number(g.id) !== gid) return null;
+  const q = extract.quoted || {};
+  return { id: gid, a: extract.teams.away.ab, h: extract.teams.home.ab, d: g.date, t: g.type,
+           v: 1, as: (q.away || {}).score, hs: (q.home || {}).score };
+}
+
 function dressedIn(extract) {
   const roster = (extract && extract.roster) || {};
   return new Set(Object.entries(roster).filter(([, r]) => r.pos !== 'G').map(([p]) => Number(p)));
@@ -701,7 +709,7 @@ function preview(id, docs, now) {
   const gid = Number(id);
   const d = docs || {};
   const fix = (((d.schedule || {}).upcoming) || []).find(g => g && Number(g.id) === gid) || null;
-  const held = (((d.catalog || {}).games) || []).find(g => g && Number(g.id) === gid) || null;
+  const held = heldFrom(d.game, gid);
 
   if (!fix && !held) return { state: 'unknown', game: null, result: null, clubs: null, league: [] };
 
@@ -774,7 +782,7 @@ function formatDate(iso) {
     return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
   }
   function grab(name) {
-    return fetch(ORIGIN + '/' + name, { cache: 'no-store' })
+    return fetch(ORIGIN + '/' + name)
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   }
@@ -790,17 +798,11 @@ function formatDate(iso) {
   function boot() {
     if (!q) { $('pv').appendChild(el('p', 'note', 'No game was named in the link.')); return; }
     Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
-                 grab('recent.json'), grab('catalog.json'), grab('players.json')])
+                 grab('recent.json'), grab('extract/' + q + '.json'), grab('players.json')])
       .then(function (r) {
-        var docs = { schedule: r[0], teams: r[1], measures: r[2],
-                     recent: r[3], catalog: r[4], players: r[5] };
-        var held = ((r[4] || {}).games || []).some(function (g) {
-          return g && String(g.id) === q && g.v; });
-        return (held ? grab('extract/' + q + '.json') : Promise.resolve(null))
-          .then(function (x) {
-            docs.game = x;
-            draw(preview(q, docs, new Date().toISOString()));
-          });
+        draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
+                          recent: r[3], game: r[4], players: r[5] },
+                     new Date().toISOString()));
       });
   }
 

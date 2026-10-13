@@ -19,6 +19,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { readerText } from '../tools/jslex.mjs';
+import { pageDocs } from '../src/lib/page-docs.js';
 
 const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
 // EVERY BUILT PAGE, so a front-door link can be resolved against what exists
@@ -137,10 +138,14 @@ const ORIGIN = 'https://readthegame.co';
  */
 function run({ search = '', docs = {}, at = null } = {}) {
   const { ids, document } = fakeDom();
+  /* The page reads what the pipeline publishes: a fixture's catalog and index go
+     through the real projection (src/lib/page-docs.js), served by path. */
+  const { 'catalog.json': cat, 'index.json': idx, ...rest } = docs;
+  const served = { ...(cat || idx ? pageDocs(cat || { games: [] }, idx || {}) : {}), ...rest };
   const fetch = url => {
-    const key = Object.keys(docs).find(k => url.includes(k));
+    const key = Object.keys(served).find(k => url.endsWith('/' + k));
     return Promise.resolve(key
-      ? { ok: true, json: () => Promise.resolve(docs[key]) }
+      ? { ok: true, json: () => Promise.resolve(served[key]) }
       : { ok: false, json: () => Promise.resolve(null) });
   };
   /* THE FRAME TALKS BACK. The hero's sentence is about shot attempts, which only
@@ -2164,11 +2169,12 @@ test('⛔ the dark-night door and the game page name the same newest game', asyn
   assert.ok(door, 'the dark state offered no door, so there is nothing to compare');
   const doorDate = /date=([\d-]+)/.exec(door.href)[1];
 
-  // The game page's own rule, extracted from the built page and run.
+  // The game page's own reader, extracted from the built page and run on the
+  // front.json the pipeline would publish for this catalog.
   const html = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
-  const src = /function pick\(c\)\{[\s\S]*?\n\}/.exec(html);
-  assert.ok(src, 'no pick() in the built game page — it chooses its game some other way now');
-  const opens = new Function(`${src[0]}; return pick;`)()(CAT);
+  const src = /function newest\(f\)\{[\s\S]*?\n\}/.exec(html);
+  assert.ok(src, 'no newest() in the built game page — it chooses its game some other way now');
+  const opens = new Function(`${src[0]}; return newest;`)()(pageDocs(CAT, {})['front.json']);
   const openDate = CAT.games.find(g => g.id === opens).d;
 
   assert.equal(doorDate, openDate,
@@ -2404,5 +2410,45 @@ test('⛔ every front-door measurement card opens its lesson, not a replay', () 
       const page = /^\/([a-z0-9-]+\.html)$/.exec(h);
       assert.ok(page && PAGE_SRC.get(page[1]), `${h} is neither a lesson page nor a lesson on the lessons page`);
     }
+  }
+});
+
+test('⛔ the home page never downloads the whole catalog or the index', () => {
+  // Data-model item 4: front.json and team/{AB}.json carry what it draws.
+  assert.doesNotMatch(script, /catalog\.json|index\.json/, 'the built home page fetches them again');
+});
+
+test('⛔ a team view fetches its own rows and skips the front door’s extras', async () => {
+  const asked = [];
+  const { ids, document } = fakeDom();
+  const served = pageDocs(MULTI, INDEX);
+  const fetch = url => {
+    asked.push(url.split('/').slice(3).join('/'));
+    const body = served[url.split('/').slice(3).join('/')];
+    return Promise.resolve(body ? { ok: true, json: () => Promise.resolve(body) }
+                                : { ok: false, json: () => Promise.resolve(null) });
+  };
+  const win = { addEventListener() {} };
+  new Function('document', 'fetch', 'location', 'window', 'Date', script)(
+    document, fetch, { search: '?team=BUF', origin: ORIGIN }, win, Date);
+  await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(asked.sort(), ['front.json', 'schedule.json', 'team/BUF.json']);
+  assert.match(textOf(ids.main), /Buffalo Sabres/);
+});
+
+test('⛔ a known team whose rows fail to download says so, never "we hold no games"', async () => {
+  const docs = pageDocs(MULTI, INDEX);
+  delete docs['team/BUF.json'];
+  const r = run({ search: '?team=BUF', docs });
+  await r.settle();
+  assert.match(textOf(r.ids.teams), /could not be loaded/);
+  assert.doesNotMatch(textOf(r.ids.main), /We hold no/);
+});
+
+test('⛔ no page opts out of the browser cache', () => {
+  // Uploads carry `no-cache` + ETag; `no-store` would make every visit a full download.
+  for (const f of ['index.html', 'calendar.html', 'preview.html', 'how-we-measure.html']) {
+    const page = readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(page, /no-store/, `${f} fetches with no-store`);
   }
 });

@@ -501,16 +501,10 @@ jobs:
         env:
           URL: ${{ steps.preview.outputs.url }}
         run: |
-          curl -sS --fail "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" -o cat.json
-          gid=$(node -e '
-            const c = require("./cat.json");
-            /* The page\u2019s own rule for what it can show: viewable, and newest by the
-               league\u2019s date. A pinned id rots the moment it leaves the archive. */
-            const v = (c.games || []).filter(g => g && g.v);
-            if (!v.length) { console.error("the catalog lists no playable game"); process.exit(1); }
-            v.sort((a, b) => (a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1)));
-            process.stdout.write(String(v[v.length - 1].id));
-          ') || { echo "::error::could not choose a played game from the catalog"; exit 1; }
+          curl -sS --fail "https://data.readthegame.co/front.json?cb=${GITHUB_RUN_ID}" -o front.json
+          # The newest viewable game, as the page itself picks it (front.json).
+          gid=$(node -e 'const f = require("./front.json"); if (!f.newest) process.exit(1); process.stdout.write(String(f.newest.id));') \
+            || { echo "::error::front.json names no played game"; exit 1; }
           echo "  unfurling the replay of game $gid"
 
           . tools/edge-fetch.sh

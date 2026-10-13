@@ -136,7 +136,6 @@ const DOCS = {
               dmen: { r: 0.81, games: 23, clubRange: { min: 0.26, max: 0.38, median: 0.32, n: 96 } },
               slot: { r: 0.72, games: 37 } } } },
   'recent.json': { asOf: '2026-10-01T12:00:00Z', games: [] },
-  'catalog.json': { games: [] },
 };
 
 /**
@@ -1331,13 +1330,15 @@ test('⛔ a players document without game dates names NOBODY', async () => {
   assert.match(textOf(ids.pv), /5-on-5 CF% while the score was level/, 'the rest of the card draws');
 });
 
-const PLAYED = { 'catalog.json': { games: [{ id: GID, v: 1, a: 'BUF', h: 'PIT',
-  d: '2026-10-02', t: 2, as: 2, hs: 3 }] } };
+// A published extract for the fixture game: its presence is what makes it played.
+const extractOf = roster => ({ game: { id: GID, date: '2026-10-02', type: 2 },
+  teams: { away: { ab: 'BUF', id: 7 }, home: { ab: 'PIT', id: 5 } },
+  quoted: { away: { score: 2 }, home: { score: 3 } }, roster });
 
 test('⛔⛔ a played game names only skaters who dressed for THAT game', async () => {
   // BUF's leader (#11) sat this one out; the roster, not the last game, decides.
   const roster = { 20: { pos: 'C', tid: 7 }, 30: { pos: 'C', tid: 5 }, 1: { pos: 'G', tid: 7 } };
-  const { ids, settle } = run({ ...PLAYED, [`${GID}.json`]: { roster } },
+  const { ids, settle } = run({ [`${GID}.json`]: extractOf(roster) },
                               `?game=${GID}`, '2026-10-05T12:00:00Z');
   await settle();
   const said = blockText(ids);
@@ -1349,8 +1350,15 @@ test('⛔⛔ a played game names only skaters who dressed for THAT game', async 
 });
 
 test('⛔ a played game whose lineup cannot be read names NOBODY', async () => {
-  const { ids, settle } = run(PLAYED, `?game=${GID}`, '2026-10-05T12:00:00Z');
+  const { ids, settle } = run({ [`${GID}.json`]: extractOf(undefined) }, `?game=${GID}`,
+                              '2026-10-05T12:00:00Z');
   await settle();
   assert.equal(blockText(ids), null, 'named a player for a game whose lineup we never read');
   assert.match(textOf(ids.pv), /5-on-5 CF% while the score was level/, 'the rest of the card draws');
+});
+
+test('⛔ the preview never downloads the whole catalog', () => {
+  // Data-model item 4: one game's extract answers what the catalog row did.
+  assert.doesNotMatch(script, /catalog\.json/, 'the built preview fetches catalog.json again');
+  assert.match(script, /'extract\/' \+ q \+ '\.json'/, 'and it reads the game’s own extract');
 });
