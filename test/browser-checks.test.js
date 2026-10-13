@@ -459,15 +459,12 @@ test('⛔ the page opens the newest viewable game even when the window will not 
     { id: 2026010009, d: '2026-09-21', t: 1, v: 0 },   // newer still and REFUSED
   ] };
   writeFileSync(join(dir, 'catalog.json'), JSON.stringify(cat));
-  // The page's own rule, in the shape `defaultGameId` extracts it from the built page.
-  writeFileSync(join(dir, 'game.html'), `<script>function pick(c){
-  var v=c.games.filter(function(g){return g.v;});
-  if(!v.length)throw new Error('the catalog lists no game we can show');
-  v.sort(function(a,b){return a.d===b.d?a.id-b.id:(a.d<b.d?-1:1);});
-  return v[v.length-1].id;
-}</script>`);
-
-  const opens = await defaultGameId(join(dir, 'catalog.json'), join(dir, 'game.html'));
+  // The BUILT page and the front.json the pipeline would publish — never a typed
+  // copy of either, which is how this test kept passing after the page changed.
+  const { pageDocs } = await import('../src/lib/page-docs.js');
+  writeFileSync(join(dir, 'front.json'), JSON.stringify(pageDocs(cat, {})['front.json']));
+  const opens = await defaultGameId(join(dir, 'front.json'),
+    new URL('../src/game.html', import.meta.url).pathname);
   const win = await recentGameIds(join(dir, 'catalog.json'), 10);
 
   assert.equal(opens, 2026010008,

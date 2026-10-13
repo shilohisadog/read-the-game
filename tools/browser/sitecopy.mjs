@@ -25,7 +25,8 @@ import { defaultGameId, download, recentGameIds, say } from './lib.mjs';
 
 export const DATA_ORIGIN = 'https://data.readthegame.co';
 /** Every archive-level document the two pages read. Missing one renders a real but WRONG state. */
-export const DOCS = ['catalog.json', 'measures.json', 'index.json', 'schedule.json', 'recent.json'];
+// What the copied home and game pages fetch, plus the catalog for the window below.
+export const DOCS = ['catalog.json', 'front.json', 'measures.json', 'schedule.json', 'recent.json'];
 
 /** The pages as the site serves them, with the policy stripped and the origin made relative. */
 export function localise(html) {
@@ -50,10 +51,10 @@ export async function sitecopy(site, dir, { games = 10, cb = process.env.GITHUB_
      measure rather than reporting "it fits", which is the only reason this was
      caught at all.
      ⭐ SO THE PICK IS COPIED EXPLICITLY, derived by running the PAGE's own
-     `pick()`. The window stays — other checks want a spread of games — but what
+     `newest()` on front.json. The window stays — other checks want a spread of games — but what
      makes the page boot is now named rather than hoped for. */
   const win = await recentGameIds(join(dir, 'catalog.json'), games);
-  const opens = await defaultGameId(join(dir, 'catalog.json'), join(dir, 'game.html'));
+  const opens = await defaultGameId(join(dir, 'front.json'), join(dir, 'game.html'));
   const ids = [...new Set([...win, opens])];
   await Promise.all(ids.map(id => download(`${DATA_ORIGIN}/extract/${id}.json`, join(dir, 'extract', `${id}.json`))));
   say(`copied the site and ${ids.length} extracts, so the pages can boot`
