@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0M9ABSy0sPTKR9OK/hRzdxEBsODJs2d1K+zJHNuNoX8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-v0/6lRdM7HXs8EZdxI+ynIWQ/0obaTdMzPXRZSuXZco=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -726,6 +726,45 @@ function disputedNote(n) {
     + `and it shows both, and says which one it replays.`;
 }
 
+
+
+
+function teamsIn(games) {
+  const seen = {};
+  for (const g of games || []) {
+    if (!inScope(g.id)) continue;
+    if (g.a) seen[g.a] = 1;
+    if (g.h) seen[g.h] = 1;
+  }
+  return Object.keys(seen).sort();
+}
+
+const HERO_LOOP = { min: 3, max: 8 };
+
+function heroOf(games) {
+  const v = (games || []).filter(g => g.v && isClubGame(typeOf(g.id)));
+  v.sort((a, b) => (a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1)));
+  for (let k = v.length - 1; k >= 0; k--) {
+    const g = v[k];
+    if (typeof g.hl === 'number' && g.hl >= HERO_LOOP.min && g.hl <= HERO_LOOP.max)
+      return { game: g, toGoal: true };
+  }
+  for (let k = v.length - 1; k >= 0; k--) {
+    const g = v[k];
+    if (typeof g.hl === 'number') return { game: g, toGoal: true };
+  }
+  return v.length ? { game: v[v.length - 1], toGoal: false } : null;
+}
+
+function newestOf(games) {
+  let best = null;
+  for (const g of games || []) {
+    if (!g.v) continue;
+    if (!best || g.d > best.d || (g.d === best.d && g.id > best.id)) best = g;
+  }
+  return best;
+}
+
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var ORIGIN = "https://data.readthegame.co";
@@ -746,14 +785,6 @@ function disputedNote(n) {
     if (cls) n.className = cls;
     if (text != null) n.textContent = text;
     return n;
-  }
-  function teamsIn(games) {
-    var seen = {};
-    games.forEach(function (g) {
-      if (!inScope(g.id)) return;
-      seen[g.a] = 1; seen[g.h] = 1;
-    });
-    return Object.keys(seen).sort();
   }
 
   function chip(ab) {
@@ -870,20 +901,6 @@ function disputedNote(n) {
   }
 
 
-  var HERO_LOOP = { min: 3, max: 8 };
-
-  function hero(games) {
-    var v = games.filter(function (g) { return g.v && isClubGame(typeOf(g.id)); });
-    v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
-    for (var k = v.length - 1; k >= 0; k--) {
-      var g = v[k], n = g.hl;
-      if (typeof n === 'number' && n >= HERO_LOOP.min && n <= HERO_LOOP.max)
-        return { game: g, toGoal: true };
-    }
-    for (var j = v.length - 1; j >= 0; j--)
-      if (typeof v[j].hl === 'number') return { game: v[j], toGoal: true };
-    return v.length ? { game: v[v.length - 1], toGoal: false } : null;
-  }
 
 
   function sayHero(g, measures, att) {
@@ -934,7 +951,7 @@ function disputedNote(n) {
   }
 
   function drawHero(cat, measures) {
-    var pick = hero((cat && cat.games) || []);
+    var pick = heroOf((cat && cat.games) || []);
     if (!pick) return;
     var g = pick.game;
     $('herokick').textContent = when(g.d) + ' \u00b7 ' + (pick.toGoal

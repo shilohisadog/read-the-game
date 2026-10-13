@@ -254,6 +254,12 @@ jobs:
       #    is checked the way every other published claim is: asserted to carry the
       #    sentence that produced it, before anyone can read it. A featured game with no rule
       #    attached is a number we are asking to be trusted.
+      # One small document per page, projected from this run's catalog and index
+      # (src/lib/page-docs.js). Written outside ingest/ so the extract sync never
+      # sees them.
+      - name: the page documents, from this run's catalog and index
+        run: node builders/page-docs.mjs ingest pages
+
       - name: what this run will publish is sound — before the sync
         run: |
           python3 builders/ledger.py ingest/index.json ingest/catalog.json
@@ -393,6 +399,7 @@ jobs:
               --cache-control no-cache \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
           done
+          S3_ENDPOINT="${{ secrets.S3_API_ENDPOINT }}" tools/page-docs-publish.sh upload pages
           echo "synced"
 
       # Syncing and assuming it landed is not verification. Read back the
@@ -413,6 +420,14 @@ jobs:
       # the archive block to reproduce it, figure by figure. Its denominator on
       # the smallest run that executes it is the whole catalog, which is the
       # property the old check did not have and the outage was made of.
+      - name: the page documents are the projection of what was published
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          S3_ENDPOINT: ${{ secrets.S3_API_ENDPOINT }}
+        run: tools/page-docs-publish.sh verify
+
       - name: the archive ledger answers to the catalog
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}

@@ -802,7 +802,7 @@ nothing in between, so that is all we draw.</p>
          now prefers one whose replay reaches a goal, which is a median of zero
          days behind and occasionally several -- and a fixed sentence describing
          a rule that has two branches is false in one of them. Which branch fired
-         is known only to `hero()`, so the sentence is written there. -->
+         is known only to `heroOf()`, so the sentence is written there. -->
     <p class="herokick" id="herokick"></p>
     <!-- THE REAL RENDERER, FRAMED. Not a recorded video: no binary asset to go
          stale, no media-src in the policy, nothing to re-record when the rink
@@ -972,17 +972,6 @@ __LIB__
    which is honest: a saved copy genuinely has no archive behind it. */
 (function () {
 __HELPERS__
-  /* THE TEAM SET IS A FACT ABOUT THE ARCHIVE, never a typed list. It is 33 today
-     because Arizona relocated to Utah inside our window, and a "32 NHL clubs"
-     constant would have been wrong on the first day. */
-  function teamsIn(games) {
-    var seen = {};
-    games.forEach(function (g) {
-      if (!inScope(g.id)) return;
-      seen[g.a] = 1; seen[g.h] = 1;
-    });
-    return Object.keys(seen).sort();
-  }
 
   function chip(ab) {
     var t = TEAMS[ab] || { colour: '#5b6d7a' };
@@ -1167,95 +1156,7 @@ __HELPERS__
      nightly with no deploy. And choosing what to SHOW by date biases no
      measurement -- the base rates still run over all 4,119 in-scope games, and
      nothing is computed from the selection. */
-  /* ⭐ AND IT SHOWS A GOAL, WHICH IS A SELECTION AND NEVER A JUMP.
-     Kevin: "we should show the goal during the first ten seconds of the hero
-     game -- that's where the most visualization takes place", and then "let's
-     end the hero replay right after the goal". He is right about the renderer: a
-     goal is the only event with a real treatment (r 3.2 against 1.7, a 0.7s
-     flare from 3.6x, a 1.3s net flash, the siren caption) and the preview
-     otherwise shows a stranger dots appearing.
-
-     THE OBVIOUS IMPLEMENTATION IS THE WRONG ONE. Starting the preview AT the
-     goal would break the thing the preview exists to demonstrate: the counter is
-     watched from zero, because "a counter you join at 24-11 is a number you did
-     not watch being built" (src/app.js). So the goal has to come to us, and the
-     LOOP ENDS ON IT instead of running out a budget.
-     ⚠️ THAT REASON EXPIRED ON 2026-09-17 (the hero shows no counter), AND THE RULE
-     WAS KEPT ON ITS OWN MERITS. Kevin, asked whether the loop should start nearer
-     the goal: "I don't mind a longer-ish loop, so no." And the same day, the other
-     end: "start the hero at the opening faceoff -- that level sets everything and
-     it's what a novice fan would expect." The loop runs from the faceoff to the
-     goal.
-
-     `hl` IS THE FIRST GOAL'S INDEX AMONG THE PLAYS, which since 2026-09-17 is the
-     loop exactly, because the loop starts at play zero. (Before, it opened one
-     play before the first attempt, and `hl` was the distance from there.)
-
-     THE WINDOW IS KEVIN'S TEN SECONDS, MEASURED OUTWARDS. At the replay's own
-     pace 30s buys a median 16 plays, so ten seconds is about five. [3,8] is
-     6-15s around that, and it is the range where the cost stops being free:
-     across 4,192 in-scope games the newest qualifying game is a MEDIAN OF 0 DAYS
-     behind the newest game (p90 3, p99 20), where the tighter [4,6] is p90 SEVEN
-     and p99 forty-eight. ⚠️ THOSE WERE MEASURED UNDER THE OLD START (one play before
-     the first attempt). ✅ RE-MEASURED 2026-09-17 FROM THE FACEOFF, on the catalog
-     the hand-run derive published (4,192 in-scope games, 1,829 with a loop, 429
-     inside [3,8]), walking all 667 game dates and taking the newest qualifying game
-     on or before each: median 1 day behind, p90 5, p99 128 -- and the p99 is the
-     season openers (8 of the 10 dates over 20 days are October, reaching back to
-     the spring). [4,6] is median 2, p90 11. The method differs from the figures
-     above, so compare within a line, not across. Kevin: "let's start with that and work outwards (if
-     needed)" -- so the two numbers are here, together, to be moved together.
-
-     ⏹ `hl` WAS AN ESTIMATE UNTIL 2026-09-17 -- derive.py found the first attempt
-     by event type, the page by the layer's reducer -- and the floor of 3 was said
-     to absorb the difference. From the faceoff there is nothing to estimate; the
-     floor stays 3 as the lower edge of Kevin's ten seconds.
-
-     AND IT FALLS BACK RATHER THAN FAILING. If nothing qualifies -- an archive
-     too small, a run of goalless openings -- the hero is the newest game, which
-     is exactly what it was before, and the preview runs its budget the way it
-     always did. A front door with no game is worse than one that opens quietly.
-
-     ⏹ A THIRD CONDITION LIVED HERE UNTIL 2026-09-17: `ha >= 3`, the attempts
-     inside the loop, so "the counter has something to show". The hero has shown
-     no counter since 2026-09-09, so the rule was choosing front doors for a
-     number nobody could see. Kevin: drop it. The measured table that justified
-     the floor of 3 is in git history (`git log -S counter -- builders/build_index.py`). */
-  var HERO_LOOP = { min: 3, max: 8 };
-
-  function hero(games) {
-    /* ⭐ PRESEASON MAY BE THE HERO — Kevin, 2026-09-21: "preseason game can be a
-       front-door hero." This filtered `inScope` too, which is a predicate about
-       which games a RATE may pool; choosing a showcase replay is curation, and
-       the hero quotes no rate. The cost of the old rule was visible every
-       September: measured 2026-09-21, the hero was CAR at VGK from 9 JUNE while
-       the archive held last night's game.
-       ⚠️ `g.hl` still gates it, and that is the real filter — a game reaches the
-       front door only if the distance from the preview's opening frame to its
-       first goal falls in HERO_LOOP. 133 of 334 preseason games carry an `hl` at
-       all and 24 sit in the window, so this widens the pool rather than handing
-       the door to whatever happened last. */
-    var v = games.filter(function (g) { return g.v && isClubGame(typeOf(g.id)); });
-    v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
-    for (var k = v.length - 1; k >= 0; k--) {
-      var g = v[k], n = g.hl;
-      if (typeof n === 'number' && n >= HERO_LOOP.min && n <= HERO_LOOP.max)
-        return { game: g, toGoal: true };
-    }
-    /* ⭐ AND OUTWARDS BEFORE GIVING UP ON A GOAL. Kevin, 2026-09-17: "the hero
-       always needs to end with a goal." When nothing in the archive is inside the
-       window, the newest game with ANY loop -- a first goal within HERO_LOOP_CAP
-       plays of the faceoff, derive.py -- is still a loop that ends on a goal,
-       where the newest game may not have one to end on. Longer or shorter than a
-       taste, but it keeps the promise the kicker makes. */
-    for (var j = v.length - 1; j >= 0; j--)
-      if (typeof v[j].hl === 'number') return { game: v[j], toGoal: true };
-    /* THE LAST FALLBACK IS NAMED, not left to be inferred from a null. No game in
-       the archive has a first goal within the cap -- a catalog not yet derived, or
-       an archive too small -- and a front door with no game is worse than one that
-       opens quietly. The kicker says which rule ran. */
-    return v.length ? { game: v[v.length - 1], toGoal: false } : null;
-  }
+  // `heroOf` and HERO_LOOP are src/lib/front.js, shared with the pipeline.
 
 
   /* THE SENTENCE UNDER THE RINK, ON THE MEASURE THE BAR ABOVE IT SHOWS.
@@ -1446,7 +1347,7 @@ __HELPERS__
   }
 
   function drawHero(cat, measures) {
-    var pick = hero((cat && cat.games) || []);
+    var pick = heroOf((cat && cat.games) || []);
     if (!pick) return;
     var g = pick.game;
     /* WHAT THE VISITOR IS ABOUT TO WATCH, in the words the branch earns. The
@@ -1994,7 +1895,7 @@ def _lib(*names):
                                  # find out whether this page used `archive.js`
                                  # was to delete it and watch the page throw.
                                  # `test/page-weight.test.js` now holds the size.
-                                 "teams.js", "scope.js", "disputed.js")))
+                                 "teams.js", "scope.js", "disputed.js", "front.js")))
 
 
 def _competitions():

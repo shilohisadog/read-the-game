@@ -376,6 +376,12 @@ jobs:
           cat report.json
           exit 1
 
+      # One small document per page, projected from this run's catalog and index
+      # (src/lib/page-docs.js). Written outside ingest/ so pass 1 never sees them.
+      - name: the page documents, from this run's catalog and index
+        if: steps.fetch.outputs.code != '2' && hashFiles('ingest/catalog.json') != ''
+        run: node builders/page-docs.mjs ingest pages
+
       # ⭐ WHAT THIS RUN IS ABOUT TO PUBLISH IS SOUND — CHECKED BEFORE THE SYNC.
       # The index's own contract and the archive ledger used to be asserted only
       # after the sync, against the bucket, so a ledger that did not close was
@@ -579,6 +585,9 @@ jobs:
                 --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
             fi
           done
+          if [ -f pages/front.json ]; then
+            S3_ENDPOINT="${{ secrets.S3_API_ENDPOINT }}" tools/page-docs-publish.sh upload pages
+          fi
           echo "synced"
           # READ BY THE `measure` JOB, which must not run against a catalog that
           # was never published. The flag is set by the step that does the
@@ -658,6 +667,15 @@ jobs:
           # sync was byte-correct. A green pipeline reported red because of a
           # decoration, which is a false red, and false reds are how a working
           # gate gets ignored. Anything worth printing here is worth checking.
+
+      - name: the page documents are the projection of what was published
+        if: hashFiles('pages/front.json') != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          S3_ENDPOINT: ${{ secrets.S3_API_ENDPOINT }}
+        run: tools/page-docs-publish.sh verify
 
       # ⭐ AND THE ARCHIVE LEDGER ANSWERS TO THE CATALOG -- ON THE NIGHTLY,
       # WHICH IS THE RUN THAT BROKE.
