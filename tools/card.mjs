@@ -52,7 +52,11 @@ import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { furniture } from '../src/lib/rinkart.js';
+import { furniture, netGlyph, SX, SY, END_DOT_X, END_DOT_Y } from '../src/lib/rinkart.js';
+import { NET_X } from '../src/lib/rink.js';
+import { NEUTRAL } from '../src/lib/teams.js';
+import { SvgPen } from '../src/lib/svgpen.js';
+import { FIG, PLAYER_FT, sizeFor } from '../src/lib/figures.js';
 import { findChrome, serve } from './browser/lib.mjs';
 import { evaluate, page } from './browser/cdp.mjs';
 
@@ -74,8 +78,9 @@ export const HREF = `${SITE}/card.png`;
    "the zones either side of each blue line" while the artwork beside it had just
    stopped painting them. Alt text is the copy nobody looks at, so it is the copy
    that goes stale — `test/card.test.js` holds it to the picture. */
-export const ALT = 'An empty NHL rink with the slot shaded in front of each net — '
-  + 'the one region this site paints on the ice, and measures shots against.';
+export const ALT = 'One end of an NHL rink: a goaltender in his net, a faceoff at the '
+  + 'end-zone dot, and the slot shaded in front of the net — the one region this site '
+  + 'paints on the ice. Beside it: NHL games, replayed event by event.';
 
 /**
  * The card, as SVG. Pure: no browser, no filesystem, so a test can read it.
@@ -86,49 +91,64 @@ export const ALT = 'An empty NHL rink with the slot shaded in front of each net 
  * product would be the "two surfaces describing one thing" defect in the one
  * place nobody looks.
  */
+/* The crop, in rink units (1 unit = 1 ft): the right-hand end, close enough that
+   a true-scale person reads at thumbnail size. */
+const CROP = { x: 136, y: 23, w: 64, h: 59 };
+const BOX_X = 500;
+const DARK = '#1f3550', LIGHT = '#ffffff';          // home dark, road white: no club's colours
+
+/** One of the replay's own figures, standing at (x, y) in rink units. */
+function person(kind, x, y, jersey, dir, pxPerFt, n) {
+  const pen = new SvgPen(`card${n}`);
+  const size = sizeFor(PLAYER_FT), intoIce = kind === 'goalie' ? dir * size * 0.26 : 0;
+  FIG[kind](pen, x + intoIce, y + size * 0.48, size, jersey, '',
+            { motion: false, glow: false, dir, px: size * pxPerFt, light: true });
+  return pen.toSvg(`class="cardfig ${kind}"`);
+}
+
 export function cardSvg() {
-  /* ⚠️ THE RINK'S COORDINATE SPACE IS 200x85 AND IS NOT NEGOTIABLE — `SX`/`SY`
-     map feet into it. So it is PLACED by a transform rather than redrawn at
-     another scale, which is what `builders/learn-figures.mjs` does for the rule
-     diagrams and for the same reason. */
-  /* ⚠️ THE SHEET CLEARS THE FOOTER, which the first render did not: the boards
-     ran behind both lines of type and the card read as a mistake. The rink is
-     200x85, so its height follows its width and the only free number is where it
-     starts. */
-  const rinkW = 940, rinkH = rinkW * 85 / 200;          // 940 x 400
-  const rinkX = (WIDTH - rinkW) / 2, rinkY = 168;
-  const scale = rinkW / 200;
+  const boxW = WIDTH - BOX_X, pxPerFt = HEIGHT / CROP.h;
+  const gx = SX(-NET_X), dotX = SX(-END_DOT_X), dotY = SY(-END_DOT_Y);
+  // A goaltender in his net and a faceoff at the end-zone dot: hockey, at true
+  // scale, with no event of any game on it.
+  const scene = netGlyph('cardnet', gx, NEUTRAL)
+    + person('goalie', gx, 42.5, DARK, -1, pxPerFt, 0)
+    + person('official', dotX + 1.5, dotY - 6.5, LIGHT, -1, pxPerFt, 1)
+    + person('mascot', dotX - 3.4, dotY, LIGHT, 1, pxPerFt, 2)
+    + person('mascot', dotX + 3.4, dotY, DARK, -1, pxPerFt, 3);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" `
     + `viewBox="0 0 ${WIDTH} ${HEIGHT}" font-family="system-ui,-apple-system,&quot;Segoe UI&quot;,Roboto,sans-serif">`
     + '<style>'
-    /* THE RINK, RESTATED FROM app.css — the same numbers, because it is the same
-       ice. `builders/build_index.py`'s FIGCSS says this of the rule diagrams and
-       makes the same restatement; a shared function does not carry a stylesheet. */
-    + '.boards{fill:#eef4f8;stroke:#ccd8e0;stroke-width:1.1}'
-    /* ⚠️ THE SAME OPACITY THE ICE USES, not a bolder one chosen because this is a
-       poster. `#rg .slotzone{opacity:.09}`. A card that paints our own measurement
-       more strongly than the product does is the product misrepresented in the one
-       picture a stranger sees first, and the words below do the work instead. */
+    // The rink, restated from app.css: the same numbers, because it is the same ice.
+    + '.boards{fill:#eef4f8;stroke:#ccd8e0;stroke-width:.6}'
+    // The ice's own slot opacity (`#rg .slotzone`), never a bolder poster one.
     + '.slotzone{fill:#e0932a;opacity:.09}'
     + '.ln{fill:none;stroke-linecap:round}'
-    + '.ln.red{stroke:#c8102e;stroke-width:.7;opacity:.5}'
-    + '.ln.blue{stroke:#3a5a9c;stroke-width:.9;opacity:.5}'
-    + '.ln.thick{stroke-width:1.1;opacity:.6}'
-    + '.fdot{fill:#c8102e;opacity:.6}.fdot.ctr{fill:#3a5a9c}'
+    + '.ln.red{stroke:#c8102e;stroke-width:.5;opacity:.55}'
+    + '.ln.blue{stroke:#3a5a9c;stroke-width:.7;opacity:.55}'
+    + '.ln.thick{stroke-width:.9;opacity:.6}'
+    + '.fdot{fill:#c8102e;opacity:.65}.fdot.ctr{fill:#3a5a9c}'
+    + '.crease{fill:#cfe0f2;stroke:#3a5a9c;stroke-width:.3;opacity:.6}'
+    + '.mesh{stroke-width:.5;opacity:.9}.strand{stroke-width:.25;opacity:.5}'
+    + '.post{stroke-width:.8;stroke-linecap:round}.flashpath{display:none}'
     + '</style>'
     + `<rect width="${WIDTH}" height="${HEIGHT}" fill="#f4f7fa"/>`
-    + `<g transform="translate(${rinkX} ${rinkY}) scale(${scale})">${furniture('card', 'slot')}</g>`
-    /* ⭐ THE WORDMARK AND THE TAGLINE ARE THE SITE'S OWN, not a second phrasing
-       invented for this one surface. `src/index.html` has read "Read the Game —
-       hockey, made legible" since it was built. */
-    + `<text x="80" y="92" font-size="62" font-weight="800" fill="#0f1a23" letter-spacing="-1">Read the Game</text>`
-    + `<text x="80" y="134" font-size="30" font-weight="500" fill="#5b6d7a">hockey, made legible</text>`
-    /* ⚠️ THE PROMISE, AND IT IS THE ONE LINE WORTH SPENDING THE SPACE ON. It is
-       what the site is FOR, it is already the homepage's own description, and on
-       a card beside a hockey title it is the only sentence that says why this is
-       not another stats page. */
-    + `<text x="${WIDTH - 80}" y="${HEIGHT - 34}" text-anchor="end" font-size="27" font-weight="600" fill="#5b6d7a">Nothing modelled, nothing invented.</text>`
-    + `<text x="80" y="${HEIGHT - 34}" font-size="27" font-weight="700" fill="#3a5a9c">readthegame.co</text>`
+    + '<defs><linearGradient id="cardfade"><stop offset="0" stop-color="#f4f7fa"/>'
+    + '<stop offset="1" stop-color="#f4f7fa" stop-opacity="0"/></linearGradient></defs>'
+    + `<svg x="${BOX_X}" y="0" width="${boxW}" height="${HEIGHT}" `
+    + `viewBox="${CROP.x} ${CROP.y} ${CROP.w} ${CROP.h}" preserveAspectRatio="xMaxYMid slice">`
+    + furniture('card', 'slot') + scene + '</svg>'
+    + `<rect x="${BOX_X}" y="0" width="90" height="${HEIGHT}" fill="url(#cardfade)"/>`
+    // The wordmark and tagline are the home page's own.
+    + `<text x="70" y="140" font-size="64" font-weight="800" fill="#0f1a23" letter-spacing="-1">Read the</text>`
+    + `<text x="70" y="214" font-size="64" font-weight="800" fill="#0f1a23" letter-spacing="-1">Game</text>`
+    + `<text x="72" y="268" font-size="30" font-weight="500" fill="#5b6d7a">hockey, made legible</text>`
+    // What the site is, for a stranger: a replay of events, not of video.
+    + `<text x="72" y="330" font-size="26" font-weight="600" fill="#0f1a23">NHL games, replayed</text>`
+    + `<text x="72" y="364" font-size="26" font-weight="600" fill="#0f1a23">event by event.</text>`
+    + `<text x="72" y="480" font-size="24" font-weight="600" fill="#5b6d7a">Nothing modelled,</text>`
+    + `<text x="72" y="512" font-size="24" font-weight="600" fill="#5b6d7a">nothing invented.</text>`
+    + `<text x="72" y="574" font-size="27" font-weight="700" fill="#3a5a9c">readthegame.co</text>`
     + '</svg>';
 }
 

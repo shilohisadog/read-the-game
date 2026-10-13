@@ -119,6 +119,8 @@ export const SX=x=>100-x, SY=y=>42.5-y;
    on the arc. `boardsY` is that one rule, and the boards rect below is drawn
    from the same four numbers, so the paint and the outline cannot disagree. */
 export const BOARD={x:1,y:1,w:198,h:83,r:27};
+// The end-zone faceoff spots, in feet from centre ice.
+export const END_DOT_X=69, END_DOT_Y=22;
 /**
  * Where the boards are at an SVG x — the top and bottom of the playing surface
  * at that point. Straight section: the full height. Inside a corner: on the arc.
@@ -251,7 +253,7 @@ export function furniture(id='',tints=true){
  // NO HASH MARKS. A real end-zone circle has them and nothing available here
  // gives their dimensions, so they stay off rather than being approximated.
  const ENDZONE=[],NEUTRAL=[];
- for(const zx of[-69,69])for(const zy of[-22,22])ENDZONE.push([zx,zy]);
+ for(const zx of[-END_DOT_X,END_DOT_X])for(const zy of[-END_DOT_Y,END_DOT_Y])ENDZONE.push([zx,zy]);
  for(const zx of[-NEUTRAL_DOT_X,NEUTRAL_DOT_X])for(const zy of[-22,22])NEUTRAL.push([zx,zy]);
  for(const[zx,zy]of ENDZONE)P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
  // Spots go on LAST so a dot sits on top of its circle. Centre ice is blue and

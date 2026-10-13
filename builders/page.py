@@ -471,10 +471,11 @@ def _card_facts():
             raise SystemExit(f"tools/card.mjs no longer exports {name}")
         return int(m.group(1))
 
-    alt = re.search(r"export const ALT = '([^']*)'\s*\+ '([^']*)';", src)
+    # ALT is one or more quoted pieces joined by `+`; every piece is read.
+    alt = re.search(r"^export const ALT = ((?:'[^']*'\s*\+?\s*)+);", src, re.M)
     if not alt:
         raise SystemExit("tools/card.mjs no longer exports ALT in the shape this reads")
-    return num("WIDTH"), num("HEIGHT"), (alt.group(1) + alt.group(2))
+    return num("WIDTH"), num("HEIGHT"), "".join(re.findall(r"'([^']*)'", alt.group(1)))
 
 
 CARD_W, CARD_H, CARD_ALT = _card_facts()

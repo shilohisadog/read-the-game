@@ -175,3 +175,15 @@ test('⛔ the alt text describes the picture that is actually drawn', () => {
     assert.equal(m[1], ALT, `${f}'s alt text is a second copy and has drifted`);
   }
 });
+
+test('⭐ the card shows hockey: a net, a goaltender and a faceoff, and says what the site is', () => {
+  /* Kevin, 2026-10-13: the empty rink read as "no nets, no nothing" in an X
+     post. MUTATION: drop the scene and the first two assertions fire. */
+  const svg = cardSvg();
+  assert.match(svg, /class="netg"/, 'the card has no net');
+  const kinds = [...svg.matchAll(/class="cardfig (\w+)"/g)].map(m => m[1]).sort();
+  assert.deepEqual(kinds, ['goalie', 'mascot', 'mascot', 'official'],
+    'the card no longer shows a goaltender, two skaters and an official');
+  assert.match(svg, />NHL games, replayed</);
+  assert.match(svg, />event by event\.</);
+});
