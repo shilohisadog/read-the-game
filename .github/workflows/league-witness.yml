@@ -1,0 +1,55 @@
+# Our player, goaltender and power-play figures against the league's own, over
+# the whole archive. A measurement: dispatch only, writes nothing to the bucket.
+# League side: tools/league_figures.py (raw boxscore + rail). Ours: the code the
+# site runs, via tools/league-witness.mjs over the published extracts.
+name: league witness, archive-wide
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    env:
+      BUCKET: readthegame
+      AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_RETRY_MODE: adaptive
+      AWS_MAX_ATTEMPTS: '10'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: pull the raw archive and the extracts
+        run: |
+          mkdir -p ingest
+          aws configure set default.s3.max_concurrent_requests 4
+          for p in raw extract; do
+            ok=
+            for attempt in 1 2 3; do
+              if aws s3 sync "s3://${BUCKET}/$p/" "ingest/$p/" \
+                  --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress; then ok=1; break; fi
+              echo "::warning::pull of $p hit a transient R2 error (attempt $attempt); retrying"
+              sleep $(( attempt * 20 ))
+            done
+            [ -n "$ok" ] || { echo "::error::$p could not be pulled"; exit 1; }
+          done
+          echo "pulled $(find ingest/raw -name latest.json | wc -l) games, $(ls ingest/extract | wc -l) extracts"
+
+      - name: the league's figures, then ours against them
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/league_figures.py ingest league.json
+          node tools/league-witness.mjs league.json ingest > report.txt
+          cat report.txt
+          { echo '## league witness, archive-wide'; echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
