@@ -150,6 +150,18 @@ sub-count is attempts), `through` (archive for teams, latest season for players)
   keeps them. The game page is 238 KB decoded, down from 1,021 KB. Stripping
   them exposed two tests that had been passing on COMMENT text.
 
+- ✅ 4 — `f7d0c2e` publishes `front.json`, `team/{AB}.json` (52) and
+  `calendar/{YYYY-MM}.json` (32), each a verbatim projection of the catalog and
+  index (`src/lib/page-docs.js`), written and uploaded with the catalog by both
+  pipelines and re-checked byte for byte from the bucket. `0b047a7` + `f558ba7`
+  switch the pages and drop `no-store`. Verified live 2026-10-13: no page
+  fetches `catalog.json` or `index.json` (the game page only on its refusal
+  error path); unchanged documents answer 304. Data per first visit, gzipped:
+  home ~86 KB → ~12 KB (measures.json 9.5 KB of it), team view ~86 → ~6 KB,
+  calendar 61 → ~2 KB, preview loses the 61 KB catalog. Both pipelines also
+  fail if a refused game still has a published extract (read-only; deleting
+  one is Kevin's call).
+
 Ordered by what a reader is told wrong first, then bytes, then hygiene.
 
 1. **D1 slot rule** — one rule for the ice, the layer and the published figures (decision: which rule — Kevin's three-clause rule is the one he asked for).

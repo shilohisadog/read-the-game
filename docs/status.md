@@ -40,16 +40,20 @@ ordered list, what is done (with commits), and what each remaining item needs.
 Kevin's ruling on order: *"get our arms wrapped around everything then start
 fixing"*, and on the slot: *"consistency and transparency are paramount"*.
 
-### ⏭ NEXT: item 4, one published document per page — PLAN FIRST
+### ⏭ NEXT: item 5, wire the free witnesses
 
-Kevin rejected a separate status-file stopgap as a band-aid. The root cause: five pages
-(home, team view, calendar, preview, game page with no id) each download the
-whole 483 KB catalog and use under 5 KB of it. Write the plan — which document
-each page gets, how each is held to being an exact projection of the catalog,
-the switch order (publish first, then switch pages, as `us` was done) — and
-bring it to Kevin **before building**. Measured projections are in the review §4.
+Boxscore player rows for goals, assists and shots; goaltender saves; standings
+for records; the rail's `powerPlay` (D2). See the review §6.
 
 ### ✅ DONE 2026-10-12/13, each verified on the live site
+
+- **One document per page** (item 4: `f7d0c2e`, `0b047a7`, `f558ba7`): `front.json`,
+  `team/{AB}.json`, `calendar/{YYYY-MM}.json`, verbatim projections of the catalog
+  and index checked byte for byte from the bucket; no page fetches the catalog
+  (the game page only on its refusal error path); `no-store` dropped. Home data
+  ~86 → ~12 KB. A refused game with a published extract fails the run (read-only).
+- **Someone to watch must be playing** (`2adf1ae`): dressed for the team's last
+  game, or for THIS game once played.
 
 - **"Last night" survives a quiet run** (`b71e107`) — the slate is the newest
   catalog night inside the fetch window, not what the latest run derived.
