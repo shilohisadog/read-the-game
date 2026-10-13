@@ -53,3 +53,11 @@ jobs:
           node tools/league-witness.mjs league.json ingest > report.txt
           cat report.txt
           { echo '## league witness, archive-wide'; echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+
+      # The power-play figures alone, small enough to read back from this log
+      # (gh run view --log) for iterating on the definition locally.
+      - name: the league's power-play figures, encoded
+        run: |
+          python3 -c "import json;d=json.load(open('league.json'));json.dump({g:[sum(r.get('powerPlayGoals',0) for r in v['skaters'].values()),v.get('rail')] for g,v in d.items()},open('pp.json','w'),separators=(',',':'))"
+          echo "PPJSON $(gzip -9c pp.json | base64 -w0)"
