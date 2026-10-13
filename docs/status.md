@@ -32,7 +32,60 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-11 (evening)
+## ⏭ 0.00 PICK UP HERE — 2026-10-13
+
+**WORK IN FLIGHT: the data-model review's fix list. Read
+[`docs/data-model-review.md`](data-model-review.md) §6 first** — it carries the
+ordered list, what is done (with commits), and what each remaining item needs.
+Kevin's ruling on order: *"get our arms wrapped around everything then start
+fixing"*, and on the slot: *"consistency and transparency are paramount"*.
+
+### ⏭ NEXT: item 4, one published document per page — PLAN FIRST
+
+Kevin rejected a separate status-file stopgap as a band-aid. The root cause: five pages
+(home, team view, calendar, preview, game page with no id) each download the
+whole 483 KB catalog and use under 5 KB of it. Write the plan — which document
+each page gets, how each is held to being an exact projection of the catalog,
+the switch order (publish first, then switch pages, as `us` was done) — and
+bring it to Kevin **before building**. Measured projections are in the review §4.
+
+### ✅ DONE 2026-10-12/13, each verified on the live site
+
+- **"Last night" survives a quiet run** (`b71e107`) — the slate is the newest
+  catalog night inside the fetch window, not what the latest run derived.
+- **Raw archive private** — Kevin's Cloudflare WAF rule; `r2-raw-private.yml`
+  (verify-only) shows `/raw/` 403, `/extract/` and catalog 200.
+- **Dead `coverage.refusedInWindow`** removed (`b71e107`).
+- **Slot rule** (`bd9d559`, re-measured `137f0c8`): the layer and every published
+  slot figure use the three-clause slot the ice paints. `ingest.yml` has a
+  `remeasure` dispatch input for rule changes in code.
+- **Shot asterisk** (`0aef016`): catalog `us` marks shot disputes; `u` stays the
+  ledger's any-kind flag. `teams.archive` (no reader, wrong "7.8%") deleted.
+- **Pages ship without comments** (`6c4e2f4`): `P.strip` before the CSP hash;
+  game page 1,021 → 238 KB decoded. Exposed two tests passing on comment text.
+- Also from Kevin's reading: `Whole-game metrics`, the season named in the
+  summary, two-column summary with a scale key in his wording, front-door cards
+  open their lessons, headings "What we count" / "What this site does and does
+  not claim".
+
+### ⚠️ RULINGS STANDING FROM THIS STRETCH
+
+- **Comments say WHAT plus a one-line why or trap — never narrative.** Reasoning
+  goes in the commit message. Cleaning the existing 71–81% comment share is
+  item 11; `tools/quoted-figures.mjs` writes figures INTO `src/lib` comments.
+- **Item 12 needs a ruling**: the replay has twelve animations and reduced motion
+  stops only the play-button pulse.
+
+### ⛔ ONE THING THAT WILL BITE A COLD SESSION
+
+The nightly commits generated files (`data/measures.json`, built pages, this
+file's health block). A rebase conflict on generated files: take either side,
+then `npm run build`, `node tools/dom-golden.mjs`, `node builders/health.mjs`,
+`node tools/tiers.mjs`, and grep for something you wrote before pushing.
+
+---
+
+## 2026-10-11 (evening)
 
 **NOTHING IS WAITING ON KEVIN.** The boxscore witness is BUILT (`1542c27`,
 `b422484`), live on the nightly, and reaches the archive on the next full derive.
@@ -112,7 +165,7 @@ taken in a conflict loses the other side's work silently.
 
 ---
 
-## ⏭ 0.00-PREV — 2026-10-07
+## 2026-10-07
 
 **TWO THREADS KEVIN OPENED OFF THE FEED INVENTORY, BOTH BUILT AND LIVE**, and
 every design decision in them was settled by MEASURING rather than arguing.
