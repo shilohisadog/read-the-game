@@ -4950,22 +4950,24 @@ __HELPERS__
      figures into each other. */
   function dec(v) { return v == null ? '\u2014' : v.toFixed(2); }
 
-  /* The possession group's one sentence: how closely each row moved with the
-     first over full team-seasons, and which run the opposite way. */
+  /* The possession group's introduction: what the cards share, what that means
+     for reading them, then how closely they agree (from `settle.family`). */
   function groupSays(g) {
-    var rest = g.pairs.length;
-    var against = g.pairs.filter(function (x) { return x.r < 0; })
-      .map(function (x) { return x.short; });
-    return 'These ' + (rest + 1) + ' rows are views of the same thing, so expect them '
-      + 'to agree. Over ' + num(g.clubSeasons) + ' full team-seasons, each of the '
-      + 'others moved with the first by ' + g.min.toFixed(2) + ' to ' + g.max.toFixed(2)
-      + ', on a scale where 1 is in lockstep and 0 is no connection'
-      + (against.length ? '. ' + cap(against.join(' and ')) + ' move the opposite way: '
-         + 'the more a team has the puck, the lower ' + (against.length === 1 ? 'it' : 'they') + ' run'
-         + (against.length === 1 ? 's' : '') : '')
-      + '.';
+    var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    var word = function (n) { return WORDS[n] || String(n); };
+    var all = g.pairs.length + 1;
+    var tends = g.pairs.map(function (x) { return x.tends; });
+    var list = tends.length > 1
+      ? tends.slice(0, -1).join(', ') + ', and ' + tends[tends.length - 1] : tends[0];
+    return 'The next ' + word(all) + ' cards all measure one thing: how much a team has '
+      + 'the puck. The first, ' + g.headLabel + ', measures it directly. Teams that '
+      + 'score high on it tend to ' + list + '. So expect a team to look strong or '
+      + 'weak on all ' + word(all) + ' at once \u2014 together they are one piece of '
+      + 'evidence, not ' + word(all) + '. How closely they agree: over '
+      + num(g.clubSeasons) + ' full team-seasons, each of the other ' + word(g.pairs.length)
+      + ' tracked the first at ' + g.min.toFixed(2) + ' to ' + g.max.toFixed(2)
+      + ', on a scale where 1 means they move in lockstep and 0 means no link at all.';
   }
-  function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
 
   function measureFor(ar, hr, p) {
     var box = el('div', 'pvm');

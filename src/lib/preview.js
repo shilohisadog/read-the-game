@@ -124,7 +124,9 @@ export const CLUB_ROWS = [
   /* The possession group: views of the same thing as the row above, kept because
      each settles and each is something a newcomer can see happen. */
   { key: 'sogShare', label: 'share of the shots on goal',
-    short: 'shots-on-goal share',
+    // What a team that has the puck more tends to do, by the sign of its r with CF%.
+    trend: { up: 'take a bigger share of the shots on goal',
+             down: 'take a smaller share of the shots on goal' },
     says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
         + 'counted \u2014 this many were its own.',
     counts: 'shots on goal by both sides in each team\u2019s own games',
@@ -134,7 +136,8 @@ export const CLUB_ROWS = [
       ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
     unit: 'share', group: 'possession', fields: ['sog'] },
   { key: 'attemptsAgainst', label: 'shot attempts against, per game',
-    short: 'attempts against',
+    trend: { up: 'face more of the other team\u2019s attempts',
+             down: 'face fewer of the other team\u2019s attempts' },
     says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
         + 'game \u2014 the other side of having the puck.',
     counts: 'Attempts aimed at each team\u2019s net',
@@ -145,7 +148,7 @@ export const CLUB_ROWS = [
   /* `blocks` is credited to the team that did the blocking, which is the
      defending team (`measureGame`). */
   { key: 'blocks', label: 'shot attempts blocked, per game',
-    short: 'blocked attempts',
+    trend: { up: 'block more shots', down: 'block fewer shots' },
     says: 'How many of the other team\u2019s shot attempts this team got in front of '
         + 'before they reached the net, per game.',
     counts: 'Attempts each team blocked',
@@ -441,11 +444,13 @@ export function possessionGroup(measures, needs) {
   const head = shown[0].key;
   const pairs = shown.slice(1).map(r => {
     const pr = fam.pairs.find(x => (x.a === head && x.b === r.key) || (x.b === head && x.a === r.key));
-    return pr && Number.isFinite(pr.r) ? { key: r.key, short: r.short, r: pr.r } : null;
+    return pr && Number.isFinite(pr.r)
+      ? { key: r.key, r: pr.r, tends: pr.r < 0 ? r.trend.down : r.trend.up }
+      : null;
   });
   if (pairs.some(x => !x)) return null;
   const size = pairs.map(x => Math.abs(x.r));
-  return { head, clubSeasons: fam.clubSeasons, pairs,
+  return { head, headLabel: shown[0].label, clubSeasons: fam.clubSeasons, pairs,
            min: Math.min(...size), max: Math.max(...size) };
 }
 

@@ -1474,9 +1474,11 @@ test('⭐ each club row reads in its own unit, and the possession group is intro
   assert.equal(sect.kids[sect.kids.indexOf(heads[0]) + 2], cards[0],
     'the heading and its sentence sit directly above the first possession row');
   const says = textOf(sect.kids.find(x => x.className === 'pvgsays'));
-  assert.match(says, /Over 96 full team-seasons/);
-  assert.match(says, /0\.61 to 0\.85/);
-  assert.match(says, /Attempts against and blocked attempts move the opposite way/);
+  assert.match(says, /^The next four cards all measure one thing: how much a team has the puck\./);
+  assert.match(says, /The first, 5-on-5 CF% while the score was level, measures it directly\./);
+  // The direction words follow the sign of each published r.
+  assert.match(says, /tend to take a bigger share of the shots on goal, face fewer of the other team’s attempts, and block fewer shots\./);
+  assert.match(says, /over 96 full team-seasons, each of the other three tracked the first at 0\.61 to 0\.85/);
 
   const values = c => walk(c).filter(x => x.className === 'pvv').map(x => x.textContent);
   const byLabel = l => cards.find(c => label(c) === l);

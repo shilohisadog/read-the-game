@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-44FpgD9LEjM/k0svzrNh8DHnEaJt0f7xxFQhhgW62h0=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-424aijIqaUIw9GmA31NdToETzKyijuD3VdAYMfw8J5Y=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -554,7 +554,8 @@ const CLUB_ROWS = [
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }),
     unit: 'share', group: 'possession', fields: ['lvl5'] },
   { key: 'sogShare', label: 'share of the shots on goal',
-    short: 'shots-on-goal share',
+    trend: { up: 'take a bigger share of the shots on goal',
+             down: 'take a smaller share of the shots on goal' },
     says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
         + 'counted \u2014 this many were its own.',
     counts: 'shots on goal by both sides in each team\u2019s own games',
@@ -563,7 +564,8 @@ const CLUB_ROWS = [
       ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
     unit: 'share', group: 'possession', fields: ['sog'] },
   { key: 'attemptsAgainst', label: 'shot attempts against, per game',
-    short: 'attempts against',
+    trend: { up: 'face more of the other team\u2019s attempts',
+             down: 'face fewer of the other team\u2019s attempts' },
     says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
         + 'game \u2014 the other side of having the puck.',
     counts: 'Attempts aimed at each team\u2019s net',
@@ -572,7 +574,7 @@ const CLUB_ROWS = [
                                      : { count: 0, n: 0 }),
     unit: 'perGame', group: 'possession', fields: ['attempts'] },
   { key: 'blocks', label: 'shot attempts blocked, per game',
-    short: 'blocked attempts',
+    trend: { up: 'block more shots', down: 'block fewer shots' },
     says: 'How many of the other team\u2019s shot attempts this team got in front of '
         + 'before they reached the net, per game.',
     counts: 'Attempts each team blocked',
@@ -723,11 +725,13 @@ function possessionGroup(measures, needs) {
   const head = shown[0].key;
   const pairs = shown.slice(1).map(r => {
     const pr = fam.pairs.find(x => (x.a === head && x.b === r.key) || (x.b === head && x.a === r.key));
-    return pr && Number.isFinite(pr.r) ? { key: r.key, short: r.short, r: pr.r } : null;
+    return pr && Number.isFinite(pr.r)
+      ? { key: r.key, r: pr.r, tends: pr.r < 0 ? r.trend.down : r.trend.up }
+      : null;
   });
   if (pairs.some(x => !x)) return null;
   const size = pairs.map(x => Math.abs(x.r));
-  return { head, clubSeasons: fam.clubSeasons, pairs,
+  return { head, headLabel: shown[0].label, clubSeasons: fam.clubSeasons, pairs,
            min: Math.min(...size), max: Math.max(...size) };
 }
 
@@ -1325,19 +1329,21 @@ function formatDate(iso) {
   function dec(v) { return v == null ? '\u2014' : v.toFixed(2); }
 
   function groupSays(g) {
-    var rest = g.pairs.length;
-    var against = g.pairs.filter(function (x) { return x.r < 0; })
-      .map(function (x) { return x.short; });
-    return 'These ' + (rest + 1) + ' rows are views of the same thing, so expect them '
-      + 'to agree. Over ' + num(g.clubSeasons) + ' full team-seasons, each of the '
-      + 'others moved with the first by ' + g.min.toFixed(2) + ' to ' + g.max.toFixed(2)
-      + ', on a scale where 1 is in lockstep and 0 is no connection'
-      + (against.length ? '. ' + cap(against.join(' and ')) + ' move the opposite way: '
-         + 'the more a team has the puck, the lower ' + (against.length === 1 ? 'it' : 'they') + ' run'
-         + (against.length === 1 ? 's' : '') : '')
-      + '.';
+    var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    var word = function (n) { return WORDS[n] || String(n); };
+    var all = g.pairs.length + 1;
+    var tends = g.pairs.map(function (x) { return x.tends; });
+    var list = tends.length > 1
+      ? tends.slice(0, -1).join(', ') + ', and ' + tends[tends.length - 1] : tends[0];
+    return 'The next ' + word(all) + ' cards all measure one thing: how much a team has '
+      + 'the puck. The first, ' + g.headLabel + ', measures it directly. Teams that '
+      + 'score high on it tend to ' + list + '. So expect a team to look strong or '
+      + 'weak on all ' + word(all) + ' at once \u2014 together they are one piece of '
+      + 'evidence, not ' + word(all) + '. How closely they agree: over '
+      + num(g.clubSeasons) + ' full team-seasons, each of the other ' + word(g.pairs.length)
+      + ' tracked the first at ' + g.min.toFixed(2) + ' to ' + g.max.toFixed(2)
+      + ', on a scale where 1 means they move in lockstep and 0 means no link at all.';
   }
-  function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
 
   function measureFor(ar, hr, p) {
     var box = el('div', 'pvm');

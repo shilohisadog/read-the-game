@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-714W8qZa/eP5KJQyS/nSI0dDnAIm3A8dq0i82KbwvKQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HGwaF1w6e5hetEzWUanx2zy4OpZd6nuUMOmUa96AC48=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -672,7 +672,8 @@ const CLUB_ROWS = [
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }),
     unit: 'share', group: 'possession', fields: ['lvl5'] },
   { key: 'sogShare', label: 'share of the shots on goal',
-    short: 'shots-on-goal share',
+    trend: { up: 'take a bigger share of the shots on goal',
+             down: 'take a smaller share of the shots on goal' },
     says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
         + 'counted \u2014 this many were its own.',
     counts: 'shots on goal by both sides in each team\u2019s own games',
@@ -681,7 +682,8 @@ const CLUB_ROWS = [
       ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
     unit: 'share', group: 'possession', fields: ['sog'] },
   { key: 'attemptsAgainst', label: 'shot attempts against, per game',
-    short: 'attempts against',
+    trend: { up: 'face more of the other team\u2019s attempts',
+             down: 'face fewer of the other team\u2019s attempts' },
     says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
         + 'game \u2014 the other side of having the puck.',
     counts: 'Attempts aimed at each team\u2019s net',
@@ -690,7 +692,7 @@ const CLUB_ROWS = [
                                      : { count: 0, n: 0 }),
     unit: 'perGame', group: 'possession', fields: ['attempts'] },
   { key: 'blocks', label: 'shot attempts blocked, per game',
-    short: 'blocked attempts',
+    trend: { up: 'block more shots', down: 'block fewer shots' },
     says: 'How many of the other team\u2019s shot attempts this team got in front of '
         + 'before they reached the net, per game.',
     counts: 'Attempts each team blocked',
@@ -841,11 +843,13 @@ function possessionGroup(measures, needs) {
   const head = shown[0].key;
   const pairs = shown.slice(1).map(r => {
     const pr = fam.pairs.find(x => (x.a === head && x.b === r.key) || (x.b === head && x.a === r.key));
-    return pr && Number.isFinite(pr.r) ? { key: r.key, short: r.short, r: pr.r } : null;
+    return pr && Number.isFinite(pr.r)
+      ? { key: r.key, r: pr.r, tends: pr.r < 0 ? r.trend.down : r.trend.up }
+      : null;
   });
   if (pairs.some(x => !x)) return null;
   const size = pairs.map(x => Math.abs(x.r));
-  return { head, clubSeasons: fam.clubSeasons, pairs,
+  return { head, headLabel: shown[0].label, clubSeasons: fam.clubSeasons, pairs,
            min: Math.min(...size), max: Math.max(...size) };
 }
 
