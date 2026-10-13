@@ -34,12 +34,26 @@ This section is the orientation. Everything below §0 is the detail, organised b
 state.
 ## ⏭ 0.00 PICK UP HERE — 2026-10-13 (evening)
 
-### ⏭ NEXT: data-model fix list, item 6
+### ⏭ NEXT: data-model fix list, item 6 (proposed to Kevin, not yet approved)
 
 `gshots`, and the `app.js` fallback that counts shootout goals; see
 [`docs/data-model-review.md`](data-model-review.md) §6. **Item 12 still needs a
 ruling**: the replay has twelve animations and reduced motion stops only the
 play-button pulse.
+
+### ✅ DONE 2026-10-13 (night): lessons open the newest games, re-picked nightly
+
+Kevin ruled option 2 (`docs/learn-doors.md` §9). Live, `b19d1ac` + a dispatched
+derive: `lessons.json` places the 14 lessons on 14 different games from the last
+three nights; a door is `/game.html?lesson=<id>`, the replay rewrites the address
+to the picked moment and shows a strip naming the lesson, the card's sentence,
+the game, and a way back. Verified on readthegame.co: icing opened VGK at MIN,
+12 October, at the icing's faceoff. ⚠️ On a phone in landscape the strip's last
+line (the game, Back, Close) sits below the fold — not changed, awaiting Kevin.
+The empty-net rule was tightened (a third-period pull by a team behind) after the
+pick landed on a delayed-penalty pull. Also tonight: the sharing card (one end of
+the rink, "NHL games, replayed event by event", `b57f4df`) and a real
+`robots.txt` (`c07f355`).
 
 ### ✅ DONE 2026-10-13 (evening): the preview's team section is seven rows
 
