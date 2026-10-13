@@ -1430,3 +1430,65 @@ test('⛔ two team values that round alike still read differently, and the axis 
   for (const e of ends) assert.match(e, /^\d+%$/, `the axis end ${e} gained a decimal`);
   assert.match(textOf(clubsIn(ids)), /league \d+\.\d%/, 'the league reference matches its values');
 });
+
+/* ------------------------------------------------ THE SEVEN-ROW SECTION */
+
+test('⭐ each club row reads in its own unit, and the possession group is introduced once', async () => {
+  /* Kevin, 2026-10-13: the team section grows to seven rows, four of them one
+     possession group. A count per game or a shift length printed as a percentage
+     would be wrong by a factor of a hundred and look fine, so this reads the
+     rendered text of each row. MUTATION: drop `unit` from a row and its value
+     reads as a share; drop the group heading and the second assertion fires. */
+  const range = (min, max) => ({ min, max, median: (min + max) / 2, n: 96 });
+  const rows = { level5: { r: 0.73, games: 35, clubRange: range(0.44, 0.57) },
+    sogShare: { r: 0.72, games: 37, clubRange: range(0.42, 0.57) },
+    attemptsAgainst: { r: 0.75, games: 33, clubRange: range(48.2, 71) },
+    blocks: { r: 0.75, games: 33, clubRange: range(11.3, 18.9) },
+    dmen: { r: 0.81, games: 23, clubRange: range(0.26, 0.38) },
+    slot: { r: 0.72, games: 37, clubRange: range(0.40, 0.54) },
+    shiftLength: { r: 0.89, games: 12, clubRange: range(43.2, 53.8) } };
+  const family = { clubSeasons: 96, pairs: [
+    { a: 'level5', b: 'sogShare', r: 0.85, n: 96 },
+    { a: 'level5', b: 'attemptsAgainst', r: -0.81, n: 96 },
+    { a: 'level5', b: 'blocks', r: -0.61, n: 96 }] };
+  const more = { blocks: { count: 170, n: 590 }, sog: { for: 330, against: 300 },
+                 shifts: { secs: 27000, n: 560 } };
+  const { ids, settle } = run({
+    'teams.json': { through: '2026-10-01',
+      seasons: { 2026: { BUF: club(more), PIT: club({ games: 11, ...more }) } } },
+    'measures.json': { ...DOCS['measures.json'],
+      settle: { ...DOCS['measures.json'].settle, rows, family } },
+  }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const sect = clubsIn(ids);
+  const kids = walk(sect);
+  const cards = kids.filter(x => (x.className || '').split(' ').includes('pvm'));
+  const label = c => textOf(walk(c).find(x => x.className === 'pvlab'));
+  assert.deepEqual(cards.map(label), ['5-on-5 CF% while the score was level',
+    'share of the shots on goal', 'shot attempts against, per game',
+    'shot attempts blocked, per game', 'shot attempts taken by defencemen',
+    'shot attempts from the slot', 'average shift length']);
+
+  const heads = sect.kids.filter(x => x.className === 'pvgroup');
+  assert.equal(heads.length, 1, 'the possession group is introduced exactly once');
+  assert.equal(sect.kids[sect.kids.indexOf(heads[0]) + 2], cards[0],
+    'the heading and its sentence sit directly above the first possession row');
+  const says = textOf(sect.kids.find(x => x.className === 'pvgsays'));
+  assert.match(says, /Over 96 full team-seasons/);
+  assert.match(says, /0\.61 to 0\.85/);
+  assert.match(says, /Attempts against and blocked attempts move the opposite way/);
+
+  const values = c => walk(c).filter(x => x.className === 'pvv').map(x => x.textContent);
+  const byLabel = l => cards.find(c => label(c) === l);
+  // 590 against in 12 games; 170 blocks in 12; 27000 s over 560 shifts.
+  assert.equal(values(byLabel('shot attempts against, per game'))[0], '49.2');
+  assert.equal(values(byLabel('shot attempts blocked, per game'))[0], '14.2');
+  assert.equal(values(byLabel('average shift length'))[0], '48.2 s');
+  assert.equal(values(byLabel('share of the shots on goal'))[0], '52.4%');
+  const foot = textOf(walk(byLabel('average shift length')).find(x => x.className === 'pvfoot'));
+  assert.match(foot, /BUF 27,000 seconds over 560 shifts/);
+  assert.match(foot, /teams ranged from 43 s to 54 s/);
+  const against = textOf(walk(byLabel('shot attempts against, per game')).find(x => x.className === 'pvfoot'));
+  assert.match(against, /^Attempts aimed at each team’s net: BUF 590 in 12 games/);
+  assert.doesNotMatch(against, /%/, 'a count per game carries no percent sign');
+});

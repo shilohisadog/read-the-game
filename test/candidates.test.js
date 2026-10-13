@@ -13,7 +13,7 @@ import { CLUB_ROWS } from '../src/lib/preview.js';
 const G = JSON.parse(readFileSync(new URL('./fixtures/extracts/2025020501.json', import.meta.url), 'utf8'));
 const c = candidatesOf(G).c;
 
-test('the card’s three rows are the card’s own figures, not a second definition', () => {
+test('the card’s rows are the card’s own figures, not a second definition', () => {
   const m = measureGame(G);
   for (const r of CLUB_ROWS) {
     for (const s of ['h', 'a']) assert.deepEqual(c[r.key][s], r.ofGame(m, s), `${r.key} ${s}`);
@@ -28,7 +28,7 @@ test('a share of both teams partitions its denominator', () => {
 });
 
 test('attempts for one side are attempts against the other', () => {
-  assert.equal(c.attemptsForPerGame.h.count, c.attemptsAgainstPerGame.a.count);
+  assert.equal(c.attemptsForPerGame.h.count, c.attemptsAgainst.a.count);
   assert.equal(c.attemptDiffPerGame.h.count, -c.attemptDiffPerGame.a.count);
   assert.equal(c.attemptsForPerGame.h.count, measureGame(G).attempts.h);
 });

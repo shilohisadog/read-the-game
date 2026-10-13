@@ -98,25 +98,19 @@ export function candidatesOf(g) {
   const out = {};
   const both = (key, f) => { out[key] = { h: f('h'), a: f('a') }; };
   const share = (x, s) => p(x[s], x.h + x.a);
-  const rowOf = key => CLUB_ROWS.find(r => r.key === key);
 
-  both('avgShiftLen', s => p(secs[s] || 0, shifts[s] || 0));
+  // Every row the card shows, through the card's own definition.
+  for (const r of CLUB_ROWS) both(r.key, s => r.ofGame(m, s));
   both('shiftsPerGame', s => p(shifts[s] || 0, shifts[s] ? 1 : 0));
   both('attemptDiffPerGame', s => p(t.att[s] - t.att[opp(s)], 1));
-  both('dmen', s => rowOf('dmen').ofGame(m, s));
   both('corsi5v5', s => share(t.att5, s));
   both('attemptsForPerGame', s => p(t.att[s], 1));
   both('fenwickShare', s => share(t.unb, s));
   both('dmen5v5', s => p(t.d5[s], t.att5[s]));
   both('hitsAgainstPerGame', s => p(t.hits[opp(s)], 1));
   both('fenwick5v5', s => share(t.unb5, s));
-  both('attemptsAgainstPerGame', s => p(t.att[opp(s)], 1));
-  both('blocksPerGame', s => p(m.blocks[s] || 0, 1));
-  both('level5', s => rowOf('level5').ofGame(m, s));
   both('ozStartShare', s => p(t.oz[s], t.oz[s] + t.dz[s]));
-  both('sogShare', s => (Number.isFinite(qs.h) && Number.isFinite(qs.a) ? share(qs, s) : p(0, 0)));
   both('sogShareEvents', s => share(t.sogEv, s));
-  both('slot', s => rowOf('slot').ofGame(m, s));
   both('ozStartShare5v5', s => p(t.oz5[s], t.oz5[s] + t.dz5[s]));
   both('sog5v5', s => share(t.sog5, s));
   both('takeawaysPerGame', s => p(t.take[s], 1));

@@ -12,7 +12,7 @@
  * Presented as a trait, such a row tells a novice something false — the
  * differences are mostly luck. Kevin: *"we are a teaching centric site, at the
  * core."* So those three became LEAGUE rows that teach what is normal, and the
- * three that do settle stayed CLUB rows.
+ * rows that do settle are CLUB rows.
  *
  * ⛔ NOTHING HERE FORECASTS. The site's own headline is that the club with more
  * shot attempts LOSES 2,228 of 4,100 games; a card implying who will win would
@@ -26,7 +26,7 @@
  */
 
 /**
- * ⭐ THE THREE ROWS THAT SETTLE, AND THE GAMES EACH ONE NEEDS.
+ * ⭐ THE ROWS THAT SETTLE, AND THE GAMES EACH ONE NEEDS.
  *
  * `need` is the number of games a club must have played before its figure
  * describes the club rather than the sample — reliability 0.7, derived from the
@@ -119,13 +119,46 @@ export const CLUB_ROWS = [
        pipeline measures how many games the row needs by splitting club-seasons in
        half, which needs the per-game form; a second statement of it in the driver
        is the copy this project keeps almost making. */
-    ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
+    ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }),
+    unit: 'share', group: 'possession', fields: ['lvl5'] },
+  /* The possession group: views of the same thing as the row above, kept because
+     each settles and each is something a newcomer can see happen. */
+  { key: 'sogShare', label: 'share of the shots on goal',
+    short: 'shots-on-goal share',
+    says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
+        + 'counted \u2014 this many were its own.',
+    counts: 'shots on goal by both sides in each team\u2019s own games',
+    // A table or record written before these fields existed adds 0 of 0.
+    of: t => (t.sog ? { count: t.sog.for, n: t.sog.for + t.sog.against } : { count: 0, n: 0 }),
+    ofGame: (g, side) => g.sog && Number.isFinite(g.sog.h) && Number.isFinite(g.sog.a)
+      ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
+    unit: 'share', group: 'possession', fields: ['sog'] },
+  { key: 'attemptsAgainst', label: 'shot attempts against, per game',
+    short: 'attempts against',
+    says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
+        + 'game \u2014 the other side of having the puck.',
+    counts: 'Attempts aimed at each team\u2019s net',
+    of: t => (t.attempts ? { count: t.attempts.against, n: t.games } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.attempts ? { count: g.attempts[side === 'h' ? 'a' : 'h'], n: 1 }
+                                     : { count: 0, n: 0 }),
+    unit: 'perGame', group: 'possession', fields: ['attempts'] },
+  /* `blocks` is credited to the team that did the blocking, which is the
+     defending team (`measureGame`). */
+  { key: 'blocks', label: 'shot attempts blocked, per game',
+    short: 'blocked attempts',
+    says: 'How many of the other team\u2019s shot attempts this team got in front of '
+        + 'before they reached the net, per game.',
+    counts: 'Attempts each team blocked',
+    of: t => (t.blocks ? { count: t.blocks.count, n: t.games } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.blocks ? { count: g.blocks[side] || 0, n: 1 } : { count: 0, n: 0 }),
+    unit: 'perGame', group: 'possession', fields: ['blocks'] },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
     says: 'Of every 100 shot attempts this team took, this many came from one of '
         + 'its own defencemen.',
     counts: 'attempts each team took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
-    ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
+    ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }),
+    unit: 'share', fields: ['dAtt', 'attempts'] },
   /* ⛔⛔⛔ `missed` WAS HERE FOR ABOUT FOUR HOURS ON 2026-09-23 AND IS NOT COMING
      BACK. It is recorded rather than deleted because the way it got here is the
      lesson, and the next person to find a fast-settling candidate needs it.
@@ -164,8 +197,26 @@ export const CLUB_ROWS = [
        at all. Without the noun the two numbers read as a contradiction. */
     counts: 'attempts each team took from a spot the feed records',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
-    ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
+    ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }),
+    unit: 'share', fields: ['slot', 'located'] },
+  /* Seconds over shifts, skaters only. Settles in about a dozen games and moves
+     independently of the rows above (|r| <= 0.07, docs/what-settles.md §2a). */
+  { key: 'shiftLength', label: 'average shift length',
+    says: 'How long this team\u2019s skaters stay on the ice each time they go out, '
+        + 'on average, in seconds.',
+    counts: 'Skaters\u2019 time on the ice',
+    of: t => (t.shifts ? { count: t.shifts.secs, n: t.shifts.n } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.shifts ? { count: g.shiftSecs[side], n: g.shifts[side] }
+                                   : { count: 0, n: 0 }),
+    unit: 'seconds', fields: ['shifts', 'shiftSecs'] },
 ];
+
+/** Does a nightly record carry every field the club rows read? One written
+ *  before a field existed is skipped whole, so no row's denominator outgrows
+ *  its numerator. */
+export function complete(g) {
+  return CLUB_ROWS.every(r => r.fields.every(f => g[f] != null));
+}
 
 /**
  * ⭐⭐ THE MEASURES WE DELIBERATELY DO NOT SHOW, DEFINED SO THE CARD CAN SAY WHY.
@@ -173,13 +224,12 @@ export const CLUB_ROWS = [
  * Kevin, 2026-09-23: *"as long as we quantify what 'possession family' means (so
  * a novice can connect the dots), then yes, I'm good with showing it once."*
  *
- * Corsi, Fenwick and shots-on-goal share are separate names in public hockey
- * analysis and each of them clears our admission rule on its own. They are not on
- * the card because they are **the same measurement as the CF% row** — over full
- * club-seasons they move together almost perfectly, and four rows that agree read
- * to a novice as four pieces of evidence rather than one. `reliability.agreement`
- * computes exactly how tightly, over the same club-seasons and with the same
- * centring, and the card prints that number instead of the rows.
+ * Corsi and Fenwick are separate names in public hockey analysis and each clears
+ * our admission rule on its own. They are not on the card because they are the
+ * same measurement as the CF% row, with nothing a newcomer could see happen that
+ * the possession group does not already show. `reliability.agreement` computes how
+ * tightly they move with the shown rows, over the same club-seasons and with the
+ * same centring.
  *
  * ⛔ THEY ARE HERE AND NOT IN THE PIPELINE, because a measure the site declines
  * to show is still a claim the site makes, and a claim belongs beside the rows it
@@ -199,8 +249,6 @@ const WITHHELD = [
      moved the wrong way; the fields are named for who did the blocking. */
   { key: 'fenwick', label: 'unblocked shot-attempt share',
     of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
-  { key: 'sog', label: 'shots-on-goal share',
-    of: g => ({ h: g.sog.h, a: g.sog.a }) },
 ].map(m => ({ key: m.key, label: m.label,
   /* A SHARE OF THE TWO SIDES' TOTAL, in the `{count, n}` contract every other row
      uses. A game whose boxscore carried no figure contributes 0 to both rather
@@ -211,11 +259,6 @@ const WITHHELD = [
       ? { count: v[side], n: v.h + v.a } : { count: 0, n: 0 };
   } }));
 
-/**
- * The CF% row and the three measures it stands in for, as one list — so the
- * agreement figure is computed over the shown row and the withheld ones together
- * and nobody has to compose that pairing at the call site.
- */
 /**
  * The player block's pick: each team's leading goalscorer this season among the
  * skaters who can be shown to be playing. For a game already played that is its
@@ -316,7 +359,9 @@ export const PLAYER_ROWS = [
     says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
 ];
 
-export const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
+/** The possession group and the measures withheld beside it, as one list, so
+ *  the agreement figure covers every pair. */
+export const POSSESSION_FAMILY = [...CLUB_ROWS.filter(r => r.group === 'possession'), ...WITHHELD];
 
 /** The season a game id belongs to, the way every other reader of an id reads it. */
 function seasonOf(id) {
@@ -342,7 +387,7 @@ function leagueShares(season, teams, recent) {
   // the same tail the club rows get, so the two are current to the same night
   for (const g of (recent && recent.games) || []) {
     if (!g || typeof g.date !== 'string' || g.date <= ((teams && teams.through) || '')) continue;
-    if (seasonOf(g.id) !== season || !g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (seasonOf(g.id) !== season || !complete(g)) continue;
     for (const side of ['h', 'a']) {
       for (const r of CLUB_ROWS) { const v = r.ofGame(g, side); tot[r.key].count += v.count; tot[r.key].n += v.n; }
     }
@@ -384,6 +429,26 @@ function needsFrom(measures) {
   return out;
 }
 
+/**
+ * How closely each shown possession row moves with the group's first row, from
+ * the published `settle.family` (centred, full club-seasons). Null when the
+ * document predates it or fewer than two of the group are shown.
+ */
+export function possessionGroup(measures, needs) {
+  const fam = measures && measures.settle && measures.settle.family;
+  const shown = CLUB_ROWS.filter(r => r.group === 'possession' && (!needs || needs[r.key]));
+  if (!fam || !fam.pairs || shown.length < 2) return null;
+  const head = shown[0].key;
+  const pairs = shown.slice(1).map(r => {
+    const pr = fam.pairs.find(x => (x.a === head && x.b === r.key) || (x.b === head && x.a === r.key));
+    return pr && Number.isFinite(pr.r) ? { key: r.key, short: r.short, r: pr.r } : null;
+  });
+  if (pairs.some(x => !x)) return null;
+  const size = pairs.map(x => Math.abs(x.r));
+  return { head, clubSeasons: fam.clubSeasons, pairs,
+           min: Math.min(...size), max: Math.max(...size) };
+}
+
 /** A club's season row, plus the games played since the weekly table was built. */
 /**
  * A team's regular-season record as `teams.json` counts it from our games,
@@ -413,6 +478,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
      yet, because the card's shape may not change from one week to the next. */
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
     .map(r => ({ key: r.key, label: r.label, says: r.says, counts: r.counts,
+      unit: r.unit, group: r.group || null,
       need: needs ? needs[r.key].need : null,
       range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
@@ -444,7 +510,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
        not move the game count either. Counting the game while dropping its
        numerators would grow a denominator without its numerator, which makes a
        share quietly wrong — worse than being a game behind. */
-    if (!g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (!complete(g)) continue;
     games += 1;
     for (const t of tally) {
       const v = CLUB_ROWS.find(r => r.key === t.key).ofGame(g, side);
@@ -543,6 +609,7 @@ export function preview(id, docs, now) {
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures),
+    possession: possessionGroup(d.measures, needs),
     /* ⭐ WHO TO WATCH, OR NULL. Built here rather than in the renderer so the
        SELECTION -- the one judgement on this block -- is a function of published
        data that a test can drive, not a branch inside a DOM builder. */

@@ -30,6 +30,7 @@ import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
 import { teamSeasons } from '../src/lib/team-season.js';
+import { CLUB_ROWS } from '../src/lib/preview.js';
 
 /**
  * The analysis tier: the modules the PIPELINE imports, directly or transitively.
@@ -1213,7 +1214,7 @@ test('⭐ --slate writes the slate and NEITHER archive document', () => {
     `--slate wrote archive documents: ${wrote.join(', ')}`);
 });
 
-test('the slate carries ten fields, sorted, and says when it was computed', () => {
+test('the slate carries the fields the card reads, sorted, and says when it was computed', () => {
   const recs = [
     { id: 3, date: '2026-01-06', awayAb: 'TOR', homeAb: 'BUF', score: { h: 1, a: 2 },
       attempts: { h: 40, a: 55 }, reach: { big: 1 }, goalies: [{ pid: 1 }], lens: {} },
@@ -1239,9 +1240,9 @@ test('the slate carries ten fields, sorted, and says when it was computed', () =
   // converse, D10: a field with no reader does not ship. `missedBy` was added and
   // removed on 2026-09-23 when the row it fed turned out to be an artefact of an
   // uncentred instrument — both directions of the rule in one day.
+  // Exactly the identity fields plus every field a club row reads.
   assert.deepEqual(Object.keys(doc.games[0]).sort(),
-    ['attempts', 'awayAb', 'dAtt', 'date', 'homeAb', 'id', 'located', 'lvl5',
-     'score', 'slot']);
+    [...new Set(['awayAb', 'date', 'homeAb', 'id', 'score', ...CLUB_ROWS.flatMap(r => r.fields)])].sort());
   // AND THE SAME RECORDS GIVE THE SAME BYTES, which is why `now` is injected.
   assert.equal(stable(slateOf(recs, 'x')), stable(slateOf([...recs].reverse(), 'x')));
 });

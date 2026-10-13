@@ -245,6 +245,15 @@ export function measureGame(g) {
   for (const k of goalies) faced[k.side] += k.faced;
   const faceoffs = { h: draws.t[ctx.homeId], a: draws.t[ctx.awayId] };
 
+  // Skaters' shifts and their seconds, per side; goaltenders excluded. A game
+  // with no shift chart adds 0 of 0, so the average is over games that have one.
+  const shifts = { h: 0, a: 0 }, shiftSecs = { h: 0, a: 0 };
+  for (const sh of g.shifts || []) {
+    const s = sideOf(sh.t);
+    if (!s || (g.roster?.[sh.p] || {}).pos === 'G' || !(sh.e > sh.s)) continue;
+    shifts[s]++; shiftSecs[s] += sh.e - sh.s;
+  }
+
   return {
     id: g.game.id,
     date: g.game.date || null,
@@ -284,7 +293,7 @@ export function measureGame(g) {
     attempts: { h: all.t[ctx.homeId], a: all.t[ctx.awayId] },
     level: level.diff,
     // The preview card's two club rows that nothing else needed. See above.
-    dAtt, lvl5,
+    dAtt, lvl5, shifts, shiftSecs,
     /* ⭐⭐⭐ WHO DID WHAT, FOR THE PREVIEW'S PLAYER BLOCK — 2026-10-07.
        Kevin: *"per player game stats sounds interesting, maybe a 'Player to
        watch' card on the preview card?"*
@@ -502,14 +511,15 @@ export function slateOf(records, now) {
   return {
     asOf: now,
     games: records
-      /* ⭐ TEN FIELDS NOW, AND THE FOUR NEW ONES HAVE A READER — D10 pointed
+      /* ⭐ FOURTEEN FIELDS, AND EVERY ONE HAS A READER — D10 pointed
          forwards. `teams.json` is rebuilt WEEKLY and the preview card prints a
          club's season as "12 of 35 games", so between Mondays it would be up to
          three games short with no symptom. The card adds the games dated after
          `teams.json`'s `through`, and these are what those games are worth. */
       .map(r => ({ id: r.id, date: r.date, awayAb: r.awayAb, homeAb: r.homeAb,
                    score: r.score, attempts: r.attempts,
-                   slot: r.slot, located: r.located, dAtt: r.dAtt, lvl5: r.lvl5 }))
+                   slot: r.slot, located: r.located, dAtt: r.dAtt, lvl5: r.lvl5,
+                   sog: r.sog, blocks: r.blocks, shifts: r.shifts, shiftSecs: r.shiftSecs }))
       // Sorted by date then id, so "last night" is a suffix of this list rather
       // than a scan, and two runs over the same games produce the same bytes.
       .sort((a, b) => (a.date === b.date ? a.id - b.id : (a.date < b.date ? -1 : 1))),

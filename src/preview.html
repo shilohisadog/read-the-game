@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-i0aMYmr0RrNysqXd/c8V/YvxfdANQiQ5ihYhiulGrO8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-YnBPcQCqyvx3q4n+BPJ2rPa9pTzNlVcvRQOQ0d2JxfM='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-44FpgD9LEjM/k0svzrNh8DHnEaJt0f7xxFQhhgW62h0=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -309,6 +309,8 @@ footer p{margin:0 0 8px}
  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .pvwatch{margin:10px 0 0;font-size:.85rem;color:var(--muted);line-height:1.45}
 .pvrecord{margin:4px 0 12px;line-height:1.5}
+.pvgroup{margin:22px 0 4px;font-size:1rem;font-weight:700}
+.pvgsays{margin:0 0 12px;font-size:.9rem;line-height:1.5;color:var(--muted)}
 .pvdots{margin:11px 0 2px;display:grid;grid-template-columns:repeat(20,1fr);
  gap:2px;max-width:100%}
 .pvdots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--edge)}
@@ -549,28 +551,67 @@ const CLUB_ROWS = [
         + 'team\u2019s own games — both sides counted — this many were its own.',
     counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score level',
     of: t => ({ count: t.level5.for, n: t.level5.for + t.level5.against }),
-    ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
+    ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }),
+    unit: 'share', group: 'possession', fields: ['lvl5'] },
+  { key: 'sogShare', label: 'share of the shots on goal',
+    short: 'shots-on-goal share',
+    says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
+        + 'counted \u2014 this many were its own.',
+    counts: 'shots on goal by both sides in each team\u2019s own games',
+    of: t => (t.sog ? { count: t.sog.for, n: t.sog.for + t.sog.against } : { count: 0, n: 0 }),
+    ofGame: (g, side) => g.sog && Number.isFinite(g.sog.h) && Number.isFinite(g.sog.a)
+      ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
+    unit: 'share', group: 'possession', fields: ['sog'] },
+  { key: 'attemptsAgainst', label: 'shot attempts against, per game',
+    short: 'attempts against',
+    says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
+        + 'game \u2014 the other side of having the puck.',
+    counts: 'Attempts aimed at each team\u2019s net',
+    of: t => (t.attempts ? { count: t.attempts.against, n: t.games } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.attempts ? { count: g.attempts[side === 'h' ? 'a' : 'h'], n: 1 }
+                                     : { count: 0, n: 0 }),
+    unit: 'perGame', group: 'possession', fields: ['attempts'] },
+  { key: 'blocks', label: 'shot attempts blocked, per game',
+    short: 'blocked attempts',
+    says: 'How many of the other team\u2019s shot attempts this team got in front of '
+        + 'before they reached the net, per game.',
+    counts: 'Attempts each team blocked',
+    of: t => (t.blocks ? { count: t.blocks.count, n: t.games } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.blocks ? { count: g.blocks[side] || 0, n: 1 } : { count: 0, n: 0 }),
+    unit: 'perGame', group: 'possession', fields: ['blocks'] },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
     says: 'Of every 100 shot attempts this team took, this many came from one of '
         + 'its own defencemen.',
     counts: 'attempts each team took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
-    ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
+    ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }),
+    unit: 'share', fields: ['dAtt', 'attempts'] },
   { key: 'slot', label: 'shot attempts from the slot',
     says: 'Of every 100 shot attempts this team took from a spot the feed records, '
         + 'this many came from the slot.',
     counts: 'attempts each team took from a spot the feed records',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
-    ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
+    ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }),
+    unit: 'share', fields: ['slot', 'located'] },
+  { key: 'shiftLength', label: 'average shift length',
+    says: 'How long this team\u2019s skaters stay on the ice each time they go out, '
+        + 'on average, in seconds.',
+    counts: 'Skaters\u2019 time on the ice',
+    of: t => (t.shifts ? { count: t.shifts.secs, n: t.shifts.n } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.shifts ? { count: g.shiftSecs[side], n: g.shifts[side] }
+                                   : { count: 0, n: 0 }),
+    unit: 'seconds', fields: ['shifts', 'shiftSecs'] },
 ];
+
+function complete(g) {
+  return CLUB_ROWS.every(r => r.fields.every(f => g[f] != null));
+}
 
 const WITHHELD = [
   { key: 'corsi', label: 'shot-attempt share, all situations',
     of: g => ({ h: g.attempts.h, a: g.attempts.a }) },
   { key: 'fenwick', label: 'unblocked shot-attempt share',
     of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
-  { key: 'sog', label: 'shots-on-goal share',
-    of: g => ({ h: g.sog.h, a: g.sog.a }) },
 ].map(m => ({ key: m.key, label: m.label,
   ofGame: (g, side) => {
     const v = m.of(g);
@@ -637,7 +678,7 @@ const PLAYER_ROWS = [
     says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
 ];
 
-const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
+const POSSESSION_FAMILY = [...CLUB_ROWS.filter(r => r.group === 'possession'), ...WITHHELD];
 
 function seasonOf(id) {
   return String(id).slice(0, 4);
@@ -652,7 +693,7 @@ function leagueShares(season, teams, recent) {
   }
   for (const g of (recent && recent.games) || []) {
     if (!g || typeof g.date !== 'string' || g.date <= ((teams && teams.through) || '')) continue;
-    if (seasonOf(g.id) !== season || !g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (seasonOf(g.id) !== season || !complete(g)) continue;
     for (const side of ['h', 'a']) {
       for (const r of CLUB_ROWS) { const v = r.ofGame(g, side); tot[r.key].count += v.count; tot[r.key].n += v.n; }
     }
@@ -675,6 +716,21 @@ function needsFrom(measures) {
   return out;
 }
 
+function possessionGroup(measures, needs) {
+  const fam = measures && measures.settle && measures.settle.family;
+  const shown = CLUB_ROWS.filter(r => r.group === 'possession' && (!needs || needs[r.key]));
+  if (!fam || !fam.pairs || shown.length < 2) return null;
+  const head = shown[0].key;
+  const pairs = shown.slice(1).map(r => {
+    const pr = fam.pairs.find(x => (x.a === head && x.b === r.key) || (x.b === head && x.a === r.key));
+    return pr && Number.isFinite(pr.r) ? { key: r.key, short: r.short, r: pr.r } : null;
+  });
+  if (pairs.some(x => !x)) return null;
+  const size = pairs.map(x => Math.abs(x.r));
+  return { head, clubSeasons: fam.clubSeasons, pairs,
+           min: Math.min(...size), max: Math.max(...size) };
+}
+
 function recordFor(ab, season, teams) {
   const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab];
   const r = base && base.record && base.record.reg;
@@ -692,6 +748,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
   const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab] || null;
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
     .map(r => ({ key: r.key, label: r.label, says: r.says, counts: r.counts,
+      unit: r.unit, group: r.group || null,
       need: needs ? needs[r.key].need : null,
       range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
@@ -708,7 +765,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
     if (seasonOf(g.id) !== season) continue;
     const side = g.homeAb === ab ? 'h' : g.awayAb === ab ? 'a' : null;
     if (!side) continue;
-    if (!g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (!complete(g)) continue;
     games += 1;
     for (const t of tally) {
       const v = CLUB_ROWS.find(r => r.key === t.key).ofGame(g, side);
@@ -761,12 +818,15 @@ function preview(id, docs, now) {
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures),
+    possession: possessionGroup(d.measures, needs),
     watch: watchFor(d.players, away, home, state === 'played' ? dressedIn(d.game) : null) };
 }
 
 
 const EXPLAINS = {
   level5: 'level5', dmen: 'dmen', slot: 'slotShare',
+  sogShare: 'sogShare', attemptsAgainst: 'attemptsAgainst', blocks: 'blocksMade',
+  shiftLength: 'shiftLength',
   powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
   icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
   playerGoals: 'playerRate', playerAssists: 'playerRate',
@@ -834,6 +894,22 @@ function formatDate(iso) {
   function pct1(v) { return v == null ? '—' : (v * 100).toFixed(1); }
   function num(n) { return (n || 0).toLocaleString(); }
 
+  var UNITS = {
+    share: { val: function (v) { return pct1(v) + '%'; },
+             end: function (v) { return pct(v) + '%'; },
+             lead: function (c) { return 'Of ' + c; },
+             tally: function (c, n) { return num(c) + ' of ' + num(n); } },
+    perGame: { lead: function (c) { return c; }, val: function (v) { return v == null ? '\u2014' : v.toFixed(1); },
+               end: function (v) { return Math.round(v) + ''; },
+               tally: function (c, n) { return num(c) + ' in ' + num(n)
+                 + (n === 1 ? ' game' : ' games'); } },
+    seconds: { lead: function (c) { return c; }, val: function (v) { return v == null ? '\u2014' : v.toFixed(1) + ' s'; },
+               end: function (v) { return Math.round(v) + ' s'; },
+               tally: function (c, n) { return num(c) + ' seconds over ' + num(n)
+                 + (n === 1 ? ' shift' : ' shifts'); } },
+  };
+  function unitOf(row) { return UNITS[row.unit] || UNITS.share; }
+
   function noneYet(counting) {
     return 'No games counted yet this season'
       + (counting && counting.startsOn && !counting.started
@@ -847,8 +923,8 @@ function formatDate(iso) {
   }
 
   function trackFor(row, sides) {
-    var fmt = row.fmt || function (v) { return pct1(v) + '%'; };
-    var endFmt = row.fmt || function (v) { return pct(v) + '%'; };
+    var fmt = row.fmt || unitOf(row).val;
+    var endFmt = row.fmt || unitOf(row).end;
     var tickSays = row.tick || 'league';
     var range = row.range;
     var vals = sides.map(function (s) { return s.value; })
@@ -989,8 +1065,14 @@ function formatDate(iso) {
     if (!rows.length) {
       sect.appendChild(el('p', 'pvnone', noneYet(p.counting)));
     }
+    var grouped = false;
     rows.forEach(function (ar, i) {
       var hr = p.clubs.home.rows[i];
+      if (ar.group === 'possession' && !grouped) {
+        grouped = true;
+        sect.appendChild(el('p', 'pvgroup', 'Who had the puck'));
+        if (p.possession) sect.appendChild(el('p', 'pvgsays', groupSays(p.possession)));
+      }
       sect.appendChild(measureFor(ar, hr, p));
     });
 
@@ -1242,12 +1324,27 @@ function formatDate(iso) {
 
   function dec(v) { return v == null ? '\u2014' : v.toFixed(2); }
 
+  function groupSays(g) {
+    var rest = g.pairs.length;
+    var against = g.pairs.filter(function (x) { return x.r < 0; })
+      .map(function (x) { return x.short; });
+    return 'These ' + (rest + 1) + ' rows are views of the same thing, so expect them '
+      + 'to agree. Over ' + num(g.clubSeasons) + ' full team-seasons, each of the '
+      + 'others moved with the first by ' + g.min.toFixed(2) + ' to ' + g.max.toFixed(2)
+      + ', on a scale where 1 is in lockstep and 0 is no connection'
+      + (against.length ? '. ' + cap(against.join(' and ')) + ' move the opposite way: '
+         + 'the more a team has the puck, the lower ' + (against.length === 1 ? 'it' : 'they') + ' run'
+         + (against.length === 1 ? 's' : '') : '')
+      + '.';
+  }
+  function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+
   function measureFor(ar, hr, p) {
     var box = el('div', 'pvm');
     var head = el('div', 'pvmh');
     head.appendChild(el('p', 'pvlab', ar.label));
     head.appendChild(el('span', 'pvref', ar.league == null
-      ? 'no league figure yet this season' : 'league ' + pct1(ar.league) + '%'));
+      ? 'no league figure yet this season' : 'league ' + unitOf(ar).val(ar.league)));
     box.appendChild(head);
 
     var sides = [ar, hr].map(function (r, i) {
@@ -1265,8 +1362,8 @@ function formatDate(iso) {
     }).filter(function (x) { return x.r.value != null; });
 
     if (live.length) {
-      foot.push('Of ' + ar.counts + ': ' + live.map(function (x) {
-        return x.ab + ' ' + num(x.r.count) + ' of ' + num(x.r.n);
+      foot.push(unitOf(ar).lead(ar.counts) + ': ' + live.map(function (x) {
+        return x.ab + ' ' + unitOf(ar).tally(x.r.count, x.r.n);
       }).join(' · ') + '.');
       foot.push(live.map(function (x) {
         return x.ab + ' ' + x.r.games + (x.r.games === 1 ? ' game' : ' games');
@@ -1274,8 +1371,8 @@ function formatDate(iso) {
         + ' before it holds steady.');
     }
     if (ar.range && track) {
-      foot.push('Across a full season teams ranged from ' + pct(ar.range.min)
-        + '% to ' + pct(ar.range.max) + '%'
+      foot.push('Across a full season teams ranged from ' + unitOf(ar).end(ar.range.min)
+        + ' to ' + unitOf(ar).end(ar.range.max)
         + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' team-games' : '')
         + ' in ' + ar.range.n + ' team-seasons.');
     }

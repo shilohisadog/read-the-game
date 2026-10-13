@@ -39,6 +39,8 @@ function blankTeam() {
     dmen: { count: 0, n: 0 },
     level5: { for: 0, against: 0 },
     blocks: { count: 0, n: 0 },
+    sog: { for: 0, against: 0 },        // the boxscore's shots on goal, both sides
+    shifts: { secs: 0, n: 0 },          // skaters' shift seconds over shifts
     saves: { count: 0, n: 0 },
     goalies: {},                        // pid -> row; becomes a sorted array below
   };
@@ -109,6 +111,12 @@ export function teamSeasons(records) {
       // unblocked shots by a population that includes shots whose origin is
       // unknowable.
       if (g.slot) { t.slot.count += g.slot[side]; t.slot.n += g.located[side]; }
+
+      // A boxscore that carried no shots-on-goal figure adds nothing to either side.
+      if (g.sog && Number.isFinite(g.sog[side]) && Number.isFinite(g.sog[opp])) {
+        t.sog.for += g.sog[side]; t.sog.against += g.sog[opp];
+      }
+      if (g.shifts) { t.shifts.secs += g.shiftSecs[side]; t.shifts.n += g.shifts[side]; }
 
       for (const k of g.goalies || []) {
         if (k.side !== side) continue;

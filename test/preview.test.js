@@ -25,7 +25,8 @@ const schedule = (up = [FIXTURE]) => ({ asOf: NOW, upcoming: up, season: {} });
 /** A club's season row, in the shape `teamSeasons` publishes. */
 const club = (o = {}) => ({ games: 20, attempts: { for: 1000, against: 950 },
   slot: { count: 240, n: 500 }, dmen: { count: 320, n: 1000 },
-  level5: { for: 400, against: 380 }, ...o });
+  level5: { for: 400, against: 380 }, blocks: { count: 280, n: 950 },
+  sog: { for: 600, against: 580 }, shifts: { secs: 47000, n: 1000 }, ...o });
 const teams = (o = {}) => ({ scope: 'NHL regular season and playoffs',
   through: '2026-01-13',
   seasons: { 2025: { BUF: club(), PIT: club({ games: 18 }) } }, ...o });
@@ -38,12 +39,16 @@ const measures = (o = {}) => ({ census: { games: 4192,
   state: { pp: { goals: 5542, minutes: 42615.7 } } },
   settle: { target: 0.7, admission: 41, seasons: ['2023', '2024'],
     rows: { level5: { r: 0.73, games: 35 }, dmen: { r: 0.81, games: 23 },
-            slot: { r: 0.72, games: 37 } } }, ...o });
+            slot: { r: 0.72, games: 37 }, sogShare: { r: 0.72, games: 37 },
+            attemptsAgainst: { r: 0.75, games: 33 }, blocks: { r: 0.75, games: 33 },
+            shiftLength: { r: 0.89, games: 12 } } }, ...o });
 
 const recent = (games = []) => ({ asOf: NOW, games });
 const played = (o = {}) => ({ id: 2025020500, date: '2026-01-15', awayAb: 'BUF', homeAb: 'PIT',
   score: { a: 2, h: 3 }, attempts: { a: 55, h: 61 }, slot: { a: 12, h: 15 },
-  located: { a: 30, h: 33 }, dAtt: { a: 18, h: 20 }, lvl5: { a: 30, h: 35 }, ...o });
+  located: { a: 30, h: 33 }, dAtt: { a: 18, h: 20 }, lvl5: { a: 30, h: 35 },
+  sog: { a: 28, h: 31 }, blocks: { a: 14, h: 12 }, shifts: { a: 480, h: 470 },
+  shiftSecs: { a: 22560, h: 22090 }, ...o });
 
 const docs = (o = {}) => ({ schedule: schedule(), teams: teams(), measures: measures(),
   recent: recent(), ...o });
@@ -143,7 +148,8 @@ test('⭐ a club row per admitted measure, each with its own progress toward set
     assert.deepEqual(rows.map(r => r.key), CLUB_ROWS.map(r => r.key));
     for (const r of rows) {
       assert.ok(r.n > 0, `${r.key} has no denominator`);
-      assert.ok(r.value > 0 && r.value < 1, `${r.key} is not a share`);
+      if (r.unit === 'share') assert.ok(r.value > 0 && r.value < 1, `${r.key} is not a share`);
+      else assert.ok(r.value > 1, `${r.key} is a ${r.unit} figure and reads as one`);
       assert.ok(r.games > 0 && r.need > 0);
       assert.equal(r.settled, r.games >= r.need);
     }
@@ -278,7 +284,8 @@ test('⛔⛔ THE ADMISSION RULE RUNS, it is not remembered: a row that needs mor
   const m = measures();
   m.settle.rows.slot.games = 60;
   const p = preview(2025020500, docs({ measures: m }), NOW);
-  assert.deepEqual(p.clubs.away.rows.map(r => r.key), ['level5', 'dmen'],
+  assert.deepEqual(p.clubs.away.rows.map(r => r.key),
+    CLUB_ROWS.map(r => r.key).filter(k => k !== 'slot'),
     'a row needing more than half a season stayed on the card');
 });
 
@@ -289,7 +296,8 @@ test('⛔ a measure the archive cannot settle at ANY number of games is not a cl
   const m = measures();
   m.settle.rows.dmen.games = null;
   const p = preview(2025020500, docs({ measures: m }), NOW);
-  assert.deepEqual(p.clubs.home.rows.map(r => r.key), ['level5', 'slot']);
+  assert.deepEqual(p.clubs.home.rows.map(r => r.key),
+    CLUB_ROWS.map(r => r.key).filter(k => k !== 'dmen'));
 });
 
 test('⚠️ before the pipeline has measured the targets, the rows show their figures and claim nothing', () => {
@@ -379,17 +387,15 @@ test('⛔⛔ the league rows draw from a census this repo actually PRODUCES', ()
 /* ------------------------------------ THE MEASURES WE DELIBERATELY WITHHOLD */
 
 test('⭐⭐ the possession family contains the row it explains, plus the ones we do not show', () => {
-  /* The card shows one possession row and says the others are the same
-     measurement. That claim is only checkable if the published agreement figure
-     was computed over the SHOWN row and the withheld ones TOGETHER — a matrix of
-     three measures none of which is on the card would prove nothing about the
-     card.
-     MUTATION: drop `CLUB_ROWS.find(...)` from the head of the list and the first
+  /* The agreement figure is computed over the shown possession group and the
+     withheld measures together, so the card's family sentence is about the rows
+     it draws. MUTATION: build the family from WITHHELD alone and the first
      assertion fires. */
   assert.equal(POSSESSION_FAMILY[0].key, 'level5', 'the family must lead with the row we print');
   assert.equal(POSSESSION_FAMILY[0], CLUB_ROWS.find(r => r.key === 'level5'),
     'it must be the SAME definition the card draws, not a second copy of it');
-  assert.deepEqual(POSSESSION_FAMILY.map(r => r.key), ['level5', 'corsi', 'fenwick', 'sog']);
+  assert.deepEqual(POSSESSION_FAMILY.map(r => r.key),
+    ['level5', 'sogShare', 'attemptsAgainst', 'blocks', 'corsi', 'fenwick']);
   for (const r of POSSESSION_FAMILY) {
     assert.equal(typeof r.ofGame, 'function', `${r.key} has no per-game form`);
     assert.ok(r.label, `${r.key} has no label for the methods page`);
@@ -413,7 +419,7 @@ test('⛔⛔ unblocked attempts subtract the OTHER side’s blocks, which is wha
 
   const corsi = POSSESSION_FAMILY.find(r => r.key === 'corsi');
   assert.deepEqual(corsi.ofGame(g, 'h'), { count: 30, n: 50 });
-  const sog = POSSESSION_FAMILY.find(r => r.key === 'sog');
+  const sog = CLUB_ROWS.find(r => r.key === 'sogShare');
   assert.deepEqual(sog.ofGame(g, 'a'), { count: 9, n: 21 });
 });
 
@@ -424,7 +430,8 @@ test('⛔ a game whose boxscore carried no figure contributes NOTHING, not a zer
      percent for that night and drag a full-season figure down invisibly.
      MUTATION: drop the `Number.isFinite` guard and `n` becomes NaN, which
      silently poisons every sum it reaches. */
-  const sog = POSSESSION_FAMILY.find(r => r.key === 'sog');
+  const sog = CLUB_ROWS.find(r => r.key === 'sogShare');
+  assert.deepEqual(sog.ofGame({}, 'h'), { count: 0, n: 0 }, 'a record with no shot line');
   for (const bad of [{ h: null, a: 9 }, { h: 12, a: undefined }, { h: 0, a: 0 }]) {
     assert.deepEqual(sog.ofGame({ sog: bad }, 'h'), { count: 0, n: 0 },
       `a missing shot line was read as ${JSON.stringify(bad)}`);
@@ -437,7 +444,7 @@ test('⛔ nothing withheld is ever rendered as a club row', () => {
      cannot survive: the page would print four rows while the text beside them
      explained that it prints one. */
   const shown = new Set(CLUB_ROWS.map(r => r.key));
-  for (const r of POSSESSION_FAMILY.slice(1)) {
+  for (const r of POSSESSION_FAMILY.filter(x => x.group !== 'possession')) {
     assert.ok(!shown.has(r.key), `${r.key} is withheld and also on the card`);
   }
 });

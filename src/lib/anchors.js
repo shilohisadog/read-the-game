@@ -42,6 +42,9 @@
  */
 const EXPLAINS = {
   level5: 'level5', dmen: 'dmen', slot: 'slotShare',
+  sogShare: 'sogShare', attemptsAgainst: 'attemptsAgainst', blocks: 'blocksMade',
+  // Not `shift`: that one is the archive's middle shift, this is a team's average.
+  shiftLength: 'shiftLength',
   powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
   icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
   /* ⭐ FOUR ROWS, ONE DERIVATION, and that is the honest grouping rather than a

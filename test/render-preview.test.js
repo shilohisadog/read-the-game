@@ -679,25 +679,32 @@ import { CLUB_ROWS } from '../src/lib/preview.js';
  * path this project requires of any check on prose: the sentence says something,
  * the reducer does something, and the test is the only place they meet.
  */
+const G = { lvl5: { h: 4, a: 6 }, dAtt: { h: 15, a: 3 }, attempts: { h: 43, a: 7 },
+            slot: { h: 21, a: 2 }, located: { h: 34, a: 5 }, sog: { h: 9, a: 12 },
+            blocks: { h: 6, a: 11 }, shifts: { h: 400, a: 410 },
+            shiftSecs: { h: 18000, a: 19300 } };
+const SHARES = CLUB_ROWS.filter(r => r.unit === 'share');
+
 function denominatorOf(row) {
-  const g = { lvl5: { h: 4, a: 6 }, dAtt: { h: 15, a: 3 }, attempts: { h: 43, a: 7 },
-              slot: { h: 21, a: 2 }, located: { h: 34, a: 5 } };
-  const home = row.ofGame(g, 'h'), away = row.ofGame(g, 'a');
+  const home = row.ofGame(G, 'h'), away = row.ofGame(G, 'a');
   return home.n === away.n ? 'both sides' : 'this club';
 }
 
 test('⭐⭐⭐ every club row says what its number counts, and whose', () => {
   /* MUTATION: delete any `says`, or give the level5 row the defencemen row's
      wording, and this fires naming the row. */
-  assert.ok(CLUB_ROWS.length >= 3, `only ${CLUB_ROWS.length} club rows — nothing to check`);
-  let bothSides = 0, ownClub = 0;
+  assert.ok(SHARES.length >= 3, `only ${SHARES.length} share rows — nothing to check`);
+  // Every row says its unit in words: a share out of 100, a count per game, seconds.
+  const UNIT_WORDS = { share: /of every 100/i, perGame: /per game/i, seconds: /seconds/i };
   for (const row of CLUB_ROWS) {
     assert.ok(row.says && row.says.length > 40,
       `the ${row.key} row carries no sentence saying what its number counts`);
-    /* THE NOVICE FORM, which is what the league tiles on this same page use. A
-       figure a reader meets as a bar needs the unit in words, not just on the axis. */
-    assert.match(row.says, /of every 100/i,
-      `the ${row.key} row's sentence does not say what the figure is out of`);
+    assert.ok(UNIT_WORDS[row.unit], `the ${row.key} row has no known unit: ${row.unit}`);
+    assert.match(row.says, UNIT_WORDS[row.unit],
+      `the ${row.key} row's sentence does not say its unit`);
+  }
+  let bothSides = 0, ownClub = 0;
+  for (const row of SHARES) {
 
     const kind = denominatorOf(row);
     if (kind === 'both sides') {
@@ -738,21 +745,18 @@ test('⭐⭐⭐ no two club rows count their attempts over the same population, 
      `n` from it, which is the independent path: if two rows ever did count the
      same population, this test would stop demanding they be worded apart rather
      than failing for a reason nobody could act on. */
-  const g = { lvl5: { h: 4, a: 6 }, dAtt: { h: 15, a: 3 }, attempts: { h: 43, a: 7 },
-              slot: { h: 21, a: 2 }, located: { h: 34, a: 5 } };
   const seen = new Map();                       // n -> the row that produced it
   for (const row of CLUB_ROWS) {
     assert.ok(row.counts && row.counts.length > 5,
       `the ${row.key} row carries no noun for the figure its footnote prints, so `
       + 'its "N attempts" means whatever the reader assumes');
-    /* THE NOUN NAMES ATTEMPTS, because that is what every one of these counts and
-       the line reads "WSH 15 of 43 <noun>". A noun that started elsewhere would
-       make the sentence ungrammatical rather than merely ambiguous. */
-    assert.match(row.counts, /^attempts\b/,
-      `the ${row.key} row's noun is "${row.counts}" — the footnote reads `
-      + '"WSH 15 of 43 " + noun, so it has to start by naming the attempts');
-
-    const n = row.ofGame(g, 'h').n;
+    // A share's footnote reads "Of <noun>: WSH 15 of 43", so its noun continues a
+    // sentence; any other row's noun opens one.
+    assert.match(row.counts, row.unit === 'share' ? /^[a-z]/ : /^[A-Z]/,
+      `the ${row.key} row's noun "${row.counts}" does not fit its footnote`);
+  }
+  for (const row of SHARES) {
+    const n = row.ofGame(G, 'h').n;
     const twin = seen.get(n);
     assert.ok(twin === undefined,
       `the ${row.key} row and the ${twin} row count the same population (${n}), so `
@@ -768,7 +772,7 @@ test('⭐⭐⭐ no two club rows count their attempts over the same population, 
   /* ⭐ AND EACH NOUN SAYS WHOSE, on the same derived-from-the-reducer rule the
      sentence above it is held to. "both sides" is this club and its OPPONENTS,
      never the two clubs on this card. */
-  for (const row of CLUB_ROWS) {
+  for (const row of SHARES) {
     if (denominatorOf(row) === 'both sides') {
       assert.match(row.counts, /both sides/i,
         `the ${row.key} row's noun does not say its figure counts both sides`);
@@ -798,7 +802,7 @@ test('⭐ the card prints each row\u2019s noun beside its figure, and never a de
     assert.ok(html.includes(row.counts),
       `the built preview page does not carry the ${row.key} row's noun "${row.counts}"`);
   /* MUTATION: put a literal back in place of `ar.counts` and this fires. */
-  assert.match(html, /foot\.push\('Of ' \+ ar\.counts \+ ': '/,
+  assert.match(html, /foot\.push\(unitOf\(ar\)\.lead\(ar\.counts\) \+ ': '/,
     'the footnote no longer takes its noun from the row');
   /* ⛔ THE FALLBACK IS THE DEFECT. `r.counts || 'attempts'` would put the one
      ambiguous word back on exactly the row that forgot to say anything — silently,
@@ -812,7 +816,8 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
      The renderer line is what puts them on screen, and the browser probe
      `preview-bars` is what proves they are visible. Three claims, three places;
      this one is the cheapest and runs in gates. */
-  const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8')
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
   for (const row of CLUB_ROWS)
     assert.ok(html.includes(row.says.slice(0, 40)),
       `the built preview page does not carry the ${row.key} row's sentence`);
@@ -831,10 +836,14 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
      values would fall back to the share, which is the safe direction for a club
      row and is why the player row's override is pinned separately below. */
   // Values carry one decimal (Kevin, 2026-10-13); the axis ends stay whole.
-  assert.match(html, /var fmt = row\.fmt \|\| function \(v\) \{ return pct1\(v\) \+ '%'; \}/,
-    'the club figure lost its unit again — the default spelling is the share');
-  assert.match(html, /var endFmt = row\.fmt \|\| function \(v\) \{ return pct\(v\) \+ '%'; \}/,
-    'the axis ends lost their unit, or the player row no longer overrides them');
+  assert.match(html, /var fmt = row\.fmt \|\| unitOf\(row\)\.val;/,
+    'the club figure is no longer spelled by its unit');
+  assert.match(html, /var endFmt = row\.fmt \|\| unitOf\(row\)\.end;/,
+    'the axis ends are no longer spelled by the unit, or the player row no longer overrides them');
+  assert.match(html, /return UNITS\[row\.unit\] \|\| UNITS\.share;/,
+    'a row with no unit no longer falls back to the share');
+  assert.match(html, /share: \{ val: function \(v\) \{ return pct1\(v\) \+ '%'; \},\s*end: function \(v\) \{ return pct\(v\) \+ '%'; \}/,
+    'the share lost its unit again');
   assert.match(html, /fmt\(s\.value\)/, 'the value beside the bar is no longer spelled by the row');
   assert.match(html, /endFmt\(lo\)/, 'the axis lost its unit again');
   assert.match(html, /trackFor\(\{ range: r\.range, fmt: dec, tick: 'typical skater' \}/,

@@ -4022,6 +4022,8 @@ PREVCSS = r"""<style>
  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .pvwatch{margin:10px 0 0;font-size:.85rem;color:var(--muted);line-height:1.45}
 .pvrecord{margin:4px 0 12px;line-height:1.5}
+.pvgroup{margin:22px 0 4px;font-size:1rem;font-weight:700}
+.pvgsays{margin:0 0 12px;font-size:.9rem;line-height:1.5;color:var(--muted)}
 /* ⭐ A HUNDRED DOTS, BECAUSE THE UNIT IS LITERALLY "OF EVERY 100". This is the one
    league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
    novice can count; a rate per game is not out of anything and gets a numeral. */
@@ -4190,6 +4192,24 @@ __HELPERS__
   function pct1(v) { return v == null ? '—' : (v * 100).toFixed(1); }
   function num(n) { return (n || 0).toLocaleString(); }
 
+  /* How a club row reads, by its `unit` (preview.js::CLUB_ROWS): the value, the
+     axis ends, and the counts behind it. */
+  var UNITS = {
+    share: { val: function (v) { return pct1(v) + '%'; },
+             end: function (v) { return pct(v) + '%'; },
+             lead: function (c) { return 'Of ' + c; },
+             tally: function (c, n) { return num(c) + ' of ' + num(n); } },
+    perGame: { lead: function (c) { return c; }, val: function (v) { return v == null ? '\u2014' : v.toFixed(1); },
+               end: function (v) { return Math.round(v) + ''; },
+               tally: function (c, n) { return num(c) + ' in ' + num(n)
+                 + (n === 1 ? ' game' : ' games'); } },
+    seconds: { lead: function (c) { return c; }, val: function (v) { return v == null ? '\u2014' : v.toFixed(1) + ' s'; },
+               end: function (v) { return Math.round(v) + ' s'; },
+               tally: function (c, n) { return num(c) + ' seconds over ' + num(n)
+                 + (n === 1 ? ' shift' : ' shifts'); } },
+  };
+  function unitOf(row) { return UNITS[row.unit] || UNITS.share; }
+
   /* ⛔ AN EMPTY COLUMN SAYS WHEN, NOT ONLY THAT IT IS EMPTY. The date is the
      league's own `regularSeasonStartDate`, carried by `preview.js` — see the
      comment on `countingFrom` for why this sentence exists at all. */
@@ -4225,8 +4245,8 @@ __HELPERS__
        running "39%" under a heading that says "goals a game" would be a number
        that is wrong by a factor of a hundred and looks fine. The default is the
        share, so no existing caller changed. */
-    var fmt = row.fmt || function (v) { return pct1(v) + '%'; };
-    var endFmt = row.fmt || function (v) { return pct(v) + '%'; };
+    var fmt = row.fmt || unitOf(row).val;
+    var endFmt = row.fmt || unitOf(row).end;
     /* ⛔ AND WHAT THE TICK IS, which is not always the league. On a club row it is
        the league figure and the word is right; on a player row it is the MEDIAN
        SKATER, and labelling that "league" tells a reader the mark beside it is a
@@ -4524,8 +4544,14 @@ __HELPERS__
     if (!rows.length) {
       sect.appendChild(el('p', 'pvnone', noneYet(p.counting)));
     }
+    var grouped = false;
     rows.forEach(function (ar, i) {
       var hr = p.clubs.home.rows[i];
+      if (ar.group === 'possession' && !grouped) {
+        grouped = true;
+        sect.appendChild(el('p', 'pvgroup', 'Who had the puck'));
+        if (p.possession) sect.appendChild(el('p', 'pvgsays', groupSays(p.possession)));
+      }
       sect.appendChild(measureFor(ar, hr, p));
     });
 
@@ -4924,12 +4950,29 @@ __HELPERS__
      figures into each other. */
   function dec(v) { return v == null ? '\u2014' : v.toFixed(2); }
 
+  /* The possession group's one sentence: how closely each row moved with the
+     first over full team-seasons, and which run the opposite way. */
+  function groupSays(g) {
+    var rest = g.pairs.length;
+    var against = g.pairs.filter(function (x) { return x.r < 0; })
+      .map(function (x) { return x.short; });
+    return 'These ' + (rest + 1) + ' rows are views of the same thing, so expect them '
+      + 'to agree. Over ' + num(g.clubSeasons) + ' full team-seasons, each of the '
+      + 'others moved with the first by ' + g.min.toFixed(2) + ' to ' + g.max.toFixed(2)
+      + ', on a scale where 1 is in lockstep and 0 is no connection'
+      + (against.length ? '. ' + cap(against.join(' and ')) + ' move the opposite way: '
+         + 'the more a team has the puck, the lower ' + (against.length === 1 ? 'it' : 'they') + ' run'
+         + (against.length === 1 ? 's' : '') : '')
+      + '.';
+  }
+  function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+
   function measureFor(ar, hr, p) {
     var box = el('div', 'pvm');
     var head = el('div', 'pvmh');
     head.appendChild(el('p', 'pvlab', ar.label));
     head.appendChild(el('span', 'pvref', ar.league == null
-      ? 'no league figure yet this season' : 'league ' + pct1(ar.league) + '%'));
+      ? 'no league figure yet this season' : 'league ' + unitOf(ar).val(ar.league)));
     box.appendChild(head);
 
     var sides = [ar, hr].map(function (r, i) {
@@ -4976,8 +5019,8 @@ __HELPERS__
     }).filter(function (x) { return x.r.value != null; });
 
     if (live.length) {
-      foot.push('Of ' + ar.counts + ': ' + live.map(function (x) {
-        return x.ab + ' ' + num(x.r.count) + ' of ' + num(x.r.n);
+      foot.push(unitOf(ar).lead(ar.counts) + ': ' + live.map(function (x) {
+        return x.ab + ' ' + unitOf(ar).tally(x.r.count, x.r.n);
       }).join(' · ') + '.');
       /* ⭐ THE TARGET AS A STATEMENT, NOT A FRACTION. `N of the M games` printed
          "60 of the 23 games this figure needs" once a team was past it — a
@@ -5011,8 +5054,8 @@ __HELPERS__
        So the lead sentence is identical everywhere and the extra fact gets its
        own sentence, printed only when there is one. */
     if (ar.range && track) {
-      foot.push('Across a full season teams ranged from ' + pct(ar.range.min)
-        + '% to ' + pct(ar.range.max) + '%'
+      foot.push('Across a full season teams ranged from ' + unitOf(ar).end(ar.range.min)
+        + ' to ' + unitOf(ar).end(ar.range.max)
         + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' team-games' : '')
         + ' in ' + ar.range.n + ' team-seasons.');
     }
@@ -5273,6 +5316,13 @@ __HELPERS__
 
   function num(n) { return (n == null ? '—' : n.toLocaleString()); }
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
+  // A club row's full-season range, in the row's own unit.
+  function spanOf(m) {
+    var lo = m.clubRange.min, hi = m.clubRange.max;
+    if (m.unit === 'perGame') return Math.round(lo) + '–' + Math.round(hi) + ' per game';
+    if (m.unit === 'seconds') return Math.round(lo) + '–' + Math.round(hi) + ' seconds';
+    return pct(lo) + '–' + pct(hi);
+  }
   function r2(v) { return v == null ? '—' : v.toFixed(2); }
   function r3(v) { return v == null ? '—' : v.toFixed(3); }
 
@@ -5337,7 +5387,7 @@ __HELPERS__
         + ' sure — ' + t.target + ' in place of ' + policyTarget, 2));
     });
     if (m.clubRange) {
-      out.push(cell(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
+      out.push(cell(spanOf(m),
         'the range real teams landed in over a full season, from '
         + num(m.clubRange.games) + ' team-games in ' + num(m.clubRange.n)
         + ' team-seasons'));
@@ -5363,28 +5413,32 @@ __HELPERS__
   function familyBlock(f) {
     var sec = el('section', 'hmsec');
     sec.id = 'possession-family';
-    sec.appendChild(kick('Why there is only one “who had the puck” number'));
-    sec.appendChild(el('h2', null,
-        'Corsi, Fenwick and shot share are one thing wearing three names'));
+    sec.appendChild(kick('Why the card groups four “who had the puck” rows'));
+    sec.appendChild(el('h2', null, 'One idea, measured several ways'));
 
     var names = {};
     f.members.forEach(function (m) { names[m.key] = m.label; });
+    var shown = f.members.filter(function (m) { return m.shown; });
     var withheld = f.members.filter(function (m) { return !m.shown; });
 
     sec.appendChild(el('p', null, 'Hockey analysis has several names for roughly '
-      + 'one idea: how much of the shooting a team did. Corsi counts every attempt. '
-      + 'Fenwick drops the ones that got blocked. Shot share counts only the ones '
-      + 'that reached the goalie. Each of the other ' + withheld.length
-      + ' passes our test on its own, and we still show only one.'));
-    sec.appendChild(el('p', null, 'Here is why. Over a full season these barely '
-      + 'disagree with each other. Below is how closely each pair moved together '
-      + 'across ' + num(f.clubSeasons) + ' team-seasons, where 1.00 would mean '
-      + 'identical. The least alike pair is ' + r2(f.min) + '. The closest is '
-      + r2(f.max) + '. Putting all ' + f.members.length + ' on one card would look '
-      + 'like ' + f.members.length + ' pieces of evidence and be one.'));
-    sec.appendChild(el('p', null, 'The ones we leave off, any of which we could '
-      + 'fairly have shown instead: '
-      + withheld.map(function (m) { return m.label; }).join('; ') + '.'));
+      + 'one idea: how much of the play a team controlled. Corsi counts every shot '
+      + 'attempt. Fenwick drops the ones that got blocked. Shot share counts only the '
+      + 'ones that reached the goaltender. The preview card shows ' + shown.length
+      + ' of these as one group \u2014 '
+      + shown.map(function (m) { return m.label; }).join('; ')
+      + ' \u2014 because each passes our test and each is something a newcomer can '
+      + 'watch happen.'));
+    sec.appendChild(el('p', null, 'They are not ' + shown.length + ' separate pieces '
+      + 'of evidence, and the card says so. Below is how closely each pair moved '
+      + 'together across ' + num(f.clubSeasons) + ' team-seasons, where 1.00 would '
+      + 'mean identical and a minus sign means one rises as the other falls. The '
+      + 'least alike pair is ' + r2(f.min) + '. The closest is ' + r2(f.max) + '.'));
+    if (withheld.length) {
+      sec.appendChild(el('p', null, 'The ones we leave off, which show nothing the '
+        + 'group does not: ' + withheld.map(function (m) { return m.label; }).join('; ')
+        + '.'));
+    }
 
     var ul = el('ul', 'hmpairs');
     f.pairs.forEach(function (p) {
@@ -5453,7 +5507,7 @@ __HELPERS__
          of this sentence doesn't align with the page."* It now names both places
          a number can end up, on the site and on this page. */
       pol.appendChild(el('p', null, 'A number that passes is shown for each of '
-        + 'the two teams on a game’s preview page — they are the three under '
+        + 'the two teams on a game’s preview page — they are the ' + m.club.length + ' under '
         + '"The numbers we show beside a team" below. A number that fails is '
         + 'still worth knowing; it just describes hockey rather than a team, so '
         + 'it is shown once above both teams instead, and it is under "What is '

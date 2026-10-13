@@ -122,7 +122,7 @@ export function methods(measures) {
                 A methods page that names a row differently from the row it explains
                 is a page a reader cannot match up — and the spread would silently
                 take precedence if this sat above it. */
-             label: r.label,
+             label: r.label, unit: r.unit,
              /* ⛔ `admitted` IS RECOMPUTED FROM THE PUBLISHED FIGURES rather than
                 inferred from the row being present. A reader checking our work
                 needs to see the rule applied, not to be told the outcome. */

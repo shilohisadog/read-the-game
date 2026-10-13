@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xUQkT+PQAAqmt1NOO6BrKmH8dxnuvLIat5iZN44wdRQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-714W8qZa/eP5KJQyS/nSI0dDnAIm3A8dq0i82KbwvKQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -669,28 +669,67 @@ const CLUB_ROWS = [
         + 'team\u2019s own games — both sides counted — this many were its own.',
     counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score level',
     of: t => ({ count: t.level5.for, n: t.level5.for + t.level5.against }),
-    ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
+    ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }),
+    unit: 'share', group: 'possession', fields: ['lvl5'] },
+  { key: 'sogShare', label: 'share of the shots on goal',
+    short: 'shots-on-goal share',
+    says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
+        + 'counted \u2014 this many were its own.',
+    counts: 'shots on goal by both sides in each team\u2019s own games',
+    of: t => (t.sog ? { count: t.sog.for, n: t.sog.for + t.sog.against } : { count: 0, n: 0 }),
+    ofGame: (g, side) => g.sog && Number.isFinite(g.sog.h) && Number.isFinite(g.sog.a)
+      ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
+    unit: 'share', group: 'possession', fields: ['sog'] },
+  { key: 'attemptsAgainst', label: 'shot attempts against, per game',
+    short: 'attempts against',
+    says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
+        + 'game \u2014 the other side of having the puck.',
+    counts: 'Attempts aimed at each team\u2019s net',
+    of: t => (t.attempts ? { count: t.attempts.against, n: t.games } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.attempts ? { count: g.attempts[side === 'h' ? 'a' : 'h'], n: 1 }
+                                     : { count: 0, n: 0 }),
+    unit: 'perGame', group: 'possession', fields: ['attempts'] },
+  { key: 'blocks', label: 'shot attempts blocked, per game',
+    short: 'blocked attempts',
+    says: 'How many of the other team\u2019s shot attempts this team got in front of '
+        + 'before they reached the net, per game.',
+    counts: 'Attempts each team blocked',
+    of: t => (t.blocks ? { count: t.blocks.count, n: t.games } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.blocks ? { count: g.blocks[side] || 0, n: 1 } : { count: 0, n: 0 }),
+    unit: 'perGame', group: 'possession', fields: ['blocks'] },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
     says: 'Of every 100 shot attempts this team took, this many came from one of '
         + 'its own defencemen.',
     counts: 'attempts each team took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
-    ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
+    ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }),
+    unit: 'share', fields: ['dAtt', 'attempts'] },
   { key: 'slot', label: 'shot attempts from the slot',
     says: 'Of every 100 shot attempts this team took from a spot the feed records, '
         + 'this many came from the slot.',
     counts: 'attempts each team took from a spot the feed records',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
-    ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
+    ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }),
+    unit: 'share', fields: ['slot', 'located'] },
+  { key: 'shiftLength', label: 'average shift length',
+    says: 'How long this team\u2019s skaters stay on the ice each time they go out, '
+        + 'on average, in seconds.',
+    counts: 'Skaters\u2019 time on the ice',
+    of: t => (t.shifts ? { count: t.shifts.secs, n: t.shifts.n } : { count: 0, n: 0 }),
+    ofGame: (g, side) => (g.shifts ? { count: g.shiftSecs[side], n: g.shifts[side] }
+                                   : { count: 0, n: 0 }),
+    unit: 'seconds', fields: ['shifts', 'shiftSecs'] },
 ];
+
+function complete(g) {
+  return CLUB_ROWS.every(r => r.fields.every(f => g[f] != null));
+}
 
 const WITHHELD = [
   { key: 'corsi', label: 'shot-attempt share, all situations',
     of: g => ({ h: g.attempts.h, a: g.attempts.a }) },
   { key: 'fenwick', label: 'unblocked shot-attempt share',
     of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
-  { key: 'sog', label: 'shots-on-goal share',
-    of: g => ({ h: g.sog.h, a: g.sog.a }) },
 ].map(m => ({ key: m.key, label: m.label,
   ofGame: (g, side) => {
     const v = m.of(g);
@@ -757,7 +796,7 @@ const PLAYER_ROWS = [
     says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
 ];
 
-const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
+const POSSESSION_FAMILY = [...CLUB_ROWS.filter(r => r.group === 'possession'), ...WITHHELD];
 
 function seasonOf(id) {
   return String(id).slice(0, 4);
@@ -772,7 +811,7 @@ function leagueShares(season, teams, recent) {
   }
   for (const g of (recent && recent.games) || []) {
     if (!g || typeof g.date !== 'string' || g.date <= ((teams && teams.through) || '')) continue;
-    if (seasonOf(g.id) !== season || !g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (seasonOf(g.id) !== season || !complete(g)) continue;
     for (const side of ['h', 'a']) {
       for (const r of CLUB_ROWS) { const v = r.ofGame(g, side); tot[r.key].count += v.count; tot[r.key].n += v.n; }
     }
@@ -795,6 +834,21 @@ function needsFrom(measures) {
   return out;
 }
 
+function possessionGroup(measures, needs) {
+  const fam = measures && measures.settle && measures.settle.family;
+  const shown = CLUB_ROWS.filter(r => r.group === 'possession' && (!needs || needs[r.key]));
+  if (!fam || !fam.pairs || shown.length < 2) return null;
+  const head = shown[0].key;
+  const pairs = shown.slice(1).map(r => {
+    const pr = fam.pairs.find(x => (x.a === head && x.b === r.key) || (x.b === head && x.a === r.key));
+    return pr && Number.isFinite(pr.r) ? { key: r.key, short: r.short, r: pr.r } : null;
+  });
+  if (pairs.some(x => !x)) return null;
+  const size = pairs.map(x => Math.abs(x.r));
+  return { head, clubSeasons: fam.clubSeasons, pairs,
+           min: Math.min(...size), max: Math.max(...size) };
+}
+
 function recordFor(ab, season, teams) {
   const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab];
   const r = base && base.record && base.record.reg;
@@ -812,6 +866,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
   const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab] || null;
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
     .map(r => ({ key: r.key, label: r.label, says: r.says, counts: r.counts,
+      unit: r.unit, group: r.group || null,
       need: needs ? needs[r.key].need : null,
       range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
@@ -828,7 +883,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
     if (seasonOf(g.id) !== season) continue;
     const side = g.homeAb === ab ? 'h' : g.awayAb === ab ? 'a' : null;
     if (!side) continue;
-    if (!g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (!complete(g)) continue;
     games += 1;
     for (const t of tally) {
       const v = CLUB_ROWS.find(r => r.key === t.key).ofGame(g, side);
@@ -881,12 +936,15 @@ function preview(id, docs, now) {
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures),
+    possession: possessionGroup(d.measures, needs),
     watch: watchFor(d.players, away, home, state === 'played' ? dressedIn(d.game) : null) };
 }
 
 
 const EXPLAINS = {
   level5: 'level5', dmen: 'dmen', slot: 'slotShare',
+  sogShare: 'sogShare', attemptsAgainst: 'attemptsAgainst', blocks: 'blocksMade',
+  shiftLength: 'shiftLength',
   powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
   icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
   playerGoals: 'playerRate', playerAssists: 'playerRate',
@@ -1135,6 +1193,40 @@ const DERIVATION = {
           + 'halves of the division rather than counted as "outside". And this '
           + 'one counts every situation, so a team with a '
           + 'lot of power-play time is partly being described by its power play.' },
+  sogShare: {
+    count: 'shots on goal by this team, as the league\u2019s boxscore counts them',
+    of: 'both teams\u2019 shots on goal in the same games \u2014 so 50% means the two '
+      + 'put the same number on net',
+    why: 'The same question as 5-on-5 CF%, who had the puck, asked of the shots '
+       + 'that reached the goaltender. It is the count the broadcast shows on screen.',
+    caveat: 'Whether a shot that did not go in was saved or missed the net is a call '
+          + 'made by somebody in the arena, and rinks do not all make it the same way. '
+          + 'Unlike 5-on-5 CF%, it counts every situation, power plays included, '
+          + 'and every score.' },
+  attemptsAgainst: {
+    count: 'shot attempts the other team took \u2014 on goal, missed, or blocked',
+    of: 'the games this team played, so the answer is per game',
+    why: 'A team that has the puck is a team the other side cannot shoot at. This is '
+       + 'possession seen from the defending end: how much shooting a team gives up.',
+    caveat: 'It counts every situation, so a team that takes a lot of penalties gives '
+          + 'up more attempts on the penalty kill. And it is a count, not a share, so '
+          + 'it rises in any game where both teams shoot a lot.' },
+  blocksMade: {
+    count: 'shot attempts this team blocked before they reached its net',
+    of: 'the games this team played, so the answer is per game',
+    why: 'You can see every one: a player dropping into a shooting lane. Across '
+       + 'full seasons, teams that have the puck less block more, which is why it '
+       + 'sits with the possession rows.',
+    caveat: 'A block is credited to the team whose player was in the way. The league '
+          + 'records where the block happened, not where the shot was taken from.' },
+  shiftLength: {
+    count: 'the seconds this team\u2019s skaters spent on the ice, shift by shift',
+    of: 'the number of those shifts, so the answer is seconds per shift',
+    why: 'Nobody stays on the ice for long, and teams differ in how long they leave '
+       + 'a line out. It barely moves with who has the puck, so it says something '
+       + 'the possession rows do not.',
+    caveat: 'Goaltenders are left out. The times come from the league\u2019s shift '
+          + 'chart; a game without one is left out rather than counted as zero.' },
 
   powerplay: {
     unit: 'goals for every 100 power plays',
@@ -1300,7 +1392,7 @@ function methods(measures) {
     const pub = (s && s.rows && s.rows[r.key]) || null;
     return { key: r.key, anchor: anchorFor(r.key),
              ...DERIVATION[explains(r.key)],
-             label: r.label,
+             label: r.label, unit: r.unit,
              admitted: !!(pub && pub.games != null && policy && pub.games <= policy.admission),
              r: pub ? pub.r : null, games: pub ? pub.games : null,
              alternate: pub ? pub.alternate || null : null,
@@ -1557,6 +1649,12 @@ function sections(create) {
 
   function num(n) { return (n == null ? '—' : n.toLocaleString()); }
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
+  function spanOf(m) {
+    var lo = m.clubRange.min, hi = m.clubRange.max;
+    if (m.unit === 'perGame') return Math.round(lo) + '–' + Math.round(hi) + ' per game';
+    if (m.unit === 'seconds') return Math.round(lo) + '–' + Math.round(hi) + ' seconds';
+    return pct(lo) + '–' + pct(hi);
+  }
   function r2(v) { return v == null ? '—' : v.toFixed(2); }
   function r3(v) { return v == null ? '—' : v.toFixed(3); }
 
@@ -1597,7 +1695,7 @@ function sections(create) {
         + ' sure — ' + t.target + ' in place of ' + policyTarget, 2));
     });
     if (m.clubRange) {
-      out.push(cell(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
+      out.push(cell(spanOf(m),
         'the range real teams landed in over a full season, from '
         + num(m.clubRange.games) + ' team-games in ' + num(m.clubRange.n)
         + ' team-seasons'));
@@ -1613,28 +1711,32 @@ function sections(create) {
   function familyBlock(f) {
     var sec = el('section', 'hmsec');
     sec.id = 'possession-family';
-    sec.appendChild(kick('Why there is only one “who had the puck” number'));
-    sec.appendChild(el('h2', null,
-        'Corsi, Fenwick and shot share are one thing wearing three names'));
+    sec.appendChild(kick('Why the card groups four “who had the puck” rows'));
+    sec.appendChild(el('h2', null, 'One idea, measured several ways'));
 
     var names = {};
     f.members.forEach(function (m) { names[m.key] = m.label; });
+    var shown = f.members.filter(function (m) { return m.shown; });
     var withheld = f.members.filter(function (m) { return !m.shown; });
 
     sec.appendChild(el('p', null, 'Hockey analysis has several names for roughly '
-      + 'one idea: how much of the shooting a team did. Corsi counts every attempt. '
-      + 'Fenwick drops the ones that got blocked. Shot share counts only the ones '
-      + 'that reached the goalie. Each of the other ' + withheld.length
-      + ' passes our test on its own, and we still show only one.'));
-    sec.appendChild(el('p', null, 'Here is why. Over a full season these barely '
-      + 'disagree with each other. Below is how closely each pair moved together '
-      + 'across ' + num(f.clubSeasons) + ' team-seasons, where 1.00 would mean '
-      + 'identical. The least alike pair is ' + r2(f.min) + '. The closest is '
-      + r2(f.max) + '. Putting all ' + f.members.length + ' on one card would look '
-      + 'like ' + f.members.length + ' pieces of evidence and be one.'));
-    sec.appendChild(el('p', null, 'The ones we leave off, any of which we could '
-      + 'fairly have shown instead: '
-      + withheld.map(function (m) { return m.label; }).join('; ') + '.'));
+      + 'one idea: how much of the play a team controlled. Corsi counts every shot '
+      + 'attempt. Fenwick drops the ones that got blocked. Shot share counts only the '
+      + 'ones that reached the goaltender. The preview card shows ' + shown.length
+      + ' of these as one group \u2014 '
+      + shown.map(function (m) { return m.label; }).join('; ')
+      + ' \u2014 because each passes our test and each is something a newcomer can '
+      + 'watch happen.'));
+    sec.appendChild(el('p', null, 'They are not ' + shown.length + ' separate pieces '
+      + 'of evidence, and the card says so. Below is how closely each pair moved '
+      + 'together across ' + num(f.clubSeasons) + ' team-seasons, where 1.00 would '
+      + 'mean identical and a minus sign means one rises as the other falls. The '
+      + 'least alike pair is ' + r2(f.min) + '. The closest is ' + r2(f.max) + '.'));
+    if (withheld.length) {
+      sec.appendChild(el('p', null, 'The ones we leave off, which show nothing the '
+        + 'group does not: ' + withheld.map(function (m) { return m.label; }).join('; ')
+        + '.'));
+    }
 
     var ul = el('ul', 'hmpairs');
     f.pairs.forEach(function (p) {
@@ -1692,7 +1794,7 @@ function sections(create) {
         + 'the size of the difference, and question 1 at the foot of the page is '
         + 'about why we do not use it.'));
       pol.appendChild(el('p', null, 'A number that passes is shown for each of '
-        + 'the two teams on a game’s preview page — they are the three under '
+        + 'the two teams on a game’s preview page — they are the ' + m.club.length + ' under '
         + '"The numbers we show beside a team" below. A number that fails is '
         + 'still worth knowing; it just describes hockey rather than a team, so '
         + 'it is shown once above both teams instead, and it is under "What is '

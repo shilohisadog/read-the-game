@@ -84,14 +84,39 @@ const MEASURES = {
       slot: { r: 0.720, games: 38, clubSeasons: 96,
         clubRange: { min: 0.413, max: 0.546, median: 0.470, n: 96, games: 7872 },
         alternate: { r: 0.79, games: 25, clubSeasons: 96 },
-        atTarget: [{ target: 0.6, games: 25 }, { target: 0.8, games: 65 }] } },
+        atTarget: [{ target: 0.6, games: 25 }, { target: 0.8, games: 65 }] },
+      sogShare: { r: 0.721, games: 37, clubSeasons: 96,
+        clubRange: { min: 0.418, max: 0.573, median: 0.5, n: 96, games: 7872 },
+        alternate: { r: 0.87, games: 14, clubSeasons: 96 },
+        atTarget: [{ target: 0.6, games: 24 }, { target: 0.8, games: 64 }] },
+      attemptsAgainst: { r: 0.745, games: 33, clubSeasons: 96,
+        clubRange: { min: 48.2, max: 71.05, median: 58.9, n: 96, games: 7872 },
+        alternate: { r: 0.80, games: 27, clubSeasons: 96 },
+        atTarget: [{ target: 0.6, games: 21 }, { target: 0.8, games: 57 }] },
+      blocks: { r: 0.749, games: 33, clubSeasons: 96,
+        clubRange: { min: 11.32, max: 18.93, median: 14.6, n: 96, games: 7872 },
+        alternate: { r: 0.73, games: 35, clubSeasons: 96 },
+        atTarget: [{ target: 0.6, games: 21 }, { target: 0.8, games: 56 }] },
+      shiftLength: { r: 0.892, games: 12, clubSeasons: 96,
+        clubRange: { min: 43.23, max: 53.8, median: 47.9, n: 96, games: 7872 },
+        alternate: { r: 0.97, games: 3, clubSeasons: 96 },
+        atTarget: [{ target: 0.6, games: 8 }, { target: 0.8, games: 21 }] } },
     family: { clubSeasons: 96, pairs: [
-      { a: 'level5', b: 'corsi', r: 0.95, n: 96 },
+      { a: 'level5', b: 'sogShare', r: 0.85, n: 96 },
+      { a: 'level5', b: 'attemptsAgainst', r: -0.81, n: 96 },
+      { a: 'level5', b: 'blocks', r: -0.61, n: 96 },
+      { a: 'level5', b: 'corsi', r: 0.93, n: 96 },
       { a: 'level5', b: 'fenwick', r: 0.90, n: 96 },
-      { a: 'level5', b: 'sog', r: 0.85, n: 96 },
-      { a: 'corsi', b: 'fenwick', r: 0.96, n: 96 },
-      { a: 'corsi', b: 'sog', r: 0.91, n: 96 },
-      { a: 'fenwick', b: 'sog', r: 0.97, n: 96 }] } },
+      { a: 'sogShare', b: 'attemptsAgainst', r: -0.82, n: 96 },
+      { a: 'sogShare', b: 'blocks', r: -0.49, n: 96 },
+      { a: 'sogShare', b: 'corsi', r: 0.93, n: 96 },
+      { a: 'sogShare', b: 'fenwick', r: 0.97, n: 96 },
+      { a: 'attemptsAgainst', b: 'blocks', r: 0.79, n: 96 },
+      { a: 'attemptsAgainst', b: 'corsi', r: -0.89, n: 96 },
+      { a: 'attemptsAgainst', b: 'fenwick', r: -0.87, n: 96 },
+      { a: 'blocks', b: 'corsi', r: -0.69, n: 96 },
+      { a: 'blocks', b: 'fenwick', r: -0.57, n: 96 },
+      { a: 'corsi', b: 'fenwick', r: 0.98, n: 96 }] } },
 };
 
 /* ------------------------------------------- THE LIST AND THE LIST ARE ONE LIST */
@@ -239,16 +264,17 @@ test('⭐⭐ the possession family is quantified, and it includes the row it exp
      future family member that runs the other way collapses the headline to a
      negative number the sentence around it cannot survive. */
   const f = methods(MEASURES).family;
-  assert.equal(f.pairs.length, 6, 'four members make six pairs');
-  assert.ok(f.members.some(m => m.shown && m.key === 'level5'),
-    'the family must contain the row the card actually prints');
-  assert.equal(f.members.filter(m => !m.shown).length, 3, 'three are withheld');
-  assert.ok(Math.abs(f.min - 0.85) < 1e-9, `min must be the weakest pair, got ${f.min}`);
-  assert.ok(Math.abs(f.max - 0.97) < 1e-9, `max must be the strongest pair, got ${f.max}`);
+  assert.equal(f.pairs.length, 15, 'six members make fifteen pairs');
+  assert.deepEqual(f.members.filter(m => m.shown).map(m => m.key),
+    CLUB_ROWS.filter(r => r.group === 'possession').map(r => r.key),
+    'the shown members are exactly the card\u2019s possession group');
+  assert.deepEqual(f.members.filter(m => !m.shown).map(m => m.key), ['corsi', 'fenwick']);
+  assert.ok(Math.abs(f.min - 0.49) < 1e-9, `min must be the weakest pair, got ${f.min}`);
+  assert.ok(Math.abs(f.max - 0.98) < 1e-9, `max must be the strongest pair, got ${f.max}`);
 
   const signed = JSON.parse(JSON.stringify(MEASURES));
-  signed.settle.family.pairs[0].r = -0.95;
-  assert.ok(methods(signed).family.min > 0.5,
+  signed.settle.family.pairs.forEach(x => { x.r = -Math.abs(x.r); });
+  assert.ok(Math.abs(methods(signed).family.min - 0.49) < 1e-9,
     'a measure running the other way is no less the same measurement');
 });
 
@@ -264,7 +290,7 @@ test('⛔ a document that predates these fields degrades — it does not throw o
   assert.equal(m.family, null, 'no family figure must be invented');
   assert.equal(m.club.find(c => c.key === 'level5').alternate, null);
   assert.equal(m.club.find(c => c.key === 'dmen').games, null, 'an unmeasured row claims nothing');
-  assert.deepEqual(methods({}).club.map(c => c.games), [null, null, null]);
+  assert.deepEqual(methods({}).club.map(c => c.games), CLUB_ROWS.map(() => null));
   assert.equal(methods(null).policy, null);
   assert.deepEqual(methods(null).league, [], 'no census, no league frame');
 });
@@ -1239,4 +1265,18 @@ test('⛔ without the league’s figures the line is absent, not zero', async ()
   await r.settle();
   const said = Object.values(r.ids).flatMap(n => walk(n)).map(n => n.textContent).join(' ');
   assert.doesNotMatch(said, /own boxscores, over the same/);
+});
+
+test('⛔ a club row’s full-season range is printed in the row’s own unit', async () => {
+  /* A per-game count or a shift length run through the share formatter reads
+     "4820%–7105%". MUTATION: drop `unit` from `methods()` and every range
+     falls back to percent, which the second assertion catches. */
+  const r = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await r.settle();
+  const said = walk(r.ids.main || Object.values(r.ids)[0]).map(n => n.textContent).join(' ');
+  assert.match(said, /43%–62%/, 'a share range stays a percentage');
+  assert.match(said, /48–71 per game/);
+  assert.match(said, /11–19 per game/);
+  assert.match(said, /43–54 seconds/);
+  assert.doesNotMatch(said, /\d{4}%/, 'a count was formatted as a share');
 });
