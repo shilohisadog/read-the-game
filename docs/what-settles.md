@@ -114,17 +114,67 @@ the boxscore.)*
 
 Kevin asked to re-run every candidate with every-other-game halves as well as
 chronological ones. The throwaway script behind §2 was gone, so it is now a tool:
-, every candidate computed through
-the site's own code and measured by  (both splits) and
- (overlap with the three shown rows). It reproduces §2 to within a game
+`node tools/candidates.mjs <dir-with-extract/>`, every candidate computed through
+the site's own code and measured by `reliability.js` (both splits) and
+`agreement` (overlap with the three shown rows). It reproduces §2 to within a game
 or two; the slot measures moved with the three-clause slot rule (fix list item 1).
 
-⭐ **The venue check now has a control.**  is how a club's figure moves with
-its opponents' in its own building;  is the same in its road games. An
+⭐ **The venue check now has a control.** `home` is how a club's figure moves with
+its opponents' in its own building; `road` is the same in its road games. An
 arena's scorer moves the first only. Something both teams share in every game —
 the stoppages that end everyone's shifts — moves both.
 
-
+```
+  target r=0.7, admission 41 games; 4281 games
+  candidate                chrono  alt   home   road  ~level5  ~dmen  ~slot
+  avgShiftLen                12     3  0.54   0.57   -0.07    0.01   0.03
+  shiftsPerGame              15     4  0.52   0.55    0.05   -0.02  -0.02
+  attemptDiffPerGame         22    17    —     —    0.92    0.33   0.04
+  dmen                       23    13 -0.11  -0.26    0.38      —  -0.01
+  corsi5v5                   24    17    —     —    0.95    0.34   0.02
+  attemptsForPerGame         24    13 -0.57  -0.59    0.87    0.34  -0.07
+  fenwickShare               28    16    —     —    0.90    0.32   0.07
+  dmen5v5                    28    16 -0.11  -0.30    0.36    0.96   0.02
+  hitsAgainstPerGame         29    22  0.40  -0.05    0.33   -0.13   0.35
+  fenwick5v5                 30    17    —     —    0.92    0.31   0.04
+  attemptsAgainstPerGame     33    27 -0.57  -0.59   -0.81   -0.26  -0.15
+  blocksPerGame              33    35 -0.35  -0.43   -0.61   -0.23  -0.04
+  level5                     35    27    —     —      —    0.38   0.03
+  ozStartShare               35    38    —     —    0.72    0.33   0.05
+  sogShare                   37    14    —     —    0.85    0.30   0.14
+  sogShareEvents             37    14    —     —    0.85    0.30   0.14
+  slot                       39    35  0.00  -0.32    0.03   -0.01     —
+  ozStartShare5v5            40    38    —     —    0.76    0.31   0.04
+  sog5v5                     42    16    —     —    0.86    0.28   0.11
+  takeawaysPerGame           42    42  0.76  -0.02    0.13    0.30   0.05
+  unblockedAgainstPerGame    45    26 -0.53  -0.56   -0.78   -0.23  -0.19
+  hitsPerGame                47    12  0.40  -0.05   -0.15   -0.27   0.01
+  fenwick5v5Level            48    37    —     —    0.97    0.34   0.03
+  ozStartOfAll               51    50 -0.85  -0.88    0.70    0.36  -0.02
+  goalDiffPerGame            52    62    —     —    0.64    0.21   0.37
+  slot5v5                    53    59  0.02  -0.25    0.03   -0.00   0.93
+  sogAgainstPerGame          53    25 -0.45  -0.49   -0.73   -0.19  -0.20
+  slotAgainst                55    59  0.00  -0.32   -0.02    0.14  -0.19
+  shotDistance               55    59  0.10  -0.09   -0.08    0.12  -0.84
+  pointsPct                  55    92    —     —    0.59    0.20   0.39
+  puckWinShare               57    38  0.79  -0.36   -0.00    0.24  -0.15
+  dmenAgainst                67    73 -0.11  -0.26   -0.14   -0.22  -0.07
+  goalsForPerGame            67    92 -0.40  -0.55    0.54    0.17   0.47
+  goalsForShare5v5           74    97    —     —    0.56    0.12   0.27
+  giveawaysPerGame           75    40  0.75   0.30    0.16   -0.04   0.14
+  drawsPerGame               77    65    —     —    0.49    0.16  -0.28
+  goalsAgainstPerGame        91    76 -0.40  -0.55   -0.58   -0.19  -0.18
+  giveawayShare              96    93    —     —   -0.00   -0.14   0.11
+  shotDistanceAgainst        96   161  0.10  -0.09    0.31   -0.05   0.09
+  takeawayShare             102   152    —     —    0.21    0.27  -0.08
+  nzFaceoffWin              103    60 -1.00  -1.00    0.16    0.02   0.26
+  dzFaceoffWin              106    40 -0.55  -0.68    0.19    0.08   0.33
+  missed                    113   111  0.50  -0.10    0.15   -0.02  -0.23
+  ppAttemptShare            122   102  0.26   0.24   -0.13   -0.20   0.12
+  shootPct5v5               177   334 -0.12  -0.14   -0.02   -0.10   0.37
+  penaltyDiffShare          204    77    —     —    0.14    0.23   0.16
+  savePct5v5                219   198 -0.12  -0.14    0.07   -0.01   0.02
+```
 
 What it says:
 
@@ -135,10 +185,10 @@ What it says:
   only** (e.g. takeaways 0.76 home, −0.02 road): the arena's scorer, now measured
   rather than suspected.
 - **Every-other-game halves add nothing clean.** What they lift over the line is
-  either the possession family again (, ,
-  , ) or an arena-scored figure
-  ( 47 → 12, , ). The one oddity is
-  , 106 → 40: faceoff ability holds within a stretch of a season and
+  either the possession family again (`sog5v5`, `sogAgainstPerGame`,
+  `unblockedAgainstPerGame`, `fenwick5v5Level`) or an arena-scored figure
+  (`hitsPerGame` 47 → 12, `giveawaysPerGame`, `puckWinShare`). The one oddity is
+  `dzFaceoffWin`, 106 → 40: faceoff ability holds within a stretch of a season and
   not across it, which fits a roster that changes.
 
 ## 3. ⛔ Most of what qualifies is ONE measurement wearing different hats
