@@ -844,7 +844,7 @@ test('the hero rectangle opens the same game its button does', () => {
       `the overlay is a <${hit.tag}> — only an anchor navigates`);
     assert.equal(hit.href, r.ids.herogo.href,
       'the rectangle and the button offer different games');
-    // AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `Watch the whole game` sits
+    // AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `Read the whole game` sits
     // directly under it with the same destination, so a keyboard or screen
     // reader user meeting this as well would meet one offer twice with nothing
     // to tell the two apart — the duplicate-funnel defect in accessible clothing.
@@ -2354,7 +2354,10 @@ test('⭐ IN SEASON THE BLOCK STILL LOOKS FORWARD, in one line', async () => {
     'the doors to last night survive');
   const line = r.ids.dailylist.kids.find(k => k.className === 'dtonight');
   assert.ok(line, 'nothing on the page says there is hockey tonight');
-  assert.match(line.textContent, /^Tonight · 11 games from \d{1,2}:\d{2}/);
+  const go = line.kids[0];
+  assert.match(go.textContent, /^Tonight · 11 games from \d{1,2}:\d{2}.* — see them →$/);
+  // Kevin, 2026-10-13: tonight's games are a door, to the date's calendar page.
+  assert.match(go.href, /^calendar\.html\?date=\d{4}-\d{2}-\d{2}$/);
 });
 
 test('a night that is not the reader\'s tonight is named by its day', async () => {

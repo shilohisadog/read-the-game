@@ -256,7 +256,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 
    ⚠️ AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `aria-hidden` and `tabindex=-1`
    keep it out of the tab order and out of the accessibility tree, because
-   `Watch the whole game` sits directly beneath it with the same destination --
+   `Read the whole game` sits directly beneath it with the same destination --
    a keyboard user would otherwise meet the same link twice with nothing to tell
    them apart, which is a duplicate-funnel defect wearing accessibility clothes.
    The frame itself already carried `tabindex=-1` for the same reason. */
@@ -391,7 +391,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    MEASURED FIRST, at 1900x1065: the document is 2.05 screens, `.wrap` renders
    944px of 1900 (half the viewport is gutter), and the hero card alone is 729px
    of a 1065px fold -- 68%. The card stacks the loop above four lines of text, so
-   `Watch the whole game` sits at y=903 and the club grid's heading at 982, and
+   `Read the whole game` sits at y=903 and the club grid's heading at 982, and
    the fold ends there. Everything a reader might act on is pushed down by the one
    thing they are meant to look at.
    ⚠️ IT READ `Watch your team` WHEN THIS WAS MEASURED, and is `Pick your team`
@@ -819,7 +819,7 @@ nothing in between, so that is all we draw.</p>
          also the one place that decides whether it is shown, and `:empty` keeps
          a game the rate cannot classify from taking any room. -->
     <p class="herorel" id="herorel"></p>
-    <a class="herogo" id="herogo" href="game.html">Watch the whole game &rarr;</a>
+    <a class="herogo" id="herogo" href="game.html">Read the whole game &rarr;</a>
     <!-- ⭐ THE ONE ELEMENT ON THIS PAGE WHOSE CONTENT IS A FUNCTION OF THE DATE.
          docs/front-door.md §3 stated it as an invariant rather than a taste:
          before this, nothing above the fold changed from one morning to the
@@ -1196,7 +1196,7 @@ __HELPERS__
        statement. The pitch was `... and lost. That is the usual outcome.` --
        a tension raised and resolved in the same breath, with nothing left for
        the button to answer. What replaces it raises the tension and stops:
-       the attempts, then the archive's own rate, then `Watch the whole game`.
+       the attempts, then the archive's own rate, then `Read the whole game`.
        NOTHING IS HIDDEN, and nothing here is newly withheld that the scoreboard
        does not fill in as the game plays. */
     /* ⛔⛔ THE SCOPE IS STATED, BECAUSE THE PICTURE BESIDE IT SHOWS A FRACTION OF
@@ -1207,7 +1207,7 @@ __HELPERS__
        attempts."* He is right, and the comment below has said WHOLE GAME, NOT THE
        LOOP'S WINDOW all along — to the code, never to the reader.
        ⛔ AND HIS OTHER SUGGESTED FIX WOULD HAVE BROKEN SOMETHING. Moving the
-       sentence under `Watch the whole game`, where whole-game scope is implied,
+       sentence under `Read the whole game`, where whole-game scope is implied,
        separates it from the archive rate that follows — and that rate is
        CONDITIONED ON FINAL TOTALS (see below, and CHENG's own earlier ruling that
        it must never sit beside a LIVE count). The pairing is the argument; only
@@ -1605,10 +1605,15 @@ __HELPERS__
        row), so tonight gets ONE line and the doors stay with the games that have
        one. Kevin, 2026-09-22: "one line is fine." */
     if (night && d.state === 'slate') {
-      list.appendChild(el('p', 'dtonight', nightWord(night.date) + ' \u00b7 ' + night.count
+      // A door to the date's calendar page, which lists each game with its preview.
+      var tl = el('p', 'dtonight');
+      var go = el('a', null, nightWord(night.date) + ' \u00b7 ' + night.count
         + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games')
         + ' from ' + clockOf(night.fixtures[0].startTimeUTC)
-        + dayNote(night.fixtures[0].startTimeUTC, night.date) + '.'));
+        + dayNote(night.fixtures[0].startTimeUTC, night.date) + ' \u2014 see them \u2192');
+      go.href = 'calendar.html?date=' + night.date;
+      tl.appendChild(go);
+      list.appendChild(tl);
     }
 
     /* ⭐ THE REST OF THE NIGHT, AND IT IS A BETTER DOOR THAN THE ROWS IT
@@ -3595,6 +3600,26 @@ __HELPERS__
 
   /* ---- the month ------------------------------------------------------- */
 
+  /* Games still to be played on this date, each a door to its preview. Once a
+     game is played and published it leaves this list for the one below. */
+  function fixtures(ahead) {
+    var box = el('div', 'ahead');
+    box.appendChild(el('h3', 'gk', 'Still to be played'));
+    var ul = el('ul', 'games night');
+    ahead.forEach(function (g) {
+      var li = el('li');
+      var t = new Date(g.startTimeUTC).toLocaleTimeString(undefined,
+        { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+      var a = el('a', null, nameOf(g.away) + ' at ' + nameOf(g.home) + ' \u00b7 ' + t
+        + (g.gameType === 1 ? ' \u00b7 preseason' : '') + ' \u2014 what to watch for \u2192');
+      a.href = '/preview.html?game=' + g.id;
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    return box;
+  }
+
   function drawMonth(games, month, months, asked, monthsHeld) {
     var main = $('main');
     main.textContent = '';
@@ -3766,18 +3791,29 @@ __HELPERS__
     return ul;
   }
 
-  function drawNight(games, date, months) {
+  function drawNight(games, date, months, schedule) {
     var main = $('main');
     main.textContent = '';
     var m = monthOf(date);
     main.appendChild(crumbTo('?month=' + m, '← ' + monthName(m)));
 
     var n = nightOf(games, date);
+    // The league's schedule for this date, less the games we already hold.
+    var held = {};
+    n.rows.forEach(function (r) { held[r.id] = 1; });
+    var ahead = ((schedule && schedule.upcoming) || []).filter(function (g) {
+      return g && g.date === date && !held[g.id];
+    }).sort(function (a, b) {
+      return a.startTimeUTC === b.startTimeUTC ? a.id - b.id
+        : (a.startTimeUTC < b.startTimeUTC ? -1 : 1);
+    });
+    var total = n.held + ahead.length;
     main.appendChild(headline(DAY[weekdayOf(date)] + ' ' + when(date),
-      n.held ? plural(n.held, 'game') : null));
+      total ? plural(total, 'game') : null));
+    if (ahead.length) main.appendChild(fixtures(ahead));
 
     if (!n.held) {
-      main.appendChild(el('p', 'note', 'No games in the archive on this date.'));
+      if (!ahead.length) main.appendChild(el('p', 'note', 'No games in the archive on this date.'));
       return;
     }
 
@@ -3873,7 +3909,8 @@ __HELPERS__
       'The archive could not be loaded, so there are no dates to show.'));
   };
   var gamesOf = function (doc) { return (doc && doc.games) || []; };
-  Promise.all([grab('front.json'), want ? grab('calendar/' + want + '.json') : null])
+  Promise.all([grab('front.json'), want ? grab('calendar/' + want + '.json') : null,
+               askedDate ? grab('schedule.json') : null])
     .then(function (r) {
       var cal = r[0] && r[0].calendar;
       var months = (cal && cal.months) || [];
@@ -3885,7 +3922,7 @@ __HELPERS__
         .then(function (doc) {
           // A month that holds games must have its document; an empty month has none.
           if (!doc && held.indexOf(month) !== -1) { unloaded(); return; }
-          if (askedDate) { drawNight(gamesOf(doc), askedDate, months); return; }
+          if (askedDate) { drawNight(gamesOf(doc), askedDate, months, r[2]); return; }
           drawMonth(gamesOf(doc), month, months, askedMonth, held);
         });
     });
@@ -4339,7 +4376,7 @@ __HELPERS__
     if (p.result) {
       var done = el('p', 'pvresult',
         g.away + ' ' + p.result.score.a + ' – ' + g.home + ' ' + p.result.score.h + '. ');
-      var a = el('a', null, 'Watch the whole game →');
+      var a = el('a', null, 'Read the whole game →');
       a.href = p.result.watch;
       done.appendChild(a);
       $('pv').appendChild(done);

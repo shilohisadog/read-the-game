@@ -76,9 +76,9 @@ const OLY = (n, d, extra) => row(2025090000 + n, d, extra);
 
 /* The page reads what the pipeline publishes: the fixture catalog through the
    real projection (src/lib/page-docs.js), served by path. */
-function run(games, search = '') {
+function run(games, search = '', extra = {}) {
   const { ids, document } = fakeDom();
-  const docs = pageDocs({ games }, {});
+  const docs = { ...pageDocs({ games }, {}), ...extra };
   const fetch = url => {
     const body = docs[url.replace(/^.*?readthegame\.co\//, '')];
     return Promise.resolve(body
@@ -410,4 +410,38 @@ test('⛔ a month that holds games but whose document fails says it could not lo
   const said = textOf(ids.main);
   assert.match(said, /could not be loaded/);
   assert.doesNotMatch(said, /No games in the archive this month/);
+});
+
+/* ⭐ A DATE STILL TO BE PLAYED LISTS ITS GAMES, EACH A DOOR TO ITS PREVIEW.
+   Kevin, 2026-10-13: the front door's "Tonight · 16 games" opens this page. */
+const fixture = (id, away, home, utc, gameType = 2, date = '2026-02-14') =>
+  ({ id, date, away, home, startTimeUTC: utc, gameType });
+const SCHED = { 'schedule.json': { upcoming: [
+  fixture(2025020020, 'PIT', 'BUF', '2026-02-15T00:00:00Z'),
+  fixture(2025020021, 'TOR', 'MTL', '2026-02-14T23:00:00Z'),
+  fixture(2025020013, 'BUF', 'TOR', '2026-02-13T23:00:00Z', 2, '2026-02-13'),   // another date
+] } };
+
+test('⭐ a date still to be played lists its games, earliest first, as preview doors', async () => {
+  const { ids, settle } = run(MONTH, '?date=2026-02-14', SCHED);
+  await settle();
+  const said = textOf(ids.main);
+  assert.match(said, /2 games/, 'the headline counts the scheduled games');
+  assert.match(said, /Still to be played/);
+  assert.doesNotMatch(said, /No games in the archive on this date/);
+  const doors = walk(ids.main).filter(x => /preview\.html/.test(x.href || ''));
+  assert.deepEqual(doors.map(d => d.href), ['/preview.html?game=2025020021', '/preview.html?game=2025020020']);
+  assert.match(doors[0].textContent, /^Toronto Maple Leafs at Montr.al Canadiens · .* — what to watch for →$/);
+});
+
+test('⛔ a game already published is listed once, as a result, not as a fixture', async () => {
+  const sched = { 'schedule.json': { upcoming: [
+    { id: 2025020010, date: '2026-02-13', away: 'BUF', home: 'TOR', startTimeUTC: '2026-02-14T00:00:00Z', gameType: 2 },
+    { id: 2025020099, date: '2026-02-13', away: 'PIT', home: 'BUF', startTimeUTC: '2026-02-14T01:00:00Z', gameType: 2 }] } };
+  const { ids, settle } = run(MONTH, '?date=2026-02-13', sched);
+  await settle();
+  const doors = walk(ids.main).filter(x => /preview\.html/.test(x.href || ''));
+  assert.deepEqual(doors.map(d => d.href), ['/preview.html?game=2025020099'],
+    'the held game (2025020010) is a result row, not a second listing');
+  assert.match(textOf(ids.main), /3 games/, 'two held and one still to be played');
 });

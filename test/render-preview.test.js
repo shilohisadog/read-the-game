@@ -242,7 +242,7 @@ test('the preview is hidden by CSS, not by deleting the app', () => {
  *
  * `.sharerow` was added below the rink after that was written. It was never added
  * here, and `Copy a link to this moment` sat on the live front door — inside the
- * hero, directly above `Watch the whole game` — until Kevin screenshotted it on
+ * hero, directly above `Read the whole game` — until Kevin screenshotted it on
  * 2026-09-09. Every test in this file was green throughout, because none of them
  * asks the question in a form the page can answer.
  *

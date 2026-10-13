@@ -850,7 +850,7 @@ test('the chrome never offers one destination twice', () => {
  * pedagogy to fix a misreading they cannot cause.
  *
  * THE RULE THAT SEPARATES THEM: the word misleads only where NOTHING BESIDE IT
- * CORRECTS IT. The hero's `Watch the whole game` sits directly under a moving
+ * CORRECTS IT. The hero's `Read the whole game` sits directly under a moving
  * rink that is 26.9% of a laptop screen and plainly not video — the demo
  * outranks the label, and that button is deliberately left alone (open question,
  * for the novice tester). A `<title>`, a description and an og: card are the
@@ -932,7 +932,7 @@ test('no pre-render metadata offers to WATCH the content', () => {
  * of thing" since C1.
  *
  * ⭐ AND THE HERO'S BUTTON IS OUT OF SCOPE BY THE RULE'S OWN LOGIC, not by an
- * exemption bolted on to make this pass. `Watch the whole game` sits directly
+ * exemption bolted on to make this pass. `Read the whole game` sits directly
  * beneath a moving rink that is 26.9% of a laptop screen and plainly not video;
  * the demonstration outranks the label, which is exactly the thing a heading
  * over a grid of codes does not have. Kevin is holding that one open for the

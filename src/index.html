@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-V77IOu7Rr3I59/RIbjvqS7R0/rZngn0sX+zQhRFFsF8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7ScBYHoB99Pq5vwMNEe7xIIlKbv+FmGQimjJDKhw59A=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -314,7 +314,7 @@ nothing in between, so that is all we draw.</p>
     <p class="herosub" id="herosub"></p>
     
     <p class="herorel" id="herorel"></p>
-    <a class="herogo" id="herogo" href="game.html">Watch the whole game &rarr;</a>
+    <a class="herogo" id="herogo" href="game.html">Read the whole game &rarr;</a>
     
     <section class="daily" id="daily" hidden>
       <p class="dailykick" id="dailykick"></p>
@@ -1021,10 +1021,14 @@ function disputedNote(n) {
       }
     }
     if (night && d.state === 'slate') {
-      list.appendChild(el('p', 'dtonight', nightWord(night.date) + ' \u00b7 ' + night.count
+      var tl = el('p', 'dtonight');
+      var go = el('a', null, nightWord(night.date) + ' \u00b7 ' + night.count
         + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games')
         + ' from ' + clockOf(night.fixtures[0].startTimeUTC)
-        + dayNote(night.fixtures[0].startTimeUTC, night.date) + '.'));
+        + dayNote(night.fixtures[0].startTimeUTC, night.date) + ' \u2014 see them \u2192');
+      go.href = 'calendar.html?date=' + night.date;
+      tl.appendChild(go);
+      list.appendChild(tl);
     }
 
     if (d.more > 0) {

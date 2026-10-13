@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4jcWBqZREKrnYp3/rptC44UrZguEDnwl2cm3iAkM7q4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SyT8mRW+nurD9heNQqpJq6MBlIJhzjdsClrcINm5lb8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -607,6 +607,24 @@ function otherInMonth(games, month) {
   }
 
 
+  function fixtures(ahead) {
+    var box = el('div', 'ahead');
+    box.appendChild(el('h3', 'gk', 'Still to be played'));
+    var ul = el('ul', 'games night');
+    ahead.forEach(function (g) {
+      var li = el('li');
+      var t = new Date(g.startTimeUTC).toLocaleTimeString(undefined,
+        { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+      var a = el('a', null, nameOf(g.away) + ' at ' + nameOf(g.home) + ' \u00b7 ' + t
+        + (g.gameType === 1 ? ' \u00b7 preseason' : '') + ' \u2014 what to watch for \u2192');
+      a.href = '/preview.html?game=' + g.id;
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    return box;
+  }
+
   function drawMonth(games, month, months, asked, monthsHeld) {
     var main = $('main');
     main.textContent = '';
@@ -731,18 +749,28 @@ function otherInMonth(games, month) {
     return ul;
   }
 
-  function drawNight(games, date, months) {
+  function drawNight(games, date, months, schedule) {
     var main = $('main');
     main.textContent = '';
     var m = monthOf(date);
     main.appendChild(crumbTo('?month=' + m, '← ' + monthName(m)));
 
     var n = nightOf(games, date);
+    var held = {};
+    n.rows.forEach(function (r) { held[r.id] = 1; });
+    var ahead = ((schedule && schedule.upcoming) || []).filter(function (g) {
+      return g && g.date === date && !held[g.id];
+    }).sort(function (a, b) {
+      return a.startTimeUTC === b.startTimeUTC ? a.id - b.id
+        : (a.startTimeUTC < b.startTimeUTC ? -1 : 1);
+    });
+    var total = n.held + ahead.length;
     main.appendChild(headline(DAY[weekdayOf(date)] + ' ' + when(date),
-      n.held ? plural(n.held, 'game') : null));
+      total ? plural(total, 'game') : null));
+    if (ahead.length) main.appendChild(fixtures(ahead));
 
     if (!n.held) {
-      main.appendChild(el('p', 'note', 'No games in the archive on this date.'));
+      if (!ahead.length) main.appendChild(el('p', 'note', 'No games in the archive on this date.'));
       return;
     }
 
@@ -802,7 +830,8 @@ function otherInMonth(games, month) {
       'The archive could not be loaded, so there are no dates to show.'));
   };
   var gamesOf = function (doc) { return (doc && doc.games) || []; };
-  Promise.all([grab('front.json'), want ? grab('calendar/' + want + '.json') : null])
+  Promise.all([grab('front.json'), want ? grab('calendar/' + want + '.json') : null,
+               askedDate ? grab('schedule.json') : null])
     .then(function (r) {
       var cal = r[0] && r[0].calendar;
       var months = (cal && cal.months) || [];
@@ -813,7 +842,7 @@ function otherInMonth(games, month) {
       return (month === want ? Promise.resolve(r[1]) : grab('calendar/' + month + '.json'))
         .then(function (doc) {
           if (!doc && held.indexOf(month) !== -1) { unloaded(); return; }
-          if (askedDate) { drawNight(gamesOf(doc), askedDate, months); return; }
+          if (askedDate) { drawNight(gamesOf(doc), askedDate, months, r[2]); return; }
           drawMonth(gamesOf(doc), month, months, askedMonth, held);
         });
     });
