@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Dn6jTAooymI1FgO1O4doZTIQCMZZ6IZ8Okx2lRloY4c=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ink7+MoVH5UVz1KKDB7rjVyGJe1tcD+nsriQjpNGC14=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -615,7 +615,7 @@ function leagueRows(measures) {
   return [
     { key: 'powerplay', games: c.games,
       goals: w.ppGoals, chances: w.ppChances, rate: pp.value, work: pp,
-      chancesPerClubGame: perClubGame(w.ppChances) },
+      chancesPerClubGame: perClubGame(w.ppChances), league: c.ppLeague || null },
     { key: 'penalties', games: c.games, count: w.penalties,
       perClubGame: pen.value, work: pen },
     { key: 'offside', games: c.games, count: w.offsides,
@@ -733,7 +733,13 @@ function dressedIn(extract) {
 }
 
 function rate(p, fig) {
-  return p.gp ? { value: p[fig] / p.gp, count: p[fig], n: p.gp } : null;
+  if (!p.gp) return null;
+  const out = { value: p[fig] / p.gp, count: p[fig], n: p.gp };
+  if (p.lg && p.lg[fig] != null) {
+    out.league = p.lg[fig];
+    out.off = (p.lgOff || []).filter(o => o.fig === fig);
+  }
+  return out;
 }
 
 const PLAYER_ROWS = [
@@ -1121,9 +1127,11 @@ const DERIVATION = {
     why: 'The most consequential thing that happens away from open play \u2014 and '
        + 'the number new fans guess far too high. Most power plays end with '
        + 'nothing at all.',
-    caveat: 'Power-play goals, not every goal scored while a team was on a power '
-          + 'play. The second includes goals scored BY the short-handed team, and '
-          + 'reads about three points higher than the league\u2019s own figure.' },
+    caveat: 'Counted the league\u2019s way. A power play is each penalty that puts '
+          + 'a team short: a double minor is two, a misconduct none, and penalties '
+          + 'to both teams at once cancel out. A power-play goal is one scored while '
+          + 'the scorer\u2019s team holds that advantage, even with its own net '
+          + 'empty \u2014 not a goal scored BY the short-handed team.' },
   penalties: {
     unit: 'penalties, per team per game',
     label: 'How many penalties a team takes',
@@ -1132,12 +1140,9 @@ const DERIVATION = {
     why: 'This is the number the power-play figure sits against, and the gap '
        + 'between them is worth knowing: taking a penalty does not always hand '
        + 'the other team a power play.',
-    caveat: 'About a quarter of penalties never give the other team a power '
-          + 'play. Offsetting minors, misconducts, and penalties taken while a '
-          + 'team is already short-handed are the obvious explanations, and we '
-          + 'have counted none of them. That is not a limit of the feed \u2014 all '
-          + 'three look countable from what we already store, and we have simply '
-          + 'not done it. So we state the gap and do not explain it.' },
+    caveat: 'Not every penalty gives the other team a power play: penalties to '
+          + 'both teams at once cancel out, a misconduct gives none, and one called '
+          + 'at the final horn leaves no time to play it. A double minor gives two.' },
   offside: {
     unit: 'times offside, per team per game',
     label: 'How often a team is offside',
@@ -1225,6 +1230,7 @@ function leagueFigures(measures) {
     return { key: row.key, anchor: anchorFor(row.key),
       ...DERIVATION[explains(row.key)],
       work: row.work || null,
+      league: row.league || null,
       over: over && row.work && row.work.n === over.n ? null : over,
       population: over ? over.unit : null };
   });
@@ -1411,6 +1417,21 @@ function sections(create) {
 
 
 
+  function leagueLine(t) {
+    if (!t || !t.ppGoals || !t.ppGoals.games) return null;
+    const differ = x => (x.gamesOff ? ', and the two differ on ' + commas(x.gamesOff) + ' of them'
+                                    : ', and the two agree on every one');
+    let say = 'The league\u2019s own boxscores, over the same ' + commas(t.ppGoals.games)
+      + ' games, count ' + commas(t.ppGoals.league) + ' power-play goals against our '
+      + commas(t.ppGoals.ours) + differ(t.ppGoals) + '.';
+    const r = t.rail && t.rail.ppChances;
+    if (r && r.games) {
+      say += ' Its game summaries, which we hold for ' + commas(r.games) + ' games, count '
+        + commas(r.league) + ' power plays against our ' + commas(r.ours) + differ(r) + '.';
+    }
+    return mk('p', 'hmwork', say);
+  }
+
   function workRow(m) {
     const w = m.work;
     if (!w || w.value == null) return null;
@@ -1480,6 +1501,8 @@ function sections(create) {
     s.appendChild(dl);
     const work = workRow(m);
     if (work) s.appendChild(work);
+    const lg = leagueLine(m.league);
+    if (lg) s.appendChild(lg);
     s.appendChild(mk('p', 'hmwhy', m.why));
     const ev = evidenceBox(m);
     if (ev) s.appendChild(ev);

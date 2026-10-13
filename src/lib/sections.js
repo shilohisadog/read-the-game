@@ -274,6 +274,23 @@ export function sections(create) {
      THE OTHER KIND OF FIGURE: one whose count and denominator are prose we wrote.
      --------------------------------------------------------------------------- */
 
+  /* Our power-play count beside the league's own, over the games each league
+     document covers (measure.mjs::ppAgainstLeague). */
+  function leagueLine(t) {
+    if (!t || !t.ppGoals || !t.ppGoals.games) return null;
+    const differ = x => (x.gamesOff ? ', and the two differ on ' + commas(x.gamesOff) + ' of them'
+                                    : ', and the two agree on every one');
+    let say = 'The league\u2019s own boxscores, over the same ' + commas(t.ppGoals.games)
+      + ' games, count ' + commas(t.ppGoals.league) + ' power-play goals against our '
+      + commas(t.ppGoals.ours) + differ(t.ppGoals) + '.';
+    const r = t.rail && t.rail.ppChances;
+    if (r && r.games) {
+      say += ' Its game summaries, which we hold for ' + commas(r.games) + ' games, count '
+        + commas(r.league) + ' power plays against our ' + commas(r.ours) + differ(r) + '.';
+    }
+    return mk('p', 'hmwork', say);
+  }
+
   function workRow(m) {
     const w = m.work;
     if (!w || w.value == null) return null;
@@ -388,6 +405,8 @@ export function sections(create) {
     s.appendChild(dl);
     const work = workRow(m);
     if (work) s.appendChild(work);
+    const lg = leagueLine(m.league);
+    if (lg) s.appendChild(lg);
     s.appendChild(mk('p', 'hmwhy', m.why));
     const ev = evidenceBox(m);
     if (ev) s.appendChild(ev);

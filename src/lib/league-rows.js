@@ -56,7 +56,7 @@ export function leagueRows(measures) {
          counts both; the second includes the short-handed ones and reads three
          points higher than the league's own figure. */
       goals: w.ppGoals, chances: w.ppChances, rate: pp.value, work: pp,
-      chancesPerClubGame: perClubGame(w.ppChances) },
+      chancesPerClubGame: perClubGame(w.ppChances), league: c.ppLeague || null },
     { key: 'penalties', games: c.games, count: w.penalties,
       perClubGame: pen.value, work: pen },
     { key: 'offside', games: c.games, count: w.offsides,

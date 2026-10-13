@@ -1666,3 +1666,33 @@ test('⛔⛔ nothing that comes and goes sits above the ice', () => {
   assert.ok(app.indexOf('id="who"') > box && app.indexOf('id="who"') < app.indexOf('id="endnote"'),
     'the active-player line has left the rink card');
 });
+
+/* ⭐⭐ ITEM 5: THE NOTE NAMES WHO. The league's boxscore rows are copied into
+   `quoted.players` (SCHEMA 6) and the page compares them with its own count
+   (league.js). The fixture's league rows are built from our own count, so a
+   game where nothing was moved must say nothing. */
+import { playersIn } from '../src/lib/league.js';
+const ctxOf = g => ({ roster: g.roster, homeId: g.teams.home.id, awayId: g.teams.away.id,
+  homeAb: g.teams.home.ab, awayAb: g.teams.away.ab, evenOnly: false });
+const quotedFromOurs = g => {
+  const nets = goaltending.reduce(g.events, ctxOf(g)).g;
+  return { src: 'boxscore.playerByGameStats',
+    skaters: Object.fromEntries(playersIn(g).map(r => [String(r.p), [r.g, r.a, r.s, 0]])),
+    goalies: Object.fromEntries(Object.entries(nets).map(([p, v]) => [p, [v.s, v.f]])) };
+};
+
+test('⭐⭐ a disputed game names the player the two league documents part on', () => {
+  const q = quotedFromOurs(UNREC);
+  const [pid, row] = Object.entries(q.skaters).find(([, v]) => v[2] > 0);
+  row[2] -= 1;
+  const a = boot({ ...UNREC, quoted: { ...(UNREC.quoted || {}), players: q } }, CURVE_AND_MIX);
+  const nm = UNREC.roster[pid].nm;
+  assert.match(a.$('unrecKey').textContent,
+    new RegExp(`${nm} ${row[2] + 1} shots on goal here, ${row[2]} in the boxscore`));
+});
+
+test('⛔ a game whose league rows match our count adds nothing', () => {
+  const a = boot({ ...rich, quoted: { ...(rich.quoted || {}), players: quotedFromOurs(rich) } },
+                 CURVE_AND_MIX);
+  assert.equal(a.$('unrecKey').textContent, '', 'a sentence on a game with nothing to say');
+});

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9DNPQ8DxnfwOzCZdCXRHI/5FcPB4edXJaMt+/gOLVvY=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-Yz+0oNLnc7pWy6LDgoDGDWg86CCFZQBH/x0wxCpUzeM='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ycJ8Pc/oEmfb44dyzUujPRRmmWANNAykAr2/K5EeTN4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-zLJUwxPtcRYW2oGhSsaJ+hoUIXuts1+5QJ1A+QHtp2o=' 'sha256-Yz+0oNLnc7pWy6LDgoDGDWg86CCFZQBH/x0wxCpUzeM='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -494,7 +494,7 @@ function leagueRows(measures) {
   return [
     { key: 'powerplay', games: c.games,
       goals: w.ppGoals, chances: w.ppChances, rate: pp.value, work: pp,
-      chancesPerClubGame: perClubGame(w.ppChances) },
+      chancesPerClubGame: perClubGame(w.ppChances), league: c.ppLeague || null },
     { key: 'penalties', games: c.games, count: w.penalties,
       perClubGame: pen.value, work: pen },
     { key: 'offside', games: c.games, count: w.offsides,
@@ -612,7 +612,13 @@ function dressedIn(extract) {
 }
 
 function rate(p, fig) {
-  return p.gp ? { value: p[fig] / p.gp, count: p[fig], n: p.gp } : null;
+  if (!p.gp) return null;
+  const out = { value: p[fig] / p.gp, count: p[fig], n: p.gp };
+  if (p.lg && p.lg[fig] != null) {
+    out.league = p.lg[fig];
+    out.off = (p.lgOff || []).filter(o => o.fig === fig);
+  }
+  return out;
 }
 
 const PLAYER_ROWS = [
@@ -995,9 +1001,10 @@ function formatDate(iso) {
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
       t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
-      t.appendChild(el('p', 'pvwatch', 'Only about ' + (pp ? pp.chancesPerClubGame.toFixed(1)
-        : '\u2014') + ' of those become a power play for the other team — the rest '
-        + 'leave nobody a skater up.'));
+      t.appendChild(el('p', 'pvwatch', 'They give the other team about '
+        + (pp ? pp.chancesPerClubGame.toFixed(1) : '\u2014') + ' power plays a game: '
+        + 'penalties to both teams at once cancel out, a misconduct gives none, '
+        + 'and a double minor gives two.'));
       t.appendChild(doors('penalties', null));
       if (pp) {
         var sub = el('p', 'pvsub', pct(pp.rate));
@@ -1157,8 +1164,14 @@ function formatDate(iso) {
       return { who: man ? man.nm : p.clubs[side].ab, v: r[side] };
     }).filter(function (x) { return x.v; });
     if (live.length) {
+      var differ = function (v) {
+        if (v.league == null) return '';
+        return ' (the league\u2019s boxscores say ' + num(v.league) + '; the two differ on '
+          + v.off.map(function (o) { return formatDate(o.d) + ' against ' + nameOf(o.vs); })
+                 .join(', ') + ')';
+      };
       foot.push('Of ' + r.noun + ': ' + live.map(function (x) {
-        return x.who + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
+        return x.who + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games' + differ(x.v);
       }).join(' \u00b7 ') + '.');
     }
     if (r.need) foot.push('This figure needs ' + r.need + ' games before it holds steady.');

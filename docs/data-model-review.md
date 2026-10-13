@@ -162,6 +162,19 @@ sub-count is attempts), `through` (archive for teams, latest season for players)
   fail if a refused game still has a published extract (read-only; deleting
   one is Kevin's call).
 
+- ⏳ 5 — measured first (`league-witness.yml`, 4,281 games): goals, assists and
+  saves agree with the boxscore on every game; skater shots and goalie shots
+  faced are ours +1 on 73 and 60 player-games, all inside the 74 games already
+  carrying the shot asterisk; power plays differed by DEFINITION. Kevin ruled
+  (2026-10-13): count power plays the league's way, and keep counting from the
+  play-by-play while showing the league's boxscore figure wherever it differs.
+  Power plays now match the boxscore on 4,280 of 4,281 games and the rail's
+  opportunities on 87 of 89 (592 = 592). SCHEMA 6 copies the league's player
+  rows and the rail's power play into each extract; the comparing is the
+  site's own JS (`src/lib/league.js`), shown on the preview's player rows, the
+  methods page's power-play working and the game page's disputed-shot note.
+  Team records (W-L-OTL) have no reader: moved to item 6.
+
 Ordered by what a reader is told wrong first, then bytes, then hygiene.
 
 1. **D1 slot rule** — one rule for the ice, the layer and the published figures (decision: which rule — Kevin's three-clause rule is the one he asked for).

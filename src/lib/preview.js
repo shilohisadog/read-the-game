@@ -270,7 +270,15 @@ export function dressedIn(extract) {
 
 /** One player's per-game rate for one figure, with the counts that made it. */
 function rate(p, fig) {
-  return p.gp ? { value: p[fig] / p.gp, count: p[fig], n: p.gp } : null;
+  if (!p.gp) return null;
+  const out = { value: p[fig] / p.gp, count: p[fig], n: p.gp };
+  // Where the league's boxscores give a different season figure, carry it and
+  // the games they differ on, so the card can show both (archive.js).
+  if (p.lg && p.lg[fig] != null) {
+    out.league = p.lg[fig];
+    out.off = (p.lgOff || []).filter(o => o.fig === fig);
+  }
+  return out;
 }
 
 /**

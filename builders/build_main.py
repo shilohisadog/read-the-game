@@ -687,6 +687,8 @@ for _m in ("__LIB__", "//__RINKART__", "__BOOT__"):
 RINKART = "rinkart.js"
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
+       # Our per-player counts beside the league's boxscore rows (data-model item 5).
+       "league.js",
        # ⭐ THE PERIOD'S OWN NAME, moved out of app.js on 2026-09-10 because a
        # SECOND surface needed it: the learn page's overtime card names the
        # moment its door opens, and the first version said "Period 4" where the

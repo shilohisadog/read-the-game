@@ -57,7 +57,7 @@ EXPECTED_EVENT = {
     "sit", "srv", "type", "x", "y", "zone",
 }
 # The number that must move when either set above does.
-EXPECTED_SCHEMA = 5
+EXPECTED_SCHEMA = 6
 
 
 def _rich():
@@ -618,3 +618,37 @@ class BoxWitness(unittest.TestCase):
         rich = E.extract(pbp, {"data": []}, box, RAIL)
         self.assertIn("team", rich["quoted"])
         self.assertIn("box", rich["quoted"])
+
+
+class LeagueRows(unittest.TestCase):
+    """SCHEMA 6: the boxscore's per-player figures and the rail's power play,
+    copied for the site's JS to hold its own counts against (src/lib/league.js)."""
+
+    BOX = json.loads((ROOT / "data" / "box_2023020204.json").read_text())
+
+    def test_every_skater_and_goaltender_row_is_copied(self):
+        q = E._quoted_players(self.BOX)
+        pbg = self.BOX["playerByGameStats"]
+        n = sum(len(pbg[f"{s}Team"][k]) for s in ("home", "away") for k in ("forwards", "defense"))
+        self.assertEqual(len(q["skaters"]), n)
+        self.assertEqual(sum(v[0] for v in q["skaters"].values()),
+                         self.BOX["homeTeam"]["score"] + self.BOX["awayTeam"]["score"],
+                         "the copied goals must add up to the final score")
+        self.assertEqual(q["src"], "boxscore.playerByGameStats")
+        g = self.BOX["playerByGameStats"]["homeTeam"]["goalies"][0]
+        self.assertEqual(q["goalies"][str(g["playerId"])], [g["saves"], g["shotsAgainst"]])
+
+    def test_an_older_goaltender_row_reads_saves_over_shots(self):
+        box = {"playerByGameStats": {
+            "homeTeam": {"forwards": [{"playerId": 1, "goals": 0, "assists": 0, "sog": 1, "powerPlayGoals": 0}],
+                         "goalies": [{"playerId": 9, "position": "G", "saveShotsAgainst": "25/27"}]},
+            "awayTeam": {"defense": [{"playerId": 2, "goals": 0, "assists": 0, "sog": 0, "powerPlayGoals": 0}]}}}
+        self.assertEqual(E._quoted_players(box)["goalies"], {"9": [25, 27]})
+
+    def test_the_rail_power_play_is_copied_or_absent(self):
+        rail = {"teamGameStats": [{"category": "powerPlay", "homeValue": "1/3", "awayValue": "0/2"}]}
+        self.assertEqual(E._quoted_pp(rail),
+                         {"src": "right-rail.teamGameStats", "home": [1, 3], "away": [0, 2]})
+        self.assertIsNone(E._quoted_pp(None))
+        self.assertIsNone(E._quoted_pp({"teamGameStats": [
+            {"category": "powerPlay", "homeValue": "1/3", "awayValue": None}]}), "half a figure is none")

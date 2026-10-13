@@ -94,6 +94,52 @@ const OUTCOME = { 'blocked-shot': 'blocked', 'shot-on-goal': 'onGoal',
                   'missed-shot': 'missed', goal: 'goal' };
 
 /**
+ * Each side's skaters with a pulled goalie's extra attacker discounted, keyed by
+ * team id — the advantage a PENALTY gives, which is what the league's power play
+ * is. Null for a code that is not a skater count (penalty shot, both nets empty).
+ */
+export function penaltyEdge(code, ctx) {
+  if (typeof code !== 'string' || !/^[01][0-9][0-9][01]$/.test(code)) return null;
+  const aG = code[0] === '1', hG = code[3] === '1';
+  if (!aG && !hG) return null;
+  const a = +code[1] - (aG ? 0 : 1), h = +code[2] - (hG ? 0 : 1);
+  if (a < 3 || h < 3 || a > 5 || h > 5) return null;
+  return { [ctx.awayId]: a, [ctx.homeId]: h };
+}
+
+/** Penalty minutes per box penalty, and the opportunities each gives. */
+const OPPORTUNITIES = { 2: 1, 4: 2, 5: 1 };
+
+/**
+ * Power-play opportunities by the league's count: one per box penalty (a double
+ * minor is two, a misconduct none), less penalties of equal length to both
+ * teams at the same stoppage, and none for a penalty called at the final horn.
+ * Measured against the rail's `powerPlay`, 2026-10-13: 87 of 89 games exact,
+ * 592 = 592 in total (tools/league-witness.mjs).
+ */
+export function ppOpportunities(events, ctx) {
+  let lastFaceoff = -1;
+  events.forEach((e, j) => { if (e.type === 'faceoff') lastFaceoff = j; });
+  const stops = new Map();
+  events.forEach((e, j) => {
+    if (j > lastFaceoff || e.type !== 'penalty' || e.pt === 'SO' || e.own == null) return;
+    if (!OPPORTUNITIES[e.min]) return;
+    const k = `${e.per}:${e.s}`;
+    if (!stops.has(k)) stops.set(k, []);
+    stops.get(k).push(e);
+  });
+  let n = 0;
+  for (const list of stops.values()) {
+    for (const min of Object.keys(OPPORTUNITIES).map(Number)) {
+      const h = list.filter(e => e.min === min && e.own === ctx.homeId).length;
+      const a = list.filter(e => e.min === min && e.own === ctx.awayId).length;
+      n += (h + a - 2 * Math.min(h, a)) * OPPORTUNITIES[min];
+    }
+  }
+  return n;
+}
+
+/**
  * One game, censused. Returns integers only.
  *
  * @param {Array} events   the game's events, in play order
@@ -177,7 +223,6 @@ export function censusGame(events, ctx) {
      of them, and `preview-and-corsi.md` §12 refuses to print a league figure in
      a club's column. */
   const whistles = { penalties: 0, offsides: 0, icings: 0, ppChances: 0, ppGoals: 0, shGoals: 0 };
-  let hadAdvantage = null;          // which club held one at the previous event
 
   for (let i = 0; i < events.length; i++) {
     const e = events[i];
@@ -195,22 +240,13 @@ export function censusGame(events, ctx) {
          either of them (`preview-and-corsi.md` §12), and a per-club icing rate
          takes 119 games to settle — it is not a club trait. */
       if (e.type === 'stoppage' && e.rsn === 'icing') whistles.icings++;
-      /* ⛔ A CHANCE IS AN ENTRY INTO AN ADVANTAGE, NOT A PENALTY AND NOT A CODE
-         CHANGE. A double minor is one advantage; a 5-on-4 that deepens to 5-on-3
-         and back is still the one it began as. Counting penalties instead would
-         over-count (coincidental minors give nobody a power play) and counting
-         situation changes would over-count every deepening. */
-      const sit = situation(e.sit, ctx);
-      const adv = sit && sit.kind === POWER_PLAY ? sit.advantage : null;
-      if (adv != null && adv !== hadAdvantage) whistles.ppChances++;
-      hadAdvantage = adv;
-      /* ⛔⛔ AND A GOAL SCORED DURING A POWER PLAY IS NOT A POWER-PLAY GOAL.
-         `state.pp.goals` above counts both sides — over three seasons that is
-         24.5% of chances against the league's own ~21%, and the gap is the
-         short-handed goals. The card quotes the industry number, so the two are
-         split here and `test/census.test.js` holds them to partitioning. */
-      if (adv != null && e.type === 'goal' && e.own != null) {
-        if (e.own === adv) whistles.ppGoals++; else whistles.shGoals++;
+      // A goal is a power-play goal by the league's rule: the scorer's team
+      // holds the penalty advantage (`penaltyEdge`), net empty or not.
+      if (e.type === 'goal' && e.own != null) {
+        const edge = penaltyEdge(e.sit, ctx);
+        const other = e.own === homeId ? ctx.awayId : homeId;
+        if (edge && edge[e.own] > edge[other]) whistles.ppGoals++;
+        else if (edge && edge[e.own] < edge[other]) whistles.shGoals++;
       }
     }
 
@@ -363,6 +399,7 @@ export function censusGame(events, ctx) {
   }
   shift.players = seen.size;
 
+  whistles.ppChances = ppOpportunities(events, ctx);
   return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter, pace, shift, whistles };
 }
 

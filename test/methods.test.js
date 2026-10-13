@@ -1220,3 +1220,23 @@ test('⛔⛔ the methods page indexes every layer, in the layer’s own words', 
   assert.equal((body.match(/<div><h3>/g) || []).length, doc.layers.length,
     'the index and the layer document disagree about how many layers there are');
 });
+
+test('⭐⭐ the power-play working shows the league’s own count beside ours', async () => {
+  // Item 5: counted the league's way, then held to the boxscore and the rail.
+  const m = JSON.parse(JSON.stringify(MEASURES));
+  m.census.ppLeague = { ppGoals: { games: 4281, ours: 5252, league: 5251, gamesOff: 1 },
+    rail: { ppGoals: { games: 89, ours: 121, league: 121, gamesOff: 0 },
+            ppChances: { games: 89, ours: 592, league: 592, gamesOff: 2 } } };
+  const r = render('how-we-measure.html', { 'measures.json': m });
+  await r.settle();
+  const said = walk(r.ids.main || Object.values(r.ids)[0]).map(n => n.textContent).join(' ');
+  assert.match(said, /The league’s own boxscores, over the same 4,281 games, count 5,251 power-play goals against our 5,252, and the two differ on 1 of them\./);
+  assert.match(said, /Its game summaries, which we hold for 89 games, count 592 power plays against our 592, and the two differ on 2 of them\./);
+});
+
+test('⛔ without the league’s figures the line is absent, not zero', async () => {
+  const r = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await r.settle();
+  const said = Object.values(r.ids).flatMap(n => walk(n)).map(n => n.textContent).join(' ');
+  assert.doesNotMatch(said, /own boxscores, over the same/);
+});

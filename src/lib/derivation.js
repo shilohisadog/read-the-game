@@ -98,9 +98,11 @@ const DERIVATION = {
     why: 'The most consequential thing that happens away from open play \u2014 and '
        + 'the number new fans guess far too high. Most power plays end with '
        + 'nothing at all.',
-    caveat: 'Power-play goals, not every goal scored while a team was on a power '
-          + 'play. The second includes goals scored BY the short-handed team, and '
-          + 'reads about three points higher than the league\u2019s own figure.' },
+    caveat: 'Counted the league\u2019s way. A power play is each penalty that puts '
+          + 'a team short: a double minor is two, a misconduct none, and penalties '
+          + 'to both teams at once cancel out. A power-play goal is one scored while '
+          + 'the scorer\u2019s team holds that advantage, even with its own net '
+          + 'empty \u2014 not a goal scored BY the short-handed team.' },
   penalties: {
     unit: 'penalties, per team per game',
     label: 'How many penalties a team takes',
@@ -109,12 +111,9 @@ const DERIVATION = {
     why: 'This is the number the power-play figure sits against, and the gap '
        + 'between them is worth knowing: taking a penalty does not always hand '
        + 'the other team a power play.',
-    caveat: 'About a quarter of penalties never give the other team a power '
-          + 'play. Offsetting minors, misconducts, and penalties taken while a '
-          + 'team is already short-handed are the obvious explanations, and we '
-          + 'have counted none of them. That is not a limit of the feed \u2014 all '
-          + 'three look countable from what we already store, and we have simply '
-          + 'not done it. So we state the gap and do not explain it.' },
+    caveat: 'Not every penalty gives the other team a power play: penalties to '
+          + 'both teams at once cancel out, a misconduct gives none, and one called '
+          + 'at the final horn leaves no time to play it. A double minor gives two.' },
   offside: {
     unit: 'times offside, per team per game',
     label: 'How often a team is offside',
@@ -281,6 +280,8 @@ export function leagueFigures(measures) {
          and "5,011 ÷ 22,872 = 21.9" is the work. The row computed it once and
          this passes it along; nothing here divides. */
       work: row.work || null,
+      // Our count beside the league's, where the row carries one (power play).
+      league: row.league || null,
       /* ⛔ AND THE ARCHIVE SIZE IS DROPPED WHEN IT IS THE DENOMINATOR AGAIN. The
          shift row is counted over 3.1 million shifts and divided by nothing, so
          printing "3,101,105 shifts it was counted over" beside "the middle value

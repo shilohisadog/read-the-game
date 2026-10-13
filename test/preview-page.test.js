@@ -1362,3 +1362,18 @@ test('⛔ the preview never downloads the whole catalog', () => {
   assert.doesNotMatch(script, /catalog\.json/, 'the built preview fetches catalog.json again');
   assert.match(script, /'extract\/' \+ q \+ '\.json'/, 'and it reads the game’s own extract');
 });
+
+test('⭐⭐ where the league’s boxscores differ, the card says their figure and the game', async () => {
+  // Kevin, 2026-10-13: count from the play-by-play and show the league's figure
+  // beside ours wherever the two disagree, so the curious can check our work.
+  const docs = playersWith(d => {
+    Object.assign(d.clubs.BUF.find(r => r.p === 11), {
+      lg: { s: 24 }, lgOff: [{ d: '2026-09-21', vs: 'TOR', fig: 's', ours: 2, league: 1 }] });
+  });
+  const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(walk(ids.pv).find(x => hasCls(x, 'pvwatchers')));
+  assert.match(said, /Scorer 25 in 10 games \(the league’s boxscores say 24; the two differ on 21 September 2026 against Toronto Maple Leafs\)/);
+  assert.doesNotMatch(said, /Captain \d+ in 11 games \(the league/, 'a player with no difference says nothing extra');
+  assert.equal((said.match(/boxscores say/g) || []).length, 1, 'only the shots row differs');
+});

@@ -41,6 +41,7 @@ import { reliability, agreement } from '../src/lib/reliability.js';
 import { CLUB_ROWS, POSSESSION_FAMILY } from '../src/lib/preview.js';
 import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
 import { TEAMS, NOT_A_CLUB } from '../src/lib/teams.js';
+import { playersIn, withLeague } from '../src/lib/league.js';
 
 /**
  * How the game ended, read from the league's own period type.
@@ -307,57 +308,10 @@ export function measureGame(g) {
        season -- so a goaltender row would be a number the card cannot stand
        behind. Excluded here rather than filtered later, so nothing downstream
        can print one by accident. */
-    players: playersIn(g),
+    players: withLeague(playersIn(g), g),
   };
 }
 
-/**
- * One row per dressed skater: who he is, and what he did in THIS game.
- *
- * ⭐ THE ACTORS ARE READ THROUGH THE SAME FIELDS THE REPLAY READS. `actor` is
- * what `attribution.js` resolves for every event type and `a1`/`a2` are the
- * assists -- so a goal counted here is the same goal the page writes a name
- * beside. Counting from raw `details` would be a second reading of the feed.
- */
-function playersIn(g) {
-  const out = new Map();
-  // ⚠️ THE CLUB IS THE ABBREVIATION, NOT THE LEAGUE'S TEAM ID. Everything
-  // downstream -- the catalog, the preview, `teams.js` -- names a club by its
-  // three letters, and carrying the id here would make `playerSeasons` the one
-  // place that has to translate, from a table it would have to be handed.
-  const ab = { [g.teams.home.id]: g.teams.home.ab, [g.teams.away.id]: g.teams.away.ab };
-  for (const [pid, r] of Object.entries(g.roster || {})) {
-    if (r.pos === 'G') continue;
-    out.set(Number(pid), { p: Number(pid), t: ab[r.tid], nm: r.nm, n: r.n, pos: r.pos,
-                           g: 0, a: 0, s: 0, c: 0 });
-  }
-  const bump = (id, k, by) => { const r = out.get(id); if (r) r[k] += by; };
-  for (const e of g.events) {
-    switch (e.type) {
-      case 'goal':
-        // ⚠️ A SHOOTOUT GOAL IS NOT A GOAL IN THE RUN OF PLAY, and the league's
-        // own boxscore does not count it as one. `pt` is the period type.
-        if (e.pt === 'SO') break;
-        bump(e.actor, 'g', 1); bump(e.actor, 's', 1); bump(e.actor, 'c', 1);
-        bump(e.a1, 'a', 1); bump(e.a2, 'a', 1);
-        break;
-      case 'shot-on-goal':
-        if (e.pt === 'SO') break;
-        bump(e.actor, 's', 1); bump(e.actor, 'c', 1);
-        break;
-      // AN ATTEMPT IS ALL THREE. `blocked-shot` credits `actor` to the SHOOTER,
-      // which is the field attribution.js resolves and validate() checks against
-      // rosterSpots every night -- see the second witness.
-      case 'missed-shot':
-      case 'blocked-shot':
-        if (e.pt === 'SO') break;
-        bump(e.actor, 'c', 1);
-        break;
-      default: break;
-    }
-  }
-  return [...out.values()];
-}
 
 /**
  * A property of how the LEAGUE records hockey, watched across the whole archive.
@@ -390,6 +344,30 @@ export function firstAtClock(events) {
   return offenders;
 }
 
+/** Ours against the league's, over the games the league's figure exists for. */
+const tallyPair = () => ({ games: 0, ours: 0, league: 0, gamesOff: 0 });
+function addPair(t, ours, league) {
+  t.games++; t.ours += ours; t.league += league;
+  if (ours !== league) t.gamesOff++;
+}
+
+/**
+ * Our power-play goals and opportunities (census.js, on the league's
+ * definitions) beside the league's own: power-play goals summed over the
+ * boxscore's skater rows, and the rail's goals/opportunities where it is held.
+ */
+export function ppAgainstLeague(t, whistles, g) {
+  const q = g.quoted || {};
+  if (q.players) {
+    const box = Object.values(q.players.skaters || {}).reduce((n, r) => n + (r[3] || 0), 0);
+    addPair(t.ppGoals, whistles.ppGoals, box);
+  }
+  if (q.pp) {
+    addPair(t.rail.ppGoals, whistles.ppGoals, q.pp.home[0] + q.pp.away[0]);
+    addPair(t.rail.ppChances, whistles.ppChances, q.pp.home[1] + q.pp.away[1]);
+  }
+}
+
 export function measureAll(dir) {
   const records = [];
   const skipped = [];
@@ -406,6 +384,7 @@ export function measureAll(dir) {
      hour of I/O for nothing. `inScope` gates it exactly as it gates the records,
      so no preseason or Olympic game reaches a published rate. */
   const census = {};
+  const ppLeague = { ppGoals: tallyPair(), rail: { ppGoals: tallyPair(), ppChances: tallyPair() } };
   /* EVERY CLUB THE ARCHIVE CONTAINS, so the one table nobody derives can be
      checked against it HERE rather than against a hand-pinned list in a unit
      test. teams.js claims "the next relocation or expansion team fails loudly
@@ -456,9 +435,11 @@ export function measureAll(dir) {
        Every other census question is answered from `events`; shift length is the
        first that is not, and a second positional argument would have to be
        threaded through `censusGame`'s three call sites and the fixtures. */
-    censusAdd(census, censusGame(g.events, { ...sctx, shifts: g.shifts }));
+    const one = censusGame(g.events, { ...sctx, shifts: g.shifts });
+    censusAdd(census, one);
+    ppAgainstLeague(ppLeague, one.whistles, g);
   }
-  return { records, skipped, drawFirst, census, declined,
+  return { records, skipped, drawFirst, census, ppLeague, declined,
            /* ⭐ MINUS THE SIDES teams.js HAS DECIDED NOT TO NAME. The archive
               permanently contains ten of them — the 4 Nations sides and the
               All-Star squads — so without the ledger this guard reports the same
@@ -733,7 +714,7 @@ function main(argv) {
      of the 2026-09-08 derive, which reported success with the ReferenceError in
      it. derive.yml now runs that step under `shell: bash`, which is the only
      spelling that carries `-o pipefail`. */
-  const { records, skipped, drawFirst, census, declined, unnamedClubs } = measureAll(dir);
+  const { records, skipped, drawFirst, census, ppLeague, declined, unnamedClubs } = measureAll(dir);
 
   if (slate) {
     // ONE DOCUMENT, AND NOT THE OTHER TWO. See slateOf's header.
@@ -768,7 +749,7 @@ function main(argv) {
      what is published. The row definitions come from `preview.js` itself, so the
      thing measured and the thing shown cannot drift apart. */
   const doc = { ...summarise(records), measured: records.length,
-                census: censusRates(census),
+                census: { ...censusRates(census), ppLeague },
                 settle: { ...reliability(records, CLUB_ROWS),
                           /* ⭐ AND WHY THERE IS ONLY ONE POSSESSION ROW, AS A
                              NUMBER. Corsi, Fenwick and SF% each clear the

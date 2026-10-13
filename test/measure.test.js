@@ -89,6 +89,8 @@ const TIER = [
   // through archive.js, which is a different question from which PAGE carries
   // them; `test/page-weight.test.js` holds that one.
   'scope.js', 'disputed.js',
+  // league.js: our per-player counts and the league's copied rows (item 5).
+  'league.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {

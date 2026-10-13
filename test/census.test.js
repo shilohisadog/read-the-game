@@ -17,7 +17,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { censusGame, censusAdd, censusRates, runAfter } from '../src/lib/census.js';
+import { censusGame, ppOpportunities, censusAdd, censusRates, runAfter } from '../src/lib/census.js';
 import { situation, POWER_PLAY } from '../src/lib/strength.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { BLUE_LINE_X, attackZone } from '../src/lib/rink.js';
@@ -778,24 +778,49 @@ test('⭐ the census counts penalties, offsides and power-play chances', () => {
   assert.ok(Number.isInteger(c.whistles.penalties) && c.whistles.penalties > 0);
   assert.ok(Number.isInteger(c.whistles.offsides) && c.whistles.offsides > 0);
   assert.ok(Number.isInteger(c.whistles.ppChances) && c.whistles.ppChances > 0);
-  /* ⛔ A CHANCE IS AN ENTRY INTO A POWER PLAY, NOT A PENALTY. A double minor is
-     one advantage; a 5-on-4 that becomes 5-on-3 is still one advantage, deeper.
-     MUTATION: count penalty events as chances, and the two figures collapse into
-     one number wearing two labels. */
-  assert.ok(c.whistles.ppChances <= c.whistles.penalties,
-    'more power plays than penalties — coincidental minors and misconducts give none');
 });
 
-test('⛔ a power play that deepens is still ONE chance, and a new one is a new chance', () => {
-  /* The mutation this exists for: counting every event whose situation is a power
-     play, or every change of situation code. Both turn one advantage into many. */
-  const ctx = { roster: {}, homeId: 1, awayId: 2, homeAb: 'HME', awayAb: 'AWY' };
-  const at = (s, sit, type = 'faceoff') => ({ type, s, sit, per: 1, pt: 'REG', own: 1 });
-  const c = censusGame([
-    at(0, '1551'), at(10, '1541'), at(20, '1531'), at(30, '1541'), at(40, '1551'),
-    at(50, '1541'), at(60, '1551'),
-  ], ctx);
-  assert.equal(c.whistles.ppChances, 2, 'one advantage that deepened, then a second');
+/* ⭐⭐ THE LEAGUE'S COUNT OF POWER-PLAY OPPORTUNITIES (Kevin, 2026-10-13: adopt
+   the league's definitions). Each case is the league's rule, not our output:
+   one per box penalty, a double minor two, a misconduct none, equal penalties
+   to both teams at one stoppage cancel, and a penalty at the final horn gives
+   no time to play. */
+const OPP = { roster: {}, homeId: 1, awayId: 2, homeAb: 'HME', awayAb: 'AWY' };
+const pen = (s, own, min) => ({ type: 'penalty', s, per: 1, pt: 'REG', own, min, sit: '1551' });
+const fo = s => ({ type: 'faceoff', s, per: 1, pt: 'REG', own: 1, sit: '1551' });
+
+test('⛔ two penalties that make a 5-on-3 are two opportunities, as the league counts', () => {
+  assert.equal(ppOpportunities([fo(0), pen(10, 2, 2), fo(11), pen(20, 2, 2), fo(21)], OPP), 2);
+});
+
+test('⛔ a double minor is two opportunities and a misconduct none', () => {
+  assert.equal(ppOpportunities([fo(0), pen(10, 1, 4), fo(11)], OPP), 2);
+  assert.equal(ppOpportunities([fo(0), pen(10, 1, 10), fo(11)], OPP), 0);
+  assert.equal(ppOpportunities([fo(0), pen(10, 1, 5), pen(10, 1, 10), fo(11)], OPP), 1,
+    'a major with a game misconduct is one');
+});
+
+test('⛔ equal penalties to both teams at one stoppage cancel; the extra one counts', () => {
+  assert.equal(ppOpportunities([fo(0), pen(10, 1, 2), pen(10, 2, 2), fo(11)], OPP), 0);
+  assert.equal(ppOpportunities([fo(0), pen(10, 1, 2), pen(10, 1, 2), pen(10, 2, 2), fo(11)], OPP), 1);
+  assert.equal(ppOpportunities([fo(0), pen(10, 1, 2), fo(11), pen(20, 2, 2), fo(21)], OPP), 2,
+    'at different stoppages they do not cancel');
+});
+
+test('⛔ a penalty called at the final horn is no opportunity', () => {
+  assert.equal(ppOpportunities([fo(0), pen(10, 1, 2), fo(11), pen(3600, 2, 2)], OPP), 1);
+});
+
+test('⛔⛔ a goal while the penalty advantage holds is a power-play goal, net empty or not', () => {
+  // `penaltyEdge` discounts a pulled goalie's extra attacker; the league's
+  // boxscore agrees on 4,280 of 4,281 games (tools/league-witness.mjs).
+  const goal = (sit, own) => ({ type: 'goal', s: 30, per: 1, pt: 'REG', own, sit });
+  const w = evs => censusGame([fo(0), ...evs], OPP).whistles;
+  assert.equal(w([goal('0641', 2)]).ppGoals, 1, '6-on-4, the scorer\u2019s net empty');
+  assert.equal(w([goal('1550', 2)]).ppGoals, 1, '5-on-5 on the ice, the short team\u2019s net empty');
+  assert.equal(w([goal('0651', 2)]).ppGoals, 0, '6-on-5 with an extra attacker is no penalty advantage');
+  assert.equal(w([goal('1541', 1)]).shGoals, 1, 'the team a skater short (home, 4) scores');
+  assert.equal(w([goal('1541', 2)]).ppGoals, 1, 'and the team with five scores on the power play');
 });
 
 test('⛔⛔ A GOAL SCORED DURING A POWER PLAY IS NOT A POWER-PLAY GOAL', () => {

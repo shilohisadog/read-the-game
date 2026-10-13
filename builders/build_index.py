@@ -4505,16 +4505,12 @@ __HELPERS__
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
       t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
-      /* ⛔⛔ THE TWO NUMBERS BESIDE EACH OTHER LOOKED LIKE A CONTRADICTION, and
-         Kevin caught it: a team takes 3.7 penalties a game and gets 2.7 power
-         plays. Both are right -- 30,827 penalties produced 22,872 power plays
-         over the archive -- and the gap is 25.8% of every penalty called.
-         ⚠️ AND IT DOES NOT SAY WHY. Offsetting minors, misconducts and penalties
-         taken while already short-handed are the obvious candidates and NONE is
-         measured, so naming them would be a cause invented to tidy a sentence. */
-      t.appendChild(el('p', 'pvwatch', 'Only about ' + (pp ? pp.chancesPerClubGame.toFixed(1)
-        : '\u2014') + ' of those become a power play for the other team — the rest '
-        + 'leave nobody a skater up.'));
+      // The league's count (census.js::ppOpportunities): equal penalties to both
+      // teams cancel, a misconduct gives none, a double minor gives two.
+      t.appendChild(el('p', 'pvwatch', 'They give the other team about '
+        + (pp ? pp.chancesPerClubGame.toFixed(1) : '\u2014') + ' power plays a game: '
+        + 'penalties to both teams at once cancel out, a misconduct gives none, '
+        + 'and a double minor gives two.'));
       t.appendChild(doors('penalties', null));
       if (pp) {
         var sub = el('p', 'pvsub', pct(pp.rate));
@@ -4772,8 +4768,16 @@ __HELPERS__
       return { who: man ? man.nm : p.clubs[side].ab, v: r[side] };
     }).filter(function (x) { return x.v; });
     if (live.length) {
+      // Counted from the play-by-play; where the league's boxscores disagree,
+      // their figure and the games they part on are said beside ours.
+      var differ = function (v) {
+        if (v.league == null) return '';
+        return ' (the league\u2019s boxscores say ' + num(v.league) + '; the two differ on '
+          + v.off.map(function (o) { return formatDate(o.d) + ' against ' + nameOf(o.vs); })
+                 .join(', ') + ')';
+      };
       foot.push('Of ' + r.noun + ': ' + live.map(function (x) {
-        return x.who + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games';
+        return x.who + ' ' + num(x.v.count) + ' in ' + num(x.v.n) + ' games' + differ(x.v);
       }).join(' \u00b7 ') + '.');
     }
     if (r.need) foot.push('This figure needs ' + r.need + ' games before it holds steady.');

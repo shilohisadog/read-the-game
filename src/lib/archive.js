@@ -787,9 +787,21 @@ export function playerSeasons(records, qualify) {
       // the club and sweater it prints are the most recent ones we hold.
       // `each` is the per-game sequence the split-half above needs, and it is
       // DROPPED before publication — see the `clubs` block below.
-      const row = was || { p: r.p, gp: 0, g: 0, a: 0, s: 0, c: 0, each: [] };
+      const row = was || { p: r.p, gp: 0, g: 0, a: 0, s: 0, c: 0, each: [],
+                           lgSum: { g: 0, a: 0, s: 0 }, lgGames: 0, lgOff: [] };
       row.each.push({ g: r.g, a: r.a, s: r.s, c: r.c });
       row.nm = r.nm; row.n = r.n; row.pos = r.pos; row.t = r.t;
+      // The league's boxscore figures for this game, where it has a row for him.
+      if (r.lg) {
+        row.lgGames += 1;
+        for (const k of ['g', 'a', 's']) {
+          row.lgSum[k] += r.lg[k];
+          if (r.lg[k] !== r[k]) {
+            row.lgOff.push({ d: g.date || null, vs: r.t === g.homeAb ? g.awayAb : g.homeAb,
+                             fig: k, ours: r[k], league: r.lg[k] });
+          }
+        }
+      }
       if (g.date && !(row.last > g.date)) row.last = g.date;
       row.gp += 1; row.g += r.g; row.a += r.a; row.s += r.s; row.c += r.c;
       season.set(r.p, row);
@@ -862,8 +874,15 @@ export function playerSeasons(records, qualify) {
     // ⛔ `each` NEVER REACHES THE ARCHIVE. It is one object per game per player —
     // the thing this document exists not to publish — and it is only here because
     // the reliability split needs the sequence.
+    // The league's season figure is published only where it differs from ours
+    // and the boxscore covered every game he played, with the games it differs on.
     clubs[ab] = [...keep.values()].sort((x, y) => y.g - x.g || x.p - y.p)
-      .map(({ each, ...rest }) => rest);
+      .map(({ each, lgSum, lgGames, lgOff, ...rest }) => {
+        if (lgGames !== rest.gp || !lgOff.length) return rest;
+        const lg = {};
+        for (const k of ['g', 'a', 's']) if (lgSum[k] !== rest[k]) lg[k] = lgSum[k];
+        return { ...rest, lg, lgOff };
+      });
   }
   /* ⭐⭐ THE DATE THE CLUB ROWS ARE MEASURED THROUGH, AND IT IS THE LATEST
      SEASON'S, NOT THE ARCHIVE'S. `clubs` describes THIS season only, so the

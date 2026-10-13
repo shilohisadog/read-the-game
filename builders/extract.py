@@ -91,7 +91,12 @@ GAME = "2023020204"
 #      three figures where the two documents were MEASURED identical (268/268
 #      team-sides, `tools/box_rail_witness.py`). Same reason to bump as 4:
 #      without it the witness exists for new games and no other.
-SCHEMA = 5
+#   6  2026-10-13, plus `quoted.players` (each skater's goals, assists, shots on
+#      goal and power-play goals; each goaltender's saves and shots against) and
+#      `quoted.pp` (the rail's power-play goals/opportunities). Copied only; the
+#      site's own JS compares them (src/lib/league.js). Measured first over the
+#      archive: goals, assists and saves agree on every game.
+SCHEMA = 6
 
 # ⭐ WHAT IS NOT PLAY — one statement, and `derive.py` reads it from here.
 #
@@ -504,7 +509,66 @@ def extract(pbp, shifts, box=None, rail=None):
     pbox = _quoted_box(box)
     if pbox:
         out.setdefault("quoted", {"src": "boxscore"})["box"] = pbox
+    players = _quoted_players(box)
+    if players:
+        out.setdefault("quoted", {"src": "boxscore"})["players"] = players
+    pp = _quoted_pp(rail)
+    if pp:
+        out.setdefault("quoted", {"src": "boxscore"})["pp"] = pp
     return out
+
+
+# The boxscore's per-player figures, copied: skater [goals, assists, sog,
+# powerPlayGoals] and goaltender [saves, shotsAgainst]. A row missing any field
+# is left out rather than zero-filled; older boxscores carry a goaltender's
+# figures only as `saveShotsAgainst` ("saves/shots").
+SKATER_FIELDS = ("goals", "assists", "sog", "powerPlayGoals")
+
+
+def _pair(v):
+    if isinstance(v, str) and "/" in v:
+        a, b = (x.strip() for x in v.split("/", 1))
+        if a.isdigit() and b.isdigit():
+            return int(a), int(b)
+    return None
+
+
+def _quoted_players(box):
+    rows = _box_rows(box)
+    if rows is None:
+        return None
+    sk, gk = {}, {}
+    for side in ("home", "away"):
+        for r in rows[side]:
+            pid = r.get("playerId")
+            if pid is None:
+                continue
+            if r.get("position") == "G" or "saves" in r or "saveShotsAgainst" in r:
+                sv, sa = r.get("saves"), r.get("shotsAgainst")
+                if not (isinstance(sv, int) and isinstance(sa, int)):
+                    pr = _pair(r.get("saveShotsAgainst"))
+                    sv, sa = pr if pr else (None, None)
+                if sv is not None:
+                    gk[str(pid)] = [sv, sa]
+                continue
+            vals = [r.get(k) for k in SKATER_FIELDS]
+            if all(isinstance(v, int) and not isinstance(v, bool) for v in vals):
+                sk[str(pid)] = vals
+    if not sk:
+        return None
+    return {"src": "boxscore.playerByGameStats", "skaters": sk, "goalies": gk}
+
+
+def _quoted_pp(rail):
+    """The rail's power play per side as [goals, opportunities], or None."""
+    st = {s.get("category"): s for s in ((rail or {}).get("teamGameStats") or [])}
+    pp = st.get("powerPlay")
+    if not pp:
+        return None
+    h, a = _pair(pp.get("homeValue")), _pair(pp.get("awayValue"))
+    if not (h and a):
+        return None
+    return {"src": "right-rail.teamGameStats", "home": list(h), "away": list(a)}
 
 
 def _count(v):
@@ -1414,9 +1478,19 @@ def main():
         if gone:
             bad.append(f"top-level keys REMOVED: {gone}")
         new_top = sorted(set(rich) - set(old))
+        # Recursively: inside a block like `quoted`, a new key is an addition and
+        # any existing value that moved is a change.
+        def walk(o, n, path):
+            if isinstance(o, dict) and isinstance(n, dict):
+                for k in o:
+                    if k not in n:
+                        bad.append(f"{path}.{k} REMOVED")
+                    else:
+                        walk(o[k], n[k], f"{path}.{k}")
+            elif o != n:
+                bad.append(f"{path} changed")
         for key in sorted((set(old) & set(rich)) - {"events"}):
-            if old[key] != rich[key]:
-                bad.append(f"{key} changed")
+            walk(old[key], rich[key], key)
         print(f"  new top-level keys: {new_top or 'none'}")
         print(f"  new event keys: {sorted(added)}")
         print(f"  nulls filled by key: {filled or 'none'}")

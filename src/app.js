@@ -60,6 +60,7 @@ import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink
    this repo would ever tell you they were missing. */
 import { printed } from './lib/printed.js';
 import { leagueFigures } from './lib/derivation.js';
+import { leagueDiffs } from './lib/league.js';
 import { sections } from './lib/sections.js';
 /* ⭐ THE ONE IMPORT THAT IS NOT SATISFIED ABOVE THE FUNCTION -- see the marker
    inside it, and the note beside it, for why the rink's paint lands elsewhere. */
@@ -3050,7 +3051,11 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
   for(const [ab,v] of sides){const s=`${v.league} ${NOUN[n.kind]} for ${ab}`;
    if(lg.indexOf(s)<0||us[lg.indexOf(s)]!==String(v.ours)){lg.push(s);us.push(String(v.ours));}}
   const d=DOC[n.src];if(d&&docs.indexOf(d)<0)docs.push(d);}
- if(!lg.length)return;
+ // WHO, from the boxscore's player rows against our own count (league.js).
+ const FIG={g:'goals',a:'assists',s:'shots on goal',sv:'saves',sa:'shots faced'};
+ const who=leagueDiffs(G,goaltending.reduce(G.events,{...CTX,evenOnly:false}).g)
+  .map(d=>`${(R[d.pid]&&R[d.pid].nm)||'#'+d.pid} ${d.ours} ${FIG[d.fig]} here, ${d.league} in the boxscore`);
+ if(!lg.length&&!who.length)return;
  /* SHORT, BECAUSE THE READER IS ON A PHONE. The first wording ran to 75px at
     390px wide and pushed the legend from 173px to 248px -- the same mistake as
     the ends disclosure, which shipped at 176px and had to come back to 78px.
@@ -3061,10 +3066,11 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
     sentence tuned for the rare case is longer than it needs to be in every
     other. With none named -- an artifact derived before notes carried `src` --
     it says the same true thing and claims no document. */
- k.textContent=(docs.length===1?`the league\u2019s ${docs[0]} says `
+ k.textContent=(lg.length?(docs.length===1?`the league\u2019s ${docs[0]} says `
                                :'the league\u2019s own figures say ')
   +lg.join(' and ')+'; its event log says '+us.join(' and ')
-  +' \u2014 we show the event log';
+  +' \u2014 we show the event log':'we count from the league\u2019s event log')
+  +(who.length?' ('+who.join('; ')+')':'');
  document.getElementById('rg').classList.add('unrec');})();
 /* AND THE BUTTON SAYS WHAT IT DOES. "Keep every mark" is false under as-played,
    where the trail clears at each period change -- and a note explaining a label
