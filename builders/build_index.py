@@ -587,9 +587,8 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    "not counted" on this grid. */
 .cell.sched{background:transparent;border:1.5px solid var(--blue)}
 .cell.sched .n{color:var(--blue);font-weight:600}
-.cell.sched .tn{font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;
- color:var(--blue);font-weight:700;line-height:1;max-width:100%;overflow:hidden;
- text-overflow:clip;white-space:nowrap}
+.cell.sched .tn{font-size:.54rem;letter-spacing:0;text-transform:uppercase;
+ color:var(--blue);font-weight:700;line-height:1}
 a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
  box-shadow:0 4px 12px rgba(58,90,156,.14)}
 /* A cell is 48px square-ish on a phone, which is all there is. Given room it
