@@ -32,22 +32,48 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-13
+## ⏭ 0.00 PICK UP HERE — 2026-10-13 (evening)
 
-**WORK IN FLIGHT: the data-model review's fix list. Read
-[`docs/data-model-review.md`](data-model-review.md) §6 first** — it carries the
-ordered list, what is done (with commits), and what each remaining item needs.
-Kevin's ruling on order: *"get our arms wrapped around everything then start
-fixing"*, and on the slot: *"consistency and transparency are paramount"*.
+### ⏭ NEXT: the preview's team section grows from three rows to seven — Kevin ruled
 
-### ⏭ NEXT: item 6, delete what has no reader
+Kevin: rows "similar" to possession can still help a novice read the game, as
+long as each one **settles** (that condition stays). He chose **full cards for
+every row** ("we can always trim if the mobile experience isn't viewed
+favorably"). Evidence: `node tools/candidates.mjs <dir-with-extract/>` and
+[`docs/what-settles.md`](what-settles.md) §2a.
 
-`gshots` in every extract and the `app.js` score fallback that counts shootout
-goals. (Team records stayed: Kevin wanted them shown, so they now open the
-preview's team section with the league's standings as their witness.) See the
-review §6.
+The section, in order:
+
+1. The records intro (live).
+2. **Possession**, one group: CF% while the score was level (headline, 35 games),
+   then shots-on-goal share (37 games, r 0.85 with the headline), attempts
+   against per game (33, r −0.81), blocked shots per game (33, r −0.61), with one
+   sentence saying they are views of the same thing and how closely they move.
+3. Defencemen (as now). 4. Slot (as now).
+5. **Average shift length, new**: settles in 12 games, independent of the other
+   three (|r| ≤ 0.07), and couples the same at home (0.54) and on the road (0.57),
+   so it is the shared stoppages and not an arena's scorer.
+
+Each new row needs a `CLUB_ROWS` entry (`of` and `ofGame`), its per-game fields in
+`measureGame`, `teamSeasons` and the nightly slate tail, its reliability published
+by `measure.mjs` (and passing the 41-game admission), and a `DERIVATION` entry for
+the methods page.
+
+Then the data-model fix list resumes at **item 6** (`gshots`, the `app.js`
+fallback that counts shootout goals); see [`docs/data-model-review.md`](data-model-review.md) §6.
+**Item 12 still needs a ruling**: the replay has twelve animations and reduced
+motion stops only the play-button pulse.
 
 ### ✅ DONE 2026-10-12/13, each verified on the live site
+
+- **Kevin's reading, 2026-10-13 afternoon**: the replay buttons say "Read the
+  whole game"; the front door's "Tonight · N games" opens the date's calendar
+  page, which lists each scheduled game as a door to its preview; the month grid
+  outlines scheduled dates ("Tonight" on the reader's today); the preview's team
+  section opens with both records, witnessed nightly by the league's standings
+  (`builders/standings.py`); team-row values read to one decimal.
+- **The nightly's measurement commit survives a moved main**: on a rejected push
+  it resets to the newest main, rebuilds, re-gates and pushes again (x3).
 
 - **League witness** (item 5: `60e13b6`, full re-derive): power plays counted the
   league's way (4,280/4,281 games vs the boxscore; 87/89 and 592 = 592 vs the
