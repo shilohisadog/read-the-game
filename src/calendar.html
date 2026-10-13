@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Qyz59lz47IHAg/ojYN5mkdSktLo/8WgTzFEbqsAO1Qk=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-Oklw3sGI5Y6nACayPpO9ptqCzcYuUquACAv2xAF1i/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Qyz59lz47IHAg/ojYN5mkdSktLo/8WgTzFEbqsAO1Qk=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-TL17HOWo5+Y21sscj3Ol6T8irtsAUpG9axa6q3bglMU='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -217,7 +217,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .months a.nil{opacity:.55}
 .months a:hover{border-color:var(--blue);color:var(--blue)}
 .months a.on:hover{color:#fff}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 14px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 0 14px}
 .cal .dow{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;
  color:var(--muted);text-align:center;padding:2px 0}
 .cell{position:relative;display:flex;flex-direction:column;align-items:center;
@@ -234,8 +234,9 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .cell.void{background:transparent;border-color:transparent}
 .cell.sched{background:transparent;border:1.5px solid var(--blue)}
 .cell.sched .n{color:var(--blue);font-weight:600}
-.cell.sched .tn{font-size:.56rem;letter-spacing:.06em;text-transform:uppercase;
- color:var(--blue);font-weight:700;line-height:1}
+.cell.sched .tn{font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;
+ color:var(--blue);font-weight:700;line-height:1;max-width:100%;overflow:hidden;
+ text-overflow:clip;white-space:nowrap}
 a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
  box-shadow:0 4px 12px rgba(58,90,156,.14)}
 @media (min-width:700px){.cell{min-height:78px}.cell .n{font-size:1.3rem}}

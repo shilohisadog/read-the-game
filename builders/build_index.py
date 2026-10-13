@@ -561,7 +561,8 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .months a.nil{opacity:.55}
 .months a:hover{border-color:var(--blue);color:var(--blue)}
 .months a.on:hover{color:#fff}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 14px}
+/* minmax(0,1fr): a long label ("Tonight") may not widen its column. */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 0 14px}
 .cal .dow{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;
  color:var(--muted);text-align:center;padding:2px 0}
 .cell{position:relative;display:flex;flex-direction:column;align-items:center;
@@ -586,8 +587,9 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    "not counted" on this grid. */
 .cell.sched{background:transparent;border:1.5px solid var(--blue)}
 .cell.sched .n{color:var(--blue);font-weight:600}
-.cell.sched .tn{font-size:.56rem;letter-spacing:.06em;text-transform:uppercase;
- color:var(--blue);font-weight:700;line-height:1}
+.cell.sched .tn{font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;
+ color:var(--blue);font-weight:700;line-height:1;max-width:100%;overflow:hidden;
+ text-overflow:clip;white-space:nowrap}
 a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
  box-shadow:0 4px 12px rgba(58,90,156,.14)}
 /* A cell is 48px square-ish on a phone, which is all there is. Given room it
