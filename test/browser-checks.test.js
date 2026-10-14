@@ -623,6 +623,7 @@ test('the probe reads nothing out of a page that never wrote its answer', () => 
    is where it sits, and the promise is that it sits at its own number.
    ──────────────────────────────────────────────────────────────────────────── */
 import { judgeMarks, fixture as markFixture, readMarks } from '../tools/browser/preview-marks.mjs';
+import { CLUB_ROWS, preview } from '../src/lib/preview.js';
 
 /** A row as the probe reads it: axis, printed figure, mark position, pixels.
  *  ⚠️ `ink: 150` is the real reading for a mark WITH its outline, measured on the
@@ -725,6 +726,23 @@ test('⭐⭐ the fixture puts the league figure where the real card has it', () 
   assert.equal(clubs.WSH.level5.for + clubs.WSH.level5.against, 10);
   assert.equal(clubs.TBL.level5.for, 2);
   assert.equal(clubs.TBL.level5.for + clubs.TBL.level5.against, 8);
+});
+
+test('⛔ the probe\u2019s teams give every club row a value, so no row goes unchecked', () => {
+  /* The 2026-10-14 deploys failed because two new rows (shots-on-goal share,
+     shift length) had no data in this fixture and drew no mark. Run the real
+     preview() over it with every row admitted; a new CLUB_ROWS entry whose
+     fields the fixture lacks fails here, not in a deploy. */
+  const range = { min: 0, max: 100, median: 50, n: 96 };
+  const rows = Object.fromEntries(CLUB_ROWS.map(r => [r.key, { r: 0.8, games: 20, clubRange: range }]));
+  const docs = markFixture({ settle: { target: 0.7, admission: 41, rows } });
+  const p = preview(2026020099, { schedule: docs['schedule.json'], teams: docs['teams.json'],
+    measures: docs['measures.json'], recent: docs['recent.json'] }, '2099-10-01T00:00:00Z');
+  for (const side of ['away', 'home']) {
+    assert.deepEqual(p.clubs[side].rows.map(r => r.key), CLUB_ROWS.map(r => r.key));
+    for (const r of p.clubs[side].rows)
+      assert.ok(r.value != null, `${side} ${r.key} has no value in the probe\u2019s fixture`);
+  }
 });
 
 test('⛔ the reader answers null when the page said nothing', () => {

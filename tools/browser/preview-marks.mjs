@@ -94,19 +94,22 @@ export const CANARY =
  * axis wider than it — the shape this picture is hardest to read in.
  */
 export function fixture(measures) {
-  const club = (lf, la, dc, dn, sc, sn) => ({ games: 1,
+  // Every field a club row reads (preview.js::CLUB_ROWS); a row with no data
+  // renders no mark and this probe then checks nothing on it.
+  const club = (lf, la, dc, dn, sc, sn, sf, sa, secs) => ({ games: 1,
     level5: { for: lf, against: la }, dmen: { count: dc, n: dn },
     slot: { count: sc, n: sn },
+    sog: { for: sf, against: sa }, shifts: { secs, n: 500 },
     attempts: { for: 50, against: 50 }, blocks: { count: 0, n: 1 },
     saves: { count: 0, n: 1 }, record: { reg: { w: 1, l: 0, otl: 0, undecided: 0 },
       post: { w: 0, l: 0, undecided: 0 } }, goalies: [] });
   const seasons = { 2026: {
-    WSH: club(4, 6, 15, 43, 21, 34),
-    TBL: club(2, 6, 23, 63, 23, 39),
+    WSH: club(4, 6, 15, 43, 21, 34, 28, 22, 23000),
+    TBL: club(2, 6, 23, 63, 23, 39, 20, 30, 25500),
     /* level5 totals 20 for / 20 against -> 50%; dmen 64 of 206 -> 31%;
        slot 64 of 128 -> 50%. Asserted in test/browser-checks.test.js. */
-    AAA: club(8, 4, 13, 50, 10, 27),
-    BBB: club(6, 4, 13, 50, 10, 28),
+    AAA: club(8, 4, 13, 50, 10, 27, 26, 25, 24000),
+    BBB: club(6, 4, 13, 50, 10, 28, 25, 26, 24500),
   } };
   return {
     'schedule.json': { upcoming: [{ id: 2026020099, away: 'WSH', home: 'TBL',
