@@ -34,12 +34,27 @@ This section is the orientation. Everything below §0 is the detail, organised b
 state.
 ## ⏭ 0.00 PICK UP HERE — 2026-10-13 (evening)
 
-### ⏭ NEXT: data-model fix list, item 6 (proposed to Kevin, not yet approved)
+### ⏭ NEXT: brainstorm — make the replay more informative and engaging (Kevin, 2026-10-14)
 
-`gshots`, and the `app.js` fallback that counts shootout goals; see
-[`docs/data-model-review.md`](data-model-review.md) §6. **Item 12 still needs a
-ruling**: the replay has twelve animations and reduced motion stops only the
-play-button pulse.
+Kevin, after looking at the replay: *"we need to figure out how to make it more
+informative for the viewer. not sure how that'll happen, but we need to do
+something."* Open-ended: start by auditing what a first-time viewer actually
+gets from the replay today (looking at the live page, not the code), then lay
+out options as prose with one recommendation. Nothing is ruled yet.
+
+**Also waiting on Kevin, unchanged:**
+- Data-model item 6 (delete `gshots`, ~3.4% of the archive, and the `app.js`
+  score fallback that would count shootout goals): proposed, not approved.
+- Item 12: what reduced motion should do to the replay's twelve animations.
+- The lesson strip's last line sits below the fold on a landscape phone.
+
+### ✅ DONE 2026-10-14: the two failed deploys
+
+Both stopped at the `preview-marks` probe: its own made-up teams had no
+shots-on-goal or shift totals, so two of the seven team rows drew no mark. Fixed
+in `da37d10` (fixture + a unit test that every CLUB_ROWS row gets a value);
+the next deploy passed. Kevin's X post for MTL at WSH (2026-10-14) used the
+preview page.
 
 ### ✅ DONE 2026-10-13 (night): lessons open the newest games, re-picked nightly
 
