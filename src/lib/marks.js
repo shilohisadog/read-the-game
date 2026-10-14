@@ -51,20 +51,26 @@ const UNIT_PX=4.3;
 const figStyle='mascot';
 
 /**
- *   frame    {evs, i, cur, moment} — the events so far, the playhead, the event
- *            at it, and whether this render is a play/jump rather than a scrub
+ *   frame    {evs, i, cur, moment, from} — the events so far, the playhead, the
+ *            event at it, whether this render is a play/jump rather than a scrub,
+ *            and the frame the current play's marks start at (trails `play`)
  *   view     {hdOn, trails, asPlayed, reduced, t} — what the page is showing
  *   game     {AID, HID, R, AWAYCOL, HOMECOL, ATT: attempts, FIG_SZ, FIG_BIG}
  *   helpers  {place, tk, isHD} — screen position, club key, and the slot rule,
  *            all three shared with other callers and so passed rather than moved
  */
-export function eventMarks({ evs, i, cur, moment },
+export function eventMarks({ evs, i, cur, moment, from = i },
                            { hdOn, trails, asPlayed: ASPLAYED, reduced: REDUCED, t: T },
                            { AID, HID, R, AWAYCOL, HOMECOL, FIG_SZ, FIG_BIG },
                            { place, tk, isHD }) {
  const parts=[];
+ let order=0;
  for(let k=0;k<evs.length;k++){const e=evs[k];const pos=place(e);if(!pos)continue;
    if(trails==='off'&&k!==i)continue;
+   if(trails==='play'&&k<from)continue;
+   // The play's earlier marks carry their order, so the sequence reads without a line we cannot draw honestly.
+   if(trails==='play'&&k!==i){order++;
+     parts.push(`<text class="evn" x="${(pos.x+1.7).toFixed(1)}" y="${Math.max(pos.y-1.5,3).toFixed(1)}">${order}</text>`);}
    /* ⭐ THE TRAIL ENDS WITH THE PERIOD, BUT ONLY WHEN THE ENDS DO (§5).
       A mark says "this team attempted from here". Accumulated on a rink that
       turns over, one team's attempts pile up at BOTH ends and the picture stops
@@ -95,6 +101,7 @@ export function eventMarks({ evs, i, cur, moment },
    // the play a viewer is watching at 20% and the rink otherwise empty.
    // Found by rendering it, not by reading it: the node suite has no CSS.
    if(k===i)cls+=' cur';
+   else if(trails==='play')cls+=' inplay';
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
    /* ⭐ THE MOMENT OF ARRIVAL, AND IT IS THE EVENT'S OWN.

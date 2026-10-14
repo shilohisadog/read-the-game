@@ -478,9 +478,9 @@ test('the controls that DO reach the base view stay in it', () => {
   on.at(200, () => {});
   const after = (on.byId.get('events')._html.match(/class="ev/g) || []).length;
 
-  assert.ok(after > before + 10,
+  assert.ok(after > before,
     `trails no longer reaches the base view: keeping every mark drew ${after} marks against `
-    + `${before} for the current moment alone. If the control genuinely stopped applying here, `
+    + `${before} for the current play alone. If the control genuinely stopped applying here, `
     + 'it should move out of the base view too — but it has not, so this is a regression.');
   assert.doesNotMatch(CSS, /#rg \.figpick\.(fig|trail)\{display:none\}/);
 });

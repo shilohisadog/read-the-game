@@ -29,6 +29,7 @@ import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
+import { endOf, playAt, playLine, playTally, plays } from './lib/stretch.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
 import { goalTicks, tickLeft } from './lib/scrub.js';
@@ -235,13 +236,11 @@ let evenOnly=false;
    claim: `tiedControl` bakes even strength in, so `levelOnly` implies it and
    deriving one from the other would make the ledger say it twice. */
 let levelOnly=false;
-// TRAILS. Every attempt used to persist for the rest of the game, which makes a
-// permanent shot chart the base view shows by default -- and Doctrine §6 says the
-// base view is just watch the game, every metric opt-in. `off` is the current
-// moment; `all` is that older behaviour, chosen. There is deliberately no middle
-// setting: it would need an N -- last ten attempts? last thirty seconds? -- and
-// no N has a source in the data.
-let trails='off';
+// TRAILS. `play` (the default) keeps the current play's marks: a play runs from
+// one recorded faceoff to the next, so its length has a source, unlike "the last
+// ten attempts". `all` keeps every attempt, which builds a shot chart the base
+// view should not show by default (Doctrine §6). `off` is the event alone.
+let trails='play';
 // The mode is part of the CONTEXT, so every layer moves together. Filtering
 // Corsi while leaving shots faced on all situations would put two scopes on one
 // screen with no way for a viewer to reconcile them.
@@ -258,6 +257,17 @@ const MODE=()=>levelOnly?'score level, even strength, regulation'
 // not a correctness one, and it is written down that way rather than dressed up
 // as a bug it does not fix.
 const PBOX=stints(G.events,CTX);
+const PLAYS=plays(G.events);
+const PLAYNAMES={a:AAB,h:HAB,awayId:AID,homeId:HID,reason:r=>(WHY[r]&&WHY[r].name)||String(r).replace(/-/g,' ')};
+/* WHICH PLAY A FRAME DESCRIBES. On a faceoff it is the play that just ended, in
+   the same period, so the pause reads what happened; otherwise the one running.
+   `from` is the frame its marks start at. */
+function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
+ const n=EVI[k],p=playAt(PLAYS,n);if(!p)return {from:k,line:''};
+ if(n===p.from){const q=PLAYS[PLAYS.indexOf(p)-1];
+   if(!q||G.events[q.from].per!==cur.per)return {from:k,line:''};
+   return {from:frameOf(q.from),line:playLine(playTally(G.events,q,q.to,CTX),endOf(G.events,q),PLAYNAMES)};}
+ return {from:frameOf(p.from),line:playLine(playTally(G.events,p,n,CTX),null,PLAYNAMES)};}
 /* ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — Kevin, watching a replay event
    by event: "I was wondering why don't we say when the penalty expires."
    Measured across 60 archive games: 308 power plays end and 78.6% of them end
@@ -911,7 +921,7 @@ function render(i,how){
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
  // `lens(i)` reduces the FULL stream up to the same moment. Two different
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
- const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
+ const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i],PLAY=playOf(i);
  const PER=cur?cur.per:1;     // pre-game shows the first period's arrangement
  drawRink(PER);
  // null before the first play: both boxes empty. `cur` goes in as well because
@@ -926,7 +936,7 @@ function render(i,how){
     the trails mode. All of it was invisible while the loop sat here reaching for
     whatever it liked. Grouped into four so the list is a shape. */
  put($('events'),eventMarks(
-  {evs,i,cur,moment},
+  {evs,i,cur,moment,from:PLAY.from},
   {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
   {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
   {place,tk,isHD}));
@@ -1117,6 +1127,7 @@ function render(i,how){
      case 'final': sayCaption(null,null,'🏁 Final','',cur); break;
    }}
  sayWho(cur);
+ sayPlay(PREVIEW?'':PLAY.line);
  // AT REST ONLY -- `render` runs on every frame including during playback, and
  // `sayOnIce` reads `playing` itself rather than being called from two places.
  sayOnIce(cur);
@@ -2667,6 +2678,8 @@ function sayWho(e){const w=$('who');if(!w)return;
   s=s.replace('{b}',whoTag(q));
   if(a.say.indexOf('{b}')===0)subj=q;}
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
+function sayPlay(line){const d=$('playd');if(!d)return;
+ $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on

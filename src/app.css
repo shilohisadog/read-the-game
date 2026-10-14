@@ -436,6 +436,7 @@
    would have caught it derives the question from the page -- see
    test/render-preview.test.js, `every control the built page can produce`. */
 #rg.preview .sharerow{display:none!important}
+#rg.preview .playd{display:none!important}
 /* ⭐ AND THE SUMMARY'S DOOR WITH IT. A preview is a game that has not been played;
    "what this game was" has no answer there, and `render-preview.test.js` requires
    every control the markup can produce to be inside something this list hides. */
@@ -808,6 +809,9 @@
 #rg .att.h{fill:var(--home)}#rg .att.a{fill:#fff;stroke:var(--away);stroke-width:.7}#rg .att{opacity:.85}
 #rg .goal.h{fill:var(--home);stroke:#fff}#rg .goal.a{fill:#fff;stroke:var(--away)}#rg .goal{stroke-width:.9}
 #rg .excl{fill:var(--muted);opacity:.2}
+/* The current play's earlier marks: visible enough to count, quieter than the play now. */
+#rg .excl.inplay{opacity:.55}
+#rg .evn{font-size:3.4px;font-weight:700;fill:var(--ink);opacity:.7;pointer-events:none}
 /* ⭐ WHERE TO LOOK NEXT. See `drawCue` in src/app.js for what it claims and what
    it costs; this is only how faint it is allowed to be.
 
@@ -2624,3 +2628,11 @@
  margin:0;line-height:inherit;cursor:pointer;text-decoration:underline;
  text-underline-offset:2px}
 #rg .wclip:hover,#rg .wclip:focus{color:var(--ink)}
+
+/* The play line under the name line; its row is reserved so it never moves Play. */
+#rg .playd{margin:2px 2px 0;min-height:1.1rem;text-align:center;font-size:.82rem;color:var(--muted)}
+#rg .playd.none{visibility:hidden}
+#rg .playline{list-style:none;cursor:pointer}
+#rg .playline::-webkit-details-marker{display:none}
+#rg .playhow{text-decoration:underline;font-size:.75rem;opacity:.8}
+#rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}

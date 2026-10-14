@@ -80,8 +80,8 @@ test('⭐ the trails note follows the ends mode, not just the control', () => {
   /* ⚠️ THE OLD SENTENCE PROMISED A WHOLE-GAME SHOT CHART AND AS-PLAYED CANNOT
      DELIVER ONE — the marks clear at every period change, because after it the
      teams are shooting the other way. Two true sentences for two arrangements. */
-  assert.match(trailsNote('off', true), /Current moment shows the latest event only/);
-  assert.match(trailsNote('off', false), /Current moment shows the latest event only/);
+  assert.match(trailsNote('play', true), /since the last faceoff/);
+  assert.match(trailsNote('play', false), /since the last faceoff/);
 
   assert.match(trailsNote('all', true), /in this period/,
                'as-played no longer says the ice clears at a period change');

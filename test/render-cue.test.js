@@ -40,7 +40,9 @@ test('the circle sits exactly where the next mark lands', () => {
     // with no cx/cy of its own, so those frames are skipped -- `drawCue` has one
     // code path and does not know the event's type, so the population that can
     // be read still exercises all of it.
-    const mark = points(d.$('events').innerHTML)[0];
+    // The CURRENT mark: earlier marks of the play are drawn too, so the first point is not it.
+    const cur = /<circle class="ev [^"]*\bcur\b[^"]*"[^>]*>/.exec(d.$('events').innerHTML);
+    const mark = cur ? points(cur[0])[0] : null;
     if (!mark) continue;
     checked++;
     const off = Math.hypot(cue.x - mark.x, cue.y - mark.y);

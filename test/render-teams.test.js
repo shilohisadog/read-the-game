@@ -203,7 +203,7 @@ test('a goal is a bullseye, so it cannot be read as an attempt', () => {
   }
 });
 
-test('the base view is the game — every layer off, no trails, at boot', () => {
+test('the base view is the game — every layer off, only the current play on the ice, at boot', () => {
   // CHENG could not tell from a screenshot whether Control and Keep-every-mark
   // were defaults or clicks, and "you probably clicked it" is not an answer.
   // Doctrine §6 and the page's own headline (watch first, add metrics after)
@@ -220,6 +220,7 @@ test('the base view is the game — every layer off, no trails, at boot', () => 
   assert.equal(a.$('rg').classList.contains('whistle'), false, 'no whistle panel');
   assert.equal(a.$('rg').classList.contains('blocked'), false, 'no blocked-shots panel');
   assert.equal(a.$('blockPanel').innerHTML, '', 'the blocked panel wrote before it was asked');
-  assert.equal(a.GROUPS['#rg .tbtn'][0]['aria-pressed'], true, 'trails: current moment');
+  assert.equal(a.GROUPS['#rg .tbtn'][0].dataset.t, 'play');
+  assert.equal(a.GROUPS['#rg .tbtn'][0]['aria-pressed'], true, 'trails: the current play');
   assert.equal(a.$('whistles').innerHTML, '', 'and nothing metric-specific is drawn');
 });

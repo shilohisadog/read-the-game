@@ -121,7 +121,7 @@ test('the controls explain themselves without referring to their own history', (
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
   assert.match(a.$('nTrails').textContent, /stays on the ice|as they happen/i,
     'flipping the trails control explains nothing');
-  a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'off').click();
+  a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'play').click();
   assert.ok(a.$('nTrails').textContent, 'the note left with the setting');
 
   // Every note a visitor can actually be shown, in the state that shows it.
@@ -196,7 +196,7 @@ test('the trails summary says which setting is on, in the button\'s own words', 
   const label = () => a.$('zTrailsOn').textContent;
   const btn = t => a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === t);
 
-  assert.equal(label(), btn('off').textContent.toLowerCase(),
+  assert.equal(label(), btn('play').textContent.toLowerCase(),
     'the summary does not report the setting the page opened with');
   btn('all').click();
   assert.equal(label(), btn('all').textContent.toLowerCase(),

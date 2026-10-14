@@ -224,13 +224,27 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
     'the key would stay after its marks left');
 });
 
-test('with trails off the ice holds the current moment and nothing else', () => {
-  // Kevin's observation: by the third period the surface is a wall of dots. This
-  // is the fix, asserted over the whole game rather than at a flattering moment.
+test('by default the ice holds the current play: marks build up, then clear at the restart', () => {
+  // Kevin's observation: by the third period the surface is a wall of dots. A play
+  // (faceoff to faceoff) bounds it. Every frame is walked, and the expectation is
+  // read from event TYPES, not from the module that draws the marks.
   const a = boot();
-  const drawn = a.sweep(evMarks);
-  assert.ok(Math.max(...drawn) <= 1,
-    `trails are off and up to ${Math.max(...drawn)} marks persisted`);
+  const frames = a.every((d, f) => ({ type: f.ev && f.ev.type, n: evMarks(d),
+    order: [...d.$('events').innerHTML.matchAll(/class="evn"[^>]*>(\d+)</g)].map(m => +m[1]) }));
+  const peak = Math.max(...frames.map(f => f.n));
+  assert.ok(peak > 1, 'no frame kept an earlier mark, so the play is not on the ice');
+  assert.ok(peak <= 40, `up to ${peak} marks persisted, which is a game, not a play`);
+  let restarts = 0;
+  frames.forEach((f, k) => {
+    // The numbers read 1, 2, 3… with none skipped, one for every mark but the current one.
+    assert.deepEqual(f.order, f.order.map((_, j) => j + 1), `frame ${k}: the order skips`);
+    assert.ok(f.order.length <= f.n, `frame ${k}: more numbers than marks`);
+    if (k > 0 && frames[k - 1].type === 'faceoff' && f.type !== 'faceoff') {
+      restarts++;
+      assert.ok(f.n <= 2, `frame ${k}: ${f.n} marks one event after a faceoff; the last play did not clear`);
+    }
+  });
+  assert.ok(restarts >= 20, `only ${restarts} restarts walked — the check proves little`);
 });
 
 test('keep-every-mark really does keep them', () => {
@@ -247,7 +261,7 @@ test('keep-every-mark really does keep them', () => {
 test('the trails control reports its own state to a screen reader', () => {
   const a = boot();
   const [offBtn, allBtn] = a.GROUPS['#rg .tbtn'];
-  assert.equal(offBtn['aria-pressed'], true, 'the default is the current moment');
+  assert.equal(offBtn['aria-pressed'], true, 'the default is the current play');
   allBtn.click();
   assert.equal(allBtn['aria-pressed'], true);
   assert.equal(offBtn['aria-pressed'], false);

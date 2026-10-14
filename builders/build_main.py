@@ -158,6 +158,17 @@ __CSS__</style>
        into the newcomer dismissal; that flag means "I know how this site works",
        and who took the shot is not scaffolding a reader outgrows. -->
   <p class="who" id="who" aria-live="polite"></p>
+  <!-- THE PLAY SO FAR: faceoff to whistle, counted from the marks on the ice
+       (src/lib/stretch.js). Opens to how it is counted, since every number
+       printed needs its working. The row is reserved so it never moves Play. -->
+  <details class="playd" id="playd"><summary class="playline"><span id="playline"></span> <span class="playhow">how?</span></summary>
+  <p class="playwork">A play runs from a faceoff to the next whistle, goal or
+  penalty. The numbered marks on the ice are its events, in the order the league
+  recorded them. An attempt is a shot on goal, a missed shot or a blocked shot,
+  credited to the team that shot. An event is in a team&rsquo;s end when it was
+  recorded past the blue line on that team&rsquo;s side. The time is the game
+  clock from the faceoff to the latest event. The league does not record where the
+  puck went between two events, so nothing here says which team had it.</p></details>
   <!-- ⭐⭐ WHO IS ON THE ICE, AND IT IS A LIST BECAUSE THAT IS WHAT WE KNOW.
        Kevin, 2026-09-10: *"we don't surface players on the ice at all; should we
        have a toggle... only clickable when not playing?"* — then, on the obvious
@@ -538,7 +549,7 @@ __CSS__</style>
 <span class="fnote" id="nCount"></span></div>
 </details>
 <details class="zone zdisp"><summary class="zh">Trails<span class="zon" id="zTrailsOn"></span></summary>
-<div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
+<div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="play" aria-pressed="true">This play</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
 <span class="fnote" id="nTrails"></span></div>
 </details>
 </div></div>
@@ -707,6 +718,8 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # AFTER rink.js, which owns BLUE_LINE_X. K1 — what happened between two
        # recorded events — and the duration format both it and `sinceLine` read.
        "transition.js",
+       # A play, faceoff to faceoff: the marks that stay on the ice and the line under it.
+       "stretch.js",
        # The per-game summary reads `perGame` out of measures.json — the mechanism
        # only, never the archive tier that builds it. See distribution.js.
        "distribution.js",

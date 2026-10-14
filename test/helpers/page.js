@@ -249,7 +249,8 @@ export function fakeDom() {
   // shows up as a test that stops finding its button, instead of one that quietly
   // clicks nothing.
   const GROUPS = {
-    '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
+    // Read from the built page, so the fake cannot keep a button the page dropped.
+    '#rg .tbtn': [...app.matchAll(/class="lyr tbtn" data-t="([a-z]+)"/g)].map(m => Object.assign(el(), { dataset: { t: m[1] } })),
     /* ⚠️ THE LABELS ARE REAL, for the reason the ring's buttons carry theirs:
        `syncStrength` copies the pressed button's own text into the drawer's
        summary, so a fake with empty text lets a summary that says NOTHING pass
