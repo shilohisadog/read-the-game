@@ -2634,5 +2634,5 @@
 #rg .playd.none{visibility:hidden}
 #rg .playline{list-style:none;cursor:pointer}
 #rg .playline::-webkit-details-marker{display:none}
-#rg .playhow{text-decoration:underline;font-size:.75rem;opacity:.8}
+#rg .playline:hover{text-decoration:underline dotted}
 #rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}

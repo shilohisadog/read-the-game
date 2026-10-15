@@ -159,9 +159,10 @@ __CSS__</style>
        and who took the shot is not scaffolding a reader outgrows. -->
   <p class="who" id="who" aria-live="polite"></p>
   <!-- THE PLAY SO FAR: faceoff to whistle, counted from the marks on the ice
-       (src/lib/stretch.js). Opens to how it is counted, since every number
-       printed needs its working. The row is reserved so it never moves Play. -->
-  <details class="playd" id="playd"><summary class="playline"><span id="playline"></span> <span class="playhow">how?</span></summary>
+       (src/lib/stretch.js). Pressing the line opens how it is counted; the
+       visible "how?" went as clutter (Kevin, 2026-10-15). The row is reserved
+       so it never moves Play. -->
+  <details class="playd" id="playd"><summary class="playline" title="How this line is counted"><span id="playline"></span></summary>
   <p class="playwork">A play runs from a faceoff to the next whistle, goal or
   penalty. The numbered marks on the ice are its events, in the order the league
   recorded them. An attempt is a shot on goal, a missed shot or a blocked shot,

@@ -378,7 +378,9 @@ test('the preview waits on the replay, not on a number somebody picked', () => {
   // TICKS, not 0: the recorder's budget is what lets the transport STEP, and
   // with 0 it schedules once and stops -- one dwell value, which the preview's
   // second wait would then fail against for no reason but the harness.
+  // At the fastest gear: the front door's loop is a taste and keeps the brisk pace.
   const plain = delaysOf('', TICKS);
+  plain.dom.$('faster').onclick();
   plain.dom.$('play').onclick();
   const replay = new Set(plain.delays);
   assert.ok(replay.size > 0, 'the ordinary play loop never scheduled anything');

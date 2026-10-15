@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-y1er9x2D+fv7S3DkXvUJ4IsmEMDcNWD7+qC+9aeq+Mc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-PsdqyteU1SoXOlA4TCbZvKkJeuNElDTH/acGB76hjSo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GZ+jWcOe4nW5f/Wlum1Lsv2Kwel9m0Plr6yfInk5CNw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-aqD/b4KvJtQ9g+JznGh7TJODrIEPF2DdkeuDf1oqWaI='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -636,7 +636,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .playd.none{visibility:hidden}
 #rg .playline{list-style:none;cursor:pointer}
 #rg .playline::-webkit-details-marker{display:none}
-#rg .playhow{text-decoration:underline;font-size:.75rem;opacity:.8}
+#rg .playline:hover{text-decoration:underline dotted}
 #rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}
 
 .hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
@@ -701,7 +701,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   
   <p class="who" id="who" aria-live="polite"></p>
   
-  <details class="playd" id="playd"><summary class="playline"><span id="playline"></span> <span class="playhow">how?</span></summary>
+  <details class="playd" id="playd"><summary class="playline" title="How this line is counted"><span id="playline"></span></summary>
   <p class="playwork">A play runs from a faceoff to the next whistle, goal or
   penalty. The numbered marks on the ice are its events, in the order the league
   recorded them. An attempt is a shot on goal, a missed shot or a blocked shot,
@@ -4503,7 +4503,7 @@ function cardsFor(id){const cs=LEARNCARDS[id];
   +cs.map(c=>`<a href="/what-you-can-see.html#${ESC(c.id)}">${ESC(c.title)}</a>`).join('')
   +`</p>`;}
 
-const PACE=[5200,3600,2000];let gear=1;
+const PACE=[7800,5400,3000];let gear=1;
 const CAPTION_BONUS=900;
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
 $('scrub').max=EV.length-1;
@@ -4575,7 +4575,7 @@ function sayWho(e){const w=$('who');if(!w)return;
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function sayPlay(line){const d=$('playd');if(!d)return;
  $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;}
-function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
+function dwell(e){return captioned(e)||/^Last play/.test(playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 function play(){closeLesson();if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
 const PLAY_REST='▶ Play';
@@ -5176,6 +5176,7 @@ if(shareBtn)shareBtn.onclick=()=>{
 const BUDGET_MS=30000;
 if(PREVIEW){
  $('rg').classList.add('preview');
+ frameMs=PACE[PACE.length-1];
  document.body.classList.add('previewing');
  if(window.parent!==window){
   const fin=corsi.reduce(G.events,{...CTX,evenOnly:false});

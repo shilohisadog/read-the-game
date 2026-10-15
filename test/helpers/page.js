@@ -792,7 +792,9 @@ export function paceOf(ticks, setup) {
                 // goal its extra time. Measuring speech by the caption alone
                 // therefore reported a frame that was long and silent, which is
                 // exactly the defect the invariant below exists to forbid.
-                goal: (dom.$('labels').innerHTML.match(/🚨[^<]*GOAL[^<]*/) || [''])[0] });
+                goal: (dom.$('labels').innerHTML.match(/🚨[^<]*GOAL[^<]*/) || [''])[0],
+                // A finished play's summary under the ice is words to read too.
+                summed: /^Last play/.test(dom.$('playline').textContent) });
     if (n++ < ticks) fn();
     return 0;
   };
@@ -809,7 +811,7 @@ export function paceOf(ticks, setup) {
   // that clearing as a second, silent-but-long frame.
   rows.forEach((r, k) => {
     const prev = rows[k - 1];
-    r.spoke = k > 0 && ((r.goal && r.goal !== prev.goal) || r.wrote > prev.wrote);
+    r.spoke = k > 0 && ((r.goal && r.goal !== prev.goal) || r.wrote > prev.wrote || r.summed);
   });
   return { dom, rows };
 }

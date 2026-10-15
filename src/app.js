@@ -2365,7 +2365,9 @@ function cardsFor(id){const cs=LEARNCARDS[id];
    words are the same length at every gear -- 900 ms of extra reading is 900 ms
    of extra reading. Doubling it would be a constant tracking another constant
    for no reason either of them states. */
-const PACE=[5200,3600,2000];let gear=1;
+// SLOWED AGAIN, 2026-10-15, every gear by half again. Kevin: "it's difficult to watch
+// the replay, read the description and mentally process what's happening."
+const PACE=[7800,5400,3000];let gear=1;
 const CAPTION_BONUS=900;
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
 $('scrub').max=EV.length-1;
@@ -2682,7 +2684,8 @@ function sayWho(e){const w=$('who');if(!w)return;
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function sayPlay(line){const d=$('playd');if(!d)return;
  $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;}
-function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
+// A finished play's summary is words to read, so it earns the caption's reading time.
+function dwell(e){return captioned(e)||/^Last play/.test(playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
    the pre-game frame for a full dwell would answer that with 1.8 seconds of empty
@@ -5065,6 +5068,8 @@ if(shareBtn)shareBtn.onclick=()=>{
 const BUDGET_MS=30000;
 if(PREVIEW){
  $('rg').classList.add('preview');
+ // The front door's loop is a taste, not a reading, so it keeps the brisk gear.
+ frameMs=PACE[PACE.length-1];
  /* AND THE CHROME GOES, from the one place chrome is defined (page.py). The
     shared header and footer are real height inside a box sized for a rink. */
  document.body.classList.add('previewing');
