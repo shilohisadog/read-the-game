@@ -8,13 +8,18 @@ exactly what that edition showed — figures, players, wording and look.**
 ## 1. What an edition is
 
 ```
-editions/2026-10-14/                       ← the date is `dataThrough`: games it covers
+editions/2026-10-14/                       ← `dataThrough`: the newest game DATE it covers
   manifest.json                            ← what this edition is (below)
   data/measures.json  teams.json  players.json  schedule.json  recent.json
   pages/preview.html  game.html  how-we-measure.html
 editions/index.json                        ← every sealed date, newest last
 ```
 
+- **The date is the league's game date** — the day a game belongs to, which is
+  the day it STARTED (Kevin, 2026-10-15). A 10 pm Pacific game that ends after
+  midnight Eastern belongs to its start date; `fetch_nhl.py:216` already carries
+  the league's own date for this reason, and every date here (edition names,
+  "the last edition before the game") is that date, never a clock's.
 - **Data**: the five documents the dated pages read (167 KB). Not the catalog,
   index or lessons — no dated page reads them. Not the game files: a shared
   replay reads the newest one (ruling 2).
@@ -124,3 +129,24 @@ The middleware rewrites `og:url` to `https://readthegame.co/{page}?game=ID`
   should).
 - The 10:00 Eastern target is unaffected: the seal runs after readers already
   have the night's pages.
+
+## 9. A requirement this must not block: the season over time
+
+Kevin, 2026-10-15: we should be able to say, mid-season, who has been the
+"player to watch" most often, how a team's possession has moved since opening
+night, and how every team measure has evolved — analytics over time.
+
+Two different questions, with two different sources:
+
+- **What did we SHOW?** (who was picked as the player to watch, and how often):
+  the editions answer it, from the build date on, because they hold what each
+  night's pages read.
+- **What HAPPENED?** (a team's possession, game by game, all season): the game
+  files answer it better than the editions. Every club row already has a
+  per-game reading (`ofGame` in `preview.js`), so a season curve is a walk over
+  stored games — the whole archive, three seasons, one consistent method —
+  rather than a stitching-together of nightly snapshots computed by whatever
+  code was live each night.
+
+So editions are not the analytics store, and nothing in this design blocks one.
+Its design waits on the measures audit, which decides what is worth tracking.
