@@ -129,9 +129,14 @@ mostly a merge of those, plus the definitions that are today implicit.
 
 1. **The list of measures: yes, first.** Items 2–6 land on it, one at a time.
 2. **"Level" means strict 5-on-5, everywhere.**
-3. **Open** — the game page's whole-game panel (*"Every count in the whole game"*,
-   the six scaled rows that open at the horn): which quantity the Goaltending and
-   Zone starts rows rank, and the slot box's denominator. Asked again in plain words.
+3. **The whole-game panel** (*"Every count in the whole game"*, the six scaled rows
+   that open at the horn): Goaltending ranks **save percentage**; Zone starts ranks
+   **offensive-zone face-offs**; the slot box divides by attempts **with a recorded
+   spot**. ("yes to both")
+7. **Per-player face-off win %** — *"a widely followed statistic … consider adding
+   to a player's page."* Needs `losingPlayerId`, which `extract.py` drops today, so
+   it is an extract change + re-derive; and there is no player page yet (the
+   preview's player block is the only player surface).
 4. **Typical shift: the mean**, everywhere ("no preference but probably mean").
 5. **Layers, agreed:** level possession folds into Attempts as a filter;
    Goaltending stays on the rink but is not ranked as a club figure; add **Who
