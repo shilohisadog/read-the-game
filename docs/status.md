@@ -32,7 +32,31 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-13 (evening)
+## ⏭ 0.00 PICK UP HERE — 2026-10-15 (end of day)
+
+### ⏭ NEXT, in Kevin's order
+
+1. **The measures audit.** The layers (chosen in August), the preview's team rows
+   and the game summary were each picked at a different time by a different rule
+   and are not coordinated. Audit every measure against every surface: can it be
+   seen as an event, does it settle for a club, which surfaces carry it and why
+   not the others. Kevin: include whether the August layers are still the best,
+   "since our understanding of what data is available has evolved". Audit, then a
+   document, then Kevin rules, then build.
+2. **"Before the game / tonight"** on a played preview (now possible: editions
+   hold what the preview said).
+3. **The season over time** (new requirement): who was the player to watch most,
+   how a team's possession and every team measure moved (`docs/editions-design.md` §9).
+4. **Later:** a Verbose / Minimal choice for the color line; replay option A (goal
+   markers opening at the faceoff of the play the goal ended).
+
+**Still waiting on Kevin:** data-model item 6, item 12 (reduced motion), the lesson
+strip below the fold on a landscape phone.
+
+**Check tomorrow:** the first NIGHTLY seal — the 2026-10-16 deploy run dispatched by
+the ingest should log "Sealed the edition for 2026-10-15".
+
+## ⏭ 0.00 (earlier) — 2026-10-13 (evening)
 
 ### ✅ BUILT 2026-10-15: the line under the rink is a COLOR analyst
 
