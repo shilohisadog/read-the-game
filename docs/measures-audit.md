@@ -252,6 +252,19 @@ and the live page computes 5/9/24/28 — the comment is stale, the page is right
 list carries no typed figure. The player rows use a different steadiness instrument
 from the club rows (§2 #8); the list will name one.
 
+**Added after Kevin's read, 2026-10-15** (proposed; each measured before it is shown)
+
+| id | name | from | note |
+|---|---|---|---|
+| `shotsOnGoal` | shots on goal, per game | boxscore (quoted) | the count beside `sogShare` |
+| `faceoffWins` | face-offs won, and the share of draws | play-by-play (every draw, winner, spot) | team share is a coin flip for the result (50.4%, n = 819); zone splits need 103–106 games |
+| `goalieRecord` | a goaltender's W–L–OT | the league's decision on the boxscore (⚠️ not yet kept — check the field) | not computed today |
+| `paceByScore` | attempts in an hour when trailing / tied / leading, 5-on-5 | `census.pace` | score effects: 63.5 / 59.1 / 53.2 an hour |
+| `paceByTime` | attempts in an hour by period / minute of the game | not computed | new |
+
+`record` stores wins, losses and overtime losses as three counts (`teams.json`
+`record.reg.{w,l,otl}`, plus playoffs) — the list carries one entry with three parts.
+
 ### 7.3 What the list will NOT carry
 
 Values. The list is definitions; the values stay in `measures.json`, `teams.json`,
