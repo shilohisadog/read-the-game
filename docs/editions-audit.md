@@ -86,7 +86,7 @@ runs share one `dataThrough`. An edition would need its own identifier.
   (`app.js:4968`). No share affordance on the preview.
 - **One page rewrites its own address:** a lesson door pins itself to the game and
   moment it opened (`build_main.py:1065`). The preview does not.
-- **The link card's URL drops everything but the game** ✔: `_middleware.js:186`
+- **The link card's URL drops everything but the game** ✔: `functions/_middleware.js:187`
   writes `og:url` as `https://readthegame.co/{game|preview}?game=ID`, so `at`,
   `layer` and any future date parameter are lost from the card.
 - **Cross-page figures can be from different nights**: the learn pages bake
