@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HGwaF1w6e5hetEzWUanx2zy4OpZd6nuUMOmUa96AC48=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6dVeOjiRdbXnDpk5j11YSZMVKpG5QY7zUJNxWA47xdQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -365,6 +365,7 @@ footer p{margin:0 0 8px}
 <div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <h1>How we measure</h1>
+<p class="note" id="hmedition" hidden></p>
 <p class="note hmlede">Every number on this site comes out of the league&rsquo;s own
 record of what happened in a game &mdash; who shot, from where, who was on the ice.
 Nothing here is a projection or an estimate.</p>
@@ -1639,6 +1640,12 @@ function sections(create) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
     return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
   }
+  var ASOF = (/[?&]asof=(\d{4}-\d{2}-\d{2})(?=&|#|$)/.exec(location.search) || [])[1] || null;
+  function withAsof(href) {
+    if (!ASOF) return href;
+    var at = href.indexOf('#'), base = at < 0 ? href : href.slice(0, at), frag = at < 0 ? '' : href.slice(at);
+    return base + (base.indexOf('?') < 0 ? '?' : '&') + 'asof=' + ASOF + frag;
+  }
   function grab(name) {
     return fetch(ORIGIN + '/' + name)
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -1886,7 +1893,15 @@ function sections(create) {
     target.focus({ preventScroll: true });
   }
 
-  grab('measures.json').then(function (mj) { draw(methods(mj)); openTheFragment(); });
+  (ASOF ? grab('editions/' + ASOF + '/data/measures.json') : Promise.resolve(null)).then(function (saved) {
+    if (ASOF) {
+      $('hmedition').textContent = saved
+        ? 'A saved version: the arithmetic as it stood with games through ' + when(ASOF) + '.'
+        : 'No saved version exists for ' + when(ASOF) + ', so this is today\u2019s arithmetic.';
+      $('hmedition').hidden = false;
+    }
+    return saved || grab('measures.json');
+  }).then(function (mj) { draw(methods(mj)); openTheFragment(); });
 </script>
 <footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any team. <strong>No NHL or team logos, wordmarks or crests appear anywhere on this site</strong> — teams are named in plain text, and identified by colour and three-letter abbreviation.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
 </body>

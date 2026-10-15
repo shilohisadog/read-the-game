@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7ScBYHoB99Pq5vwMNEe7xIIlKbv+FmGQimjJDKhw59A=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-v3a28d5AgEHazCelDNC/GewgbPHIcZPNj+KlYlq0v/s=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -739,6 +739,12 @@ function disputedNote(n) {
   function when(d) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
     return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
+  }
+  var ASOF = (/[?&]asof=(\d{4}-\d{2}-\d{2})(?=&|#|$)/.exec(location.search) || [])[1] || null;
+  function withAsof(href) {
+    if (!ASOF) return href;
+    var at = href.indexOf('#'), base = at < 0 ? href : href.slice(0, at), frag = at < 0 ? '' : href.slice(at);
+    return base + (base.indexOf('?') < 0 ? '?' : '&') + 'asof=' + ASOF + frag;
   }
   function grab(name) {
     return fetch(ORIGIN + '/' + name)

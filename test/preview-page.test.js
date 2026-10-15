@@ -1497,3 +1497,79 @@ test('⭐ each club row reads in its own unit, and the possession group is intro
   assert.match(against, /^Attempts aimed at each team’s net: BUF 590 in 12 games/);
   assert.doesNotMatch(against, /%/, 'a count per game carries no percent sign');
 });
+
+/* ---------------------------------------------------- EDITIONS (docs/editions-design.md) */
+
+const ED = '2026-10-01';
+// Fetch keyed by the full path, so an edition's copy and the loose file are different documents.
+function runPaths(byPath, search, at) {
+  const { ids, document } = fakeDom();
+  const asked = [];
+  const fetch = url => {
+    const path = url.replace(/^https:\/\/data\.readthegame\.co\//, '');
+    asked.push(path);
+    const body = Object.prototype.hasOwnProperty.call(byPath, path) ? byPath[path] : null;
+    return Promise.resolve(body == null ? { ok: false, json: () => Promise.resolve(null) }
+                                        : { ok: true, json: () => Promise.resolve(body) });
+  };
+  const Real = Date;
+  const Clock = class extends Real {
+    constructor(...a) { super(...(a.length ? a : [at])); }
+    static now() { return new Real(at).getTime(); } };
+  new Function('document', 'fetch', 'location', 'Date', script)(
+    document, fetch, { search, origin: 'https://readthegame.co' }, Clock);
+  return { ids, asked, settle: () => new Promise(r => setTimeout(r, 0)) };
+}
+const edition = (docs, date = ED) => ({
+  [`editions/${date}/manifest.json`]: { date, sealedAt: `${date}T14:00:00Z` },
+  ...Object.fromEntries(Object.entries(docs).map(([k, v]) => [`editions/${date}/data/${k}`, v])) });
+// The loose files tell a different story, so reading them by mistake shows.
+const LATER = { ...DOCS, 'teams.json': { through: '2026-10-09',
+  seasons: { 2026: { BUF: club({ games: 20 }), PIT: club({ games: 20 }) } } } };
+
+test('⭐ a dated preview reads that night\'s edition, and the newest game file', async () => {
+  const p = runPaths({ ...LATER, ...edition(DOCS), [`extract/${GID}.json`]: null },
+                     `?game=${GID}&asof=${ED}`, '2026-10-10T12:00:00Z');
+  await p.settle();
+  const loose = p.asked.filter(a => !a.startsWith('editions/') && a !== `extract/${GID}.json`);
+  assert.deepEqual(loose, [], `a dated preview read today's files: ${loose.join(', ')}`);
+  assert.match(p.ids.pvedition.textContent, /A saved version: as it stood with games through 1 October 2026/);
+  assert.equal(p.ids.pvedition.hidden, false);
+});
+
+test('⛔ a saved preview stays as it stood: no score for a game still on that night\'s schedule', async () => {
+  const played = { game: { id: GID, date: '2026-10-02', type: 2 },
+    teams: { away: { ab: 'BUF', id: 7 }, home: { ab: 'PIT', id: 5 } },
+    quoted: { away: { score: 2 }, home: { score: 3 } }, roster: {} };
+  const p = runPaths({ ...LATER, ...edition(DOCS), [`extract/${GID}.json`]: played },
+                     `?game=${GID}&asof=${ED}`, '2026-10-10T12:00:00Z');
+  await p.settle();
+  assert.doesNotMatch(textOf(p.ids.pv), /BUF 2 – PIT 3/, 'the saved preview shows a result it never showed');
+  assert.doesNotMatch(p.ids.pvwhen.textContent, /Played/);
+  // The paired half: undated, the same game file does show the result.
+  const live = runPaths({ ...LATER, [`extract/${GID}.json`]: played }, `?game=${GID}`, '2026-10-10T12:00:00Z');
+  await live.settle();
+  assert.match(textOf(live.ids.pv), /BUF 2 – PIT 3/);
+  assert.match(live.ids.pvedition.textContent, /not saved before the game/);
+});
+
+test('a date with no saved edition says so and shows today\'s figures', async () => {
+  const p = runPaths({ ...LATER }, `?game=${GID}&asof=2026-09-01`, '2026-10-10T12:00:00Z');
+  await p.settle();
+  assert.match(p.ids.pvedition.textContent, /No saved version exists for 1 September 2026/);
+  assert.ok(p.asked.includes('teams.json'), 'it did not fall back to today\'s files');
+});
+
+test('an undated preview of a game not yet played says nothing about versions', async () => {
+  const p = runPaths({ ...DOCS }, `?game=${GID}`, '2026-10-01T15:00:00Z');
+  await p.settle();
+  assert.equal(p.ids.pvedition.hidden, true);
+});
+
+test('a dated preview\'s "How this is counted" keeps the date, before the fragment', () => {
+  assert.match(script, /withAsof\('\/how-we-measure\.html#' \+ anchorFor\(key\)\)/);
+  const withAsof = new Function('location', `${/var ASOF = [^\n]*\n/.exec(script)[0]}
+    ${/function withAsof[\s\S]*?\n  \}/.exec(script)[0]}; return withAsof;`)({ search: `?game=1&asof=${ED}` });
+  assert.equal(withAsof('/how-we-measure.html#m-slot'), `/how-we-measure.html?asof=${ED}#m-slot`);
+  assert.equal(withAsof('game.html?game=1'), `game.html?game=1&asof=${ED}`);
+});

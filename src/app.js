@@ -121,6 +121,8 @@ const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
    location.search and two hand-written regexes, one of them the same preview
    test spelled twice; see src/lib/deeplink.js for why that became a module. */
 const LINK=parse(location.search),PREVIEW=LINK.preview;
+// A dated link keeps its edition on the methods page it opens, so the arithmetic is the same night's.
+const METHODS='/how-we-measure.html'+(LINK.asof?'?asof='+LINK.asof:'');
 /* A MOMENT NAMES AN EVENT IN THE GAME; THE SCRUBBER INDEXES THE PLAYABLE ONES.
    EV drops 51 of 320 -- stoppages among them -- so the whistle layer's own
    teaching case ("here is an icing, watch this one") names an event that has no
@@ -1642,7 +1644,7 @@ function renderWork(_,cur,at){
   lds:lyr?lyr.counts:'',lat:lyr?lyr.credits:'',work:LAYERWORK[id]||[],
   box:lboxFor(id,at,counted(sl)),cards:cardsFor(id),
   mode:MODE(),when:cur?`through P${cur.per} ${cur.rem}`:'pre-game',
-  evenOnly,AAB,HAB});}
+  evenOnly,AAB,HAB,methods:METHODS});}
 /* ⭐⭐⭐ `IS THAT A LOT?` — THE ARCHIVE'S ANSWER, OVER THE RINK.
    Kevin, 2026-09-25: *"It takes 3 or 4 mouse clicks to get to 'how we counted
    this' from a replay-layer and it takes us away from the replay page."* It was
@@ -1980,7 +1982,7 @@ function renderSum(){
   if(doors.length){
    const d=document.createElement('span');
    d.className='sdoor';
-   d.innerHTML=doors.map(w=>`<a href="/how-we-measure.html#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('');
+   d.innerHTML=doors.map(w=>`<a href="${METHODS}#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('');
    li.appendChild(d);}
   ul.appendChild(li);});
  /* ⭐⭐ THE KEY TO THE SCALES, SAID ONCE ABOVE THEM — Kevin, 2026-10-12: *"we
@@ -2281,7 +2283,7 @@ function renderAlot(at=i){
      GAME page to an element that is not on it. */
   if(printedBy[a]){
    host.appendChild(SECTION.printedSection(printedBy[a],
-    {labelOf,href:x=>'/how-we-measure.html#'+x}));drew++;return;}
+    {labelOf,href:x=>METHODS+'#'+x}));drew++;return;}
   if(leagueBy[a]){
    /* ⛔ NO PER-SECTION `n` TILE, because the line above already said it — unless
       it could not, in which case each section carries its own again rather than
@@ -4982,8 +4984,10 @@ function shareUrl(){
     that lands on the replay instead is a link to a different page.
     ⛔ ONLY WHEN IT IS OPEN, which is what makes this a link to THIS moment rather
     than a second kind of link: nothing is added to a share taken over the ice. */
+ // The edition: this link's own, else the newest saved one, so the shared comparisons stay that night's.
+ const ed=LINK.asof||(typeof NEWEST_EDITION==='string'?NEWEST_EDITION:null);
  return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'')
-         +(sumOpen?'&summary=1':'');}
+         +(sumOpen?'&summary=1':'')+(ed?'&asof='+ed:'');}
 
 const shareBtn=$('share'),shareSaid=$('sharesaid');
 if(shareBtn)shareBtn.onclick=()=>{

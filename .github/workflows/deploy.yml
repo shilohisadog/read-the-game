@@ -18,6 +18,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      seal:
+        description: "seal tonight's edition after the deploy (the nightly sets this)"
+        type: boolean
+        default: false
 
 # One deploy at a time, and never cancel one midway -- a half-finished upload
 # to a live site is worse than a queued one.
@@ -468,7 +473,8 @@ jobs:
             grep -q "property=\"$prop\"" unfurl.html \
               || { echo "::error::$prop is missing from the unfurled page"; exit 1; }
           done
-          grep -q 'property="og:url" content="https://readthegame.co/preview?game='"$gid"'"' unfurl.html \
+          # Once editions exist the preview redirects to one, and the card keeps its date.
+          grep -Eq 'property="og:url" content="https://readthegame\.co/preview\?game='"$gid"'((&|&amp;)asof=[0-9]{4}-[0-9]{2}-[0-9]{2})?"' unfurl.html \
             || { echo "::error::og:url does not name this game"; exit 1; }
 
           # ⛔ THE PAIRED HALF: no `game=`, no rewrite, byte for byte.
@@ -846,3 +852,30 @@ jobs:
             echo ""
             echo "Checked first as a preview: ${{ steps.preview.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # ⭐ TONIGHT'S EDITION (docs/editions-design.md): the five documents the dated
+      # pages read and the three dated pages, written once under editions/<date>/.
+      # LAST, so only a verified deploy is sealed; the checkout is what is live
+      # (the diff step proved it, or nothing changed). Data and pages first, then
+      # the manifest, then the index: an edition with a manifest is complete.
+      - name: seal tonight's edition — written once, never changed
+        if: github.event_name == 'workflow_dispatch' && inputs.seal
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          ENDPOINT: ${{ secrets.S3_API_ENDPOINT }}
+          BUCKET: readthegame
+        run: |
+          set -euo pipefail
+          node tools/seal-edition.mjs stage > seal.out
+          cat seal.out
+          if ! grep -q '^seal=1$' seal.out; then echo "  nothing to seal"; exit 0; fi
+          d=$(sed -n 's/^date=//p' seal.out)
+          up() { aws s3 cp "$@" --endpoint-url "$ENDPOINT" --no-progress; }
+          KEEP="public, max-age=31536000, immutable"
+          up "stage/editions/$d/data" "s3://$BUCKET/editions/$d/data" --recursive --cache-control "$KEEP"
+          up "stage/editions/$d/pages" "s3://$BUCKET/editions/$d/pages" --recursive --cache-control "$KEEP"
+          up "stage/editions/$d/manifest.json" "s3://$BUCKET/editions/$d/manifest.json" --cache-control "$KEEP"
+          up stage/editions/index.json "s3://$BUCKET/editions/index.json" --cache-control no-cache
+          echo "### Sealed the edition for $d" >> "$GITHUB_STEP_SUMMARY"

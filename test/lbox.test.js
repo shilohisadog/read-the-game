@@ -18,6 +18,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 /** The real published document — the summary panel draws nothing without it. */
 const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
 import { boot, app, PAGE_CSS, rich } from './helpers/page.js';
+const APP_JS_TEXT = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
 import { blocked } from '../src/lib/layers/blocked.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
@@ -1253,4 +1254,21 @@ test('⭐ the note says a goaltender has faced nothing exactly while that is tru
       + 'one side is empty, so this fixture cannot witness the note');
     assert.deepEqual(wrong.slice(0, 5), [], `${name}: ${wrong.length} frame(s) disagree`);
   }
+});
+
+test('a dated replay keeps its date in the link it copies and in its methods links', async () => {
+  // docs/editions-design.md: the comparisons around a shared moment are that night's.
+  const a = boot(rich, MEASURES, `?game=${rich.game.id}&asof=2026-10-14`);
+  a.$('scrub').oninput({ target: { value: '120' } });
+  pick(a, 'slot');
+  a.$('share').onclick();
+  await a.settle();
+  assert.equal(new URLSearchParams(a.copied.split('?')[1]).get('asof'), '2026-10-14');
+  // And undated, no date is invented when no edition is known.
+  const b = boot();
+  b.$('share').onclick();
+  await b.settle();
+  assert.equal(new URLSearchParams(b.copied.split('?')[1]).get('asof'), null);
+  assert.match(APP_JS_TEXT, /const METHODS='\/how-we-measure\.html'\+\(LINK\.asof\?'\?asof='\+LINK\.asof:''\)/);
+  assert.doesNotMatch(APP_JS_TEXT, /href="\/how-we-measure\.html#/, 'a methods link drops the date');
 });

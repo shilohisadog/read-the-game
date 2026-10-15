@@ -27,6 +27,9 @@
  * whether or not the middleware ran, and `document.test.js`'s claim about the
  * page being a complete document cannot be broken from here.
  *
+ * ⭐ AND, SINCE 2026-10-15, IT ROUTES EDITIONS: a dated page with `asof=` is
+ * answered with that night's stored copy, and an undated preview with `game=` is
+ * redirected to the edition it should show. Still never a request with no query.
  * ⛔ PASS THROUGH ON ANY ERROR. A generic unfurl beats a 500 by a mile. Every
  * path through this file that can throw is wrapped, and the untouched asset is
  * returned instead.
@@ -172,10 +175,65 @@ export function tagsFor(g, url, page = 'preview') {
   return { title, description, url };
 }
 
+/**
+ * EDITIONS (docs/editions-design.md): a dated link shows what that night showed.
+ * Each night's three dated pages and five data documents are stored, once, under
+ * `editions/<date>/`; the date is the league's game date of the newest game
+ * covered. This file only routes to them and computes nothing.
+ */
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The pages an edition stores, by every path that reaches them. */
+export const DATED = {
+  '/preview': 'preview.html', '/preview.html': 'preview.html',
+  '/game': 'game.html', '/game.html': 'game.html',
+  '/how-we-measure': 'how-we-measure.html', '/how-we-measure.html': 'how-we-measure.html',
+};
+
+/** `{asof, file}` when this request names an edition of a dated page, else null. */
+export function editionPage(urlString) {
+  const url = new URL(urlString);
+  const file = DATED[url.pathname];
+  const asof = url.searchParams.get('asof');
+  return file && asof && DATE.test(asof) ? { asof, file } : null;
+}
+
+/**
+ * The edition an undated preview should show, or null. Before its game: the
+ * newest. After it: the newest dated BEFORE the game's date, so the page says
+ * what it said going in. `index` is `editions/index.json`: `{editions: [dates]}`.
+ */
+export function editionFor(g, index) {
+  const dates = ((index && index.editions) || []).filter(d => DATE.test(d)).sort();
+  if (!g.played) return dates.length ? dates[dates.length - 1] : null;
+  if (!DATE.test(g.date || '')) return null;
+  const before = dates.filter(d => d < g.date);
+  return before.length ? before[before.length - 1] : null;
+}
+
+/** The link a card names: the game, plus the moment and the edition when the request has them. */
+export function cardUrl(route, id, urlString) {
+  const q = new URL(urlString).searchParams;
+  let u = `https://readthegame.co/${route}?game=${id}`;
+  const at = q.get('at'), asof = q.get('asof');
+  if (at) u += `&at=${encodeURIComponent(at)}`;
+  if (asof && DATE.test(asof)) u += `&asof=${asof}`;
+  return u;
+}
+
 export async function onRequest(context) {
   const { request, next } = context;
-  const res = await next();
+  let res = await next();
   try {
+    /* A DATED LINK: that night's stored page replaces the current one. No stored
+       page (before editions began, or a night that never sealed) leaves the
+       current page, which says so itself. */
+    const dated = editionPage(request.url);
+    if (dated && /text\/html/i.test(res.headers.get('content-type') || '')) {
+      const stored = await fetch(`${DATA}/editions/${dated.asof}/pages/${dated.file}`);
+      if (stored.ok) res = new Response(stored.body,
+        { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' } });
+    }
     /* TWO PATHS, EACH IN BOTH ITS FORMS — see `PAGES`. */
     const hit = targetGame(request.url, res.headers.get('content-type'));
     if (!hit) return res;
@@ -183,8 +241,19 @@ export async function onRequest(context) {
     const g = await gameOf(hit.id);
     if (!g || !g.away || !g.home) return res;      // a game we do not hold stays generic
 
+    /* AN UNDATED PREVIEW GOES TO ITS EDITION, so the address a reader copies is
+       the permanent one. No edition yet: the current page, as before. */
+    if (hit.page === 'preview' && !new URL(request.url).searchParams.get('asof')) {
+      const date = editionFor(g, await doc('editions/index.json'));
+      if (date) {
+        const to = new URL(request.url);
+        to.searchParams.set('asof', date);
+        return Response.redirect(to.toString(), 302);
+      }
+    }
+
     const route = hit.page === 'replay' ? 'game' : 'preview';
-    const t = tagsFor(g, `https://readthegame.co/${route}?game=${hit.id}`, hit.page);
+    const t = tagsFor(g, cardUrl(route, hit.id, request.url), hit.page);
     /* ⛔ AND `tagsFor` IS ALLOWED TO REFUSE. An unplayed game has no replay, so
        the generic document is the honest one — returning it here is the same
        pass-through every other unknown takes. */

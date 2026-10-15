@@ -412,10 +412,12 @@ test('⛔⛔ the committed build input cannot move without a deploy being asked 
   assert.match(job, /gh workflow run deploy\.yml/,
     'the build input is committed and no deploy is requested — a GITHUB_TOKEN push '
     + 'does not trigger one, so the learn pages would hold the old figures');
-  // AND IT ASKS ONLY WHEN SOMETHING CHANGED, or every quiet night dispatches a
-  // deploy of an identical tree.
-  assert.match(job, /if: steps\.commit\.outputs\.pushed == '1'/,
-    'the deploy is dispatched unconditionally, including on nights with no change');
+  // AND IT ASKS EVERY NIGHT, WITH THE SEAL: the deploy also seals the night's
+  // edition (docs/editions-design.md), and an unchanged tree skips the upload.
+  assert.match(job, /gh workflow run deploy\.yml --ref main -f seal=true/,
+    'the nightly no longer asks the deploy to seal tonight\u2019s edition');
+  assert.doesNotMatch(job, /if: steps\.commit\.outputs\.pushed == '1'\s*\n\s*env:\s*\n\s*GH_TOKEN[^\n]*\n\s*run: gh workflow run deploy/,
+    'the deploy is asked for only when the pages changed, so quiet nights never seal');
   // The permissions the two steps need, named at the job. Without either, the
   // step fails at the end of a job that has already published correctly.
   /* ANCHORED TO THE START OF A LINE so a commented-out permission cannot

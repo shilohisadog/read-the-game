@@ -1156,9 +1156,10 @@ jobs:
       # `push: branches: [main]` — never fires. The learn pages would then hold
       # last week's figures with a fresh commit in the history saying otherwise,
       # which is a worse state than not committing at all. So the deploy is asked
-      # for explicitly, and only when something actually changed.
-      - name: republish the learn pages
-        if: steps.commit.outputs.pushed == '1'
+      # for explicitly — EVERY night the measurement ran, not only when the
+      # learn pages changed, because the deploy also seals the night's edition
+      # (docs/editions-design.md). An unchanged site skips the upload and still seals.
+      - name: republish the learn pages and seal tonight's edition
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run deploy.yml --ref main
+        run: gh workflow run deploy.yml --ref main -f seal=true

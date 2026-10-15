@@ -188,10 +188,14 @@ export function parse(search) {
      `preview` has followed since it was written. */
   // A learn-page lesson this visit came from; its id is checked against the
   // page's own list where it is used.
+  // A saved edition this link names (docs/editions-design.md): a league game date.
+  const rawAsof = once('asof');
+  const asof = rawAsof !== null && /^\d{4}-\d{2}-\d{2}$/.test(rawAsof) ? rawAsof : null;
+  if (rawAsof !== null && asof === null) problems.push(`asof: "${rawAsof}" is not a date`);
   const rawLesson = once('lesson');
   const lesson = rawLesson !== null && /^[a-z-]+$/.test(rawLesson) ? rawLesson : null;
   if (rawLesson !== null && lesson === null) problems.push(`lesson: "${rawLesson}" is not a lesson`);
-  return { game, at, layers, strength, ends, lesson,
+  return { game, at, layers, strength, ends, lesson, asof,
            preview: once('preview') === '1',
            summary: once('summary') === '1', problems };
 }

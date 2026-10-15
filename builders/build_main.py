@@ -1053,6 +1053,13 @@ function newest(f){
 // two of them the same test spelled out again. src/lib/deeplink.js is why.
 var LINK0=parse(location.search);
 var want=LINK0.game;
+// THE NEWEST SAVED EDITION, for the share link (docs/editions-design.md). Optional:
+// without it a shared link carries no date, as before.
+// Asked after the game has drawn, so the game file stays the first request.
+var NEWEST_EDITION=null;
+function newestEdition(){grab(ORIGIN+'/editions/index.json')
+  .then(function(x){var e=(x&&x.editions)||[];NEWEST_EDITION=e.length?e[e.length-1]:null;})
+  .catch(function(){});}
 say('Loading…');
 // A LESSON DOOR (`?lesson=icing`, no game): the nightly lessons.json names the
 // game and the moment; the reference game's door stands in when it cannot be
@@ -1079,9 +1086,12 @@ function lessonGame(id){
     // preview, and measures.json exists only to feed it, so fetching it would be
     // a request on a homepage for bytes nobody reads.
     if(LINK0.preview){reveal();draw(g,null);return null;}
-    return grab(ORIGIN+'/measures.json')
+    // A dated link reads that night's measurements; a night never saved falls back to today's.
+    return (LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/measures.json')
+                      .catch(function(){return grab(ORIGIN+'/measures.json');})
+                     :grab(ORIGIN+'/measures.json'))
       .catch(function(){return null;})
-      .then(function(rates){reveal();draw(g,rates);});})
+      .then(function(rates){reveal();draw(g,rates);newestEdition();});})
   .catch(function(e){
     // A true sentence about a broken situation beats a spinner that never ends.
     // AND THE APP GOES BACK AWAY. `reveal()` may already have run and `boot()`

@@ -62,7 +62,8 @@ const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takea
  *   evenOnly  whether the strength filter is on, for the footnote
  *   AAB HAB   the two club abbreviations
  */
-export function workMarkup({ id, L, sl, name, lds, lat, work, box: b, cards, mode, when, evenOnly, AAB, HAB }) {
+export function workMarkup({ id, L, sl, name, lds, lat, work, box: b, cards, mode, when, evenOnly, AAB, HAB,
+                             methods = '/how-we-measure.html' }) {
  /* ⭐ ONE EXAMPLE PER GROUP, so a categorical reason keeps a real measurement
     beside it. CHENG on the specific form: "36 against 33 teaches the rule
     better than the rule statement does" -- right, and the way to keep that
@@ -194,7 +195,7 @@ export function workMarkup({ id, L, sl, name, lds, lat, work, box: b, cards, mod
     advertise a gap, which is the argument `cardsFor` already settled. */
  +(work&&work.length
     ?`<p class="wwork"><span class="wll">How we counted this</span>`
-      +work.map(w=>`<a href="/how-we-measure.html#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('')
+      +work.map(w=>`<a href="${ESC(methods)}#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('')
       +`</p>`
     :'')+`</div>`
  /* ⭐⭐ THE SAME SHAPE AS THE COLUMN BESIDE IT: one row per RULE, with its count

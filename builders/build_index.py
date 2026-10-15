@@ -719,6 +719,14 @@ HELPERS = r"""  var $ = function (id) { return document.getElementById(id); };
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
     return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
   }
+  /* A DATED LINK (`asof=`) shows a saved edition: that night's data, under
+     `editions/<date>/` (docs/editions-design.md). Links between dated pages keep it. */
+  var ASOF = (/[?&]asof=(\d{4}-\d{2}-\d{2})(?=&|#|$)/.exec(location.search) || [])[1] || null;
+  function withAsof(href) {
+    if (!ASOF) return href;
+    var at = href.indexOf('#'), base = at < 0 ? href : href.slice(0, at), frag = at < 0 ? '' : href.slice(at);
+    return base + (base.indexOf('?') < 0 ? '?' : '&') + 'asof=' + ASOF + frag;
+  }
   // Default caching: every document is uploaded `no-cache` with an ETag, so the
   // browser revalidates each time and an unchanged one costs a 304.
   function grab(name) {
@@ -4099,6 +4107,7 @@ PREV_BODY = r"""<div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <h1 id="pvh1">What to watch for</h1>
 <p class="note" id="pvwhen"></p>
+<p class="note" id="pvedition" hidden></p>
 <main id="pv"></main>
 </div>
 <script>
@@ -4121,13 +4130,35 @@ __HELPERS__
        rather than a card that does not draw. */
     // The extract answers whether the game was played (a 404 means not held)
     // and who dressed for it; see `heldFrom` and `watchFor`.
-    Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
-                 grab('recent.json'), grab('extract/' + q + '.json'), grab('players.json')])
-      .then(function (r) {
-        draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
-                          recent: r[3], game: r[4], players: r[5] },
-                     new Date().toISOString()));
-      });
+    // A dated link reads its edition when one was saved; the game file is always the newest.
+    (ASOF ? grab('editions/' + ASOF + '/manifest.json') : Promise.resolve(null)).then(function (man) {
+      var ed = ASOF && man ? ASOF : null;
+      var at = function (n) { return ed ? 'editions/' + ed + '/data/' + n : n; };
+      return Promise.all([grab(at('schedule.json')), grab(at('teams.json')), grab(at('measures.json')),
+                          grab(at('recent.json')), grab('extract/' + q + '.json'), grab(at('players.json'))])
+        .then(function (r) {
+          // As it stood: a game still on that night's schedule had not been played yet.
+          var upcoming = ed && ((r[0] || {}).upcoming || []).some(function (g) {
+            return g && String(g.id) === String(q); });
+          var p = preview(q, { schedule: r[0], teams: r[1], measures: r[2], recent: r[3],
+                               game: upcoming ? null : r[4], players: r[5] },
+                          ed ? man.sealedAt : new Date().toISOString());
+          draw(p);
+          sayEdition(ed, p);
+        });
+    });
+  }
+
+  /* WHICH VERSION THIS IS, said rather than implied. */
+  function sayEdition(ed, p) {
+    var line = ed ? 'A saved version: as it stood with games through ' + when(ed)
+                    + '. This link always shows these figures.'
+      : ASOF ? 'No saved version exists for ' + when(ASOF) + ', so these are today\u2019s figures.'
+      : p.state === 'played' ? 'This preview was not saved before the game, so these are '
+                    + 'today\u2019s figures, and they include the game itself.'
+      : '';
+    $('pvedition').textContent = line;
+    $('pvedition').hidden = !line;
   }
 
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + ''; }
@@ -4381,7 +4412,7 @@ __HELPERS__
       var done = el('p', 'pvresult',
         g.away + ' ' + p.result.score.a + ' – ' + g.home + ' ' + p.result.score.h + '. ');
       var a = el('a', null, 'Read the whole game →');
-      a.href = p.result.watch;
+      a.href = withAsof(p.result.watch);
       done.appendChild(a);
       $('pv').appendChild(done);
     }
@@ -4526,7 +4557,7 @@ __HELPERS__
      by `test/methods.test.js` before it ships, not by a reader. */
   function workLink(key) {
     var a = el('a', 'pvwork', 'How this is counted \u2192');
-    a.href = '/how-we-measure.html#' + anchorFor(key);
+    a.href = withAsof('/how-we-measure.html#' + anchorFor(key));
     return a;
   }
 
@@ -4783,9 +4814,10 @@ __HELPERS__
     // The date the figures are counted through; absent rather than guessed.
     var through = w.through ? formatDate(w.through) : null;
     if (through) {
-      sect.appendChild(el('p', 'pvwatch',
-        'Counted through ' + through + ', and refreshed each night — a game '
-        + 'played after that date is not in these numbers yet.'));
+      sect.appendChild(el('p', 'pvwatch', ASOF
+        ? 'Counted through ' + through + '; a game played after that date is not in these numbers.'
+        : 'Counted through ' + through + ', and refreshed each night — a game '
+          + 'played after that date is not in these numbers yet.'));
     }
     w.rows.forEach(function (r) { sect.appendChild(playerRow(r, p)); });
     return sect;
@@ -5117,6 +5149,7 @@ __SECTIONCSS__
 HOW_BODY = r"""<div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <h1>How we measure</h1>
+<p class="note" id="hmedition" hidden></p>
 <p class="note hmlede">Every number on this site comes out of the league&rsquo;s own
 record of what happened in a game &mdash; who shot, from where, who was on the ice.
 Nothing here is a projection or an estimate.</p>
@@ -5594,7 +5627,16 @@ __HELPERS__
     target.focus({ preventScroll: true });
   }
 
-  grab('measures.json').then(function (mj) { draw(methods(mj)); openTheFragment(); });
+  // A dated link reads that night's measurements, so its arithmetic matches the page that linked here.
+  (ASOF ? grab('editions/' + ASOF + '/data/measures.json') : Promise.resolve(null)).then(function (saved) {
+    if (ASOF) {
+      $('hmedition').textContent = saved
+        ? 'A saved version: the arithmetic as it stood with games through ' + when(ASOF) + '.'
+        : 'No saved version exists for ' + when(ASOF) + ', so this is today\u2019s arithmetic.';
+      $('hmedition').hidden = false;
+    }
+    return saved || grab('measures.json');
+  }).then(function (mj) { draw(methods(mj)); openTheFragment(); });
 </script>
 """
 
