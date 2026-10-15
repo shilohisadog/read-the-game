@@ -2,14 +2,14 @@
  * EVERY NAME THE CODE GIVES A MEASURE RESOLVES TO ONE ENTRY IN THE LIST.
  * Two paths: the keys and labels are read from the surfaces' own modules and the
  * built game page, never from the registry, and the registry must account for
- * every one of them. A wording a reader meets must be the entry's `name` or one of
- * its `words`, and every listed word must still be met somewhere, so a renamed
- * label fails here instead of drifting.
+ * every one of them. Labels are read FROM the list, so the wording checks ask
+ * the two things that can still go wrong: a surface typing its own text again, and
+ * a page calling for an entry or field the list does not have.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { MEASURES, UNITS, CREDITS, STATUS, claimOf } from '../src/lib/registry.js';
+import { MEASURES, MEASURE_UNITS as UNITS, MEASURE_CREDITS as CREDITS, MEASURE_STATUS as STATUS, claimOf } from '../src/lib/registry.js';
 import { CLUB_ROWS, PLAYER_ROWS, POSSESSION_FAMILY, leagueRows } from '../src/lib/preview.js';
 import { EXPLAINED, PRINTED, PRINTED_KEYS, explainedLabel } from '../src/lib/methods.js';
 import { LAYERS } from '../builders/layer-rules.mjs';
@@ -31,16 +31,6 @@ const SYSTEMS = {
   printed: PRINTED_KEYS,
 };
 
-/** Every wording a reader meets, with the key that places it. */
-const WORDINGS = [
-  ...lenses.map(l => ({ system: 'lens', key: l.id, label: l.label })),
-  ...chips.map(c => ({ system: 'lens', key: c.key, label: c.label })),
-  ...[...CLUB_ROWS, ...PLAYER_ROWS].map(r => ({ system: 'row', key: r.key, label: r.label })),
-  ...POSSESSION_FAMILY.map(r => ({ system: CLUB_ROWS.includes(r) ? 'row' : 'withheld', key: r.key, label: r.label })),
-  ...EXPLAINED.map(k => ({ system: 'derivation', key: k, label: explainedLabel(k) })).filter(w => w.label),
-  ...PRINTED_KEYS.map(k => ({ system: 'printed', key: k, label: PRINTED[k].label })),
-];
-
 test('the game page offers chips, so the wording check has something to read', () => {
   assert.ok(chips.length >= 6, `found ${chips.length} chips in src/game.html`);
 });
@@ -49,7 +39,7 @@ test('every entry is complete and uses the declared vocabularies', () => {
   const ids = new Set();
   for (const m of MEASURES) {
     assert.ok(!ids.has(m.id), `two entries are called ${m.id}`); ids.add(m.id);
-    for (const f of ['name', 'says', 'counts', 'of', 'credit', 'unit', 'strength', 'score', 'scopes', 'keys', 'words'])
+    for (const f of ['name', 'says', 'counts', 'of', 'credit', 'unit', 'strength', 'score', 'scopes', 'keys'])
       assert.ok(m[f] != null, `${m.id} has no ${f}`);
     assert.ok(UNITS.includes(m.unit), `${m.id}: unit ${m.unit}`);
     assert.ok(CREDITS.includes(m.credit), `${m.id}: credit ${m.credit}`);
@@ -84,20 +74,48 @@ test('a proposed entry claims no key, and a live one is reachable', () => {
   }
 });
 
-test('every wording a reader meets is the entry’s name or one of its words', () => {
-  const stray = [];
-  for (const w of WORDINGS) {
-    const m = claimOf(w.system, w.key);
-    assert.ok(m, `${w.system}:${w.key} has no entry`);
-    if (w.label !== m.name && !m.words.includes(w.label)) stray.push(`${m.id} ← "${w.label}" (${w.system}:${w.key})`);
-  }
-  assert.deepEqual(stray, []);
+const ROLES = ['name', 'says', 'heading', 'layer', 'chip', 'tile'];
+
+test('every chip over the rink is the list\u2019s chip for that layer', () => {
+  for (const c of chips) assert.equal(c.label, claimOf('lens', c.key)?.chip, `chip ${c.key}`);
 });
 
-test('a word listed for an entry is met somewhere, so the list cannot carry dead wordings', () => {
-  const met = new Set(WORDINGS.map(w => w.label));
-  const dead = MEASURES.flatMap(m => m.words.filter(w => !met.has(w)).map(w => `${m.id}: "${w}"`));
-  assert.deepEqual(dead, []);
+test('every surface label is read from the list, the same text the list holds', () => {
+  const pairs = [
+    ...lenses.map(l => [l.label, claimOf('lens', l.id)?.layer, `layer ${l.id}`]),
+    ...[...CLUB_ROWS, ...PLAYER_ROWS].map(r => [r.label, claimOf('row', r.key)?.name, `row ${r.key}`]),
+    ...[...CLUB_ROWS, ...PLAYER_ROWS].map(r => [r.says, claimOf('row', r.key)?.says, `row ${r.key} says`]),
+    ...POSSESSION_FAMILY.filter(r => !CLUB_ROWS.includes(r))
+      .map(r => [r.label, claimOf('withheld', r.key)?.name, `withheld ${r.key}`]),
+    ...PRINTED_KEYS.map(k => [PRINTED[k].label, claimOf('printed', k)?.heading, `printed ${k}`]),
+    ...EXPLAINED.filter(k => explainedLabel(k)).map(k => [explainedLabel(k),
+      MEASURES.find(m => m.keys.derivation === k)?.heading, `derivation ${k}`]),
+  ];
+  assert.deepEqual(pairs.filter(([a, b]) => a !== b).map(p => p[2]), []);
+});
+
+test('no page or builder types a wording the list owns', () => {
+  const files = ['../builders/build_index.py', '../builders/build_main.py',
+    ...['preview.js', 'printed.js', 'derivation.js', 'league-rows.js', 'methods.js', 'sections.js']
+      .map(f => `../src/lib/${f}`),
+    ...lenses.map(l => `../src/lib/layers/${l === tiedControl ? 'tied' : ({ slot: 'danger' }[l.id] || l.id)}.js`)];
+  const owned = MEASURES.flatMap(m => ROLES.map(r => m[r]))
+    .filter(w => typeof w === 'string' && w.length >= 16);
+  const typed = [];
+  for (const f of files) {
+    const src = read(f);
+    for (const w of owned) for (const q of [`'${w}'`, `"${w}"`, `>${w}<`]) if (src.includes(q)) typed.push(`${f}: ${q}`);
+  }
+  assert.deepEqual(typed, []);
+});
+
+test('every measure() call in a built page names an entry and a field it has', () => {
+  const calls = [];
+  for (const page of ['../src/preview.html', '../src/how-we-measure.html', '../src/game.html'])
+    for (const m of read(page).matchAll(/measure\('(\w+)'\)\.(\w+)/g)) calls.push([page, m[1], m[2]]);
+  assert.ok(calls.length >= 5, `found ${calls.length} calls`);
+  const bad = calls.filter(([, id, f]) => typeof MEASURES.find(m => m.id === id)?.[f] !== 'string');
+  assert.deepEqual(bad.map(c => c.join(' ')), []);
 });
 
 test('the slot entries carry the slot boundary as our policy', () => {

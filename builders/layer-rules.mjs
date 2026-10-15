@@ -35,6 +35,7 @@ import { zonestart } from '../src/lib/layers/zonestart.js';
 import { anchorOf } from '../src/lib/anchors.js';
 import { EXPLAINED, PRINTED_KEYS, explainedLabel } from '../src/lib/methods.js';
 import { stable } from './measure.mjs';
+import { claimOf } from '../src/lib/registry.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -67,7 +68,9 @@ export function rules(explained) {
           + `explains no such figure (it has ${explained.join(', ')})`);
       }
     }
-    return { id: l.id, label: l.label, counts: l.counts, credits: l.credits,
+    const entry = claimOf('lens', l.id);
+    if (!entry || !entry.chip) throw new Error(`layer ${l.id}: no chip label in src/lib/registry.js`);
+    return { id: l.id, label: l.label, chip: entry.chip, counts: l.counts, credits: l.credits,
              /* ⭐ THE LABEL TRAVELS WITH THE DOOR. Stoppages opens three
                 sections and three links reading "How we counted this" is a menu
                 with nothing on it; the name is `methods.js`'s and is read from

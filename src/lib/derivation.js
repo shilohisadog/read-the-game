@@ -17,6 +17,7 @@
 import { anchorFor, explains } from './anchors.js';
 import { leagueRows } from './league-rows.js';
 import { PRINTED } from './printed.js';
+import { measure } from './registry.js';
 
 /**
  * What each figure is COUNTED FROM, in the words a reader can check us on.
@@ -126,7 +127,7 @@ const DERIVATION = {
   /* -------------------------------------------------------- the league frame */
   powerplay: {
     unit: 'goals for every 100 power plays',
-    label: 'How often a power play produces a goal',
+    label: measure('ppGoalRate').heading,
     count: 'power-play goals',
     of: 'power plays',
     why: 'The most consequential thing that happens away from open play \u2014 and '
@@ -139,7 +140,7 @@ const DERIVATION = {
           + 'empty \u2014 not a goal scored BY the short-handed team.' },
   penalties: {
     unit: 'penalties, per team per game',
-    label: 'How many penalties a team takes',
+    label: measure('penalties').heading,
     count: 'penalties called',
     of: 'two teams per game, so the answer is per team per game',
     why: 'This is the number the power-play figure sits against, and the gap '
@@ -150,7 +151,7 @@ const DERIVATION = {
           + 'at the final horn leaves no time to play it. A double minor gives two.' },
   offside: {
     unit: 'times offside, per team per game',
-    label: 'How often a team is offside',
+    label: measure('offside').heading,
     count: 'times play was stopped for offside',
     of: 'two teams per game',
     why: 'The first rule that makes a newcomer ask why play just stopped \u2014 and '
@@ -161,7 +162,7 @@ const DERIVATION = {
           + 'a dependable reading, but it is a reading.' },
   icing: {
     unit: 'icings, per team per game',
-    label: 'How often a team ices the puck',
+    label: measure('icing').heading,
     count: 'times play was stopped for icing',
     of: 'two teams per game',
     /* ⛔ "so tired players have to stay out" WAS HERE AND HAS BEEN CUT TWICE.
@@ -178,7 +179,7 @@ const DERIVATION = {
           + 'rulebook, that is evidence about our reading first.' },
   attempts: {
     unit: 'of every 100 attempts reached the goalie',
-    label: 'Where a shot attempt ends',
+    label: measure('attemptMix').heading,
     count: 'attempts of each ending \u2014 reached the goalie, blocked, missed',
     of: 'every shot attempt in the archive',
     /* ⛔⛔ THIS PROSE NAMED TWO THINGS THAT ARE NOT THERE, and they were not there
@@ -239,7 +240,7 @@ const DERIVATION = {
           + 'beside a team when that judgement is what the number rests on.' },
   playerRate: {
     unit: 'a game, for one skater',
-    label: 'What a player does in a game',
+    label: measure('playerGoals').heading,
     count: 'that player\u2019s goals, assists, shots on goal or shot attempts',
     of: 'the games he dressed for this season',
     /* ⚠️ THE DENOMINATOR IS GAMES DRESSED, NOT GAMES HE DID SOMETHING IN, and
@@ -268,7 +269,7 @@ const DERIVATION = {
           + 'We show it so you know who to watch, not to rank anybody.' },
   shift: {
     unit: 'seconds',
-    label: 'How long a shift lasts',
+    label: measure('shiftMedian').heading,
     count: 'the middle shift length, in seconds',
     of: 'every shift in the archive with a start and an end recorded',
     why: 'The most bewildering thing about a first hockey game is that nobody '
@@ -279,7 +280,7 @@ const DERIVATION = {
           + 'information are left out of the count rather than treated as zero.' },
   hits: {
     unit: 'hits, per team per game',
-    label: 'How many hits a team lands',
+    label: measure('hits').heading,
     count: 'hits credited to a team',
     of: 'two teams per game',
     why: 'You will hear "they are really taking it to them physically" all night. '

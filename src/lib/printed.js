@@ -24,6 +24,7 @@
  * re-exports these three, so nothing that already read them had to change.
  */
 import { anchorOf } from './anchors.js';
+import { measure } from './registry.js';
 
 /**
  * ⭐⭐⭐ THE FIGURES THE REST OF THE SITE PRINTS, AND WHY THEY ARE A SECOND TABLE.
@@ -64,7 +65,7 @@ import { anchorOf } from './anchors.js';
  */
 const PRINTED = {
   slotGoals: {
-    label: 'How often a shot from the slot goes in',
+    label: measure('slotGoals').heading,
     where: 'The front door, the Shots from the slot card on What you can '
          + 'see here, and the Shots from the slot rule page.',
     reads: [
@@ -97,7 +98,7 @@ const PRINTED = {
        reader's "where did 46.7% come from?" with r = 0.72 over 38 games. Caught
        by the gate that requires a door's section to show a number the copy
        shows, which is the one check here that is not circular. */
-    label: 'How many shot attempts are taken from the slot',
+    label: measure('slotShare').heading,
     where: 'The note under the drawing on the Shots from the slot rule page.',
     reads: [
       { is: 'Taken from inside the slot', at: ['slot', 'attempts'],
@@ -147,7 +148,7 @@ const PRINTED = {
        question a reader of the front door does, and until now the layer could
        only answer it with its own counting rule — true, and silent about what
        ordinary looks like. */
-    label: 'How often a goaltender makes the save',
+    label: measure('saveFraction').heading,
     /* ⚠️ NO `where`, AND THAT IS NOT AN OMISSION. This figure is printed on no
        static page at all — the Goaltending layer builds it in front of a viewer,
        once per game — and the line saying so is DERIVED from the layer
@@ -179,7 +180,7 @@ const PRINTED = {
         played, so an hour of even-strength hockey holds about 117 of these
         between the two of them — not 59. A label on the methods page that
         doubles a figure is the worst place on the site to be loose. */
-    label: 'How many shot attempts a team takes in an hour',
+    label: measure('pace').heading,
     /* ⛔ AND THIS USED TO CLAIM THE GAME PAGE TOO. It does not print this
        figure: the box under the ice counts attempts, and the per-60 rate is
        printed on exactly one surface. Measured by grepping the built pages for
@@ -210,7 +211,7 @@ const PRINTED = {
           + 'counted once from each side, which is why the pair can be read '
           + 'against each other and why neither can be added to the other.' },
   scoreEffects: {
-    label: 'What the scoreboard does to the same number',
+    label: measure('paceByScore').heading,
     where: 'The front door, and the Score effects card on '
          + 'What you can see here.',
     reads: [
@@ -243,7 +244,7 @@ const PRINTED = {
           + 'behind is also, on average, the weaker team that night, and this '
           + 'measurement cannot take that apart.' },
   zoneStarts: {
-    label: 'What a face-off in one end is worth',
+    label: measure('endZoneWorth').heading,
     where: 'The front door, and The attacking zone card on '
          + 'What you can see here.',
     reads: [

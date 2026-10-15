@@ -38,6 +38,7 @@ import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, distanceToNet, isHighDanger, NET_X, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../rink.js';
 import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
+import { measure } from '../registry.js';
 
 export const danger = {
   /**
@@ -82,7 +83,7 @@ export const danger = {
   counts: `attempts from within ${HIGH_DANGER_FT} ft of the net, ${SLOT_HALF_WIDTH} ft either side of the middle, and in front of the goal line`,
   credits: 'Credited to the team that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.',
   id: 'slot',
-  label: '＋ Shots from the slot',
+  label: measure('slotShots').layer,
 
   reduce(events, ctx) {
     const counted = [], surprising = [], excluded = [];

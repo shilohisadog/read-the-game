@@ -12,6 +12,7 @@
 import { corsiTeam, ATTEMPT_TYPES } from '../attribution.js';
 import { NOT_A_PLAY, NOT_AN_ATTEMPT, inShootout, shootoutWinner } from '../layer.js';
 import { whyNotEven } from '../strength.js';
+import { measure } from '../registry.js';
 
 
 export const corsi = {
@@ -37,7 +38,7 @@ export const corsi = {
   counts: 'every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net',
   credits: 'A blocked attempt is credited to the team that shot it — the shot was still taken, it just never arrived.',
   id: 'corsi',
-  label: '＋ Control (Corsi)',
+  label: measure('attempts').layer,
 
   /**
    * @param events  the whole game, in order

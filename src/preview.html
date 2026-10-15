@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UF/aJn3x2AMcgLFlp6hdQV6EeOfb3sEQr8EzzQj8L0k=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Mt58iH88bieXZXpLOt79meWcHyRL9EkwjSK0V0jAy3s=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -489,6 +489,298 @@ function readableInk(hex, on = '#ffffff') {
 }
 
 
+const NET_X = 89;
+const GOAL_LINE_X = 89; 
+const BLUE_LINE_X = 25; 
+const NEUTRAL_DOT_X = 20;
+const ZONE_BAND_FT = BLUE_LINE_X - NEUTRAL_DOT_X; 
+const CENTRE_X = 0;
+const SLOT_HALF_WIDTH = 22; 
+const HIGH_DANGER_FT = 33; 
+
+function attackZone(x, dir) {
+  const ax = x * dir;
+  return ax > BLUE_LINE_X ? 'O' : ax < -BLUE_LINE_X ? 'D' : 'N';
+}
+
+function attackDirection(teamId, homeTeamId) {
+  return teamId === homeTeamId ? 1 : -1;
+}
+
+function distanceToNet(x, y, dir) {
+  return Math.hypot(NET_X - x * dir, y);
+}
+
+function isHighDanger(x, y, dir) {
+  return distanceToNet(x, y, dir) <= HIGH_DANGER_FT
+    && Math.abs(y) <= SLOT_HALF_WIDTH
+    && x * dir <= NET_X;
+}
+
+const ENDS_SHOOTOUT = {
+  rule: 'The goaltenders change ends for the shootout — every attempt is taken '
+      + 'at the same end of the rink.',
+  from: 'rule: the feed records the shootout as its own period type, and both '
+      + 'teams attempt at one end within it',
+};
+
+const ENDS_NOTE = {
+  'as-played': {
+    rule: 'The teams have just changed ends, as they do every period.',
+    from: 'rule: the feed records which end each team defended in each period, '
+        + 'and the rink follows it',
+  },
+  fixed: {
+    rule: 'The teams just changed ends, as they do every period.',
+    display: 'We hold the rink the same way all game, so the marks stay comparable.',
+    from: 'display: the feed records which end each team defended and the extract '
+        + 'normalizes it away, so the rink is held in one direction',
+  },
+};
+
+const ENDS_KEY = {
+  'as-played': {
+    rule: 'the teams switch ends every period, as they do in the arena',
+    from: 'rule: a fact about hockey, not a claim about this page',
+  },
+  fixed: {
+    display: 'ends are held fixed — in the arena the teams switch each period',
+    from: 'display: the extract normalizes the switch away, so the rink is held '
+        + 'in one direction',
+  },
+};
+
+function endsKeyShowing(mode, e) {
+  if (mode === 'as-played') return true;
+  return !!e && e.per > 1;
+}
+
+const ENDS_NOTE_SECONDS = 90;
+
+function endsNoteShowing(e, periodStart) {
+  if (!e || !(e.per > 1)) return false;
+  if (e.pt === 'SO') return false;
+  return e.s - periodStart < ENDS_NOTE_SECONDS;
+}
+
+
+
+
+const SLOT_POLICY = { slot: `slot = within ${HIGH_DANGER_FT} ft of the net and ${SLOT_HALF_WIDTH} ft either side of centre — ours, unsourced` };
+
+const MEASURE_UNITS = ['count', 'share', 'perGame', 'per60', 'seconds', 'record', 'rate'];
+const MEASURE_CREDITS = ['shooter', 'defender', 'blocker', 'goaltender', 'winner', 'team', 'player', 'none'];
+const MEASURE_STATUS = ['live', 'proposed'];
+
+const MEASURES = [
+  { id: 'attempts', name: 'shot attempts', chip: 'Attempts', layer: '＋ Control (Corsi)',
+    says: 'Every puck a team put at the net — on goal, missed, or blocked by a body.',
+    counts: 'goals + shots on goal + missed + blocked', of: 'game', credit: 'shooter',
+    unit: 'count', strength: 'all', score: 'any', scopes: ['game', 'season'],
+    typical: 'middle half', witness: null, family: 'possession',
+    keys: { lens: 'corsi' },
+    pending: [{ ruling: '5', what: 'level possession folds in as a filter' },
+              { ruling: 'wording', what: 'the layer label says "Control (Corsi)", the chip says "Attempts"' }] },
+  { id: 'level5', name: '5-on-5 CF% while the score was level', layer: 'control while the score was level',
+    says: 'Of every 100 shot attempts at 5-on-5 with the score level in this team\u2019s own games — both sides counted — this many were its own.',
+    counts: 'own attempts at strict 5-on-5, score level', of: 'both sides’ attempts, same filter',
+    credit: 'shooter', unit: 'share', strength: '5v5', score: 'level', scopes: ['season'],
+    typical: 'league figure', witness: null, family: 'possession',
+    keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' },
+    pending: [{ ruling: '2', what: 'tied-control admits 4-on-4 and 3-on-3; level means strict 5-on-5 everywhere' }] },
+  { id: 'corsiShare', name: 'shot-attempt share, all situations', says: 'Of every 100 shot attempts in a team’s games, this many were its own.',
+    counts: 'own attempts', of: 'both sides’ attempts', credit: 'shooter', unit: 'share',
+    strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure',
+    witness: null, family: 'possession', keys: { withheld: 'corsi' } },
+  { id: 'fenwickShare', name: 'unblocked shot-attempt share', says: 'The same share, leaving out attempts that were blocked.',
+    counts: 'own unblocked attempts', of: 'both sides’ unblocked attempts', credit: 'shooter',
+    unit: 'share', strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure',
+    witness: null, family: 'possession', keys: { withheld: 'fenwick' } },
+  { id: 'sogShare', name: 'share of the shots on goal', says: 'Of every 100 shots on goal in this team\u2019s own games — both sides counted — this many were its own.',
+    counts: 'own shots on goal', of: 'both sides’ shots on goal', credit: 'shooter',
+    unit: 'share', strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure',
+    witness: 'boxscore (quoted)', family: 'possession', keys: { row: 'sogShare', derivation: 'sogShare' } },
+  { id: 'shotsOnGoal', name: 'shots on goal, per game', status: 'proposed',
+    says: 'Pucks a team put on net that the goaltender had to deal with, per game.',
+    counts: 'shots on goal', of: 'games', credit: 'shooter', unit: 'perGame', strength: 'all',
+    score: 'any', scopes: ['game', 'season'], typical: 'league figure',
+    witness: 'boxscore (quoted)', family: 'possession', keys: {} },
+  { id: 'attemptsAgainst', name: 'shot attempts against, per game', says: 'How many shot attempts the other team aimed at this team\u2019s net, per game — the other side of having the puck.',
+    counts: 'opponent’s attempts', of: 'games', credit: 'defender', unit: 'perGame',
+    strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure',
+    witness: null, family: 'possession', keys: { row: 'attemptsAgainst', derivation: 'attemptsAgainst' } },
+  { id: 'blocks', name: 'shot attempts blocked, per game', chip: 'Blocked', layer: '＋ Blocked shots',
+    says: 'How many of the other team\u2019s shot attempts this team got in front of before they reached the net, per game.',
+    counts: 'blocked shots credited to the blocker’s team', of: 'games', credit: 'blocker',
+    unit: 'perGame', strength: 'all', score: 'any', scopes: ['game', 'season'],
+    typical: 'league figure', witness: 'boxscore player rows', family: 'possession',
+    keys: { row: 'blocks', derivation: 'blocksMade', lens: 'blocked' },
+    pending: [{ ruling: 'audit §2 #6', what: 'the whole-game scale also counts teammate blocks and blocks with no blocker recorded' }] },
+  { id: 'zoneStarts', name: 'offensive-zone face-offs', chip: 'Zone starts', layer: '＋ Zone starts',
+    says: 'Face-offs a team won in the other team’s end.',
+    counts: 'face-offs in the attacking end', of: 'face-offs', credit: 'winner', unit: 'count',
+    strength: 'all', score: 'any', scopes: ['game', 'season'], typical: 'middle half',
+    witness: null, family: 'possession', keys: { lens: 'zonestart' },
+    pending: [{ ruling: '3', what: 'the whole-game panel ranks all face-offs won; rank offensive-zone face-offs' }] },
+
+  { id: 'slotShots', name: 'shots from the slot', chip: 'Slot shots', layer: '＋ Shots from the slot',
+    says: 'Shots taken from the slot, the area in front of the net.',
+    counts: 'unblocked attempts with a location, inside the slot', of: 'attempts with a location',
+    credit: 'shooter', unit: 'count', strength: 'all', score: 'any', scopes: ['game', 'season'],
+    typical: 'middle half', witness: null, policy: SLOT_POLICY.slot, keys: { lens: 'slot' },
+    pending: [{ ruling: '3', what: 'the box divides by every attempt, blocked included; divide by attempts with a location' }] },
+  { id: 'slotShare', name: 'shot attempts from the slot', heading: 'How many shot attempts are taken from the slot',
+    says: 'Of every 100 shot attempts this team took from a spot the feed records, this many came from the slot.',
+    counts: 'unblocked attempts with a location, inside the slot', of: 'unblocked attempts with a location',
+    credit: 'shooter', unit: 'share', strength: 'all', score: 'any', scopes: ['season', 'archive'],
+    typical: 'league figure', witness: null, policy: SLOT_POLICY.slot,
+    keys: { row: 'slot', derivation: 'slotShare', printed: 'slotAttempts' } },
+  { id: 'slotGoals', name: 'how often a shot from the slot goes in', heading: 'How often a shot from the slot goes in',
+    says: 'Goals per shot from inside the slot and from outside it, and the share of goals scored from it.',
+    counts: 'goals', of: 'unblocked attempts, inside vs outside', credit: 'none', unit: 'share',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    policy: SLOT_POLICY.slot, keys: { printed: 'slotGoals' } },
+  { id: 'dmen', name: 'shot attempts taken by defencemen', says: 'Of every 100 shot attempts this team took, this many came from one of its own defencemen.',
+    counts: 'attempts by a defenceman', of: 'own attempts', credit: 'shooter', unit: 'share',
+    strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure', witness: null,
+    keys: { row: 'dmen', derivation: 'dmen' },
+    pending: [{ ruling: '5', what: 'add the Who shoots layer' }] },
+  { id: 'shiftLength', name: 'average shift length', says: 'How long this team\u2019s skaters stay on the ice each time they go out, on average, in seconds.',
+    counts: 'skater seconds on the ice', of: 'skater shifts', credit: 'team', unit: 'seconds',
+    strength: 'all', score: 'any', scopes: ['game', 'season', 'archive'], typical: 'mean',
+    witness: null, keys: { row: 'shiftLength', derivation: 'shiftLength' } },
+  { id: 'shiftMedian', name: 'how long a shift lasts', heading: 'How long a shift lasts',
+    says: 'The middle shift in the archive, with the middle half around it.',
+    counts: 'skater shifts', of: 'percentile', credit: 'none', unit: 'seconds', strength: 'all',
+    score: 'any', scopes: ['archive'], typical: 'median', witness: null,
+    keys: { league: 'shift', derivation: 'shift' },
+    pending: [{ ruling: '4', what: 'the typical shift is the mean everywhere; the color line reads this median' }] },
+
+  { id: 'shotsFaced', name: 'shots the goaltenders faced', says: 'Shots on goal and goals against, with a goaltender in the net.',
+    counts: 'shots on goal + goals, goalie in net', of: 'game', credit: 'goaltender', unit: 'count',
+    strength: 'all', score: 'any', scopes: ['game', 'season'], typical: 'middle half',
+    witness: 'boxscore', keys: {} },
+  { id: 'saveFraction', name: 'how often a goaltender makes the save',
+    chip: 'Goaltending', layer: '＋ Goaltending', heading: 'How often a goaltender makes the save',
+    says: 'Of every 100 shots a goaltender faced, this many he stopped.',
+    counts: 'saves', of: 'shots faced', credit: 'goaltender', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['game', 'archive'], typical: 'league figure', witness: 'boxscore',
+    holds: false, keys: { lens: 'goaltending', printed: 'saves' },
+    pending: [{ ruling: '3', what: 'the whole-game panel ranks shots faced; rank save fraction' },
+              { ruling: '5', what: 'stays on the rink, never ranked as a team figure' }] },
+  { id: 'goalieRecord', name: 'a goaltender’s record', status: 'proposed',
+    says: 'Wins, losses and overtime losses credited to a goaltender.',
+    counts: 'the league’s decision', of: 'games', credit: 'goaltender', unit: 'record',
+    strength: 'all', score: 'any', scopes: ['season'], typical: null,
+    witness: 'boxscore decision (not yet kept — check the field)', keys: {} },
+
+  { id: 'faceoffWins', name: 'face-offs won', status: 'proposed',
+    says: 'Face-offs a team won, and its share of all the draws.',
+    counts: 'face-offs won', of: 'face-offs', credit: 'winner', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: 'right rail',
+    holds: false, keys: {} },
+  { id: 'playerFaceoffs', name: 'face-off win percentage', status: 'proposed',
+    says: 'Of every 100 draws a player took, this many he won.',
+    counts: 'draws won', of: 'draws taken', credit: 'player', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg',
+    keys: {}, pending: [{ ruling: '7', what: 'needs the losing player, which extract.py drops' }] },
+  { id: 'endZoneWorth', name: 'what a face-off in one end is worth', heading: 'What a face-off in one end is worth',
+    says: 'Shot attempts that follow a face-off in one end, per face-off.',
+    counts: 'attempts after the draw', of: 'face-offs in that end', credit: 'none', unit: 'rate',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    keys: { printed: 'zoneStarts' } },
+
+  { id: 'penalties', name: 'penalties a team takes', heading: 'How many penalties a team takes', tile: 'penalties a team takes',
+    says: 'Penalties called on one team, per game.',
+    counts: 'penalty events', of: '2 × games', credit: 'team', unit: 'perGame', strength: 'all',
+    score: 'any', scopes: ['archive'], typical: 'league figure', witness: null, holds: false,
+    keys: { league: 'penalties', derivation: 'penalties' } },
+  { id: 'ppGoalRate', name: 'power plays that produce a goal', heading: 'How often a power play produces a goal', tile: 'power plays produce a goal',
+    says: 'Of every 100 power plays, this many end with a goal.',
+    counts: 'power-play goals', of: 'power plays, counted the league’s way', credit: 'team',
+    unit: 'share', strength: 'pp', score: 'any', scopes: ['archive'], typical: 'league figure',
+    witness: 'boxscore + right rail', holds: false, keys: { league: 'powerplay', derivation: 'powerplay' } },
+  { id: 'powerPlays', name: 'power plays a team gets', says: 'Power plays one team gets, per game — printed inside the power-play row.',
+    counts: 'power plays, counted the league’s way', of: '2 × games', credit: 'team',
+    unit: 'perGame', strength: 'pp', score: 'any', scopes: ['archive'], typical: 'league figure',
+    witness: 'boxscore + right rail', holds: false, keys: {} },
+  { id: 'offside', name: 'times a team is offside', heading: 'How often a team is offside', tile: 'times a team is offside',
+    says: 'Offside calls against one team, per game.',
+    counts: 'stoppages for offside', of: '2 × games', credit: 'team', unit: 'perGame',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    holds: false, keys: { league: 'offside', derivation: 'offside' } },
+  { id: 'icing', name: 'times a team ices the puck', heading: 'How often a team ices the puck', tile: 'times a team ices the puck',
+    says: 'Icing calls against one team, per game.',
+    counts: 'stoppages for icing', of: '2 × games', credit: 'team', unit: 'perGame',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    holds: false, keys: { league: 'icing', derivation: 'icing' } },
+  { id: 'stoppages', name: 'why play stopped', chip: 'Stoppages', layer: '＋ Why play stopped',
+    says: 'Every stoppage, named by its reason. A stoppage names a rule, never a team.',
+    counts: 'stoppages + delayed penalties, by reason', of: 'game', credit: 'none', unit: 'count',
+    strength: 'all', score: 'any', scopes: ['game', 'season'], typical: 'middle half',
+    witness: null, keys: { lens: 'whistle' } },
+  { id: 'attemptMix', name: 'where a shot attempt ends', heading: 'Where a shot attempt ends', tile: 'shot attempts reach the goalie',
+    says: 'Of every 100 attempts, how many reached the goalie, were blocked, or missed.',
+    counts: 'attempts by how they ended', of: 'all attempts', credit: 'none', unit: 'share',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    keys: { league: 'attempts', derivation: 'attempts' } },
+  { id: 'pace', name: 'shot attempts in an hour', heading: 'How many shot attempts a team takes in an hour',
+    says: 'Attempts per 60 minutes, at even strength, on the power play and short-handed.',
+    counts: 'attempts in the situation', of: 'minutes in the situation', credit: 'none',
+    unit: 'per60', strength: 'by situation', score: 'any', scopes: ['archive'],
+    typical: 'league figure', witness: null, keys: { printed: 'pace' } },
+  { id: 'paceByScore', name: 'what the scoreboard does to the same number',
+    heading: 'What the scoreboard does to the same number',
+    says: 'Attempts per 60 minutes at even strength when trailing, tied and leading.',
+    counts: 'even-strength attempts', of: 'even-strength minutes, by score', credit: 'none',
+    unit: 'per60', strength: 'even', score: 'trailing / tied / leading', scopes: ['archive'],
+    typical: 'league figure', witness: null, keys: { printed: 'scoreEffects' } },
+  { id: 'paceByTime', name: 'shot attempts in an hour, by time of game', status: 'proposed',
+    says: 'Attempts per 60 minutes by period and by minute of the game.',
+    counts: 'attempts', of: 'minutes, by period / minute', credit: 'none', unit: 'per60',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null, keys: {} },
+  { id: 'hits', name: 'hits a team lands', heading: 'How many hits a team lands',
+    says: 'Hits recorded for one team, per game. Follows the home arena’s scorer more than the team.',
+    counts: 'hits', of: '2 × games', credit: 'team', unit: 'perGame', strength: 'all', score: 'any',
+    scopes: ['archive'], typical: 'league figure', witness: 'right rail', holds: false,
+    keys: { league: 'hits', derivation: 'hits' } },
+
+  { id: 'record', name: 'record', says: 'Wins, losses and overtime losses — three counts, regular season and playoffs apart.',
+    counts: 'decided games', of: 'games', credit: 'team', unit: 'record', strength: 'all',
+    score: 'any', scopes: ['season'], typical: null, witness: 'standings (nightly)', keys: {} },
+  { id: 'leaderLost', name: 'the team with more attempts lost', says: 'Of games where one team had more shot attempts, how many it lost.',
+    counts: 'games the attempts leader lost', of: 'games with an edge', credit: 'none',
+    unit: 'share', strength: 'all', score: 'any', scopes: ['archive', 'night'],
+    typical: null, witness: null, keys: {} },
+  { id: 'levelLeaderLost', name: 'the team that controlled level play lost', says: 'Of games where one team led level-score attempts by k or more, how many it lost.',
+    counts: 'games the level leader lost', of: 'games led by k or more', credit: 'none',
+    unit: 'share', strength: '5v5', score: 'level', scopes: ['archive'], typical: null,
+    witness: null, keys: {},
+    pending: [{ ruling: '2', what: 'computed from tied-control today; level means strict 5-on-5' }] },
+
+  ...[['playerGoals', 'goals per game', 'goals', 'How many of this team\u2019s goals he has scored himself, per game played.'],
+      ['playerAssists', 'assists per game', 'assists', 'The passes the league credited to him on somebody else\u2019s goal.'],
+      ['playerShots', 'shots on goal per game', 'shots on goal', 'Pucks he put on net that the goaltender had to deal with.'],
+      ['playerAttempts', 'shot attempts per game', 'shot attempts', 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.'],
+  ].map(([id, name, what, says]) => ({
+    id, name, heading: 'What a player does in a game', says,
+    counts: what, of: 'games played', credit: 'player', unit: 'perGame', strength: 'all',
+    score: 'any', scopes: ['season'], typical: 'median',
+    witness: id === 'playerAttempts' ? null : 'boxscore', keys: { row: id, derivation: 'playerRate' },
+    pending: [{ ruling: 'audit §2 #8', what: 'steadiness is measured by a different instrument from the team rows' }] })),
+];
+
+function measure(id) {
+  const m = MEASURES.find(x => x.id === id);
+  if (!m) throw new Error(`registry: no measure called ${id}`);
+  return m;
+}
+
+function claimOf(system, key) {
+  return MEASURES.find(m => m.keys[system] === key);
+}
+
+
 function leagueRows(measures) {
   const c = (measures && measures.census) || null;
   const w = c && c.whistles;
@@ -544,61 +836,50 @@ function extraLeagueRows(measures, c, perClubGame, ratio) {
 
 
 
+
 { leagueRows };
 
+const words = id => ({ label: measure(id).name, says: measure(id).says });
+
 const CLUB_ROWS = [
-  { key: 'level5', label: '5-on-5 CF% while the score was level',
-    says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
-        + 'team\u2019s own games — both sides counted — this many were its own.',
+  { key: 'level5', ...words('level5'),
     counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score level',
     of: t => ({ count: t.level5.for, n: t.level5.for + t.level5.against }),
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }),
     unit: 'share', group: 'possession', fields: ['lvl5'] },
-  { key: 'sogShare', label: 'share of the shots on goal',
+  { key: 'sogShare', ...words('sogShare'),
     trend: { up: 'take a bigger share of the shots on goal',
              down: 'take a smaller share of the shots on goal' },
-    says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
-        + 'counted \u2014 this many were its own.',
     counts: 'shots on goal by both sides in each team\u2019s own games',
     of: t => (t.sog ? { count: t.sog.for, n: t.sog.for + t.sog.against } : { count: 0, n: 0 }),
     ofGame: (g, side) => g.sog && Number.isFinite(g.sog.h) && Number.isFinite(g.sog.a)
       ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
     unit: 'share', group: 'possession', fields: ['sog'] },
-  { key: 'attemptsAgainst', label: 'shot attempts against, per game',
+  { key: 'attemptsAgainst', ...words('attemptsAgainst'),
     trend: { up: 'face more of the other team\u2019s attempts',
              down: 'face fewer of the other team\u2019s attempts' },
-    says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
-        + 'game \u2014 the other side of having the puck.',
     counts: 'Attempts aimed at each team\u2019s net',
     of: t => (t.attempts ? { count: t.attempts.against, n: t.games } : { count: 0, n: 0 }),
     ofGame: (g, side) => (g.attempts ? { count: g.attempts[side === 'h' ? 'a' : 'h'], n: 1 }
                                      : { count: 0, n: 0 }),
     unit: 'perGame', group: 'possession', fields: ['attempts'] },
-  { key: 'blocks', label: 'shot attempts blocked, per game',
+  { key: 'blocks', ...words('blocks'),
     trend: { up: 'block more shots', down: 'block fewer shots' },
-    says: 'How many of the other team\u2019s shot attempts this team got in front of '
-        + 'before they reached the net, per game.',
     counts: 'Attempts each team blocked',
     of: t => (t.blocks ? { count: t.blocks.count, n: t.games } : { count: 0, n: 0 }),
     ofGame: (g, side) => (g.blocks ? { count: g.blocks[side] || 0, n: 1 } : { count: 0, n: 0 }),
     unit: 'perGame', group: 'possession', fields: ['blocks'] },
-  { key: 'dmen', label: 'shot attempts taken by defencemen',
-    says: 'Of every 100 shot attempts this team took, this many came from one of '
-        + 'its own defencemen.',
+  { key: 'dmen', ...words('dmen'),
     counts: 'attempts each team took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }),
     unit: 'share', fields: ['dAtt', 'attempts'] },
-  { key: 'slot', label: 'shot attempts from the slot',
-    says: 'Of every 100 shot attempts this team took from a spot the feed records, '
-        + 'this many came from the slot.',
+  { key: 'slot', ...words('slotShare'),
     counts: 'attempts each team took from a spot the feed records',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }),
     unit: 'share', fields: ['slot', 'located'] },
-  { key: 'shiftLength', label: 'average shift length',
-    says: 'How long this team\u2019s skaters stay on the ice each time they go out, '
-        + 'on average, in seconds.',
+  { key: 'shiftLength', ...words('shiftLength'),
     counts: 'Skaters\u2019 time on the ice',
     of: t => (t.shifts ? { count: t.shifts.secs, n: t.shifts.n } : { count: 0, n: 0 }),
     ofGame: (g, side) => (g.shifts ? { count: g.shiftSecs[side], n: g.shifts[side] }
@@ -611,9 +892,9 @@ function complete(g) {
 }
 
 const WITHHELD = [
-  { key: 'corsi', label: 'shot-attempt share, all situations',
+  { key: 'corsi', label: measure('corsiShare').name,
     of: g => ({ h: g.attempts.h, a: g.attempts.a }) },
-  { key: 'fenwick', label: 'unblocked shot-attempt share',
+  { key: 'fenwick', label: measure('fenwickShare').name,
     of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
 ].map(m => ({ key: m.key, label: m.label,
   ofGame: (g, side) => {
@@ -671,14 +952,10 @@ function rate(p, fig) {
 }
 
 const PLAYER_ROWS = [
-  { key: 'playerGoals', fig: 'g', label: 'goals per game', noun: 'goals',
-    says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
-  { key: 'playerAssists', fig: 'a', label: 'assists per game', noun: 'assists',
-    says: 'The passes the league credited to him on somebody else\u2019s goal.' },
-  { key: 'playerShots', fig: 's', label: 'shots on goal per game', noun: 'shots on goal',
-    says: 'Pucks he put on net that the goaltender had to deal with.' },
-  { key: 'playerAttempts', fig: 'c', label: 'shot attempts per game', noun: 'shot attempts',
-    says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
+  { key: 'playerGoals', fig: 'g', ...words('playerGoals'), noun: 'goals' },
+  { key: 'playerAssists', fig: 'a', ...words('playerAssists'), noun: 'assists' },
+  { key: 'playerShots', fig: 's', ...words('playerShots'), noun: 'shots on goal' },
+  { key: 'playerAttempts', fig: 'c', ...words('playerAttempts'), noun: 'shot attempts' },
 ];
 
 const POSSESSION_FAMILY = [...CLUB_ROWS.filter(r => r.group === 'possession'), ...WITHHELD];
@@ -1145,7 +1422,7 @@ function formatDate(iso) {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
+      t.appendChild(el('p', 'pvtlab', measure('penalties').tile));
       t.appendChild(el('p', 'pvwatch', 'They give the other team about '
         + (pp ? pp.chancesPerClubGame.toFixed(1) : '\u2014') + ' power plays a game: '
         + 'penalties to both teams at once cancel out, a misconduct gives none, '
@@ -1155,7 +1432,7 @@ function formatDate(iso) {
         var sub = el('p', 'pvsub', pct(pp.rate));
         sub.appendChild(el('span', 'pvunit', ' of every 100'));
         t.appendChild(sub);
-        t.appendChild(el('p', 'pvtlab', 'power plays produce a goal'));
+        t.appendChild(el('p', 'pvtlab', measure('ppGoalRate').tile));
         var dots = el('div', 'pvdots');
         var on = Math.round(pp.rate * 100);
         for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
@@ -1170,7 +1447,7 @@ function formatDate(iso) {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'times a team is offside'));
+      t.appendChild(el('p', 'pvtlab', measure('offside').tile));
       t.appendChild(el('p', 'pvwatch',
         'Watch the blue line as a team carries the puck in.'));
       learn = learnLink('offside', 'What offside means');
@@ -1179,7 +1456,7 @@ function formatDate(iso) {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'times a team ices the puck'));
+      t.appendChild(el('p', 'pvtlab', measure('icing').tile));
       t.appendChild(el('p', 'pvwatch', 'The faceoff comes all the way back, and '
         + 'the team that iced it may not change its line. Watch who is stuck out '
         + 'there and how tired they are.'));
@@ -1190,7 +1467,7 @@ function formatDate(iso) {
       big.textContent = pct(reached.v / r.total);
       big.appendChild(el('span', 'pvunit', ' of every 100'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'shot attempts reach the goalie'));
+      t.appendChild(el('p', 'pvtlab', measure('attemptMix').tile));
       var bar = svgEl('svg', { 'class': 'pvmix', viewBox: '0 0 100 8',
         preserveAspectRatio: 'none', 'aria-hidden': 'true' });
       var x = 0;

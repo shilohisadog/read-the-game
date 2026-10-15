@@ -410,7 +410,7 @@ __CSS__</style>
      thing, even when considering past guidance (which was based on previous UX
      situation)." -->
 <div class="newcomer" id="newcomer"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot shots</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">Zone starts</span><span class="pkn" id="n_zonestart">0</span></button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">__CHIP_CORSI__</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">__CHIP_SLOT__</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">__CHIP_BLOCKED__</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">__CHIP_GOALTENDING__</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">__CHIP_WHISTLE__</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">__CHIP_ZONESTART__</span><span class="pkn" id="n_zonestart">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
 <div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
@@ -663,6 +663,12 @@ assert T.count("__SLOT_FT__") == 1, \
 # draws that page's figure blocks in the `Is that a lot?` overlay, and one
 # component with two stylesheets diverges silently on a surface no unit test
 # can see. See the header of `src/sections.css`.
+# Each chip's label is the list of measures', via the rules node wrote.
+for _l in json.loads((ROOT / "data" / "layer-rules.json").read_text())["layers"]:
+    _mk = f"__CHIP_{_l['id'].upper()}__"
+    assert T.count(_mk) == 1, f"the template holds {T.count(_mk)} copies of {_mk}, and it must hold one"
+    T = T.replace(_mk, _l["chip"])
+
 T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text()
                           + (ROOT / "src" / "sections.css").read_text())
       .replace("__SLOT_FT__", _rink_const("HIGH_DANGER_FT"))
@@ -700,7 +706,7 @@ for _m in ("__LIB__", "//__RINKART__", "__BOOT__"):
 # the one that keeps the test and loses the property.
 RINKART = "rinkart.js"
 
-LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
+LIB = ["rink.js", "registry.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
        # Our per-player counts beside the league's boxscore rows (data-model item 5).
        "league.js",
        # ⭐ THE PERIOD'S OWN NAME, moved out of app.js on 2026-09-10 because a

@@ -50,6 +50,7 @@
    `export … from` because the builders' inliner strips the import line and would
    leave the rest dangling. */
 import { leagueRows } from './league-rows.js';
+import { measure } from './registry.js';
 export { leagueRows };
 
 /**
@@ -82,16 +83,17 @@ export { leagueRows };
  * and prose for a novice says "of every 100" — the form the league tiles on this
  * same page already use.
  */
+/** A row's label and line, from the list of measures. */
+const words = id => ({ label: measure(id).name, says: measure(id).says });
+
 export const CLUB_ROWS = [
-  { key: 'level5', label: '5-on-5 CF% while the score was level',
+  { key: 'level5', ...words('level5'),
     /* ⚠️ "BOTH SIDES" MEANS THIS CLUB AND ITS OPPONENTS, NOT THE TWO CLUBS ON
        THIS CARD, and the first draft of this sentence said "the two clubs took
        between them" — which reads as WSH against TBL. They have not played each
        other: each figure is that club's own season so far, and on this card both
        were one game against somebody else. A sentence that invites a reader to
        add 40 and 25 and expect 100 is worse than no sentence. */
-    says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
-        + 'team\u2019s own games — both sides counted — this many were its own.',
     /* ⭐⭐⭐ THE NOUN ON THE SECOND NUMBER, AND IT IS DIFFERENT ON EVERY ROW.
        Kevin, reading the live card on 2026-10-03: *"I noticed 10 attempts, 43
        attempts and 34 attempts, obviously those are all different numbers and it
@@ -123,23 +125,19 @@ export const CLUB_ROWS = [
     unit: 'share', group: 'possession', fields: ['lvl5'] },
   /* The possession group: views of the same thing as the row above, kept because
      each settles and each is something a newcomer can see happen. */
-  { key: 'sogShare', label: 'share of the shots on goal',
+  { key: 'sogShare', ...words('sogShare'),
     // What a team that has the puck more tends to do, by the sign of its r with CF%.
     trend: { up: 'take a bigger share of the shots on goal',
              down: 'take a smaller share of the shots on goal' },
-    says: 'Of every 100 shots on goal in this team\u2019s own games \u2014 both sides '
-        + 'counted \u2014 this many were its own.',
     counts: 'shots on goal by both sides in each team\u2019s own games',
     // A table or record written before these fields existed adds 0 of 0.
     of: t => (t.sog ? { count: t.sog.for, n: t.sog.for + t.sog.against } : { count: 0, n: 0 }),
     ofGame: (g, side) => g.sog && Number.isFinite(g.sog.h) && Number.isFinite(g.sog.a)
       ? { count: g.sog[side], n: g.sog.h + g.sog.a } : { count: 0, n: 0 },
     unit: 'share', group: 'possession', fields: ['sog'] },
-  { key: 'attemptsAgainst', label: 'shot attempts against, per game',
+  { key: 'attemptsAgainst', ...words('attemptsAgainst'),
     trend: { up: 'face more of the other team\u2019s attempts',
              down: 'face fewer of the other team\u2019s attempts' },
-    says: 'How many shot attempts the other team aimed at this team\u2019s net, per '
-        + 'game \u2014 the other side of having the puck.',
     counts: 'Attempts aimed at each team\u2019s net',
     of: t => (t.attempts ? { count: t.attempts.against, n: t.games } : { count: 0, n: 0 }),
     ofGame: (g, side) => (g.attempts ? { count: g.attempts[side === 'h' ? 'a' : 'h'], n: 1 }
@@ -147,17 +145,13 @@ export const CLUB_ROWS = [
     unit: 'perGame', group: 'possession', fields: ['attempts'] },
   /* `blocks` is credited to the team that did the blocking, which is the
      defending team (`measureGame`). */
-  { key: 'blocks', label: 'shot attempts blocked, per game',
+  { key: 'blocks', ...words('blocks'),
     trend: { up: 'block more shots', down: 'block fewer shots' },
-    says: 'How many of the other team\u2019s shot attempts this team got in front of '
-        + 'before they reached the net, per game.',
     counts: 'Attempts each team blocked',
     of: t => (t.blocks ? { count: t.blocks.count, n: t.games } : { count: 0, n: 0 }),
     ofGame: (g, side) => (g.blocks ? { count: g.blocks[side] || 0, n: 1 } : { count: 0, n: 0 }),
     unit: 'perGame', group: 'possession', fields: ['blocks'] },
-  { key: 'dmen', label: 'shot attempts taken by defencemen',
-    says: 'Of every 100 shot attempts this team took, this many came from one of '
-        + 'its own defencemen.',
+  { key: 'dmen', ...words('dmen'),
     counts: 'attempts each team took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }),
@@ -188,12 +182,10 @@ export const CLUB_ROWS = [
      and a defenceman is a roster row; "that one missed rather than being saved"
      is a person in the arena deciding. That is the line, and it is worth more
      than this row was. */
-  { key: 'slot', label: 'shot attempts from the slot',
+  { key: 'slot', ...words('slotShare'),
     /* ⚠️ THE DENOMINATOR IS THE LOCATED ATTEMPTS, NOT ALL OF THEM, and the
        sentence says so: a blocked shot's coordinate is the BLOCK POINT, so an
        attempt a body stopped has no shot location and is in neither part. */
-    says: 'Of every 100 shot attempts this team took from a spot the feed records, '
-        + 'this many came from the slot.',
     /* ⚠️ AND THIS IS WHY 34 IS SMALLER THAN THE DEFENCEMEN ROW'S 43 IN THE SAME
        GAME: nine of that club's attempts were blocked, and a blocked shot's
        coordinate is the BLOCK POINT, so a blocked attempt has no shot location
@@ -204,9 +196,7 @@ export const CLUB_ROWS = [
     unit: 'share', fields: ['slot', 'located'] },
   /* Seconds over shifts, skaters only. Settles in about a dozen games and moves
      independently of the rows above (|r| <= 0.07, docs/what-settles.md §2a). */
-  { key: 'shiftLength', label: 'average shift length',
-    says: 'How long this team\u2019s skaters stay on the ice each time they go out, '
-        + 'on average, in seconds.',
+  { key: 'shiftLength', ...words('shiftLength'),
     counts: 'Skaters\u2019 time on the ice',
     of: t => (t.shifts ? { count: t.shifts.secs, n: t.shifts.n } : { count: 0, n: 0 }),
     ofGame: (g, side) => (g.shifts ? { count: g.shiftSecs[side], n: g.shifts[side] }
@@ -243,14 +233,14 @@ export function complete(g) {
  * draw — if one ever does, that is a reason to argue about it, not to build it.
  */
 const WITHHELD = [
-  { key: 'corsi', label: 'shot-attempt share, all situations',
+  { key: 'corsi', label: measure('corsiShare').name,
     of: g => ({ h: g.attempts.h, a: g.attempts.a }) },
   /* UNBLOCKED ATTEMPTS = a side's attempts minus the blocks CREDITED TO THE OTHER
      SIDE. `measureGame` credits a block to the team that made it, which is the
      defending team, so the away side's blocks are what removed home attempts. The
      first draft subtracted a side's own blocks and produced a Fenwick share that
      moved the wrong way; the fields are named for who did the blocking. */
-  { key: 'fenwick', label: 'unblocked shot-attempt share',
+  { key: 'fenwick', label: measure('fenwickShare').name,
     of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
 ].map(m => ({ key: m.key, label: m.label,
   /* A SHARE OF THE TWO SIDES' TOTAL, in the `{count, n}` contract every other row
@@ -352,14 +342,10 @@ function rate(p, fig) {
    a game"*. One quantity, two phrasings, two lines apart — the same shape as
    `club`/`team` ([[house-vocabulary]]), and it took a reader to hear it. */
 export const PLAYER_ROWS = [
-  { key: 'playerGoals', fig: 'g', label: 'goals per game', noun: 'goals',
-    says: 'How many of this team\u2019s goals he has scored himself, per game played.' },
-  { key: 'playerAssists', fig: 'a', label: 'assists per game', noun: 'assists',
-    says: 'The passes the league credited to him on somebody else\u2019s goal.' },
-  { key: 'playerShots', fig: 's', label: 'shots on goal per game', noun: 'shots on goal',
-    says: 'Pucks he put on net that the goaltender had to deal with.' },
-  { key: 'playerAttempts', fig: 'c', label: 'shot attempts per game', noun: 'shot attempts',
-    says: 'Every puck he put at the net \u2014 on goal, missed, or blocked by a body.' },
+  { key: 'playerGoals', fig: 'g', ...words('playerGoals'), noun: 'goals' },
+  { key: 'playerAssists', fig: 'a', ...words('playerAssists'), noun: 'assists' },
+  { key: 'playerShots', fig: 's', ...words('playerShots'), noun: 'shots on goal' },
+  { key: 'playerAttempts', fig: 'c', ...words('playerAttempts'), noun: 'shot attempts' },
 ];
 
 /** The possession group and the measures withheld beside it, as one list, so

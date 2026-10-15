@@ -65,6 +65,7 @@
 import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 import { attackDirection, attackZone } from '../rink.js';
+import { measure } from '../registry.js';
 
 
 /** What a non-faceoff event is, said in the layer's own vocabulary. */
@@ -119,7 +120,7 @@ export const zonestart = {
   counts: 'every faceoff, and for the team that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
   credits: 'Each draw is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one team and never two.',
   id: 'zonestart',
-  label: '＋ Zone starts',
+  label: measure('zoneStarts').layer,
 
   /**
    * @param events  the whole game, in order

@@ -44,6 +44,7 @@
  */
 import { NOT_A_PLAY } from '../layer.js';
 import { BLUE_LINE_X, GOAL_LINE_X, CENTRE_X } from '../rink.js';
+import { measure } from '../registry.js';
 
 /**
  * Which team's end play restarted in, from the coordinate and the rink alone.
@@ -564,7 +565,7 @@ export const whistle = {
   counts: 'the rule that stopped play, and the dot it restarted on',
   credits: 'A stoppage names a rule and never a team, so nothing here is credited to either side.',
   id: 'whistle',
-  label: '＋ Why play stopped',
+  label: measure('stoppages').layer,
 
   /**
    * @param events  the whole game, in order

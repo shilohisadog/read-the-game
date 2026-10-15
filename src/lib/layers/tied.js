@@ -55,11 +55,12 @@
 import { corsiTeam } from '../attribution.js';
 import { NOT_A_PLAY, NOT_AN_ATTEMPT, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
+import { measure } from '../registry.js';
 
 
 export const tiedControl = {
   id: 'tied-control',
-  label: 'control while the score was level',
+  label: measure('level5').layer,
 
   /** The rule, in one sentence, for printing next to the number it produced. */
   rule: 'even-strength shot attempts taken while the score was level, in regulation',

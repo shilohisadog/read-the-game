@@ -36,6 +36,7 @@
  */
 import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
+import { measure } from '../registry.js';
 
 /**
  * Why an attempt that happened was not blocked. Its own vocabulary, because
@@ -100,7 +101,7 @@ export const blocked = {
   counts: 'the attempts a body stopped before they reached the goalie',
   credits: 'Each block is credited to the team that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.',
   id: 'blocked',
-  label: '＋ Blocked shots',
+  label: measure('blocks').layer,
 
   /**
    * @param events  the whole game, in order

@@ -16,6 +16,7 @@ import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, isHighDanger } from '../rink.js';
 import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
+import { measure } from '../registry.js';
 
 /** Geometric rule, measured to the ATTACKING net. */
 export function isHighDangerEvent(e, ctx) {
@@ -46,7 +47,7 @@ export const goaltending = {
   counts: 'every shot each goaltender faced, and what became of it — saved, scored on, or missed the net',
   credits: 'Each goaltender is counted for the team he plays for, against the other team’s shots — so these two columns read the opposite way round.',
   id: 'goaltending',
-  label: '＋ Goaltending',
+  label: measure('saveFraction').layer,
 
   reduce(events, ctx) {
     const g = {};

@@ -4598,7 +4598,7 @@ __HELPERS__
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
+      t.appendChild(el('p', 'pvtlab', measure('penalties').tile));
       // The league's count (census.js::ppOpportunities): equal penalties to both
       // teams cancel, a misconduct gives none, a double minor gives two.
       t.appendChild(el('p', 'pvwatch', 'They give the other team about '
@@ -4610,7 +4610,7 @@ __HELPERS__
         var sub = el('p', 'pvsub', pct(pp.rate));
         sub.appendChild(el('span', 'pvunit', ' of every 100'));
         t.appendChild(sub);
-        t.appendChild(el('p', 'pvtlab', 'power plays produce a goal'));
+        t.appendChild(el('p', 'pvtlab', measure('ppGoalRate').tile));
         var dots = el('div', 'pvdots');
         var on = Math.round(pp.rate * 100);
         for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
@@ -4625,7 +4625,7 @@ __HELPERS__
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'times a team is offside'));
+      t.appendChild(el('p', 'pvtlab', measure('offside').tile));
       t.appendChild(el('p', 'pvwatch',
         'Watch the blue line as a team carries the puck in.'));
       learn = learnLink('offside', 'What offside means');
@@ -4634,7 +4634,7 @@ __HELPERS__
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'times a team ices the puck'));
+      t.appendChild(el('p', 'pvtlab', measure('icing').tile));
       t.appendChild(el('p', 'pvwatch', 'The faceoff comes all the way back, and '
         + 'the team that iced it may not change its line. Watch who is stuck out '
         + 'there and how tired they are.'));
@@ -4649,7 +4649,7 @@ __HELPERS__
       big.textContent = pct(reached.v / r.total);
       big.appendChild(el('span', 'pvunit', ' of every 100'));
       t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'shot attempts reach the goalie'));
+      t.appendChild(el('p', 'pvtlab', measure('attemptMix').tile));
       var bar = svgEl('svg', { 'class': 'pvmix', viewBox: '0 0 100 8',
         preserveAspectRatio: 'none', 'aria-hidden': 'true' });
       var x = 0;
@@ -5750,6 +5750,7 @@ def build_methods():
     html = (HOW_BODY.replace("__LAYER_RULES__", _layer_rules())
                     .replace("__LAYER_FOR__", _layer_for())
                     .replace("__LIB__", _lib("competitions.js", "teams.js",
+                                             "rink.js", "registry.js",
                                              "league-rows.js", "preview.js",
                                              "anchors.js", "printed.js",
                                              "derivation.js", "methods.js",
@@ -5823,6 +5824,7 @@ def build_preview():
     # this build's own subject matter. `_when()` in this file is the Python twin
     # and `test/learn-figures.test.js` asserts they agree.
     html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
+                                              "rink.js", "registry.js",
                                               "league-rows.js", "preview.js",
                                               "anchors.js", "day.js"))
                      .replace("__HELPERS__", HELPERS)
