@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SAYorPa316jlNNrM1prtGoFNIGwUOlA+C6Zf4A8n9Cg=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-aqD/b4KvJtQ9g+JznGh7TJODrIEPF2DdkeuDf1oqWaI='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-m3aF+hqlva2JhK6BX8DGEzX8k2ReybVck1MsbYBWDvA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-pBZe3mTIMYoeL1sqmOl+HceiSm2nhy8cqpcAw/i0ZQg='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -211,6 +211,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .excl{fill:var(--muted);opacity:.2}
 #rg .excl.inplay{opacity:.55}
 #rg .evn{font-size:3.4px;font-weight:700;fill:var(--ink);opacity:.7;pointer-events:none}
+#rg .excl.inplay.inzone,#rg .att.inplay.inzone{opacity:1}
+#rg .evn.inzone{opacity:1;font-size:4px}
 #rg .cuef{fill:var(--cue);opacity:.22}
 #rg .rulel{stroke:var(--flag);stroke-width:4.6;opacity:.4;stroke-linecap:butt;pointer-events:none}
 #rg .ring{fill:none;pointer-events:none}
@@ -638,6 +640,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .playline{list-style:none;cursor:pointer}
 #rg .playline::-webkit-details-marker{display:none}
 #rg .playline:hover{text-decoration:underline dotted}
+#rg .playd.zone .playline{color:var(--ink);font-weight:600}
 #rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}
 
 .hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
@@ -707,8 +710,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   penalty. The numbered marks on the ice are its events, in the order the league
   recorded them. An attempt is a shot on goal, a missed shot or a blocked shot,
   credited to the team that shot. An event is in a team&rsquo;s end when it was
-  recorded past the blue line on that team&rsquo;s side. The time is the game
-  clock from the faceoff to the latest event. The league does not record where the
+  recorded past the blue line on that team&rsquo;s side. When three or more events
+  in a row are recorded in one zone &mdash; our own rule, not the league&rsquo;s &mdash;
+  the line follows that zone until play leaves it, and its marks stand out. The time
+  is the game clock between the events, from the faceoff or from the first event in
+  that zone; nobody records when the puck crossed a blue line. The league does not record where the
   puck went between two events, so nothing here says which team had it.</p></details>
   
   
@@ -1784,21 +1790,59 @@ function playTally(events, play, upto, ctx) {
 
 const plural = (k, one) => `${k} ${one}${k === 1 ? '' : 's'}`;
 
-function playLine(t, done, names) {
+const ZONE_RUN = 3;
+const zoneAtX = x => (x < -BLUE_LINE_X ? 'h' : x > BLUE_LINE_X ? 'a' : 'n');
+
+function zoneRuns(events, play, upto, ctx) {
+  const runs = [];
+  let cur = null;
+  for (let n = play.from; n <= Math.min(upto, play.to); n++) {
+    const e = events[n];
+    if (!markable(e)) continue;
+    const end = zoneAtX(e.x);
+    if (!cur || cur.end !== end) { cur = { end, from: n, marks: 0, s0: e.s, secs: 0, att: { a: 0, h: 0 }, onGoal: { a: 0, h: 0 } }; runs.push(cur); }
+    cur.marks++;
+    cur.secs = e.s - cur.s0;
+    const team = corsiTeam(e, ctx.roster);
+    const k = team === ctx.awayId ? 'a' : team === ctx.homeId ? 'h' : null;
+    if (k) { cur.att[k]++; if (e.type === 'shot-on-goal' || e.type === 'goal') cur.onGoal[k]++; }
+  }
+  return runs.map(({ s0, ...r }) => r);
+}
+
+const liveRun = runs => {
+  const r = runs[runs.length - 1];
+  return r && r.marks >= ZONE_RUN ? r : null;
+};
+
+const longestRun = runs =>
+  runs.reduce((best, r) => (r.marks >= ZONE_RUN && (!best || r.marks > best.marks) ? r : best), null);
+
+const zoneSaid = (end, names) => (end === 'n' ? 'the neutral zone' : `the ${names[end]} end`);
+
+function attemptsSaid(att, onGoal, names) {
+  if (att.a + att.h === 0) return 'no attempts';
+  const side = k => `${names[k]} ${plural(att[k], 'attempt')}${onGoal[k] ? ` (${onGoal[k]} on goal)` : ''}`;
+  const other = k => `${names[k]} ${att[k]}`;
+  return att.a >= att.h ? `${side('a')}, ${other('h')}` : `${side('h')}, ${other('a')}`;
+}
+
+function playLine(t, done, names, run = null) {
   if (!t || t.marks === 0 || (!done && t.marks < 2)) return '';
   const gap = spokenGap(t.secs);
+  if (!done && run) {
+    return [`In ${zoneSaid(run.end, names)}: ${run.marks} events in a row`,
+            attemptsSaid(run.att, run.onGoal, names),
+            spokenGap(run.secs) || 'under a second',
+            `this play ${gap || '0s'}`].join(' · ');
+  }
   const parts = done ? ['Last play', gap || 'under a second'] : ['This play', `${gap || '0s'} since the faceoff`];
-  const side = k => `${names[k]} ${plural(t.att[k], 'attempt')}${t.onGoal[k] ? ` (${t.onGoal[k]} on goal)` : ''}`;
-  const other = k => `${names[k]} ${t.att[k]}`;
-  if (t.att.a + t.att.h === 0) parts.push('no attempts');
-  else parts.push(t.att.a >= t.att.h ? `${side('a')}, ${other('h')}` : `${side('h')}, ${other('a')}`);
+  parts.push(attemptsSaid(t.att, t.onGoal, names));
   if (t.marks > 1) {
     const top = Object.entries(t.end).sort((x, y) => y[1] - x[1]);
-    if (top[0][1] > top[1][1]) {
-      const where = top[0][0] === 'n' ? 'the neutral zone' : `the ${names[top[0][0]]} end`;
-      parts.push(`${top[0][1]} of ${plural(t.marks, 'event')} in ${where}`);
-    }
+    if (top[0][1] > top[1][1]) parts.push(`${top[0][1]} of ${plural(t.marks, 'event')} in ${zoneSaid(top[0][0], names)}`);
   }
+  if (done && run) parts.push(`longest stay: ${run.marks} events in a row in ${zoneSaid(run.end, names)}`);
   if (done) parts.push('ended: ' + endSaid(done, names));
   return parts.join(' · ');
 }
@@ -1972,7 +2016,7 @@ const ARRIVE={goal:'flare',hit:'jolt','blocked-shot':'halt',
 const UNIT_PX=4.3;
 const figStyle='mascot';
 
-function eventMarks({ evs, i, cur, moment, from = i },
+function eventMarks({ evs, i, cur, moment, from = i, zoneFrom = null },
                            { hdOn, trails, asPlayed: ASPLAYED, reduced: REDUCED, t: T },
                            { AID, HID, R, AWAYCOL, HOMECOL, FIG_SZ, FIG_BIG },
                            { place, tk, isHD }) {
@@ -1982,13 +2026,14 @@ function eventMarks({ evs, i, cur, moment, from = i },
    if(trails==='off'&&k!==i)continue;
    if(trails==='play'&&k<from)continue;
    if(trails==='play'&&k!==i){order++;
-     parts.push(`<text class="evn" x="${(pos.x+1.7).toFixed(1)}" y="${Math.max(pos.y-1.5,3).toFixed(1)}">${order}</text>`);}
+     parts.push(`<text class="evn${zoneFrom!=null&&k>=zoneFrom?' inzone':''}" x="${(pos.x+1.7).toFixed(1)}" y="${Math.max(pos.y-1.5,3).toFixed(1)}">${order}</text>`);}
    if(ASPLAYED&&trails==='all'&&cur&&e.per!==cur.per)continue;
    const hd=hdOn&&isHD(e);
    let cls=e.type==='goal'?'goal':ATT.has(e.type)?'att':'excl';
    if(e.type==='blocked-shot')cls+=' blkd'; 
    if(k===i)cls+=' cur';
    else if(trails==='play')cls+=' inplay';
+   if(zoneFrom!=null&&k>=zoneFrom)cls+=' inzone';
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&moment)?' '+(ARRIVE[e.type]||'pop'):'';
@@ -4011,8 +4056,11 @@ function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);if(!p)return {from:k,line:''};
  if(n===p.from){const q=PLAYS[PLAYS.indexOf(p)-1];
    if(!q||G.events[q.from].per!==cur.per)return {from:k,line:''};
-   return {from:frameOf(q.from),line:playLine(playTally(G.events,q,q.to,CTX),endOf(G.events,q),PLAYNAMES)};}
- return {from:frameOf(p.from),line:playLine(playTally(G.events,p,n,CTX),null,PLAYNAMES)};}
+   const long=longestRun(zoneRuns(G.events,q,q.to,CTX));
+   return {from:frameOf(q.from),line:playLine(playTally(G.events,q,q.to,CTX),endOf(G.events,q),PLAYNAMES,long)};}
+ const run=liveRun(zoneRuns(G.events,p,n,CTX));
+ return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,
+         line:playLine(playTally(G.events,p,n,CTX),null,PLAYNAMES,run)};}
 const ENDED=new Map(powerPlayOver(EV,PBOX,CTX).map(k=>[EV[k.sayAt],k]));
 const ICING=new Map(icingRestarts(G.events,CTX).map(r=>[r.event,r]));
 const OFFSIDE=new Map(offsideRestarts(G.events,CTX).map(r=>[r.event,r]));
@@ -4154,7 +4202,7 @@ function render(i,how){
  drawEndsNote(cur,i);
  drawClip(i);
  put($('events'),eventMarks(
-  {evs,i,cur,moment,from:PLAY.from},
+  {evs,i,cur,moment,from:PLAY.from,zoneFrom:PLAY.zoneFrom},
   {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
   {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
   {place,tk,isHD}));
@@ -4575,7 +4623,8 @@ function sayWho(e){const w=$('who');if(!w)return;
   if(a.say.indexOf('{b}')===0)subj=q;}
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function sayPlay(line){const d=$('playd');if(!d)return;
- $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;}
+ $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;
+ d.classList.toggle('zone',/^In the /.test(line));}
 function dwell(e){return captioned(e)||/^Last play/.test(playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 function play(){closeLesson();if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}

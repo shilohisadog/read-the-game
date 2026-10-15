@@ -4,7 +4,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { endOf, markable, playAt, playLine, playTally, plays } from '../src/lib/stretch.js';
+import { endOf, liveRun, longestRun, markable, playAt, playLine, playTally, plays, zoneRuns, ZONE_RUN } from '../src/lib/stretch.js';
 
 const HOME = 1, AWAY = 2;
 const roster = { 10: { tid: HOME }, 20: { tid: AWAY } };
@@ -74,4 +74,24 @@ test('the line says nothing it cannot count', () => {
   const tie = [ev('faceoff', 0, 0), ev('hit', 5, 60, { actor: 20 }), ev('hit', 9, -60, { actor: 10 })];
   assert.equal(playLine(playTally(tie, { from: 0, to: 2 }, 2, ctx), null, names),
     'This play · 9s since the faceoff · no attempts');
+});
+
+test('zone stretches: events in a row in one zone, inside one play', () => {
+  const [A, B] = plays(GAME);
+  // Play A: faceoff at centre (neutral), then three events past the AWY blue line.
+  assert.deepEqual(zoneRuns(GAME, A, A.to, ctx).map(r => [r.end, r.marks, r.secs]), [['n', 1, 0], ['a', 3, 19]]);
+  assert.equal(ZONE_RUN, 3);
+  assert.equal(liveRun(zoneRuns(GAME, A, 3, ctx)), null, 'two in a row is not yet a stretch');
+  const live = liveRun(zoneRuns(GAME, A, 4, ctx));
+  assert.deepEqual([live.end, live.marks, live.att, live.onGoal], ['a', 3, { a: 0, h: 2 }, { a: 0, h: 1 }]);
+  assert.deepEqual(longestRun(zoneRuns(GAME, B, B.to, ctx)).end, 'h', 'play B never leaves the HOM end');
+});
+
+test('the line follows a live zone stretch, and a finished play names its longest', () => {
+  const [A] = plays(GAME);
+  assert.equal(playLine(playTally(GAME, A, 4, ctx), null, names, liveRun(zoneRuns(GAME, A, 4, ctx))),
+    'In the AWY end: 3 events in a row · HOM 2 attempts (1 on goal), AWY 0 · 19s · this play 31s');
+  assert.equal(playLine(playTally(GAME, A, A.to, ctx), endOf(GAME, A), names, longestRun(zoneRuns(GAME, A, A.to, ctx))),
+    'Last play · 31s · HOM 2 attempts (1 on goal), AWY 0 · 3 of 4 events in the AWY end'
+    + ' · longest stay: 3 events in a row in the AWY end · ended: icing');
 });

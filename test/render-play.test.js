@@ -29,3 +29,17 @@ test('the line is not on the front door preview', () => {
   const a = boot(null, null, '?preview=1');
   a.every(d => assert.equal(d.$('playline').textContent, ''));
 });
+
+test('a zone stretch leads the line exactly when its marks stand out, and holds three or more', () => {
+  const a = boot();
+  const frames = a.every(d => ({ line: d.$('playline').textContent,
+    inzone: new Set([...d.$('events').innerHTML.matchAll(/class="ev [^"]*\binzone\b[^"]*" data-i="(\d+)"/g)].map(m => m[1])).size }));
+  let zone = 0;
+  frames.forEach((f, k) => {
+    const m = /^In the .*?: (\d+) events in a row/.exec(f.line);
+    if (m) { zone++; assert.equal(f.inzone, +m[1], `frame ${k}: the line says ${m[1]} in a row, the ice shows ${f.inzone}`);
+             assert.ok(+m[1] >= 3, `frame ${k}: a stretch of ${m[1]}`); }
+    else assert.equal(f.inzone, 0, `frame ${k}: marks stand out with no stretch in the line`);
+  });
+  assert.ok(zone > 20, `only ${zone} zone frames walked`);
+});

@@ -167,8 +167,11 @@ __CSS__</style>
   penalty. The numbered marks on the ice are its events, in the order the league
   recorded them. An attempt is a shot on goal, a missed shot or a blocked shot,
   credited to the team that shot. An event is in a team&rsquo;s end when it was
-  recorded past the blue line on that team&rsquo;s side. The time is the game
-  clock from the faceoff to the latest event. The league does not record where the
+  recorded past the blue line on that team&rsquo;s side. When three or more events
+  in a row are recorded in one zone &mdash; our own rule, not the league&rsquo;s &mdash;
+  the line follows that zone until play leaves it, and its marks stand out. The time
+  is the game clock between the events, from the faceoff or from the first event in
+  that zone; nobody records when the puck crossed a blue line. The league does not record where the
   puck went between two events, so nothing here says which team had it.</p></details>
   <!-- ⭐⭐ WHO IS ON THE ICE, AND IT IS A LIST BECAUSE THAT IS WHAT WE KNOW.
        Kevin, 2026-09-10: *"we don't surface players on the ice at all; should we

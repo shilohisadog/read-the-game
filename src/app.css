@@ -812,6 +812,9 @@
 /* The current play's earlier marks: visible enough to count, quieter than the play now. */
 #rg .excl.inplay{opacity:.55}
 #rg .evn{font-size:3.4px;font-weight:700;fill:var(--ink);opacity:.7;pointer-events:none}
+/* A live zone stretch: its marks and numbers stand out from the rest of the play. */
+#rg .excl.inplay.inzone,#rg .att.inplay.inzone{opacity:1}
+#rg .evn.inzone{opacity:1;font-size:4px}
 /* ⭐ WHERE TO LOOK NEXT. See `drawCue` in src/app.js for what it claims and what
    it costs; this is only how faint it is allowed to be.
 
@@ -2635,4 +2638,5 @@
 #rg .playline{list-style:none;cursor:pointer}
 #rg .playline::-webkit-details-marker{display:none}
 #rg .playline:hover{text-decoration:underline dotted}
+#rg .playd.zone .playline{color:var(--ink);font-weight:600}
 #rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}

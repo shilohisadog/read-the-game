@@ -53,13 +53,14 @@ const figStyle='mascot';
 /**
  *   frame    {evs, i, cur, moment, from} — the events so far, the playhead, the
  *            event at it, whether this render is a play/jump rather than a scrub,
- *            and the frame the current play's marks start at (trails `play`)
+ *            the frame the current play's marks start at (trails `play`), and
+ *            where a live zone stretch starts (`zoneFrom`), whose marks are emphasised
  *   view     {hdOn, trails, asPlayed, reduced, t} — what the page is showing
  *   game     {AID, HID, R, AWAYCOL, HOMECOL, ATT: attempts, FIG_SZ, FIG_BIG}
  *   helpers  {place, tk, isHD} — screen position, club key, and the slot rule,
  *            all three shared with other callers and so passed rather than moved
  */
-export function eventMarks({ evs, i, cur, moment, from = i },
+export function eventMarks({ evs, i, cur, moment, from = i, zoneFrom = null },
                            { hdOn, trails, asPlayed: ASPLAYED, reduced: REDUCED, t: T },
                            { AID, HID, R, AWAYCOL, HOMECOL, FIG_SZ, FIG_BIG },
                            { place, tk, isHD }) {
@@ -70,7 +71,7 @@ export function eventMarks({ evs, i, cur, moment, from = i },
    if(trails==='play'&&k<from)continue;
    // The play's earlier marks carry their order, so the sequence reads without a line we cannot draw honestly.
    if(trails==='play'&&k!==i){order++;
-     parts.push(`<text class="evn" x="${(pos.x+1.7).toFixed(1)}" y="${Math.max(pos.y-1.5,3).toFixed(1)}">${order}</text>`);}
+     parts.push(`<text class="evn${zoneFrom!=null&&k>=zoneFrom?' inzone':''}" x="${(pos.x+1.7).toFixed(1)}" y="${Math.max(pos.y-1.5,3).toFixed(1)}">${order}</text>`);}
    /* ⭐ THE TRAIL ENDS WITH THE PERIOD, BUT ONLY WHEN THE ENDS DO (§5).
       A mark says "this team attempted from here". Accumulated on a rink that
       turns over, one team's attempts pile up at BOTH ends and the picture stops
@@ -102,6 +103,7 @@ export function eventMarks({ evs, i, cur, moment, from = i },
    // Found by rendering it, not by reading it: the node suite has no CSS.
    if(k===i)cls+=' cur';
    else if(trails==='play')cls+=' inplay';
+   if(zoneFrom!=null&&k>=zoneFrom)cls+=' inzone';
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
    /* ⭐ THE MOMENT OF ARRIVAL, AND IT IS THE EVENT'S OWN.

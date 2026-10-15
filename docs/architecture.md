@@ -41,12 +41,12 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 787 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 1,529 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 832 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (54 modules) | 12,978 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (54 modules) | 13,032 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 954 |
-| **presentation** | generates the pages | `build_*.py` (8) | 8,098 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 5,165 |
+| **presentation** | generates the pages | `build_*.py` (8) | 8,101 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 5,170 |
 
-<sub>Counted 2026-10-15 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **54 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 37 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,165 lines **3,733 are comment-only and 1261 are code**, and **417 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-10-15 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **54 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 37 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,170 lines **3,734 are comment-only and 1265 are code**, and **417 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---
