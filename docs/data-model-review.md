@@ -137,6 +137,14 @@ sub-count is attempts), `through` (archive for teams, latest season for players)
 
 ---
 
+## 5a. The measures — what each one MEANS
+
+The audit of measure definitions across the replay, preview and summary is
+`docs/measures-audit.md` (2026-10-15): the same label covering different
+quantities, and the proposal for one registry of measures.
+
+---
+
 ## 6. Proposed fix list — to discuss, in this order
 
 **Progress** (each verified on the live site, not by a green run):
