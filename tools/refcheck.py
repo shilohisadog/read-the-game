@@ -76,7 +76,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # DELETE a true citation. An instrument that pays you to remove evidence.
 SOURCE_GLOBS = ("src/*.js", "src/*.css", "src/lib/*.js", "src/lib/layers/*.js",
                 "builders/*.py", "builders/*.mjs", "test/*.js", "test/*.py",
-                "tools/*.sh", "tools/*.py", "tools/*.mjs")
+                "tools/*.sh", "tools/*.py", "tools/*.mjs",
+                # The Pages middleware, the only server-side code; missing until 2026-10-15.
+                "functions/*.js")
 # [rev:]path/to/name.ext:123[ "anchor"], with or without backticks and dirs.
 # The rev is a git revision -- `914e638` or `914e638^` -- and its presence is
 # what makes a citation historical rather than current.
