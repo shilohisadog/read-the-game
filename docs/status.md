@@ -45,7 +45,12 @@ five documents the dated pages read and the three dated pages as deployed. The
 middleware serves `?asof=` from the edition, redirects an undated preview to its
 edition (the last one before a played game), and keeps `asof`/`at` in the card.
 Preview, methods page and replay read their edition and say which version they
-are; links between them keep the date. ⏭ Verify after the first seal.
+are; links between them keep the date. ✅ Verified live 2026-10-15 after a
+dispatched seal of `2026-10-14`: undated preview 302s to `&asof=2026-10-14` and
+its card keeps the date; MTL at WSH (played 10-14, nothing saved before it) says
+it was not saved; the dated methods page says so; a second seal is refused; BUF
+"129 of 258" on the dated preview matches the edition's `teams.json` (129 for,
+129 against).
 
 ### ✅ DONE 2026-10-14: the replay shows the PLAY, not just the event
 
