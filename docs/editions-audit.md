@@ -64,7 +64,7 @@ no-cache`, e.g. `ingest.yml:1003`) ✔. Nothing is versioned except the raw feed
 
 | Document | Changes | Past dates rewritten? | Size | Earlier version recoverable? |
 |---|---|---|---|---|
-| `raw/{game}/{sha}/{feed}.json` + `latest.json` | nightly window | amendment = new sha | ~426 KB a game (403 at the edge, not re-measured) | **yes — every version kept** |
+| `raw/{game}/{sha}/{feed}.json` + `raw/{game}/latest.json` | nightly window | amendment = new sha | ~426 KB a game (403 at the edge, not re-measured) | **yes — every version kept** |
 | `extract/{game}.json` | nightly window; whole archive weekly and on format change | yes | mean 84 KB (n=10); 4,658 published | no (re-derivable from raw + the extractor of that commit) |
 | `catalog.json` | nightly | yes | 485 KB, 4,725 rows | no |
 | `index.json` | every run | yes | 385 KB | no |
