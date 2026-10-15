@@ -125,7 +125,22 @@ mostly a merge of those, plus the definitions that are today implicit.
 
 ---
 
-## 6. For Kevin to rule — in this order
+## 6. Kevin's rulings — 2026-10-15
+
+1. **The list of measures: yes, first.** Items 2–6 land on it, one at a time.
+2. **"Level" means strict 5-on-5, everywhere.**
+3. **Open** — the game page's whole-game panel (*"Every count in the whole game"*,
+   the six scaled rows that open at the horn): which quantity the Goaltending and
+   Zone starts rows rank, and the slot box's denominator. Asked again in plain words.
+4. **Typical shift: the mean**, everywhere ("no preference but probably mean").
+5. **Layers, agreed:** level possession folds into Attempts as a filter;
+   Goaltending stays on the rink but is not ranked as a club figure; add **Who
+   shoots**. Shift length stays off the rink.
+6. **Unread `measures.json` keys: delete** (or name a reader).
+
+---
+
+## 6a. As proposed (kept for the record)
 
 1. **Adopt the registry?** (Recommended: yes, before any other change here, so each
    fix below lands once.)
@@ -141,3 +156,104 @@ mostly a merge of those, plus the definitions that are today implicit.
    club figure; add **Who shoots** as a layer. Shift length stays off the rink (the
    color line carries it).
 6. **Delete the unread `measures.json` keys** (§3), or name a reader for each.
+
+---
+
+## 7. The list itself — what each entry holds, and every entry
+
+### 7.1 The fields
+
+| field | what it holds | example (slot share) |
+|---|---|---|
+| `id` | one key, used by every surface, the published data and the methods anchor | `slotShare` |
+| `name` | the ONE plain-English name a reader sees | *shot attempts from the slot* |
+| `says` | one sentence for a novice | *Of every 100 attempts from a spot the feed records, this many came from the slot.* |
+| `counts` | the events and the filter, as the reducer that computes it | unblocked attempts with a location, inside the slot |
+| `of` | the denominator, or `game` / `60 min` for a rate | attempts with a recorded location |
+| `credit` | whose figure it is: shooter's club, blocker's club, the goaltender, no team | shooter's club |
+| `unit` | count · share · per game · per 60 · seconds | share |
+| `strength` | all · 5-on-5 · power play | all |
+| `score` | any · level | any |
+| `scopes` | where it is published: this game (live), club-season, archive | club-season, archive |
+| `typical` | the reference a value is read against: league figure · mean · median · middle half | league figure (sum over sum) |
+| `witness` | the league document that checks it, if any | none |
+| `holds` | games before a club (or player) figure holds steady — computed nightly by ONE instrument, never typed | 39 |
+| `policy` | any number that is our choice, with the word *ours* | slot = 33 ft × 22 ft, ours |
+| `surfaces` | where a reader meets it | preview row, methods page, slot lesson |
+| `doors` | its *How this is counted* anchor and its lesson | `#slotShare`, *What the slot is* |
+| `family` | measures that are the same measurement (shown together, never as separate evidence) | — |
+
+### 7.2 Every entry, as of today
+
+Rulings 2 and 4 applied (level = strict 5-on-5; typical shift = mean). *holds* is
+the club figure unless marked; ✗ = does not hold steady inside a season.
+
+**Possession — one family** (r 0.61–0.95 with each other)
+
+| id | name | counts / of | credit | holds | witness |
+|---|---|---|---|---|---|
+| `attempts` | shot attempts | goals + on goal + missed + blocked | shooter's club | 24 | — |
+| `level5` | 5-on-5 share of attempts while the score was level | own / both sides', strict 5-on-5, score level | shooter's club | 35 | — |
+| `sogShare` | share of the shots on goal | own / both sides' | shooter's club | 37 | boxscore (quoted) |
+| `attemptsAgainst` | shot attempts against, per game | opponent's attempts / games | defending club | 33 | — |
+| `blocks` | shot attempts blocked, per game | blocks credited to a club / games | blocker's club | 33 | boxscore player rows |
+| `zoneStarts` | offensive-zone face-offs (layer + whole-game panel) | face-offs in the attacking end / all | winner's club | 35 | — |
+
+**Independent of possession**
+
+| id | name | counts / of | credit | holds | witness |
+|---|---|---|---|---|---|
+| `slotShare` | shot attempts from the slot | slot attempts / attempts with a location | shooter's club | 39 | — · **policy 33×22, ours** |
+| `dmen` | shot attempts taken by defencemen (the *Who shoots* layer) | by a D / own attempts | shooter's club | 23 | — |
+| `shiftLength` | average shift length (**mean**) | skater seconds / skater shifts | club | 12 | — |
+
+**Goaltending**
+
+| id | name | counts / of | credit | holds | witness |
+|---|---|---|---|---|---|
+| `shotsFaced` | shots the goaltenders faced | on goal + goals, goalie in net | goaltender | — | boxscore |
+| `saveFraction` | how often a goaltender makes the save | saves / shots faced | goaltender | ✗ 219 | boxscore |
+
+**League rows** — archive-wide, never counted for a team (✗)
+
+| id | name | counts / of | witness |
+|---|---|---|---|
+| `penalties` | penalties a team takes | penalty events / (2 × games) | — |
+| `powerPlays` | power plays a team gets | the league's way / (2 × games) | boxscore + rail |
+| `ppGoalRate` | power plays that produce a goal | PP goals / power plays | boxscore + rail |
+| `offside` | times a team is offside | stoppages, reason offside / (2 × games) | — |
+| `icing` | times a team ices the puck | stoppages, reason icing / (2 × games) | — |
+| `stoppages` | why play stopped (layer) | stoppages + delayed penalties, by reason | no team |
+| `attemptMix` | where a shot attempt ends | reached the goalie / blocked / missed, of all attempts | — |
+| `slotGoals` | how often a slot shot goes in, and the share of goals from the slot | goals / attempts, inside vs outside | — · policy 33×22 |
+| `endZoneWorth` | what a face-off in one end is worth | attempts per face-off | — |
+| `pace` | attempts in an hour, by situation and by score | attempts / 60 min | — |
+| `hits` | hits a team lands | league row, follows the home scorer | rail |
+
+**Game outcomes and base rates**
+
+| id | name | counts / of | witness |
+|---|---|---|---|
+| `record` | W–L–OTL | regular-season games | standings (nightly) |
+| `leaderLost` | the team with more attempts lost | games with an edge, score not tied | — |
+| `levelLeaderLost` (`levelCurve`) | of games led by k or more at 5-on-5 level, how many were lost | per k | — |
+
+**Players** (per game played, current season; typical = **median** skater)
+
+| id | name | holds (player) | witness |
+|---|---|---|---|
+| `playerGoals` | goals per game | computed nightly | boxscore |
+| `playerAssists` | assists per game | computed nightly | boxscore |
+| `playerShots` | shots on goal per game | computed nightly | boxscore |
+| `playerAttempts` | shot attempts per game | computed nightly | — |
+
+⚠️ The player *holds* figures are typed in a comment at `preview.js:337` (6/10/24/33)
+and the live page computes 5/9/24/28 — the comment is stale, the page is right; the
+list carries no typed figure. The player rows use a different steadiness instrument
+from the club rows (§2 #8); the list will name one.
+
+### 7.3 What the list will NOT carry
+
+Values. The list is definitions; the values stay in `measures.json`, `teams.json`,
+`players.json` and the extracts, computed by the same reducers as today. One file of
+meanings, many files of numbers.
