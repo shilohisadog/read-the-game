@@ -43,9 +43,17 @@ state.
    ✅ (a) surfaces take their name/says from the list (2026-10-15: preview rows,
    player rows, tiles, methods headings, layer labels, chips — rendered text of two
    previews and the methods page byte-identical before/after, game page DOM
-   unchanged over 270 frames); (b) ruling 3 — the whole-game
+   unchanged over 270 frames); ✅ (b) ruling 3 (`776185b`; new per-team classes
+   `savePct`, `ozStarts`; derive 38805112349 republished, verified live: marks at
+   the published positions) — the whole-game
    panel ranks save fraction and offensive-zone face-offs, the slot box divides by
-   located attempts; (c) ruling 2 — level = strict 5-on-5 everywhere (moves the
+   located attempts; ⏭ NEXT (Kevin moved it up, 2026-10-15): data-model item 9 — the derive spends ~13 of
+   its ~20 min (31 min on 2026-10-15: pull 18.5, upload 11) re-downloading ~18,000 immutable raw files to a fresh runner (derive 38 s,
+   measure 6 s); cache `ingest/raw` between runs so only new games download, then time
+   the first run after; AND the extract upload (9+ min, Kevin 2026-10-15): `aws s3 sync`
+   re-sends all ~4,600 extracts because derive rewrote them (newer mtime) — upload only
+   those whose MD5 differs from the published ETag (verify ETag = MD5 on the first run);
+   (c) ruling 2 — level = strict 5-on-5 everywhere (moves the
    front door's "level leader lost" figure); (d) ruling 4 — typical shift = mean
    (color line); (e) ruling 5 — fold level into Attempts, Goaltending unranked, add
    the Who shoots layer; (f) ruling 6 — delete unread `measures.json` keys;
