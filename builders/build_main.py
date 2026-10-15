@@ -158,21 +158,18 @@ __CSS__</style>
        into the newcomer dismissal; that flag means "I know how this site works",
        and who took the shot is not scaffolding a reader outgrows. -->
   <p class="who" id="who" aria-live="polite"></p>
-  <!-- THE PLAY SO FAR: faceoff to whistle, counted from the marks on the ice
-       (src/lib/stretch.js). Pressing the line opens how it is counted; the
-       visible "how?" went as clutter (Kevin, 2026-10-15). The row is reserved
-       so it never moves Play. -->
-  <details class="playd" id="playd"><summary class="playline" title="How this line is counted"><span id="playline"></span></summary>
-  <p class="playwork">A play runs from a faceoff to the next whistle, goal or
-  penalty. The numbered marks on the ice are its events, in the order the league
-  recorded them. An attempt is a shot on goal, a missed shot or a blocked shot,
-  credited to the team that shot. An event is in a team&rsquo;s end when it was
-  recorded past the blue line on that team&rsquo;s side. When three or more events
-  in a row are recorded in one zone &mdash; our own rule, not the league&rsquo;s &mdash;
-  the line follows that zone until play leaves it, and its marks stand out. The time
-  is the game clock between the events, from the faceoff or from the first event in
-  that zone; nobody records when the puck crossed a blue line. The league does not record where the
-  puck went between two events, so nothing here says which team had it.</p></details>
+  <!-- THE COLOR LINE (src/lib/color.js): what a color analyst would add, from
+       the record, the rulebook and the archive. Pressing it opens where the notes
+       come from. The row is reserved so it never moves Play. -->
+  <details class="playd" id="playd"><summary class="playline" title="Where these notes come from"><span id="playline"></span></summary>
+  <p class="playwork">Each note comes from one of three places: the league&rsquo;s
+  record of this game, the NHL rulebook, or how often something happened across
+  three seasons of games we hold. None of them says which team had the puck &mdash;
+  the record does not say &mdash; or why anyone did anything. &ldquo;Events in a
+  row&rdquo; counts the numbered marks on the ice; three in a row in one zone is our
+  own rule for when the puck has stayed there, and its seconds run between recorded
+  events, because nobody records when the puck crossed a blue line. A typical shift
+  is the middle of every shift we hold.</p></details>
   <!-- ⭐⭐ WHO IS ON THE ICE, AND IT IS A LIST BECAUSE THAT IS WHAT WE KNOW.
        Kevin, 2026-09-10: *"we don't surface players on the ice at all; should we
        have a toggle... only clickable when not playing?"* — then, on the obvious
@@ -756,6 +753,8 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        "announce.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js", "layers/zonestart.js",
+       # The color line. AFTER stretch.js and the whistle and goaltending layers it reads.
+       "color.js",
        # BEFORE sentence.js, which asks it which competition a game is.
        "competitions.js",
        "teams.js", "layers/tied.js", "sentence.js",

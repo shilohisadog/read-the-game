@@ -793,8 +793,8 @@ export function paceOf(ticks, setup) {
                 // therefore reported a frame that was long and silent, which is
                 // exactly the defect the invariant below exists to forbid.
                 goal: (dom.$('labels').innerHTML.match(/🚨[^<]*GOAL[^<]*/) || [''])[0],
-                // A finished play's summary under the ice is words to read too.
-                summed: /^Last play/.test(dom.$('playline').textContent) });
+                // The color note under the ice is words to read too.
+                summed: dom.$('playline').textContent !== '' });
     if (n++ < ticks) fn();
     return 0;
   };

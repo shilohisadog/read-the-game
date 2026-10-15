@@ -29,7 +29,8 @@ import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
-import { endOf, liveRun, longestRun, playAt, playLine, playTally, plays, zoneRuns } from './lib/stretch.js';
+import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
+import { colorNotes } from './lib/color.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
 import { goalTicks, tickLeft } from './lib/scrub.js';
@@ -260,20 +261,16 @@ const MODE=()=>levelOnly?'score level, even strength, regulation'
 // as a bug it does not fix.
 const PBOX=stints(G.events,CTX);
 const PLAYS=plays(G.events);
-const PLAYNAMES={a:AAB,h:HAB,awayId:AID,homeId:HID,reason:r=>(WHY[r]&&WHY[r].name)||String(r).replace(/-/g,' ')};
-/* WHICH PLAY A FRAME DESCRIBES. On a faceoff it is the play that just ended, in
-   the same period, so the pause reads what happened; otherwise the one running.
-   `from` is the frame its marks start at. */
+// THE COLOR LINE: one note per frame at most, from the record, the rulebook and
+// the archive (src/lib/color.js). Computed once; RATES may be null.
+const COLOR=colorNotes(G,CTX,RATES);
+/* WHAT A FRAME SHOWS OF ITS PLAY: the marks since the faceoff (`from`), those of
+   a live zone stretch emphasised (`zoneFrom`), and the color note for the frame. */
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
- const n=EVI[k],p=playAt(PLAYS,n);if(!p)return {from:k,line:''};
- if(n===p.from){const q=PLAYS[PLAYS.indexOf(p)-1];
-   if(!q||G.events[q.from].per!==cur.per)return {from:k,line:''};
-   const long=longestRun(zoneRuns(G.events,q,q.to,CTX));
-   return {from:frameOf(q.from),line:playLine(playTally(G.events,q,q.to,CTX),endOf(G.events,q),PLAYNAMES,long)};}
- // A live zone stretch leads the line, and its marks are the ones emphasised.
+ const n=EVI[k],p=playAt(PLAYS,n),line=COLOR.get(n)||'';
+ if(!p)return {from:k,line};
  const run=liveRun(zoneRuns(G.events,p,n,CTX));
- return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,
-         line:playLine(playTally(G.events,p,n,CTX),null,PLAYNAMES,run)};}
+ return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}
 /* ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — Kevin, watching a replay event
    by event: "I was wondering why don't we say when the penalty expires."
    Measured across 60 archive games: 308 power plays end and 78.6% of them end
@@ -2690,9 +2687,9 @@ function sayWho(e){const w=$('who');if(!w)return;
 function sayPlay(line){const d=$('playd');if(!d)return;
  $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;
  // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
- d.classList.toggle('zoned',/^In the /.test(line));}
-// A finished play's summary is words to read, so it earns the caption's reading time.
-function dwell(e){return captioned(e)||/^Last play/.test(playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
+ d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
+// A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
+function dwell(e){return captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
    the pre-game frame for a full dwell would answer that with 1.8 seconds of empty

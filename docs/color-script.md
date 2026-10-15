@@ -1,13 +1,12 @@
 # A color-commentary script — first period, BOS at SJS, 13 October 2026
 
-**Status: A DRAFT TO READ. Nothing is built.** Kevin, 2026-10-15: the line under the
+**Status: BUILT 2026-10-15** (`src/lib/color.js`, the line under the rink), after Kevin read the draft: *"Everything else looks real good … let's go with the verbose approach to start, then maybe we add a toggle that says Verbose / Minimal commentary."* The draft's "(all 47)" now reads "47 seconds each"; a penalty names the player who sits and says "power play" only when the record shows a side short; the score between periods opens the next period. Below, the table is regenerated from the built code. Kevin, 2026-10-15: the line under the
 rink should be "more like the color guy and not the play by play guy", in plain
 English, without inventing anything, because the mission is to help a viewer
 understand hockey.
 
-How it was made: `tools/color-script.mjs` applies the draft rules below to the
-league's record of game 2026020105, so this is what a build would actually say —
-not a hand-written ideal. The middle column is a plain-English stand-in for what
+How it was made: `tools/color-script.mjs` runs `src/lib/color.js` — the code the
+replay runs — over the league's record of game 2026020105. The middle column is a plain-English stand-in for what
 the page already shows (the label on the ice and the name line).
 
 ## The story it tells, in the last three minutes
@@ -75,13 +74,13 @@ the SJS end … in that time BOS has 3 shot attempts". Same plain English, and t
 |---|---|---|
 | 20:00 | BOS won the faceoff (Lindholm) |  |
 | 19:28 | BOS blocked a SJS shot (Mittelstadt) |  |
-| 19:13 | SJS shot and missed the net (Cagnoni) | Every SJS skater on the ice has now been out more than 46 seconds (all 47). A typical shift lasts about 46 seconds; hockey is played in short bursts. |
+| 19:13 | SJS shot and missed the net (Cagnoni) | Every SJS skater on the ice has been out longer than a typical shift (about 46 seconds): 47 seconds each. |
 | 18:51 | BOS lost the puck (Pastrnak) |  |
 | 18:15 | BOS player hit an opponent (Zadorov) |  |
 | 18:14 | SJS shot on goal, saved (Chernyshov) | That shot came from the slot, the area right in front of the net. About 1 shot in 9 from there goes in; from farther out, about 1 in 30. |
-| 17:31 | SJS won the faceoff (Ostapchuk) | BOS iced the puck: shot it from its own half all the way past the far goal line without anyone touching it. The faceoff comes back to the BOS end, and BOS may not swap players — its 5 skaters stay on, 25 to 35 seconds into their shift. SJS sent out 3 fresh skaters. |
+| 17:31 | SJS won the faceoff (Ostapchuk) | BOS may not change players for this faceoff: its 5 skaters stay on, 25 to 35 seconds into their shift. SJS sent out 3 fresh skaters. |
 | 17:27 | BOS blocked a SJS shot (Peterka) |  |
-| 17:02 | SJS shot and missed the net (Goodrow) | Another shot from the slot: SJS's 2nd tonight. |
+| 17:02 | SJS shot and missed the net (Goodrow) | Another shot from the slot: SJS's 2nd of the game. |
 | 16:46 | SJS shot on goal, saved (Graf) | The puck has stayed in the BOS end for 4 events in a row; in that time SJS has 3 shot attempts. |
 | 16:24 | BOS shot and missed the net (McAvoy) |  |
 | 16:12 | BOS shot on goal, saved (Kastelic) |  |
@@ -89,9 +88,9 @@ the SJS end … in that time BOS has 3 shot attempts". Same plain English, and t
 | 16:00 | SJS player hit an opponent (Orlov) |  |
 | 15:56 | SJS won the faceoff (Smith) | Why play stopped: The goaltender caught or covered the puck after a shot, which stops play and brings a faceoff. |
 | 15:18 | SJS shot on goal, saved (Nurse) |  |
-| 15:16 | BOS penalty: High-sticking (Pastrnak) | Pastrnak of BOS goes to the penalty box for 2 minutes. BOS plays with one skater fewer until he is back — a "power play" for SJS. Over the last three seasons, about 1 power play in 5 ended in a goal. |
+| 15:16 | BOS penalty: High-sticking (Pastrnak) | Pastrnak sits in the penalty box for 2 minutes. BOS plays with fewer skaters until then: a "power play" for SJS. Over the last three seasons, about 1 power play in 5 ended in a goal. |
 | 15:16 | BOS won the faceoff (Khusnutdinov) |  |
-| 14:08 | BOS blocked a SJS shot (Borgen) | Every SJS skater on the ice has now been out more than 46 seconds (68 to 114). A typical shift lasts about 46 seconds; hockey is played in short bursts. |
+| 14:08 | BOS blocked a SJS shot (Borgen) | Every SJS skater on the ice has been out longer than a typical shift (about 46 seconds): 68 to 114 seconds each. |
 | 13:46 | SJS lost the puck (Misa) | The puck has stayed in the BOS end for 3 events in a row; in that time SJS has 1 shot attempt. |
 | 13:41 | SJS took the puck away (Orlov) |  |
 | 13:28 | BOS blocked a SJS shot (McAvoy) |  |
@@ -104,29 +103,29 @@ the SJS end … in that time BOS has 3 shot attempts". Same plain English, and t
 | 12:46 | BOS blocked a SJS shot (Lindholm) |  |
 | 12:41 | BOS lost the puck (Pastrnak) |  |
 | 12:32 | SJS shot on goal, saved (Celebrini) |  |
-| 12:06 | A SJS shot hit a SJS teammate (Chernyshov) | Every SJS skater on the ice has now been out more than 46 seconds (all 50). A typical shift lasts about 46 seconds; hockey is played in short bursts. |
+| 12:06 | A SJS shot hit a teammate (Chernyshov) | Every SJS skater on the ice has been out longer than a typical shift (about 46 seconds): 50 seconds each. |
 | 11:04 | SJS won the faceoff (Wennberg) | Why play stopped: The puck struck an official, and play stopped. |
 | 10:39 | BOS player hit an opponent (Brunet) |  |
 | 10:26 | BOS player hit an opponent (Minten) |  |
 | 10:09 | BOS player hit an opponent (McAvoy) |  |
 | 10:07 | BOS won the faceoff (Poitras) |  |
 | 09:28 | BOS player hit an opponent (Borgen) |  |
-| 09:00 | A BOS shot hit a BOS teammate (Zacha) |  |
+| 09:00 | A BOS shot hit a teammate (Zacha) |  |
 | 08:29 | SJS blocked a BOS shot (Nurse) |  |
 | 08:24 | SJS lost the puck (Smith) | The puck has stayed in the SJS end for 3 events in a row; in that time BOS has 2 shot attempts. |
 | 08:18 | SJS lost the puck (Celebrini) | The puck has stayed in the SJS end for 4 events in a row; in that time BOS has 2 shot attempts. |
 | 08:16 | SJS took the puck away (Celebrini) | The puck has stayed in the SJS end for 5 events in a row; in that time BOS has 2 shot attempts. |
 | 07:10 | BOS shot on goal, saved (Mittelstadt) | The puck has stayed in the SJS end for 6 events in a row; in that time BOS has 3 shot attempts. |
-| 07:05 | **BOS GOAL** (Minten) | That puts BOS ahead. The puck had stayed in the SJS end for 7 events in a row before it went in. |
+| 07:05 | **BOS GOAL** (Minten) | That puts BOS ahead, 1–0. The puck had stayed in the SJS end for 7 events in a row before it went in. |
 | 07:05 | BOS won the faceoff (Minten) |  |
 | 06:40 | BOS lost the puck (Khusnutdinov) |  |
-| 06:33 | BOS penalty: Hooking (Zadorov) | Zadorov of BOS goes to the penalty box for 2 minutes. BOS plays with one skater fewer until he is back — a "power play" for SJS. Over the last three seasons, about 1 power play in 5 ended in a goal. |
+| 06:33 | BOS penalty: Hooking (Zadorov) | Zadorov sits in the penalty box for 2 minutes. BOS plays with fewer skaters until then: a "power play" for SJS. Over the last three seasons, about 1 power play in 5 ended in a goal. |
 | 06:33 | BOS won the faceoff (Lindholm) | Why play stopped: A scheduled broadcast break. Play was already stopped. |
-| 06:15 | BOS won the faceoff (Lindholm) | Play stopped for offside: an attacker crossed into the other team's end before the puck did. The faceoff moves out of that end. |
-| 05:18 | SJS shot on goal, saved (Smith) | Another shot from the slot: SJS's 3rd tonight. |
+| 06:15 | BOS won the faceoff (Lindholm) |  |
+| 05:18 | SJS shot on goal, saved (Smith) | Another shot from the slot: SJS's 3rd of the game. |
 | 04:46 | BOS player hit an opponent (Borgen) |  |
 | 04:40 | SJS won the faceoff (Ostapchuk) | Why play stopped: The puck went into a penalty bench and play stopped. |
-| 04:31 | **SJS GOAL** (Trouba) | That ties the game. |
+| 04:31 | **SJS GOAL** (Trouba) | That ties the game, 1–1. |
 | 04:31 | SJS won the faceoff (Ostapchuk) |  |
 | 04:23 | SJS won the faceoff (Celebrini) |  |
 | 04:20 | BOS shot on goal, saved (Lindholm) |  |
@@ -136,18 +135,17 @@ the SJS end … in that time BOS has 3 shot attempts". Same plain English, and t
 | 03:37 | SJS player hit an opponent (Nurse) |  |
 | 03:24 | BOS lost the puck (Zadorov) |  |
 | 03:14 | BOS shot on goal, saved (Peterka) |  |
-| 03:04 | BOS won the faceoff (Lindholm) | SJS iced the puck: shot it from its own half all the way past the far goal line without anyone touching it. The faceoff comes back to the SJS end, and SJS may not swap players — its 5 skaters stay on, 23 to 26 seconds into their shift. BOS sent out 5 fresh skaters. |
+| 03:04 | BOS won the faceoff (Lindholm) | SJS may not change players for this faceoff: its 5 skaters stay on, 23 to 26 seconds into their shift. BOS sent out 5 fresh skaters. |
 | 03:01 | BOS shot on goal, saved (Lohrei) |  |
-| 02:09 | BOS won the faceoff (Minten) | SJS iced the puck: shot it from its own half all the way past the far goal line without anyone touching it. The faceoff comes back to the SJS end, and SJS may not swap players — its 5 skaters stay on, 15 to 33 seconds into their shift. |
+| 02:09 | BOS won the faceoff (Minten) | SJS may not change players for this faceoff: its 5 skaters stay on, 15 to 33 seconds into their shift. |
 | 01:49 | SJS player hit an opponent (Goodrow) |  |
 | 01:47 | SJS player hit an opponent (Ostapchuk) | The puck has stayed in the SJS end for 3 events in a row; in that time BOS has no shot attempts. |
-| 01:36 | SJS player hit an opponent (Goodrow) | Every SJS skater on the ice has now been out more than 46 seconds (48 to 66). A typical shift lasts about 46 seconds; hockey is played in short bursts. |
+| 01:36 | SJS player hit an opponent (Goodrow) | Every SJS skater on the ice has been out longer than a typical shift (about 46 seconds): 48 to 66 seconds each. |
 | 01:32 | BOS shot and missed the net (McAvoy) | That shot came from the slot, the area right in front of the net. About 1 shot in 9 from there goes in; from farther out, about 1 in 30. |
-| 01:17 | **BOS GOAL** (McAvoy) | BOS now leads 2–1. The puck had stayed in the SJS end for 6 events in a row before it went in. |
+| 01:17 | **BOS GOAL** (McAvoy) | That puts BOS ahead, 2–1. The puck had stayed in the SJS end for 6 events in a row before it went in. |
 | 01:17 | BOS won the faceoff (Poitras) |  |
 | 01:06 | BOS lost the puck (Zadorov) |  |
 | 00:47 | BOS player hit an opponent (Poitras) |  |
 | 00:42 | BOS blocked a SJS shot (Kastelic) |  |
 | 00:08 | BOS blocked a SJS shot (Brunet) | The puck has stayed in the BOS end for 3 events in a row; in that time SJS has 2 shot attempts. |
 | 00:06 | BOS blocked a SJS shot (Lindholm) | The puck has stayed in the BOS end for 4 events in a row; in that time SJS has 3 shot attempts. |
-| 00:00 | End of the period | After the period: shots on goal BOS 8, SJS 7; all shot attempts BOS 12, SJS 18; shots from the slot BOS 2, SJS 3. |

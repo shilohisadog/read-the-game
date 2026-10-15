@@ -5,24 +5,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { boot } from './helpers/page.js';
 
-test('the line runs during a play and sums the last one up at the faceoff', () => {
+test('the line carries the color note for its frame, and is hidden without one', () => {
   const a = boot();
-  const frames = a.every((d, f) => ({ type: f.ev && f.ev.type, per: f.ev && f.ev.per,
-    line: d.$('playline').textContent, none: d.$('playd').classList.contains('none') }));
-  let running = 0, last = 0;
-  frames.forEach((f, k) => {
-    assert.equal(f.none, !f.line, `frame ${k}: the row shows with nothing in it, or hides a line`);
-    if (/^This play/.test(f.line)) { running++; assert.notEqual(f.type, 'faceoff', `frame ${k}`); }
-    if (/^Last play/.test(f.line)) {
-      last++;
-      assert.equal(f.type, 'faceoff', `frame ${k}: a finished play summed up away from the restart`);
-      assert.match(f.line, / · ended: /, `frame ${k}: no ending`);
-    }
-  });
-  assert.ok(running > 50 && last > 20, `walked ${running} running and ${last} finished lines`);
-  // The first faceoff of a period has no play before it in that period.
-  frames.forEach((f, k) => { if (f.type === 'faceoff' && (k === 0 || frames[k - 1].per !== f.per))
-    assert.equal(f.line, '', `frame ${k}: summed up a play from another period`); });
+  const frames = a.every(d => ({ line: d.$('playline').textContent, none: d.$('playd').classList.contains('none') }));
+  frames.forEach((f, k) => assert.equal(f.none, !f.line, `frame ${k}: the row shows with nothing in it, or hides a note`));
+  const said = frames.filter(f => f.line);
+  // A broadcast's color analyst speaks in the gaps: some frames, never all of them.
+  assert.ok(said.length > 30 && said.length < frames.length * 0.7,
+    `${said.length} of ${frames.length} frames carry a note`);
+  assert.ok(said.every(f => !/^This play|^Last play/.test(f.line)), 'the old play summary is still on screen');
 });
 
 test('the line is not on the front door preview', () => {
@@ -30,18 +21,19 @@ test('the line is not on the front door preview', () => {
   a.every(d => assert.equal(d.$('playline').textContent, ''));
 });
 
-test('a zone stretch leads the line exactly when its marks stand out, and holds three or more', () => {
+test('a note that counts events in a row agrees with the marks that stand out on the ice', () => {
   const a = boot();
   const frames = a.every(d => ({ line: d.$('playline').textContent,
     inzone: new Set([...d.$('events').innerHTML.matchAll(/class="ev [^"]*\binzone\b[^"]*" data-i="(\d+)"/g)].map(m => m[1])).size }));
-  let zone = 0;
+  let checked = 0;
   frames.forEach((f, k) => {
-    const m = /^In the .*?: (\d+) events in a row/.exec(f.line);
-    if (m) { zone++; assert.equal(f.inzone, +m[1], `frame ${k}: the line says ${m[1]} in a row, the ice shows ${f.inzone}`);
-             assert.ok(+m[1] >= 3, `frame ${k}: a stretch of ${m[1]}`); }
-    else assert.equal(f.inzone, 0, `frame ${k}: marks stand out with no stretch in the line`);
+    if (f.inzone) assert.ok(f.inzone >= 3, `frame ${k}: ${f.inzone} marks stand out, fewer than a stretch`);
+    const m = /stayed in the .*? for (\d+) events in a row/.exec(f.line);
+    if (!m) return;
+    checked++;
+    assert.equal(f.inzone, +m[1], `frame ${k}: the note says ${m[1]} in a row, the ice shows ${f.inzone}`);
   });
-  assert.ok(zone > 20, `only ${zone} zone frames walked`);
+  assert.ok(checked > 10, `only ${checked} counted notes walked`);
 });
 
 test('the line\'s state classes are its own: no other rule on the page can restyle it', async () => {
