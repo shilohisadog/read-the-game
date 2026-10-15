@@ -21,10 +21,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import {
   ALT, HEIGHT, HREF, PNG, STAMP, WIDTH,
   cardSvg, chunks, crc32, judgeCard, pngSize, pngText, sourceHash, withText,
 } from '../tools/card.mjs';
+const CARD_HASH = createHash('sha256').update(readFileSync(new URL('../src/card.png', import.meta.url))).digest('hex').slice(0, 10);
 
 const SRC = new URL('../src/', import.meta.url);
 const pages = ['index.html', 'game.html', 'read-the-game.html', 'calendar.html', 'preview.html'];
@@ -148,7 +150,8 @@ test('⭐⭐⭐ every shareable page offers the card, at the size the file reall
     for (const tag of ['og:image', 'twitter:image']) {
       const m = new RegExp(`<meta (?:property|name)="${tag}" content="([^"]*)"`).exec(html);
       assert.ok(m, `${f} has no ${tag}`);
-      assert.equal(m[1], HREF, `${f}'s ${tag} points somewhere else`);
+      // The address carries the image's own hash, so a redrawn card is fetched afresh.
+      assert.equal(m[1], `${HREF}?v=${CARD_HASH}`, `${f}'s ${tag} points somewhere else, or at a stale version`);
       /* ⛔ ABSOLUTE, ALWAYS. A crawler resolves these against nothing a relative
          path can rely on, and a card that 404s for the crawler is a card that
          does not exist — which looks exactly like having none. */

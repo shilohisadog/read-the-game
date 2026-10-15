@@ -479,7 +479,11 @@ def _card_facts():
 
 
 CARD_W, CARD_H, CARD_ALT = _card_facts()
-CARD_URL = "https://readthegame.co/card.png"
+# ⭐ VERSIONED BY ITS OWN BYTES. X caches a card image by its URL, so after the
+# card was redrawn (2026-10-13) posts still unfurled the old empty rink. A new
+# picture now means a new address, and the crawler has to fetch it.
+CARD_URL = ("https://readthegame.co/card.png?v="
+            + hashlib.sha256((ROOT / "src" / "card.png").read_bytes()).hexdigest()[:10])
 
 
 def document(body, *, title, description=None, url=None, head="", lang="en",
