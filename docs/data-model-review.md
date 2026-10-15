@@ -195,7 +195,7 @@ Ordered by what a reader is told wrong first, then bytes, then hygiene.
 6. **Delete what has no reader**: `teams.archive`, `gshots`, the `app.js:216` fallback.
 7. **Collapse the season-from-id copies**; add the index-vs-catalog and id-type-vs-schedule-type checks.
 8. **Re-copy the stale fixtures** and guard their vintage.
-9. ⏭ **Moved up by Kevin, 2026-10-15** (a derive took 30+ min). Measured: the raw pull is ~13 of ~20 min; derive 38 s, measure 6 s. **Pipeline**: measure incrementally rather than pulling 376 MB; send `Accept-Encoding` to the league; skip uploads when nothing changed.
+9. ✅ **Moved up by Kevin, 2026-10-15; DONE `ac829b2` — derive 31 min → 3 min 14 s** (raw archive cached between runs; only extracts whose MD5 differs from the published ETag are uploaded). ⏭ Still open: the nightly's measure job downloads every extract (`ingest.yml`), 6–9 min a run. (a derive took 30+ min). Measured: the raw pull is ~13 of ~20 min; derive 38 s, measure 6 s. **Pipeline**: measure incrementally rather than pulling 376 MB; send `Accept-Encoding` to the league; skip uploads when nothing changed.
 10. Wording: D4, D7, D8; `recent.json`'s two jobs.
 11. **Comments out of the source** (Kevin, 2026-10-12: *"don't think (excessive)
     narrative belongs in code comments"*). 71–81% of `src/` and `builders/` is

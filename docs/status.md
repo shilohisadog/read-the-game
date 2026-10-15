@@ -47,7 +47,9 @@ state.
    `savePct`, `ozStarts`; derive 38805112349 republished, verified live: marks at
    the published positions) — the whole-game
    panel ranks save fraction and offensive-zone face-offs, the slot box divides by
-   located attempts; ⏭ NEXT (Kevin moved it up, 2026-10-15): data-model item 9 — the derive spends ~13 of
+   located attempts; ✅ DONE `ac829b2`, measured: derive 31 min → 3 min 14 s (run 38811819027: pull 30 s,
+   390 files; upload 32 s, 4,658 of 4,658 extracts unchanged so ETag = MD5 holds on R2).
+   Was: data-model item 9 — the derive spends ~13 of
    its ~20 min (31 min on 2026-10-15: pull 18.5, upload 11) re-downloading ~18,000 immutable raw files to a fresh runner (derive 38 s,
    measure 6 s); cache `ingest/raw` between runs so only new games download, then time
    the first run after; AND the extract upload (9+ min, Kevin 2026-10-15): `aws s3 sync`
