@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Mt58iH88bieXZXpLOt79meWcHyRL9EkwjSK0V0jAy3s=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-iYTCMv/CqctIcPMQ+mH+jQ/ZgbTINHlRfjWo5zlQ3YY=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-esspllL3ECBQ4jNo8Y0thR6HE0bOBdtjM7Vj2xg9DKo=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -578,7 +578,7 @@ const MEASURES = [
     counts: 'goals + shots on goal + missed + blocked', of: 'game', credit: 'shooter',
     unit: 'count', strength: 'all', score: 'any', scopes: ['game', 'season'],
     typical: 'middle half', witness: null, family: 'possession',
-    keys: { lens: 'corsi' },
+    keys: { lens: 'corsi', perTeam: 'corsi' },
     pending: [{ ruling: '5', what: 'level possession folds in as a filter' },
               { ruling: 'wording', what: 'the layer label says "Control (Corsi)", the chip says "Attempts"' }] },
   { id: 'level5', name: '5-on-5 CF% while the score was level', layer: 'control while the score was level',
@@ -614,21 +614,19 @@ const MEASURES = [
     counts: 'blocked shots credited to the blocker’s team', of: 'games', credit: 'blocker',
     unit: 'perGame', strength: 'all', score: 'any', scopes: ['game', 'season'],
     typical: 'league figure', witness: 'boxscore player rows', family: 'possession',
-    keys: { row: 'blocks', derivation: 'blocksMade', lens: 'blocked' },
+    keys: { row: 'blocks', derivation: 'blocksMade', lens: 'blocked', perTeam: 'blocked' },
     pending: [{ ruling: 'audit §2 #6', what: 'the whole-game scale also counts teammate blocks and blocks with no blocker recorded' }] },
   { id: 'zoneStarts', name: 'offensive-zone face-offs', chip: 'Zone starts', layer: '＋ Zone starts',
     says: 'Face-offs a team won in the other team’s end.',
     counts: 'face-offs in the attacking end', of: 'face-offs', credit: 'winner', unit: 'count',
     strength: 'all', score: 'any', scopes: ['game', 'season'], typical: 'middle half',
-    witness: null, family: 'possession', keys: { lens: 'zonestart' },
-    pending: [{ ruling: '3', what: 'the whole-game panel ranks all face-offs won; rank offensive-zone face-offs' }] },
+    witness: null, family: 'possession', keys: { lens: 'zonestart', perTeam: 'ozStarts' } },
 
   { id: 'slotShots', name: 'shots from the slot', chip: 'Slot shots', layer: '＋ Shots from the slot',
     says: 'Shots taken from the slot, the area in front of the net.',
     counts: 'unblocked attempts with a location, inside the slot', of: 'attempts with a location',
     credit: 'shooter', unit: 'count', strength: 'all', score: 'any', scopes: ['game', 'season'],
-    typical: 'middle half', witness: null, policy: SLOT_POLICY.slot, keys: { lens: 'slot' },
-    pending: [{ ruling: '3', what: 'the box divides by every attempt, blocked included; divide by attempts with a location' }] },
+    typical: 'middle half', witness: null, policy: SLOT_POLICY.slot, keys: { lens: 'slot', perTeam: 'slot' } },
   { id: 'slotShare', name: 'shot attempts from the slot', heading: 'How many shot attempts are taken from the slot',
     says: 'Of every 100 shot attempts this team took from a spot the feed records, this many came from the slot.',
     counts: 'unblocked attempts with a location, inside the slot', of: 'unblocked attempts with a location',
@@ -665,9 +663,8 @@ const MEASURES = [
     says: 'Of every 100 shots a goaltender faced, this many he stopped.',
     counts: 'saves', of: 'shots faced', credit: 'goaltender', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'archive'], typical: 'league figure', witness: 'boxscore',
-    holds: false, keys: { lens: 'goaltending', printed: 'saves' },
-    pending: [{ ruling: '3', what: 'the whole-game panel ranks shots faced; rank save fraction' },
-              { ruling: '5', what: 'stays on the rink, never ranked as a team figure' }] },
+    holds: false, keys: { lens: 'goaltending', printed: 'saves', perTeam: 'savePct' },
+    pending: [{ ruling: '5', what: 'stays on the rink, never ranked as a team figure' }] },
   { id: 'goalieRecord', name: 'a goaltender’s record', status: 'proposed',
     says: 'Wins, losses and overtime losses credited to a goaltender.',
     counts: 'the league’s decision', of: 'games', credit: 'goaltender', unit: 'record',

@@ -116,9 +116,12 @@ test('the slot counts by the shooter too, and names its denominator', () => {
   const b = box(a);
   assert.equal(b.a, String(exp[AID]));
   assert.equal(b.h, String(exp[HID]));
-  // A count with no denominator is the defect this project names everywhere
-  // else; the line carries the attempts the slot shots are a subset of.
-  assert.match(b.n, /Of \d+ attempts so far/, 'the slot figures name no population');
+  // The denominator is the attempts whose spot is known: unblocked, with a location.
+  const located = corsi.reduce(rich.events, CTX).counted
+    .filter(i => ['goal', 'shot-on-goal', 'missed-shot'].includes(rich.events[i].type) && rich.events[i].x != null).length;
+  const blockedToo = corsi.reduce(rich.events, CTX).counted.length;
+  assert.ok(located < blockedToo, 'the fixture has blocked shots, so the two denominators differ');
+  assert.match(b.n, new RegExp(`^Of ${located} unblocked attempts with a recorded spot so far`));
 });
 
 /**

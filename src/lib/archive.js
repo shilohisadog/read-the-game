@@ -332,11 +332,17 @@ const PER_TEAM = {
          'shots from the slot'],
   blocked: [g => g.blocks, 'attempts one team\u2019s bodies stopped in one game',
             'blocked shots'],
-  goaltending: [g => g.faced, 'shots one team\u2019s goaltenders faced in one game',
-                'shots the goaltenders faced'],
-  zonestart: [g => g.faceoffs, 'face-offs one team won in one game, at all strengths',
-              'face-offs'],
+  // A whole percent, so it histograms like the counts; a side that faced no shot drops out.
+  savePct: [g => g.saves && g.faced && { h: pct(g.saves.h, g.faced.h), a: pct(g.saves.a, g.faced.a) },
+            'saves out of every 100 shots one team\u2019s goaltenders faced in one game',
+            'saves of every 100 shots', '%'],
+  ozStarts: [g => g.oz, 'face-offs one team won in the other team\u2019s end in one game',
+             'offensive-zone face-offs'],
 };
+const pct = (s, f) => (f > 0 ? Math.round((100 * s) / f) : null);
+
+/** The per-team-game classes this module publishes, by key. */
+export const PER_TEAM_KEYS = Object.keys(PER_TEAM);
 
 export function perTeamGame(records) {
   const bySeason = {};
@@ -345,14 +351,14 @@ export function perTeamGame(records) {
   for (const y of Object.keys(bySeason).sort()) {
     const pop = `${POPULATION}, ${seasonLabel(y)}`;
     out[y] = {};
-    for (const [k, [read, what, noun]] of Object.entries(PER_TEAM)) {
+    for (const [k, [read, what, noun, suffix]] of Object.entries(PER_TEAM)) {
       /* A record written before these fields existed contributes nothing rather
          than a zero — `distribution` filters on Number.isInteger, so a missing
          side drops out of its own population and says so in `n`. */
       const vals = [];
       for (const g of bySeason[y]) { const v = read(g) || {}; vals.push(v.h, v.a); }
       out[y][k] = { ...distribution(vals, `${what} (n counts TEAM-GAMES, not events)`, pop),
-                    unit: 'team-games', noun };
+                    unit: 'team-games', noun, ...(suffix ? { suffix } : {}) };
     }
     out[y].dataThrough = dataThrough(bySeason[y]);
   }

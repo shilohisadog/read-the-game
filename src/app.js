@@ -22,8 +22,9 @@ import {
   ENDS_KEY, ENDS_NOTE, ENDS_SHOOTOUT, NET_X, attackDirection, endsKeyShowing, endsNoteShowing
 } from './lib/rink.js';
 import {
-  ATTRIBUTION, corsiTeam, missSay, shootingTeam
+  ATTRIBUTION, corsiTeam, missSay, shootingTeam, SHOT_TYPES
 } from './lib/attribution.js';
+import { claimOf } from './lib/registry.js';
 import { framed, inShootout, notAPlay, sitAt } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
@@ -1852,15 +1853,23 @@ function renderSum(){
  const byClub=(id,L)=>{
   if(id==='whistle')return null;
   if(id==='slot')return byShooter(L.counted,G.events);
-  if(id==='goaltending'){const t={[AID]:0,[HID]:0};
+  // Goaltending: each team's own goaltenders' saves out of every 100 shots they faced.
+  if(id==='goaltending'){const s={[AID]:0,[HID]:0},f={[AID]:0,[HID]:0};
    for(const gid of Object.keys(L.g||{})){const p=R[gid];
-    if(p&&t[p.tid]!=null)t[p.tid]+=L.g[gid].f;}
-   return t;}
+    if(p&&f[p.tid]!=null){s[p.tid]+=L.g[gid].s;f[p.tid]+=L.g[gid].f;}}
+   if(!f[AID]||!f[HID])return null;
+   return {[AID]:Math.round(100*s[AID]/f[AID]),[HID]:Math.round(100*s[HID]/f[HID])};}
+  // Zone starts: face-offs each team won in the other team's end.
+  if(id==='zonestart')return L.z?{[AID]:L.z[AID].O,[HID]:L.z[HID].O}:null;
   return L.t||null;};
+ /* Lenses whose per-team figure is a different quantity from the game's total, so
+    with no per-team class they draw no scale rather than fall back to the game's. */
+ const TEAM_ONLY={goaltending:1,zonestart:1};
  Object.keys(LENS).forEach(id=>{
   const L=LENS[id].reduce(G.events,{...CTX,evenOnly:false});
   const n=L.counted.length;
   const by=byClub(id,L);
+  if(TEAM_ONLY[id]&&!by)return;
   /* ⛔⛔⛔ THE SPLIT AND ITS CLASS TRAVEL TOGETHER, OR NEITHER DOES — and the first
      version of this line shipped the defect the whole feature exists to prevent.
      It read `by&&perTeam ? perTeam[id] : own[id]`, so on a page whose PUBLISHED
@@ -1881,9 +1890,11 @@ function renderSum(){
      class, which is what this card drew for its whole life before today. A row
      that cannot say what each club did says what the game did, and never splits a
      count it has nowhere honest to put. */
-  const cls=by&&perTeam?perTeam[id]:null;
-  const split=by&&cls;
-  const d=split?cls:(own?own[id]:null);
+  const cls=by&&perTeam?perTeam[claimOf('lens',id).keys.perTeam]:null;
+  const bare=by&&!cls&&TEAM_ONLY[id];
+  const split=by&&(cls||bare);
+  const d=cls?cls:(bare?null:(own?own[id]:null));
+  const u=(cls&&cls.suffix)||(bare&&id==='goaltending'?'%':'');
   /* ⭐ THE CLASS NAMES ARE WHOLE LITERALS, NOT `'s'+cls`. `test/css-orphans.test.js`
      counts every word inside every shipped string to decide whether a CSS rule
      still dresses anything, and a name spliced from a prefix and a letter is
@@ -1908,7 +1919,7 @@ function renderSum(){
      and mean different things is the oldest defect in this file. */
   if(split){
    say.innerHTML='<b>'+ESC(chipLabel(id))+'</b> — '
-    +sides.map(([mk,tid,ab])=>'<span class="stm '+mk+'">'+ESC(ab)+' '+N(by[tid])+'</span>')
+    +sides.map(([mk,tid,ab])=>'<span class="stm '+mk+'">'+ESC(ab)+' '+N(by[tid])+u+'</span>')
       .join(' · ');
   }else{
    /* ⚠️ TWO REASONS A ROW IS NOT SPLIT, AND THEY ARE DIFFERENT CLAIMS. The whistle
@@ -1959,8 +1970,8 @@ function renderSum(){
       guess at, and the row no longer carries a sentence saying where the mark
       sat. */
    const ends=document.createElement('span');ends.className='sends';
-   const lo=document.createElement('span');lo.textContent=N(ref0.min);
-   const hi=document.createElement('span');hi.textContent=N(ref0.max);
+   const lo=document.createElement('span');lo.textContent=N(ref0.min)+u;
+   const hi=document.createElement('span');hi.textContent=N(ref0.max)+u;
    ends.appendChild(lo);ends.appendChild(hi);
    sc.appendChild(ends);li.appendChild(sc);}
   /* ⭐⭐⭐ AND EVERY COUNT HERE OPENS TO HOW IT WAS COUNTED — 2026-10-04, and this
@@ -4545,9 +4556,11 @@ function lboxFor(id,at,L){
   const a=L.t[AID],h=L.t[HID];
   return {a,k:'SHOT ATTEMPTS',h,n:`On goal, missed or blocked · ${MODE()}.`};}
  if(id==='slot'){
-  const c=byShooter(danger.reduce(sl,CTX).counted,sl), tot=L.t[AID]+L.t[HID];
+  // Out of the attempts whose spot is known: a blocked shot is recorded where it was blocked.
+  const c=byShooter(danger.reduce(sl,CTX).counted,sl),
+        loc=L.counted.filter(i=>SHOT_TYPES.has(sl[i].type)&&sl[i].x!=null).length;
   return {a:c[AID],k:'SHOTS FROM THE SLOT',h:c[HID],
-   n:`Of ${tot} attempt${tot===1?'':'s'} so far · ${MODE()}.`};}
+   n:`Of ${loc} unblocked attempt${loc===1?'':'s'} with a recorded spot so far · ${MODE()}.`};}
  if(id==='blocked'){
   /* ⭐ COUNTED BY THE BLOCKER — the standard attribution, and this REVERSES the
      rule §31.4b laid down a day earlier. Kevin: "blocked shots is quite a common

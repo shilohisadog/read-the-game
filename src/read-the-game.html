@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5d5mBJqUcqr9r8FLXsQBYb0geG3oLV2zl65gMaFsFMw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-BlTQQ+Zq0kSq6GTGxDgdHTg/3YJ1xchAaJlyHl/+dVw='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sgERvL8ZeBu2a6GAH2Kd/gbhkGIiBH40K174vKjgyn4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-BlTQQ+Zq0kSq6GTGxDgdHTg/3YJ1xchAaJlyHl/+dVw='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -890,7 +890,7 @@ const MEASURES = [
     counts: 'goals + shots on goal + missed + blocked', of: 'game', credit: 'shooter',
     unit: 'count', strength: 'all', score: 'any', scopes: ['game', 'season'],
     typical: 'middle half', witness: null, family: 'possession',
-    keys: { lens: 'corsi' },
+    keys: { lens: 'corsi', perTeam: 'corsi' },
     pending: [{ ruling: '5', what: 'level possession folds in as a filter' },
               { ruling: 'wording', what: 'the layer label says "Control (Corsi)", the chip says "Attempts"' }] },
   { id: 'level5', name: '5-on-5 CF% while the score was level', layer: 'control while the score was level',
@@ -926,21 +926,19 @@ const MEASURES = [
     counts: 'blocked shots credited to the blocker’s team', of: 'games', credit: 'blocker',
     unit: 'perGame', strength: 'all', score: 'any', scopes: ['game', 'season'],
     typical: 'league figure', witness: 'boxscore player rows', family: 'possession',
-    keys: { row: 'blocks', derivation: 'blocksMade', lens: 'blocked' },
+    keys: { row: 'blocks', derivation: 'blocksMade', lens: 'blocked', perTeam: 'blocked' },
     pending: [{ ruling: 'audit §2 #6', what: 'the whole-game scale also counts teammate blocks and blocks with no blocker recorded' }] },
   { id: 'zoneStarts', name: 'offensive-zone face-offs', chip: 'Zone starts', layer: '＋ Zone starts',
     says: 'Face-offs a team won in the other team’s end.',
     counts: 'face-offs in the attacking end', of: 'face-offs', credit: 'winner', unit: 'count',
     strength: 'all', score: 'any', scopes: ['game', 'season'], typical: 'middle half',
-    witness: null, family: 'possession', keys: { lens: 'zonestart' },
-    pending: [{ ruling: '3', what: 'the whole-game panel ranks all face-offs won; rank offensive-zone face-offs' }] },
+    witness: null, family: 'possession', keys: { lens: 'zonestart', perTeam: 'ozStarts' } },
 
   { id: 'slotShots', name: 'shots from the slot', chip: 'Slot shots', layer: '＋ Shots from the slot',
     says: 'Shots taken from the slot, the area in front of the net.',
     counts: 'unblocked attempts with a location, inside the slot', of: 'attempts with a location',
     credit: 'shooter', unit: 'count', strength: 'all', score: 'any', scopes: ['game', 'season'],
-    typical: 'middle half', witness: null, policy: SLOT_POLICY.slot, keys: { lens: 'slot' },
-    pending: [{ ruling: '3', what: 'the box divides by every attempt, blocked included; divide by attempts with a location' }] },
+    typical: 'middle half', witness: null, policy: SLOT_POLICY.slot, keys: { lens: 'slot', perTeam: 'slot' } },
   { id: 'slotShare', name: 'shot attempts from the slot', heading: 'How many shot attempts are taken from the slot',
     says: 'Of every 100 shot attempts this team took from a spot the feed records, this many came from the slot.',
     counts: 'unblocked attempts with a location, inside the slot', of: 'unblocked attempts with a location',
@@ -977,9 +975,8 @@ const MEASURES = [
     says: 'Of every 100 shots a goaltender faced, this many he stopped.',
     counts: 'saves', of: 'shots faced', credit: 'goaltender', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'archive'], typical: 'league figure', witness: 'boxscore',
-    holds: false, keys: { lens: 'goaltending', printed: 'saves' },
-    pending: [{ ruling: '3', what: 'the whole-game panel ranks shots faced; rank save fraction' },
-              { ruling: '5', what: 'stays on the rink, never ranked as a team figure' }] },
+    holds: false, keys: { lens: 'goaltending', printed: 'saves', perTeam: 'savePct' },
+    pending: [{ ruling: '5', what: 'stays on the rink, never ranked as a team figure' }] },
   { id: 'goalieRecord', name: 'a goaltender’s record', status: 'proposed',
     says: 'Wins, losses and overtime losses credited to a goaltender.',
     counts: 'the league’s decision', of: 'games', credit: 'goaltender', unit: 'record',
@@ -4650,18 +4647,24 @@ function renderSum(){
  const byClub=(id,L)=>{
   if(id==='whistle')return null;
   if(id==='slot')return byShooter(L.counted,G.events);
-  if(id==='goaltending'){const t={[AID]:0,[HID]:0};
+  if(id==='goaltending'){const s={[AID]:0,[HID]:0},f={[AID]:0,[HID]:0};
    for(const gid of Object.keys(L.g||{})){const p=R[gid];
-    if(p&&t[p.tid]!=null)t[p.tid]+=L.g[gid].f;}
-   return t;}
+    if(p&&f[p.tid]!=null){s[p.tid]+=L.g[gid].s;f[p.tid]+=L.g[gid].f;}}
+   if(!f[AID]||!f[HID])return null;
+   return {[AID]:Math.round(100*s[AID]/f[AID]),[HID]:Math.round(100*s[HID]/f[HID])};}
+  if(id==='zonestart')return L.z?{[AID]:L.z[AID].O,[HID]:L.z[HID].O}:null;
   return L.t||null;};
+ const TEAM_ONLY={goaltending:1,zonestart:1};
  Object.keys(LENS).forEach(id=>{
   const L=LENS[id].reduce(G.events,{...CTX,evenOnly:false});
   const n=L.counted.length;
   const by=byClub(id,L);
-  const cls=by&&perTeam?perTeam[id]:null;
-  const split=by&&cls;
-  const d=split?cls:(own?own[id]:null);
+  if(TEAM_ONLY[id]&&!by)return;
+  const cls=by&&perTeam?perTeam[claimOf('lens',id).keys.perTeam]:null;
+  const bare=by&&!cls&&TEAM_ONLY[id];
+  const split=by&&(cls||bare);
+  const d=cls?cls:(bare?null:(own?own[id]:null));
+  const u=(cls&&cls.suffix)||(bare&&id==='goaltending'?'%':'');
   const sides=split?[['sa',AID,AAB],['sh',HID,HAB]]:[['snone',null,null]];
   const marks=sides.map(([mk,tid,ab])=>({cls:mk,ab,
    at:sitsIn(d,split?by[tid]:n)})).filter(m=>m.at);
@@ -4670,7 +4673,7 @@ function renderSum(){
   const say=document.createElement('span');
   if(split){
    say.innerHTML='<b>'+ESC(chipLabel(id))+'</b> — '
-    +sides.map(([mk,tid,ab])=>'<span class="stm '+mk+'">'+ESC(ab)+' '+N(by[tid])+'</span>')
+    +sides.map(([mk,tid,ab])=>'<span class="stm '+mk+'">'+ESC(ab)+' '+N(by[tid])+u+'</span>')
       .join(' · ');
   }else{
    say.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b> \u2014 the whole game'
@@ -4695,8 +4698,8 @@ function renderSum(){
     tr.appendChild(pt);}
    sc.appendChild(tr);
    const ends=document.createElement('span');ends.className='sends';
-   const lo=document.createElement('span');lo.textContent=N(ref0.min);
-   const hi=document.createElement('span');hi.textContent=N(ref0.max);
+   const lo=document.createElement('span');lo.textContent=N(ref0.min)+u;
+   const hi=document.createElement('span');hi.textContent=N(ref0.max)+u;
    ends.appendChild(lo);ends.appendChild(hi);
    sc.appendChild(ends);li.appendChild(sc);}
   const doors=LAYERWORK[id]||[];
@@ -5352,9 +5355,10 @@ function lboxFor(id,at,L){
   const a=L.t[AID],h=L.t[HID];
   return {a,k:'SHOT ATTEMPTS',h,n:`On goal, missed or blocked · ${MODE()}.`};}
  if(id==='slot'){
-  const c=byShooter(danger.reduce(sl,CTX).counted,sl), tot=L.t[AID]+L.t[HID];
+  const c=byShooter(danger.reduce(sl,CTX).counted,sl),
+        loc=L.counted.filter(i=>SHOT_TYPES.has(sl[i].type)&&sl[i].x!=null).length;
   return {a:c[AID],k:'SHOTS FROM THE SLOT',h:c[HID],
-   n:`Of ${tot} attempt${tot===1?'':'s'} so far · ${MODE()}.`};}
+   n:`Of ${loc} unblocked attempt${loc===1?'':'s'} with a recorded spot so far · ${MODE()}.`};}
  if(id==='blocked'){
   const B=blocked.reduce(sl,CTX), tot=L.t[AID]+L.t[HID], n=B.counted.length;
   const rest=[[B.teammate.length,'by a teammate'],

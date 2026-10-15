@@ -132,7 +132,7 @@ mostly a merge of those, plus the definitions that are today implicit.
 3. **The whole-game panel** (*"Every count in the whole game"*, the six scaled rows
    that open at the horn): Goaltending ranks **save percentage**; Zone starts ranks
    **offensive-zone face-offs**; the slot box divides by attempts **with a recorded
-   spot**. ("yes to both")
+   spot**. ("yes to both") ✅ built 2026-10-15.
 7. **Per-player face-off win %** — *"a widely followed statistic … consider adding
    to a player's page."* Needs `losingPlayerId`, which `extract.py` drops today, so
    it is an extract change + re-derive; and there is no player page yet (the

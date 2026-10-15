@@ -61,6 +61,7 @@ import { blocked } from '../src/lib/layers/blocked.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
+import { claimOf } from '../src/lib/registry.js';
 
 const RULES = JSON.parse(readFileSync(new URL('../data/layer-rules.json', import.meta.url), 'utf8'));
 /**
@@ -73,6 +74,7 @@ const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import
 
 /** The page as a reader meets it: a real game, and the rates the shell fetches. */
 const page = () => boot(rich, MEASURES);
+const LAYERWORK_LENSES = { corsi: 1, slot: 1, blocked: 1, goaltending: 1, whistle: 1, zonestart: 1 };
 
 test('⛔⛔⛔ EVERY LAYER DOOR IS ANSWERED BY ONE OF THE TWO TABLES', () => {
   /* ⚠️ NOT CIRCULAR, AND THAT IS THE WHOLE VALUE OF IT. The left-hand side is
@@ -835,7 +837,7 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
 
     /* THE CLUBS AND THEIR COUNTS, READ OFF THE ROW. A team row prints a chip per
        club; the stoppages row prints a total and says it is the whole game. */
-    const pairs = [...text.matchAll(/<span class="stm s([ah])">([A-Z]{2,3}) ([\d,]+)<\/span>/g)]
+    const pairs = [...text.matchAll(/<span class="stm s([ah])">([A-Z]{2,3}) ([\d,]+)%?<\/span>/g)]
       .map(m => ({ cls: 's' + m[1], ab: m[2], count: +m[3].replace(/,/g, '') }));
     const label = (/^<b>([^<0-9]+?)\s*[\d,]*<\/b>/.exec(text) || [])[1];
     assert.ok(label, `could not read the lens out of the row: ${text}`);
@@ -843,7 +845,8 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
     assert.ok(lens, `the row is labelled "${label}", which is no chip on this page`);
 
     const perTeam = pairs.length > 0;
-    const dist = perTeam ? byTeam[lens] : byGame[lens];
+    const teamKey = claimOf('lens', lens).keys.perTeam;
+    const dist = perTeam ? byTeam[teamKey] : byGame[lens];
     assert.ok(dist && dist.max > dist.min, `no published range for ${lens}`);
 
     if (perTeam) {
@@ -854,7 +857,7 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
       assert.equal(marks.length, pairs.length,
         `${lens} prints ${pairs.length} club counts and draws ${marks.length} marks`);
       assert.equal(pairs.length, 2, `${lens} names ${pairs.length} clubs`);
-      assert.ok(byTeam[lens], `${lens} has clubs on the row and no per-team-game class`);
+      assert.ok(byTeam[teamKey], `${lens} has clubs on the row and no per-team-game class`);
       /* ⭐ COLOUR NAMES WHOSE, so each mark carries its own club's class and the
          two differ. It used to encode inside-versus-outside, which with two marks
          on one rail leaves a reader unable to tell them apart. */
@@ -869,7 +872,7 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
       assert.match(text.replace(/<[^>]+>/g, ''), /never a team/,
         'the row placed against GAMES does not say it is the whole game, so its '
         + 'rail reads as the same population as the five above it');
-      assert.ok(!byTeam[lens], `${lens} says it has no per-team form and ${lens} is in perTeamGame`);
+      assert.ok(!teamKey, `${lens} says it has no per-team form and the list gives it one`);
     }
 
     /* ⛔⛔ EVERY POSITION COMPUTED INDEPENDENTLY, FROM THE PUBLISHED DOCUMENT.
@@ -913,7 +916,9 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
   /* ⛔ BOTH KINDS MUST HAVE DRAWN. All-team rows would mean the stoppages row had
      silently acquired a per-club split it cannot have; all-game rows would mean
      the whole change did nothing. */
-  assert.ok(teamRows >= 4, `${teamRows} rows drew a mark per club`);
+  // Every lens whose per-team class the document publishes draws one row per club.
+  const published = Object.keys(LAYERWORK_LENSES).filter(l => byTeam[claimOf('lens', l).keys.perTeam]).length;
+  assert.ok(teamRows >= 3 && teamRows === published, `${teamRows} rows drew a mark per club; ${published} classes are published`);
   assert.equal(gameRows, 1, `${gameRows} rows were placed against GAMES, not 1`);
 });
 
@@ -1044,6 +1049,10 @@ test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club 
     const text = (kids[0] && kids[0].innerHTML) || '';
     /* ① NOT ONE ROW SPLITS. A club chip anywhere means a club count is on screen
        with no class of its own to be placed against. */
+    // Goaltending and Zone starts are a team's own figure (ruling 3): with no class
+    // they print each team's figure and draw no scale, never the game's total.
+    const teamOnly = /^<b>(Goaltending|Zone starts)<\/b>/.test(text);
+    if (teamOnly) { assert.ok(!railIn(li), `${text} drew a scale with no class for it`); continue; }
     assert.ok(!/class="stm s[ah]"/.test(text),
       `a row still names the clubs with no per-team class published: ${text}`);
     const track = railIn(li);
@@ -1070,7 +1079,7 @@ test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club 
       [dist.min.toLocaleString(), dist.max.toLocaleString()],
       `${lens}'s axis names the ends of a class its mark was not placed on`);
   }
-  assert.ok(drew >= 5, `only ${drew} rows drew a scale without the per-team class`);
+  assert.ok(drew >= 4, `only ${drew} rows drew a scale without the per-team class`);
 });
 
 test('⛔ the clubs\u2019 counts are the lens\u2019s own, and only ONE lens may fail to add up', () => {
@@ -1111,7 +1120,8 @@ test('⛔ the clubs\u2019 counts are the lens\u2019s own, and only ONE lens may 
     const sum = pairs.reduce((n, p) => n + p.count, 0);
     assert.ok(sum > 0, `${id} printed two zeroes`);
     assert.ok(sum <= total, `${id}: the clubs total ${sum} out of a lens count of ${total}`);
-    if (sum !== total) residuals.push(id);
+    // Zone starts counts only the attacking-end draws (ruling 3), so it is a part of its lens by design.
+    if (sum !== total && id !== 'zonestart') residuals.push(id);
     checked++;
   }
   assert.ok(checked >= 4, `only ${checked} club rows were reconciled`);

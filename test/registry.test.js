@@ -14,6 +14,7 @@ import { CLUB_ROWS, PLAYER_ROWS, POSSESSION_FAMILY, leagueRows } from '../src/li
 import { EXPLAINED, PRINTED, PRINTED_KEYS, explainedLabel } from '../src/lib/methods.js';
 import { LAYERS } from '../builders/layer-rules.mjs';
 import { tiedControl } from '../src/lib/layers/tied.js';
+import { PER_TEAM_KEYS } from '../src/lib/archive.js';
 
 const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
 const measures = JSON.parse(read('../data/measures.json'));
@@ -29,6 +30,7 @@ const SYSTEMS = {
   league: leagueRows(measures).map(r => r.key),
   derivation: EXPLAINED,
   printed: PRINTED_KEYS,
+  perTeam: PER_TEAM_KEYS,
 };
 
 test('the game page offers chips, so the wording check has something to read', () => {

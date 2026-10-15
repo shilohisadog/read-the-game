@@ -241,9 +241,10 @@ export function measureGame(g) {
      about tending: "how many this team's goaltender had to handle". Summed off
      `goalies`, whose sides are already resolved against the roster, so it cannot
      disagree with the per-goalie rows beside it. */
-  const faced = { h: 0, a: 0 };
-  for (const k of goalies) faced[k.side] += k.faced;
-  const faceoffs = { h: draws.t[ctx.homeId], a: draws.t[ctx.awayId] };
+  const faced = { h: 0, a: 0 }, saves = { h: 0, a: 0 };
+  for (const k of goalies) { faced[k.side] += k.faced; saves[k.side] += k.saves; }
+  // Face-offs each side won in its attacking end — the Zone starts box's figure.
+  const oz = { h: draws.z[ctx.homeId].O, a: draws.z[ctx.awayId].O };
 
   // Skaters' shifts and their seconds, per side; goaltenders excluded. A game
   // with no shift chart adds 0 of 0, so the average is over games that have one.
@@ -263,7 +264,7 @@ export function measureGame(g) {
     // Blocks CREDITED to each side — the team that did the blocking, which is
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
-    slot, located, goals, goalies, reach, faced, faceoffs,
+    slot, located, goals, goalies, reach, faced, saves, oz,
     /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
        rink puts a live count on each lens, and it is `LEDGER[id](sl)
        .counted.length` for every one of them — so a reference class built on
