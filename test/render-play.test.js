@@ -43,3 +43,22 @@ test('a zone stretch leads the line exactly when its marks stand out, and holds 
   });
   assert.ok(zone > 20, `only ${zone} zone frames walked`);
 });
+
+test('the line\'s state classes are its own: no other rule on the page can restyle it', async () => {
+  // Defect, 2026-10-15: the zone line was toggled `zone`, which is the layer panels'
+  // class, so it was drawn as a panel — left-aligned, bordered, with a ▼.
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../src/app.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const js = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  const toggled = [...js.matchAll(/d\.classList\.toggle\('([a-z-]+)'/g)].map(m => m[1]);
+  assert.ok(toggled.includes('zoned') && toggled.includes('none'), `toggles found: ${toggled}`);
+  for (const c of toggled) {
+    const rules = [...css.matchAll(new RegExp(`[^{}]*\\.${c}\\b[^{}]*\\{`, 'g'))].map(m => m[0].trim());
+    for (const r of rules) for (const sel of r.replace('{', '').split(',')) {
+      if (!new RegExp(`\\.${c}\\b`).test(sel)) continue;
+      // Either it names the line, or it only reaches inside another element.
+      assert.ok(/\.playd/.test(sel) || new RegExp(`\\S\\s+\\.${c}\\b`).test(sel.replace(/^#rg\s+/, '')),
+        `"${sel.trim()}" can restyle the play line through .${c}`);
+    }
+  }
+});

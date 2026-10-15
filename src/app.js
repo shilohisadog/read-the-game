@@ -2369,7 +2369,8 @@ function cardsFor(id){const cs=LEARNCARDS[id];
    words are the same length at every gear -- 900 ms of extra reading is 900 ms
    of extra reading. Doubling it would be a constant tracking another constant
    for no reason either of them states. */
-// SLOWED AGAIN, 2026-10-15, every gear by half again. Kevin: "it's difficult to watch
+// SLOWED AGAIN, 2026-10-15, every gear by half again, and LOCKED by Kevin the same day
+// ("I like the pacing, so let's lock that in"). Before: "it's difficult to watch
 // the replay, read the description and mentally process what's happening."
 const PACE=[7800,5400,3000];let gear=1;
 const CAPTION_BONUS=900;
@@ -2688,7 +2689,8 @@ function sayWho(e){const w=$('who');if(!w)return;
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function sayPlay(line){const d=$('playd');if(!d)return;
  $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;
- d.classList.toggle('zone',/^In the /.test(line));}
+ // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
+ d.classList.toggle('zoned',/^In the /.test(line));}
 // A finished play's summary is words to read, so it earns the caption's reading time.
 function dwell(e){return captioned(e)||/^Last play/.test(playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
