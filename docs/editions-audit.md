@@ -138,3 +138,19 @@ summary are drawn from.
    start from the build date?
 6. **The link card** must carry the date in `og:url`, or the card's link and the
    pasted link disagree.
+
+---
+
+## 8. Kevin's rulings, 2026-10-15 — and the trade-offs taken
+
+| Question | Ruling | What we gave up, and why it is acceptable |
+|---|---|---|
+| 1. Which pages are statements? | **Previews, game summaries and the methods page are dated. Learn pages and lesson doors are not.** A replay can be shared. | A learn page or lesson door read later may show newer figures or a different game. They teach; "even with evolved content the intent of the page will still be met." |
+| 2. League amendments | **Do not chase them; keep what we showed.** | A shared replay draws its events from the newest game file, so a league correction (small, for reading the game) can appear under an old link. The comparisons around it (summary scales, "Is that a lot?") come from the dated edition. |
+| 3. Inputs or statements? | **Store the inputs, and keep the code that was live that night.** A dated link opens that night's deploy (Cloudflare Pages keeps every deploy at its own permanent address) reading that night's data. | **Old links keep that night's LOOK and any defect that deploy shipped with.** This supersedes the morning's "current design" ruling. Why: inputs redrawn by today's code drift whenever the code changes — the 14 October deploy failures were exactly that (new rows reading fields that older data lacked), and a reworded sentence or corrected formula would change an old link silently. The alternative, storing each page's statements, means moving every figure-stating sentence out of the renderers and keeping today's renderer able to draw every stored format forever. |
+| 4. Grain | **One edition a night, for everything.** | Something shared between a daytime deploy and the next night is shown with the night's deploy, not the daytime one. |
+| 5. The past | **Start from the build date.** Backward compatibility later. | Links shared before the build (including Kevin's MTL post) keep drifting until a reconstruction exists, and must say they are not a saved version. |
+| 6. The link card | **It carries the date.** | — |
+
+Approximate cost, from §6: ~1 MB of data a night, ~380 MB a year. Game files are
+not copied into editions (ruling 2), so a format change costs nothing extra.
