@@ -111,3 +111,10 @@ test('no note claims possession, intent or a judgement the record cannot make', 
     shiftsFor([10, 11, 12, 13, 14], HOME, -50, 90));
   for (const [, say] of notesOf(g)) assert.doesNotMatch(say, /\b(had|kept|controlled) the puck|tired|momentum|dominat|trying to/i, say);
 });
+
+test('after an icing, a skater who came on as the puck was iced leaves the seconds out', () => {
+  const g = game([ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
+    ev('stoppage', 30, null, { rsn: 'icing' }), ev('faceoff', 30, 69, { own: HOME, actor: 10 })],
+    [...shiftsFor([20, 21, 22, 23], AWAY, 2, 60), ...shiftsFor([24], AWAY, 30, 60)]);
+  assert.deepEqual(notesOf(g), [[2, 'AWY may not change players for this faceoff.']]);
+});

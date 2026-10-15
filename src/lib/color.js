@@ -116,8 +116,12 @@ export function colorNotes(game, ctx, rates) {
       if (tid != null) {
         const mine = skatersOn(game, e, tid).map(x => x.on);
         const fresh = skatersOn(game, e, other(tid)).filter(x => x.on === 0).length;
-        if (mine.length) say = `${off} may not change players for this faceoff: its ${mine.length} skaters stay on, `
-          + `${secsSpan(mine).replace(' each', '')} into their shift.${fresh ? ` ${ab(other(tid))} sent out ${countOf(fresh, 'fresh skater')}.` : ''}`;
+        // A skater at 0 seconds came on as the puck was iced, on the fly; the seconds would then
+        // read as a contradiction of "may not change", so they are left out.
+        const secs = mine.length && Math.min(...mine) > 0
+          ? `: its ${mine.length} skaters stay on, ${secsSpan(mine).replace(' each', '')} into their shift` : '';
+        if (mine.length) say = `${off} may not change players for this faceoff${secs}.`
+          + `${fresh ? ` ${ab(other(tid))} sent out ${countOf(fresh, 'fresh skater')}.` : ''}`;
       }
     } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn)
                && !toldWhy.has(lastStop.rsn) && WHY[lastStop.rsn] && WHY[lastStop.rsn].say
