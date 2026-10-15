@@ -90,6 +90,14 @@ jobs:
       # Egress from R2 is free and both ends are in the cloud, so this is
       # minutes. It is the whole archive on purpose: a partial pull would
       # publish a partial answer.
+      # The raw files are content-addressed and never change once stored, so the
+      # previous run's copy is restored and the sync below fetches only what is new.
+      - name: the raw archive as the last run left it
+        uses: actions/cache@v5
+        with:
+          path: ingest/raw
+          key: derive-raw-${{ github.run_id }}
+          restore-keys: derive-raw-
       - name: pull the raw archive
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
@@ -122,7 +130,7 @@ jobs:
           for attempt in 1 2 3; do
             if aws s3 sync "s3://${BUCKET}/" ingest/ \
                 --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
-                --exclude 'extract/*' --exclude 'catalog.json' --no-progress; then ok=1; break; fi
+                --exclude 'extract/*' --exclude 'catalog.json' --no-progress >> pulled.log; then ok=1; break; fi
             echo "::warning::pull attempt $attempt hit a transient R2 error; retrying"
             sleep $(( attempt * 20 ))
           done
@@ -130,7 +138,7 @@ jobs:
             echo "::error::the archive could not be pulled in three attempts"
             exit 1
           fi
-          echo "pulled $(find ingest/raw -name latest.json | wc -l) games, $(du -sh ingest | cut -f1)"
+          echo "pulled $(find ingest/raw -name latest.json | wc -l) games, $(du -sh ingest | cut -f1); downloaded $(grep -c '^download:' pulled.log || true) files this run"
 
       # ⛔⛔⛔ THIS PIPELINE ATE derive.py's EXIT CODE FOR AS LONG AS IT EXISTED.
       # The default shell is `bash -e {0}` WITHOUT `-o pipefail`, so the step
@@ -345,9 +353,15 @@ jobs:
           # and the very next run died here instead, on PutObject: `aws s3 sync`
           # exits 1 on one failed transfer whichever way it is pointed.
           aws configure set default.s3.max_concurrent_requests 4
+          # Upload only the extracts whose bytes differ from the published copy: derive
+          # rewrites every file, so a plain sync re-sent all of them on the mtime alone.
+          aws s3api list-objects-v2 --bucket "${BUCKET}" --prefix extract/ \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --output json > published-extracts.json
+          python3 tools/changed_extracts.py ingest/extract published-extracts.json extract-changed
           ok=
           for attempt in 1 2 3; do
-            if aws s3 sync ingest/extract/ "s3://${BUCKET}/extract/" \
+            if [ -z "$(ls -A extract-changed)" ]; then ok=1; break; fi
+            if aws s3 sync extract-changed/ "s3://${BUCKET}/extract/" \
                  --cache-control no-cache \
                  --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress; then ok=1; break; fi
             echo "::warning::extract push attempt $attempt hit a transient R2 error; retrying" >&2

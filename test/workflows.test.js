@@ -45,6 +45,7 @@ const PINNED = {
   'actions/checkout': { major: 'v5', why: 'first major on node24 (v4 is node20)' },
   'actions/setup-node': { major: 'v5', why: 'first major on node24; its auto-cache breaking change needs a packageManager field, which we do not have' },
   'actions/setup-python': { major: 'v6', why: 'first major on node24 (v5 is node20)' },
+  'actions/cache': { major: 'v5', why: 'first major on node24 (v4 is node20)' },
 };
 
 const usesIn = text => [...text.matchAll(/uses:\s*(actions\/[\w-]+)@(v\d+)/g)]
@@ -84,6 +85,7 @@ test('⛔ no workflow runs an action on a Node runtime GitHub has deprecated', (
     'actions/checkout': ['v1', 'v2', 'v3', 'v4'],
     'actions/setup-node': ['v1', 'v2', 'v3', 'v4'],
     'actions/setup-python': ['v1', 'v2', 'v3', 'v4', 'v5'],
+    'actions/cache': ['v1', 'v2', 'v3', 'v4'],
   };
   const bad = [];
   for (const f of FILES)
