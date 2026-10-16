@@ -71,7 +71,10 @@ state.
 **Still waiting on Kevin:** data-model item 6, item 12 (reduced motion), the lesson
 strip below the fold on a landscape phone.
 
-**Check tomorrow:** the first NIGHTLY seal — the 2026-10-16 deploy run dispatched by
+**Check 2026-10-17:** the nightly's measure job — on 10-16 it published, then failed the
+suite on the step-2 panel test (axis ends without `%`), so it never committed; fixed and the
+refresh committed by hand in `c5c465d`. A rerun cannot confirm it (it replays the old commit).
+**Also check tomorrow:** the first NIGHTLY seal — the 2026-10-16 deploy run dispatched by
 the ingest should log "Sealed the edition for 2026-10-15".
 
 ## ⏭ 0.00 (earlier) — 2026-10-13 (evening)
