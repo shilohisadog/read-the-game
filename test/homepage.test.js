@@ -2455,3 +2455,25 @@ test('⛔ no page opts out of the browser cache', () => {
     assert.doesNotMatch(page, /no-store/, `${f} fetches with no-store`);
   }
 });
+
+test('⛔ a night that has started and is not held yet is on the card, named and never scored', async () => {
+  // Kevin, 2026-10-16: between the last puck drop and the overnight update the night was nowhere.
+  const started = new Date(AT.getTime() - 4 * 3600000);
+  const sch = tonight(3, { hours: 30, gameType: 2 });
+  const played = [0, 1, 2].map(k => ({ id: 800 + k, date: localDate(started), gameType: 2, state: 'FUT',
+    away: ['BUF', 'NYR', 'DAL'][k], home: ['TOR', 'PHI', 'CHI'][k],
+    startTimeUTC: new Date(started.getTime() + k * 60000).toISOString() }));
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': RECENT,
+    'schedule.json': { ...sch, upcoming: [...played, ...sch.upcoming] } } });
+  await r.settle(); await r.settle();
+  const kids = r.ids.dailylist.kids;
+  const head = kids.find(k => k.className === 'dailykick dawait');
+  assert.ok(head, 'the started night is nowhere on the card');
+  assert.match(head.textContent, /· 3 games$/);
+  const say = kids[kids.indexOf(head) + 1];
+  assert.equal(say.textContent, 'Played after our last update. The replays arrive with our overnight update.');
+  const rows = kids.filter(k => k.className === 'dfix');
+  assert.deepEqual(rows.map(k => k.textContent), ['BUF at TOR', 'NYR at PHI', 'DAL at CHI']);
+  for (const row of rows) assert.match(row.href, /^\/preview\.html\?game=80\d$/);
+  assert.ok(kids.find(k => k.className === 'dtonight'), 'the next night still has its line');
+});

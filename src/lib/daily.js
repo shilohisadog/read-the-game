@@ -237,6 +237,32 @@ function nextNight(schedule, now) {
  * true would be the worse error, and by the day games are actually played there
  * is a fixture in `upcoming` and this branch no longer runs.
  */
+/** How long a started game we do not hold is still announced as on its way. */
+export const AWAITED_HOURS = 36;
+
+/**
+ * Games the league's schedule shows as started, which we do not hold yet — the
+ * night between the last puck drop and the overnight update. Without this they
+ * appear nowhere: past `nextNight` once all of them have started, and not in
+ * `recent` until the ingest. Bounded to recent starts, so a postponed game left
+ * in `upcoming` stops being announced. Only the newest league date is returned.
+ */
+function awaited(schedule, now, recentGames, nightDate) {
+  const held = new Set((recentGames || []).map(g => g && g.id));
+  const heldDate = newestDay(recentGames).date;
+  const t = Date.parse(now);
+  const rows = upcomingFrom(schedule, now).filter(g =>
+    !(g.startTimeUTC > now)
+    && t - Date.parse(g.startTimeUTC) < AWAITED_HOURS * 3600000
+    && typeof g.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(g.date)
+    && g.date !== nightDate && !held.has(g.id)
+    && (!heldDate || g.date > heldDate));
+  if (!rows.length) return null;
+  const date = rows.reduce((max, g) => (g.date > max ? g.date : max), rows[0].date);
+  const games = rows.filter(g => g.date === date);
+  return { date, count: games.length, fixtures: games.slice(0, SHOWN), rest: games.slice(SHOWN) };
+}
+
 export function whenHockeyReturns(schedule, now) {
   const s = (schedule && schedule.season) || {};
   const today = String(now || '').slice(0, 10);
@@ -307,9 +333,10 @@ export function daily(recent, schedule, now) {
        preseason, because preseason is out of scope for recent.json and the
        `upcoming` branch was what a reader saw. From the first morning of the
        regular season most days hold results, and the forward look vanished. */
+    const night = nextNight(schedule, now);
     return { state: 'slate', kicker, count: rows.length, lines, date,
       games: rows.slice(0, SHOWN), more: Math.max(0, rows.length - SHOWN),
-      next: null, night: nextNight(schedule, now) };
+      next: null, night, awaited: awaited(schedule, now, recent && recent.games, night && night.date) };
   }
 
   const next = nextFixture(schedule, now);
@@ -336,7 +363,8 @@ export function daily(recent, schedule, now) {
     const night = nextNight(schedule, now);
     return { state: 'upcoming', kicker: night ? null : 'Next', count: null,
       lines: [], games: [], date: null, more: 0,
-      next: night ? null : next, night };
+      next: night ? null : next, night,
+      awaited: awaited(schedule, now, recent && recent.games, night && night.date) };
   }
 
   const back = whenHockeyReturns(schedule, now);

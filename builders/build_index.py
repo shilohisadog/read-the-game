@@ -328,6 +328,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .teamnext .k{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700;margin-right:8px}
 .dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
+.dawait{margin-top:14px}
 .dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
 /* The attempts figure is the reason the row is here rather than in a scores
@@ -1619,6 +1620,26 @@ __HELPERS__
        already spend the slack beside the rink (§12.2, ~440px at 1900 and 42px a
        row), so tonight gets ONE line and the doors stay with the games that have
        one. Kevin, 2026-09-22: "one line is fine." */
+    // Games started that we do not hold yet: named, never scored, until the overnight update.
+    var aw = d.awaited;
+    if (aw) {
+      list.appendChild(el('p', 'dailykick dawait', formatDate(aw.date) + ' \u00b7 ' + aw.count
+        + (aw.count === 1 ? ' game' : ' games')));
+      list.appendChild(el('p', 'dailysay', 'Played after our last update. '
+        + 'The replays arrive with our overnight update.'));
+      var awRow = function (g) {
+        var r = el('a', 'dfix', g.away + ' at ' + g.home);
+        r.href = '/preview.html?game=' + g.id;
+        return r;
+      };
+      aw.fixtures.forEach(function (g) { list.appendChild(awRow(g)); });
+      if (aw.rest.length) {
+        var awMore = el('details', 'dmoretonight');
+        awMore.appendChild(el('summary', null, aw.rest.length + ' more'));
+        aw.rest.forEach(function (g) { awMore.appendChild(awRow(g)); });
+        list.appendChild(awMore);
+      }
+    }
     if (night && d.state === 'slate') {
       // A door to the date's calendar page, which lists each game with its preview.
       var tl = el('p', 'dtonight');

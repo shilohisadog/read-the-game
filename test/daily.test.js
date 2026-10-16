@@ -498,3 +498,57 @@ test('⛔ a night still computes no date and no day-name — only the renderer c
   for (const f of r.night.fixtures) assert.equal(typeof f.startTimeUTC, 'string');
   for (const line of r.lines) assert.doesNotMatch(line, /January|Friday|tonight/i);
 });
+
+/* ---------------------------------------------------------------- AWAITED GAMES
+   Kevin, 2026-10-16 at 02:38 Eastern: the front door showed 14 October as the
+   newest night and "Tonight" pointed at Friday, and the 15 October games were
+   nowhere — every one had started, so `nextNight` had moved on, and the overnight
+   update had not yet fetched them. The schedule below is that night's shape. */
+const OCT16 = '2026-10-16T06:38:00Z';
+const held14 = recent([game({ id: 2026020106, date: '2026-10-14' }), game({ id: 2026020107, date: '2026-10-14' })]);
+const thursday = [
+  ['BUF', 'TOR', '2026-10-15T23:00:00Z', 2026020108], ['NYR', 'PHI', '2026-10-15T23:00:00Z', 2026020109],
+  ['DAL', 'CHI', '2026-10-16T00:30:00Z', 2026020110], ['VGK', 'SEA', '2026-10-16T02:00:00Z', 2026020111],
+].map(([away, home, startTimeUTC, id]) => fixture({ id, away, home, startTimeUTC, date: '2026-10-15' }));
+const friday = [
+  fixture({ id: 2026020112, away: 'MIN', home: 'WPG', startTimeUTC: '2026-10-17T01:00:00Z', date: '2026-10-16' }),
+  fixture({ id: 2026020113, away: 'EDM', home: 'CGY', startTimeUTC: '2026-10-17T02:00:00Z', date: '2026-10-16' }),
+];
+
+test('⛔ games that started and are not held yet are announced, under their own date', () => {
+  const r = daily(held14, sched(LEAGUE, [...thursday, ...friday]), OCT16);
+  assert.equal(r.state, 'slate');
+  assert.equal(r.date, '2026-10-14', 'the slate is still the newest night we hold');
+  assert.equal(r.night.date, '2026-10-16', 'tonight is Friday');
+  assert.ok(r.awaited, 'the 15 October games are nowhere');
+  assert.equal(r.awaited.date, '2026-10-15');
+  assert.deepEqual(r.awaited.fixtures.map(g => g.id), thursday.map(g => g.id));
+});
+
+test('while a night still has a game to start, its started games stay in tonight, not twice', () => {
+  const evening = '2026-10-16T01:00:00Z';   // two of Thursday's four have started
+  const r = daily(held14, sched(LEAGUE, [...thursday, ...friday]), evening);
+  assert.equal(r.night.date, '2026-10-15');
+  assert.equal(r.awaited, null);
+});
+
+test('once the overnight update holds them, they are the slate and nothing is awaited', () => {
+  const held15 = recent([...held14.games, ...thursday.map(g => game({ id: g.id, date: '2026-10-15' }))]);
+  const r = daily(held15, sched(LEAGUE, [...thursday, ...friday]), '2026-10-16T07:10:00Z');
+  assert.equal(r.date, '2026-10-15');
+  assert.equal(r.awaited, null);
+});
+
+test('a game left in the schedule long after its start stops being announced', () => {
+  const stale = fixture({ id: 2026020099, away: 'ANA', home: 'SJS', date: '2026-10-15',
+    startTimeUTC: '2026-10-14T17:00:00Z' });   // 37.6 h before OCT16
+  const r = daily(held14, sched(LEAGUE, [stale, ...friday]), OCT16);
+  assert.equal(r.awaited, null);
+});
+
+test('with nothing held yet, a started night is still announced', () => {
+  const r = daily(recent([]), sched(LEAGUE, [...thursday, ...friday]), OCT16);
+  assert.equal(r.state, 'upcoming');
+  assert.equal(r.awaited.date, '2026-10-15');
+  assert.equal(r.awaited.count, 4);
+});

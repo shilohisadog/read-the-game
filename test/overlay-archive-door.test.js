@@ -910,7 +910,7 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
     const ends = endsIn(li);
     assert.ok(ends, `${lens} drew a scale with no ends`);
     assert.deepEqual((ends._kids || []).map(n => n.textContent),
-      [dist.min.toLocaleString(), dist.max.toLocaleString()],
+      [dist.min.toLocaleString() + (dist.suffix || ''), dist.max.toLocaleString() + (dist.suffix || '')],
       `${lens}'s axis does not name the ends of the class its marks were placed on`);
   }
   /* ⛔ BOTH KINDS MUST HAVE DRAWN. All-team rows would mean the stoppages row had
