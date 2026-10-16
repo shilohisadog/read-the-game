@@ -1712,7 +1712,7 @@ test('the daily block renders last night from recent.json, with doors', async ()
   await r.settle(); await r.settle();
   assert.equal(r.ids.daily.hidden, false, 'the block never revealed itself');
   assert.match(r.ids.dailykick.textContent, /2 games$/);
-  assert.match(r.ids.dailysay.textContent, /lost 1 of the 2\./);
+  assert.equal(r.ids.dailysay.textContent, '', 'the night carries no tally');
   const rows = r.ids.dailylist.kids;
   assert.equal(rows.length, 2, 'one door per game');
   assert.deepEqual(rows.map(a => a.href),

@@ -201,7 +201,7 @@ export const MEASURES = [
     score: 'any', scopes: ['season'], typical: null, witness: 'standings (nightly)', keys: {} },
   { id: 'leaderLost', name: 'the team with more attempts lost', says: 'Of games where one team had more shot attempts, how many it lost.',
     counts: 'games the attempts leader lost', of: 'games with an edge', credit: 'none',
-    unit: 'share', strength: 'all', score: 'any', scopes: ['archive', 'night'],
+    unit: 'share', strength: 'all', score: 'any', scopes: ['archive'],
     typical: null, witness: null, keys: {} },
   { id: 'levelLeaderLost', name: 'the team that controlled level play lost', says: 'Of games where one team led level-score attempts by k or more, how many it lost.',
     counts: 'games the level leader lost', of: 'games led by k or more', credit: 'none',

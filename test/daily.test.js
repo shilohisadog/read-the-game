@@ -47,12 +47,12 @@ const text = r => r.lines.join(' ');
 
 /* ------------------------------------------------------------------ THE SLATE */
 
-test('⭐ games last night: the count, the tally, and the rows to click', () => {
+test('⭐ games last night: the count and the rows to click, and no tally', () => {
   const r = daily(recent([leaderLost(), leaderLost(), leaderWon()]), sched(LEAGUE), NOW);
   assert.equal(r.state, 'slate');
   assert.equal(r.kicker, 'Last night');
   assert.equal(r.count, 3);
-  assert.equal(text(r), 'The team with more shot attempts lost 2 of the 3.');
+  assert.deepEqual(r.lines, [], 'the night carries no tally (Kevin, 2026-10-16)');
   assert.equal(r.games.length, 3, 'the list a reader chooses from');
 });
 
@@ -71,7 +71,6 @@ test('⛔ ONLY THE NEWEST DAY IS "last night" — a caught-up run holds a fortni
   assert.equal(r.count, 2, 'five games in the document, two of them last night');
   assert.equal(r.games.length, 2);
   assert.deepEqual([...new Set(r.games.map(g => g.date))], ['2026-01-14']);
-  assert.equal(text(r), 'The team with more shot attempts lost 1 of the 2.');
 });
 
 test('⭐ "Last night" IS EARNED FROM THE GAME DATES, and degrades instead of lying', () => {
@@ -93,37 +92,7 @@ test('⭐ "Last night" IS EARNED FROM THE GAME DATES, and degrades instead of ly
   assert.equal(fresh.kicker, 'Last night');
 });
 
-test('the tally names its own denominator when a game had no leader', () => {
-  /* A game with the attempts tied is not a game the claim is about, so it leaves
-     the denominator. Then the sentence's n and the headline count differ, and a
-     sentence reading "lost 1 of the 3" beside "3 games" would be false about the
-     population even though every digit in it is right. */
-  const r = daily(recent([leaderLost(), leaderWon(), tied()]), sched(LEAGUE), NOW);
-  assert.equal(r.count, 3, 'three games were played');
-  assert.equal(text(r), 'The team with more shot attempts lost 1 of the 2 where one team had more.');
-});
-
-test('…and says nothing at all when no game had a leader', () => {
-  const r = daily(recent([tied(), tied()]), sched(LEAGUE), NOW);
-  assert.equal(r.state, 'slate', 'the count and the rows are still a real block');
-  assert.equal(r.count, 2);
-  assert.deepEqual(r.lines, [], 'a sentence with no subject was written anyway');
-  assert.equal(r.games.length, 2);
-});
-
-test('the tally does not soften at either edge — one form, every morning', () => {
-  /* §5.2.1: this must read as a TALLY, not as a measurement moving. A reader who
-     visits twice sees one number move and one hold, and the two must not look
-     like two readings of the same instrument. A sentence that switches to "won
-     every one" at zero reads as a different instrument on the mornings it
-     fires — which are precisely the interesting ones. */
-  assert.equal(text(daily(recent([leaderWon(), leaderWon()]), sched(LEAGUE), NOW)),
-    'The team with more shot attempts lost 0 of the 2.');
-  assert.equal(text(daily(recent([leaderLost(), leaderLost()]), sched(LEAGUE), NOW)),
-    'The team with more shot attempts lost 2 of the 2.');
-});
-
-test('a game arriving without its numbers leaves the tally, not the count', () => {
+test('a game arriving without its numbers is still counted and listed', () => {
   // measure.mjs emits `attempts` for every game it records, but recent.json is a
   // document and a document can be malformed. A missing field must not become a
   // zero, which would silently credit one club with a lead it did not have.
@@ -132,7 +101,6 @@ test('a game arriving without its numbers leaves the tally, not the count', () =
     game({ attempts: { a: 60, h: null } }),
   ]), sched(LEAGUE), NOW);
   assert.equal(r.count, 4, 'four games were played and all four are listed');
-  assert.equal(text(r), 'The team with more shot attempts lost 1 of the 1 where one team had more.');
 });
 
 /* ---------------------------------------------------------------- ⛔ NO RATE */
@@ -365,7 +333,6 @@ test('⛔ THE LIST IS CAPPED, and the count above it is not', () => {
   assert.equal(r.games.length, SHOWN);
   assert.equal(r.more, 16 - SHOWN, 'the tail link has no number to print');
   assert.equal(r.date, '2026-01-14', 'calendar.html?date= has nothing to point at');
-  assert.match(text(r), /lost 10 of the 16\./, 'the tally is over the night, not the list');
 });
 
 test('…and a night that fits prints no tail', () => {

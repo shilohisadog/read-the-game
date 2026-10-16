@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dGq8US8U4KZ6R6MscHnLKf/sUQ619qXrB9mT0WGgPC0=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+D+387zLaGnt38x0MXDXWWRHtP2JugyGgBXsyLpVdjo=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -482,22 +482,6 @@ function newestDay(games) {
   return { date, rows: rows.filter(g => g.date === date) };
 }
 
-function attemptsTally(rows) {
-  let n = 0, lost = 0;
-  for (const g of rows) {
-    const a = g && g.attempts, s = g && g.score;
-    if (!a || !s) continue;
-    if (!Number.isFinite(a.h) || !Number.isFinite(a.a)) continue;
-    if (!Number.isFinite(s.h) || !Number.isFinite(s.a)) continue;
-    if (a.h === a.a) continue;
-    n += 1;
-    const leaderScore = a.h > a.a ? s.h : s.a;
-    const otherScore = a.h > a.a ? s.a : s.h;
-    if (leaderScore < otherScore) lost += 1;
-  }
-  return { n, lost };
-}
-
 function nextFixture(schedule, now) {
   return upcomingFrom(schedule, now).filter(g => g.startTimeUTC > now)[0] || null;
 }
@@ -576,13 +560,6 @@ function daily(recent, schedule, now) {
     const kicker = date === yesterday ? 'Last night' : formatDate(date);
     if (!kicker) return none;
     const lines = [];
-    const { n, lost } = attemptsTally(rows);
-    if (n > 0) {
-      const tail = n === rows.length
-        ? `the ${n}.`
-        : `the ${n} where one team had more.`;
-      lines.push(`The team with more shot attempts lost ${lost} of ${tail}`);
-    }
     const night = nextNight(schedule, now);
     return { state: 'slate', kicker, count: rows.length, lines, date,
       games: rows.slice(0, SHOWN), more: Math.max(0, rows.length - SHOWN),

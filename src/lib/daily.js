@@ -86,33 +86,6 @@ function newestDay(games) {
 }
 
 /**
- * ⛔ COUNTS ONLY. Returns how many of these games had an attempts leader at all,
- * and how many times that leader lost. It returns no rate and the caller cannot
- * derive one it is willing to print — see this file's header.
- *
- * A GAME WITH THE ATTEMPTS TIED IS NOT A GAME THE CLAIM IS ABOUT, so it leaves
- * the denominator rather than being counted as a win for either side. That is
- * the same handling `archive.js` gives a tie, and it is why the sentence prints
- * its own n instead of reusing the night's game count: on a night where one game
- * ties, "5 of the 8" would be false and "5 of the 7" is not the headline number.
- */
-function attemptsTally(rows) {
-  let n = 0, lost = 0;
-  for (const g of rows) {
-    const a = g && g.attempts, s = g && g.score;
-    if (!a || !s) continue;
-    if (!Number.isFinite(a.h) || !Number.isFinite(a.a)) continue;
-    if (!Number.isFinite(s.h) || !Number.isFinite(s.a)) continue;
-    if (a.h === a.a) continue;
-    n += 1;
-    const leaderScore = a.h > a.a ? s.h : s.a;
-    const otherScore = a.h > a.a ? s.a : s.h;
-    if (leaderScore < otherScore) lost += 1;
-  }
-  return { n, lost };
-}
-
-/**
  * The next fixture the league has listed and we have not yet played past.
  *
  * ⚠️ THE FILTER IS `startTimeUTC > now`, NOT "everything in the document".
@@ -310,23 +283,8 @@ export function daily(recent, schedule, now) {
     // The word is earned from the games, not from a clock. See the header.
     const kicker = date === yesterday ? 'Last night' : formatDate(date);
     if (!kicker) return none;
+    // No tally of the night (Kevin, 2026-10-16): the count and the rows are the block.
     const lines = [];
-    const { n, lost } = attemptsTally(rows);
-    // n === 0 means every game we hold for that day had the attempts tied or
-    // arrived without them. There is no sentence to write, and the count plus
-    // the list are still a real block.
-    if (n > 0) {
-      // ⛔ ONE FORM, AND IT DOES NOT SOFTEN AT THE EDGES. "lost 0 of the 8" is
-      // duller than "won every one", and duller is the point: §5.2.1 requires
-      // this to read as a tally rather than as a measurement moving, and a tally
-      // that changes its wording when it hits zero reads as a different
-      // instrument each morning. The only variation permitted is the clause
-      // below, which exists because without it the sentence would be false.
-      const tail = n === rows.length
-        ? `the ${n}.`
-        : `the ${n} where one team had more.`;
-      lines.push(`The team with more shot attempts lost ${lost} of ${tail}`);
-    }
     /* ⭐ AND THE SLATE LOOKS FORWARD TOO, which is the defect that arrives with
        the regular season. This branch fires whenever recent.json holds games and
        it used to carry nothing about what is on tonight — invisible all
