@@ -148,4 +148,49 @@ function apply() {
   aimAt(aim);
   inset(last, p);
 }
-window.LAB = { frame(f) { last = f; apply(); } };
+/* ---------------------------------------------------------------- the goalie view
+   On a goal (and, with viz=saves, on a save) a button beside the highlight opens
+   the shot from the crease over the replay. Lab: only games with a shot file. */
+const GOAL_HOLD = 3000;                      // a goal holds this much longer while playing
+let shotFile = null, shotFileFor = null;
+function hasShotFile(G) {
+  const id = G.game && G.game.id;
+  if (shotFileFor !== id) { shotFileFor = id; shotFile = fetch(`/lab/data/${id}.json`, { method: 'HEAD' }).then(r => r.ok).catch(() => false); }
+  return shotFile;
+}
+css.textContent += `
+#rg .who .wgv{margin-left:8px;font:inherit;font-weight:700;border:0;border-radius:99px;padding:3px 10px;background:#0f1a23;color:#fff;cursor:pointer}
+.labgv{position:fixed;inset:3vh 3vw;z-index:10000;border-radius:16px;overflow:hidden;background:#0b121a;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.labgv iframe{border:0;width:100%;height:100%;display:block}
+.labgv .x{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:2;font:700 12px/1 system-ui;border:0;border-radius:99px;
+  padding:6px 12px;background:rgba(255,255,255,.92);color:#0f1a23;cursor:pointer}
+.labgvbg{position:fixed;inset:0;z-index:9999;background:rgba(5,10,15,.55)}
+@media (max-height:500px),(max-width:700px){.labgv{inset:0;border-radius:0}}`;
+function openGoalieView(f, e) {
+  if (f.playing) document.getElementById('play').click();            // pause the replay
+  const bg = document.createElement('div'); bg.className = 'labgvbg';
+  const box = document.createElement('div'); box.className = 'labgv';
+  const u = new URLSearchParams({ embed: 1, game: f.G.game.id, per: e.per, rem: e.rem, shooter: e.actor, seat: 'crease' });
+  box.innerHTML = `<iframe title="The shot from the crease" src="/lab/shot.html?${u}"></iframe><button class="x" type="button">Back to the replay</button>`;
+  const close = () => { box.remove(); bg.remove(); removeEventListener('keydown', esc); };
+  const esc = k => { if (k.key === 'Escape') close(); };
+  box.querySelector('.x').onclick = close; bg.onclick = close; addEventListener('keydown', esc);
+  document.body.append(bg, box);
+}
+function goalieButton(f) {
+  const e = f.cur, w = document.getElementById('who');
+  if (!w || !e) return;
+  const kind = e.type === 'goal' || (on.has('saves') && e.type === 'shot-on-goal');
+  if (!kind || !e.goalie || w.querySelector('.wgv')) return;
+  hasShotFile(f.G).then(ok => {
+    if (!ok || last.cur !== e || w.querySelector('.wgv')) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'wgv';
+    b.textContent = '\u25B6 Goalie view';
+    b.onclick = ev => { ev.stopPropagation(); openGoalieView(last, e); };
+    w.appendChild(b);
+  });
+}
+window.LAB = {
+  frame(f) { last = f; apply(); goalieButton(f); },
+  extra: e => (e && e.type === 'goal' ? GOAL_HOLD : 0),
+};
