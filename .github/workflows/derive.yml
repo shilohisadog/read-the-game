@@ -305,14 +305,6 @@ jobs:
           python3 - <<'PY'
           import json, sys
           m = json.load(open('ingest/measures.json'))
-          if not m.get('rule'):
-              sys.exit("::error::measures.json carries numbers with no stated rule")
-          if not m.get('featured'):
-              sys.exit("::error::no game was featured — the homepage would have no hero")
-          f = m['featured'][0]
-          print(f"  featured: {f['ab']} controlled by {f['edge']} while level and lost "
-                f"(game {f['id']})")
-          print(f"  rule: {m['rule']}")
           for k, r in m['baseRates'].items():
               if r['rate'] is None:
                   continue
@@ -321,6 +313,10 @@ jobs:
               # published beside the number, or a reader cannot check it.
               if not r.get('n') or not r.get('population'):
                   sys.exit(f"::error::{k} published without n or population: {r}")
+              # Each rate states what it counts (the top-level `rule` and `featured`
+              # were removed in ruling 6, 2026-10-17; nothing read them).
+              if not r.get('what'):
+                  sys.exit(f"::error::{k} published without saying what it counts: {r}")
               print(f"  {r['what']}: {r['rate']*100:.1f}% of {r['n']} ({r['population']})")
           if m['measured'] < 3000:
               sys.exit(f"::error::only {m['measured']} games measured — that is not "
