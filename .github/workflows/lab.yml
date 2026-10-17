@@ -34,13 +34,8 @@ jobs:
           python-version: '3.x'
       - name: build
         run: npm run build
-      - name: mark it as the lab, and keep it out of search
-        run: |
-          printf 'User-agent: *\nDisallow: /\n' > src/robots.txt
-          printf '/*\n  X-Robots-Tag: noindex, nofollow\n' > src/_headers
-          for f in src/*.html; do
-            sed -i 's#<body\([^>]*\)>#<body\1><div style="position:fixed;bottom:6px;left:6px;z-index:99999;background:\#7c3aed;color:\#fff;font:700 11px/1 system-ui;padding:4px 7px;border-radius:5px;letter-spacing:.08em;pointer-events:none">LAB</div>#' "$f"
-          done
+      - name: turn the build into the lab (lab.js, CSP, badge, noindex)
+        run: python3 .github/lab_prep.py
       - name: deploy as the lab preview
         shell: bash
         env:

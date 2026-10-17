@@ -1143,6 +1143,8 @@ function render(i,how){
     frame the transport last settled on -- one behind the one being drawn during
     a step. Same trap `drawLBox` names in its own comment. */
  if(workOpen)renderWork(L,cur,i);
+ // LAB ONLY: prototypes listen here (src/lab/lab.js). Never on main.
+ if(window.LAB)window.LAB.frame({i,how,cur,EV,G,playing,REDUCED});
 }
 /* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
    ⚠️ NAMED IN BOTH PLACES A GOAL IS ANNOUNCED, because there are two. A goal the
