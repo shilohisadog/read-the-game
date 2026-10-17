@@ -54,6 +54,13 @@ state.
 
 ### ⏭ NEXT, in Kevin's order
 
+0. **The saved-edition banner** on a dated preview (`?asof=`), raised by Kevin 2026-10-17:
+   *"do we need to say it at all?"* — "A saved version: as it stood with games through
+   16 October 2026. This link always shows these figures." Proposed (awaiting his yes):
+   show NOTHING when the edition is the newest one; when it is older, one line —
+   "Figures as of 16 October 2026. See today's →" (link without `asof`). Also open: the
+   page mixes "Saturday, October 17" (browser locale) with our "16 October 2026" — does
+   the site switch to "October 16, 2026" everywhere (one date function + pinned tests)?
 1. **Ruling 7 — per-player face-off win %.** Needs `losingPlayerId` kept by
    `extract.py` and a full re-derive; there is no player page yet (the preview's
    player block is the only player surface). Proposed on the list, unbuilt: goalie
