@@ -87,6 +87,18 @@ const PRINTED = {
           + 'shot from the slot is partly the reward for something that already '
           + 'went right, so this cannot tell you that the same shot moved '
           + 'twenty feet in would go in three times as often.' },
+  // Who shoots (ruling 5): the archive's share of attempts taken by defencemen.
+  dmenAttempts: {
+    label: measure('dmen').heading,
+    where: 'The Is that a lot? panel of the Who shoots layer.',
+    reads: [
+      { is: 'Taken by defencemen', at: ['census', 'shooter', 'D'], said: ['census', 'shooter'],
+        num: 'n', den: 'of', out: 'share', as: 'ratio', unit: '%' },
+    ],
+    why: 'Forwards take most of the shots, but not all of them: a team\u2019s defencemen '
+       + 'shoot from the blue line too, and how much a team leans on them is part of how '
+       + 'it plays. This is the league-wide figure a night is read against.',
+    caveat: 'Position is the one the roster lists, not where the player was standing.' },
   slotAttempts: {
     /* ⛔⛔ THE THIRD MEASUREMENT CALLED "SLOT", AND THE REASON IT IS ITS OWN
        ENTRY. `slotGoals` is how often a shot from there goes in; the CARD's

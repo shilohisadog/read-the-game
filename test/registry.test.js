@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { MEASURES, MEASURE_UNITS as UNITS, MEASURE_CREDITS as CREDITS, MEASURE_STATUS as STATUS, claimOf } from '../src/lib/registry.js';
 import { CLUB_ROWS, PLAYER_ROWS, POSSESSION_FAMILY, leagueRows } from '../src/lib/preview.js';
-import { EXPLAINED, PRINTED, PRINTED_KEYS, explainedLabel } from '../src/lib/methods.js';
+import { EXPLAINED, PRINTED, PRINTED_KEYS, DERIVATION, explainedLabel } from '../src/lib/methods.js';
 import { LAYERS } from '../builders/layer-rules.mjs';
 import { tiedControl } from '../src/lib/layers/tied.js';
 import { PER_TEAM_KEYS } from '../src/lib/archive.js';
@@ -90,8 +90,9 @@ test('every surface label is read from the list, the same text the list holds', 
     ...POSSESSION_FAMILY.filter(r => !CLUB_ROWS.includes(r))
       .map(r => [r.label, claimOf('withheld', r.key)?.name, `withheld ${r.key}`]),
     ...PRINTED_KEYS.map(k => [PRINTED[k].label, claimOf('printed', k)?.heading, `printed ${k}`]),
-    ...EXPLAINED.filter(k => explainedLabel(k)).map(k => [explainedLabel(k),
-      MEASURES.find(m => m.keys.derivation === k)?.heading, `derivation ${k}`]),
+    ...EXPLAINED.filter(k => explainedLabel(k)).map(k => { const m = MEASURES.find(x => x.keys.derivation === k);
+      // A section with its own heading uses the list's heading; a team row's section, the row's name.
+      return [explainedLabel(k), DERIVATION[k]?.label ? m?.heading : m?.name, `derivation ${k}`]; }),
   ];
   assert.deepEqual(pairs.filter(([a, b]) => a !== b).map(p => p[2]), []);
 });

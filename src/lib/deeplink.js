@@ -41,13 +41,14 @@ import { danger } from './layers/danger.js';
 import { whistle } from './layers/whistle.js';
 import { blocked } from './layers/blocked.js';
 import { zonestart } from './layers/zonestart.js';
+import { shooters } from './layers/shooters.js';
 
 /**
  * The URL's vocabulary of layers IS the layers, derived and never restated.
  * A layer added without a token would be unreachable by link, and a token
  * naming no layer would be a dead string nobody could see was dead.
  */
-export const LAYER_TOKENS = [corsi, goaltending, danger, whistle, blocked, zonestart].map(l => l.id);
+export const LAYER_TOKENS = [corsi, goaltending, danger, whistle, blocked, zonestart, shooters].map(l => l.id);
 
 /** The page counts every attempt unless a link says otherwise. */
 const DEFAULT_STRENGTH = 'all';

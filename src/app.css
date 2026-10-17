@@ -2379,6 +2379,7 @@
    same device the slot layer uses, and the reason the mark needed a class of
    its own rather than being found by its ring. */
 #rg.blocked .att:not(.blkd):not(.cur),#rg.blocked .goal:not(.cur){opacity:.2}
+#rg.shooters .att:not(.dsh):not(.cur),#rg.shooters .goal:not(.dsh):not(.cur){opacity:.2}
 #rg.blocked .ring.blk{stroke-width:1.3;opacity:1}
 #rg .blockpanel{display:none}
 #rg.blocked .blockpanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}

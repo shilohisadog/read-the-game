@@ -232,6 +232,8 @@ export function perGame(records) {
        above its own `lens` block. The layer's LESSON is where the draw was; its
        COUNT is face-offs. */
     zonestart: ['face-offs in one game, both teams, at all strengths', 'face-offs'],
+    shooters: ['shot attempts by defencemen, both teams, in one game, at all strengths',
+               'attempts by defencemen'],
   };
   const bySeason = {};
   for (const g of records) (bySeason[season(g.id)] ||= []).push(g);
@@ -338,6 +340,9 @@ const PER_TEAM = {
             'saves of every 100 shots', '%'],
   ozStarts: [g => g.oz, 'face-offs one team won in the other team\u2019s end in one game',
              'offensive-zone face-offs'],
+  dmenShare: [g => g.dAtt && g.attempts && { h: pct(g.dAtt.h, g.attempts.h), a: pct(g.dAtt.a, g.attempts.a) },
+              'of every 100 shot attempts one team took in one game, the ones its defencemen took',
+              'attempts by defencemen, of every 100', '%'],
 };
 const pct = (s, f) => (f > 0 ? Math.round((100 * s) / f) : null);
 

@@ -17,7 +17,7 @@
 import { anchorFor, explains } from './anchors.js';
 import { leagueRows } from './league-rows.js';
 import { PRINTED } from './printed.js';
-import { measure } from './registry.js';
+import { measure, claimOf } from './registry.js';
 
 /**
  * What each figure is COUNTED FROM, in the words a reader can check us on.
@@ -344,7 +344,9 @@ export const EXPLAINED = Object.keys(DERIVATION);
  */
 export function explainedLabel(key) {
   const e = DERIVATION[key] || PRINTED[key];
-  return e ? e.label : null;
+  if (!e) return null;
+  // A team row's section has no heading of its own; it is titled by the row's name.
+  return e.label || (claimOf('derivation', key) || {}).name || null;
 }
 
 export { DERIVATION };

@@ -476,7 +476,7 @@ test('the ends toggle never reaches a count', () => {
       block: d.$('blockPanel').innerHTML,
     }));
   };
-  for (const layer of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']) {
+  for (const layer of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart', 'shooters']) {
     const played = walk('?ends=as-played', layer), fixed = walk('?ends=fixed', layer);
     assert.equal(played.length, fixed.length);
     assert.ok(played.length > 100, 'the walk must cover the game, not a sample');

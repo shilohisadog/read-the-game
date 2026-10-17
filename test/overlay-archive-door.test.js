@@ -74,7 +74,7 @@ const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import
 
 /** The page as a reader meets it: a real game, and the rates the shell fetches. */
 const page = () => boot(rich, MEASURES);
-const LAYERWORK_LENSES = { corsi: 1, slot: 1, blocked: 1, goaltending: 1, whistle: 1, zonestart: 1 };
+const LAYERWORK_LENSES = { corsi: 1, slot: 1, blocked: 1, goaltending: 1, whistle: 1, zonestart: 1, shooters: 1 };
 
 test('⛔⛔⛔ EVERY LAYER DOOR IS ANSWERED BY ONE OF THE TWO TABLES', () => {
   /* ⚠️ NOT CIRCULAR, AND THAT IS THE WHOLE VALUE OF IT. The left-hand side is
@@ -1051,7 +1051,7 @@ test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club 
        with no class of its own to be placed against. */
     // Goaltending and Zone starts are a team's own figure (ruling 3): with no class
     // they print each team's figure and draw no scale, never the game's total.
-    const teamOnly = /^<b>(Goaltending|Zone starts)<\/b>/.test(text);
+    const teamOnly = /^<b>(Goaltending|Zone starts|Who shoots)<\/b>/.test(text);
     if (teamOnly) { assert.ok(!railIn(li), `${text} drew a scale with no class for it`); continue; }
     assert.ok(!/class="stm s[ah]"/.test(text),
       `a row still names the clubs with no per-team class published: ${text}`);
@@ -1279,7 +1279,7 @@ test('⛔⛔⛔ neither panel claims the ARCHIVE holds what the MEASUREMENT coun
  */
 test('⭐ a finished season still names its population, in the same words', () => {
   const y = String(rich.game.id).slice(0, 4);
-  const big = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']
+  const big = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart', 'shooters']
     .map(k => [k, measuredOver(1394, 'shot attempts')]));
   const a = boot(rich, { ...MEASURES, perGame: { [y]: big, [String(+y + 1)]: big } });
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
@@ -1455,7 +1455,7 @@ test('⛔⛔ a row with no scale to draw still opens to how it was counted', () 
  */
 test('⭐ the summary names the season its population is drawn from', () => {
   const y = String(rich.game.id).slice(0, 4);
-  const pg = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']
+  const pg = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart', 'shooters']
     .map(k => [k, { ...measuredOver(86, 'things'),
                     population: 'NHL regular season and playoffs, 1999-00' }]));
   const a = boot(rich, { ...MEASURES, perGame: { [y]: pg } });
@@ -1472,7 +1472,7 @@ test('⛔ a population with no season named is not given one', () => {
      from the game id would be the page stating a provenance the archive does
      not carry — `quoted.src`'s rule, applied to prose. */
   const y = String(rich.game.id).slice(0, 4);
-  const pg = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']
+  const pg = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart', 'shooters']
     .map(k => [k, { ...measuredOver(86, 'things'), population: null }]));
   const a = boot(rich, { ...MEASURES, perGame: { [y]: pg } });
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });

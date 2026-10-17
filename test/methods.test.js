@@ -67,6 +67,8 @@ const MEASURES = {
                  + 'end-zone face-off, out of every end-zone face-off',
       atk: 235614, def: 126603, n: 165420, atkPerDraw: 1.424, defPerDraw: 0.765 },
     shift: { n: 3101105, secs: 148232819, mean: 47.8, perPlayerGame: 20.8 },
+    shooter: { what: 'shot attempts split by the position the roster lists for the player who took them',
+      attempts: 514420, D: { n: 167079, of: 514420, share: 0.325 } },
     hits: { n: 4192, r: -0.07, opposite: 0.481, totalHits: 188512 },
     whistles: { penalties: 30827, offsides: 18700, icings: 35930,
                 ppChances: 22872, ppGoals: 4982, shGoals: 560 } },
@@ -1155,10 +1157,10 @@ test('⛔⛔⛔ every layer a viewer can switch on has a door to the work behind
      MUTATION: add a layer with a `＋` label and no `work`, and the build refuses
      it; drop one from `layer-rules.mjs`'s list and this names it. */
   const mods = await Promise.all(['blocked', 'corsi', 'danger', 'goaltending',
-    'whistle', 'zonestart', 'tied'].map(n => import(`../src/lib/layers/${n}.js`)));
+    'whistle', 'zonestart', 'tied', 'shooters'].map(n => import(`../src/lib/layers/${n}.js`)));
   const every = mods.flatMap(m => Object.values(m)).filter(v => v && v.label);
   const chips = every.filter(l => l.label.startsWith('＋'));
-  assert.equal(chips.length, 6, `${chips.length} layers carry a chip label`);
+  assert.equal(chips.length, 7, `${chips.length} layers carry a chip label`);
   assert.equal(every.length - chips.length, 1,
     'tiedControl is the one descriptor that is not a chip; something else grew a label');
 
@@ -1208,7 +1210,7 @@ test('⚠️ a section two layers open names both, in a sentence that reads', as
   await page.settle();
   const sec = walk(page.ids.hm).find(n => n.id === anchorOf('attempts'));
   const said = walk(sec).map(n => n.textContent).filter(Boolean).join(' ');
-  assert.match(said, /the Control \(Corsi\) and Blocked shots layers are counting/,
+  assert.match(said, /the Attempts and Blocked shots layers are counting/,
     'two layers open this section and the sentence naming them does not read');
 
   const one = walk(page.ids.hm).find(n => n.id === anchorOf('saves'));

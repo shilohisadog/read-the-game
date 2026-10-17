@@ -30,6 +30,7 @@ import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
+import { shooters } from '../src/lib/layers/shooters.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { situation, DECLINED } from '../src/lib/strength.js';
 // The SAME two functions danger.js calls at line 118 — a distance measured here
@@ -107,6 +108,7 @@ export function measureGame(g) {
      lesson is about WHERE the draw was rather than who won it — so the
      per-game distribution counts draws, which is what the chip counts. */
   const draws = zonestart.reduce(g.events, lay);
+  const dshots = shooters.reduce(g.events, lay);
   const sideOf = tid => tid === ctx.homeId ? 'h' : tid === ctx.awayId ? 'a' : null;
 
   const slot = { h: 0, a: 0 };
@@ -119,18 +121,8 @@ export function measureGame(g) {
   // total attempts would divide by a population containing blocked shots, whose
   // origin is not in the feed at all — the numerator and the denominator have to
   // mean the same thing, which is the lesson extract.py's SOG check paid for.
-  /* ⭐ THE DEFENCEMEN'S SHARE, AND THE POSITION COMES FROM THE ROSTER ROW.
-     `census.js` groups shooters the same way and off the same field (`pos`), so
-     this is that question asked per club rather than per archive. The attempt is
-     credited by `corsi`'s own attribution — a blocked shot to the SHOOTER — so
-     the numerator and `attempts` below are drawn from one set. */
-  const dAtt = { h: 0, a: 0 };
-  for (const id of all.counted) {
-    const e = g.events[id];
-    if ((g.roster?.[e.actor] || {}).pos !== 'D') continue;
-    const s = sideOf(shootingTeam(e, g.roster));
-    if (s) dAtt[s]++;
-  }
+  // The defencemen's attempts: the Who shoots layer's own count, one definition (ruling 5).
+  const dAtt = { h: dshots.t[ctx.homeId], a: dshots.t[ctx.awayId] };
 
 
   // 5-on-5 while the score was level: tiedControl's own count, one definition (ruling 2).
@@ -273,6 +265,7 @@ export function measureGame(g) {
       goaltending: nets.counted.length,
       whistle: stops.counted.length,
       zonestart: draws.counted.length,
+      shooters: dshots.counted.length,
     },
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.

@@ -516,7 +516,7 @@ export function censusRates(t) {
         const n = z.n || 0;
         const sum = (z.blocked || 0) + (z.onGoal || 0) + (z.missed || 0) + (z.goal || 0);
         if (sum !== n) out.outcomesMatch = false;
-        out[k] = { n, share: ratio(n, tot),
+        out[k] = { n, of: tot, share: ratio(n, tot),
                    blocked: ratio(z.blocked || 0, n), onGoal: ratio(z.onGoal || 0, n),
                    missed: ratio(z.missed || 0, n), goal: ratio(z.goal || 0, n) };
       }

@@ -41,7 +41,7 @@ import { CLUB_ROWS } from '../src/lib/preview.js';
 const TIER = [
   'archive.js', 'attribution.js', 'layer.js', 'rink.js', 'strength.js', 'team-season.js',
   // registry.js: the layers read their labels from the list of measures.
-  'registry.js',
+  'registry.js', 'layers/shooters.js',
   // competitions.js joined when archive.js stopped spelling `slice(4, 6)` itself
   // and asked it instead. CAUGHT BY THIS TEST, for the second time — the tier
   // goes stale in the same edit that changes the graph, every time.
@@ -1482,7 +1482,7 @@ const dated = (id, date) => ({ id, date, homeAb: 'WSH', awayAb: 'CAR',
   score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 50, a: 40 },
   blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 },
   level: 0, dAtt: { h: 0, a: 0 }, lvl5: { h: 0, a: 0 }, goalies: [],
-  lens: { corsi: 90, slot: 20, blocked: 12, goaltending: 55, whistle: 40, zonestart: 60 } });
+  lens: { corsi: 90, slot: 20, blocked: 12, goaltending: 55, whistle: 40, zonestart: 60, shooters: 28 } });
 
 test('⭐ the span is the newest GAME DATE, whatever order the games arrived in', () => {
   /* MUTATION: have the reduce answer with today's date off the wall clock and
@@ -1567,7 +1567,7 @@ test('⭐ the per-season stamp sits beside the lens ids and is not mistaken for 
      MUTATION: make the stamp `{ date: '...' }` and `sitsIn` starts answering for
      it, which is the shape that would put a date where a histogram goes. */
   const e = perGame([dated(2026020001, '2026-10-01'), dated(2026020002, '2026-10-02')])['2026'];
-  for (const k of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart'])
+  for (const k of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart', 'shooters'])
     assert.ok(e[k] && e[k].n === 2, `the stamp displaced the ${k} histogram`);
   assert.equal(typeof e.dataThrough, 'string');
   assert.equal(sitsIn(e.dataThrough, null), null,

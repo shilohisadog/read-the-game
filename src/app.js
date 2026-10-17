@@ -50,6 +50,7 @@ import {
 } from './lib/layers/whistle.js';
 import { blocked } from './lib/layers/blocked.js';
 import { zonestart } from './lib/layers/zonestart.js';
+import { shooters } from './lib/layers/shooters.js';
 import { periodLabel } from './lib/period.js';
 import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
@@ -1464,7 +1465,7 @@ function chipLabel(id){
    mapping in one visible place instead of scattering it. `test/lbox.test.js`
    asserts every key here equals its own module's `id`, so the two cannot drift. */
 const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whistle:whistle,
- zonestart:zonestart};
+ zonestart:zonestart,shooters:shooters};
 /**
  * ⭐ WHAT EACH LAYER PUTS ON SCREEN — and this half stayed with the page.
  *
@@ -1579,6 +1580,7 @@ const DRAWS={
     lesson, and a false one, since who wins draws is the archive's cleanest null
     at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
  zonestart:ZONE_SAY,
+ shooters:'Attempts a defenceman took keep their mark and every other mark dims. The box below the ice counts each team\u2019s, out of all the attempts it has taken so far.',
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the team that MADE it, the way a broadcast does. A block by a teammate is credited to neither team, so the two figures need not add up to the total.'};
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
@@ -1861,10 +1863,13 @@ function renderSum(){
    return {[AID]:Math.round(100*s[AID]/f[AID]),[HID]:Math.round(100*s[HID]/f[HID])};}
   // Zone starts: face-offs each team won in the other team's end.
   if(id==='zonestart')return L.z?{[AID]:L.z[AID].O,[HID]:L.z[HID].O}:null;
+  // Who shoots: of every 100 attempts a team took, the ones its defencemen took.
+  if(id==='shooters')return L.all&&L.all[AID]&&L.all[HID]
+   ?{[AID]:Math.round(100*L.t[AID]/L.all[AID]),[HID]:Math.round(100*L.t[HID]/L.all[HID])}:null;
   return L.t||null;};
  /* Lenses whose per-team figure is a different quantity from the game's total, so
     with no per-team class they draw no scale rather than fall back to the game's. */
- const TEAM_ONLY={goaltending:1,zonestart:1};
+ const TEAM_ONLY={goaltending:1,zonestart:1,shooters:1};
  Object.keys(LENS).forEach(id=>{
   const L=LENS[id].reduce(G.events,{...CTX,evenOnly:false});
   const n=L.counted.length;
@@ -1894,7 +1899,7 @@ function renderSum(){
   const bare=by&&!cls&&TEAM_ONLY[id];
   const split=by&&(cls||bare);
   const d=cls?cls:(bare?null:(own?own[id]:null));
-  const u=(cls&&cls.suffix)||(bare&&id==='goaltending'?'%':'');
+  const u=(cls&&cls.suffix)||(bare&&(id==='goaltending'||id==='shooters')?'%':'');
   /* ⭐ THE CLASS NAMES ARE WHOLE LITERALS, NOT `'s'+cls`. `test/css-orphans.test.js`
      counts every word inside every shipped string to decide whether a CSS rule
      still dresses anything, and a name spliced from a prefix and a letter is
@@ -4292,7 +4297,7 @@ function drawNewcomer(){
   document.getElementById('rg').classList.remove('newcomer');});}
 document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
-let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false,zoneOn=false;
+let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false,zoneOn=false,shootOn=false;
 /* ⚠️ AND IT LIVES HERE, NOT BESIDE THE THING IT DRAWS. `zoneState()` runs at
    BOOT, one line below its own definition, and it calls `syncPick` -- so with
    this block further down the file `let picking` was still in its temporal
@@ -4318,7 +4323,8 @@ const PICKS=[['corsi',()=>corsiOn,v=>{corsiOn=v;setCorsi();}],
              ['blocked',()=>blockOn,v=>{blockOn=v;setBlock();}],
              ['goaltending',()=>goalieOn,v=>{goalieOn=v;setGoalie();}],
              ['whistle',()=>whistleOn,v=>{whistleOn=v;setWhistle();}],
-             ['zonestart',()=>zoneOn,v=>{zoneOn=v;setZone();}]];
+             ['zonestart',()=>zoneOn,v=>{zoneOn=v;setZone();}],
+             ['shooters',()=>shootOn,v=>{shootOn=v;setShooters();}]];
 let picking=false;
 function pick(want){
  // GUARDED because each setter calls lyrState -> syncPick, and syncPick reads
@@ -4672,6 +4678,10 @@ function lboxFor(id,at,L){
     the box under the rink -- so reading `L.z` here returns undefined and takes
     the whole render down with it. Every layer past `corsi` in this chain does
     the same thing for the same reason. */
+ if(id==='shooters'){
+  const D=shooters.reduce(sl,CTX), tot=D.all[AID]+D.all[HID];
+  return {a:D.t[AID],k:'BY DEFENCEMEN',h:D.t[HID],
+   n:`Of ${tot} attempt${tot===1?'':'s'} so far · ${MODE()}.`};}
  if(id==='zonestart'){
   const Z=zonestart.reduce(sl,CTX), n=Z.counted.length;
   const mid=Z.z[AID].N+Z.z[HID].N, dz=Z.z[AID].D+Z.z[HID].D, un=Z.unplaced.length;
@@ -4693,7 +4703,7 @@ function lboxFor(id,at,L){
 /** The centre label alone, for the pre-game frame where there is nothing to count. */
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
  blocked:()=>'BLOCKS',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES',
- zonestart:()=>'OFFENSIVE-ZONE STARTS'};
+ zonestart:()=>'OFFENSIVE-ZONE STARTS',shooters:()=>'BY DEFENCEMEN'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -4857,6 +4867,7 @@ function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goa
 function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);syncPick();render(i,'');}
 function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);syncPick();render(i,'');}
 function setZone(){document.getElementById('rg').classList.toggle('zonestart',zoneOn);syncPick();render(i,'');}
+function setShooters(){document.getElementById('rg').classList.toggle('shooters',shootOn);syncPick();render(i,'');}
 /* ⭐ THE GAME OPENS BEFORE THE FIRST PLAY -- on the state, not on a play.
    It used to open on the LAST event, which put the final score, the finished
    counters and -- on a shootout game -- the shootout notice on screen before a
@@ -4906,6 +4917,7 @@ const LAYER_APPLY={
  [whistle.id]:()=>{whistleOn=true;setWhistle();},
  [blocked.id]:()=>{blockOn=true;setBlock();},
  [zonestart.id]:()=>{zoneOn=true;setZone();},
+ [shooters.id]:()=>{shootOn=true;setShooters();},
 };
 /* ⭐ ONE CALL, NOT A SECOND SPELLING. This read `if(LINK.strength==='even')` and
    set the flag itself, which was harmless while there was one flag and would be

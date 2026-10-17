@@ -143,7 +143,12 @@ mostly a merge of those, plus the definitions that are today implicit.
 4. **Typical shift: the mean**, everywhere ("no preference but probably mean"). ✅ built 2026-10-17:
    archive mean 47.8 s (150,727,738 ÷ 3,154,714), shown as a division on the methods page;
    median, middle half and the under-a-minute share DELETED (Kevin: one figure per lesson).
-5. **Layers, agreed:** level possession folds into Attempts as a filter;
+5. ✅ built 2026-10-17 — the tied-score count was ALREADY a filter on Attempts (the Counting
+   control), so nothing to fold; Goaltending kept after a "should it exist?" pass (it answers
+   "how is the goalie doing tonight", with the league's witness); the Attempts layer label is
+   "Attempts", not "Control (Corsi)"; **Who shoots** is the seventh chip (`layers/shooters.js`),
+   its panel row the per-team share, its archive figure `census.shooter` (32.5%).
+   **Layers, agreed:** level possession folds into Attempts as a filter;
    Goaltending stays on the rink but is not ranked as a club figure; add **Who
    shoots**. Shift length stays off the rink.
 6. **Unread `measures.json` keys: delete** (or name a reader).

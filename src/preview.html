@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-roZRxXja9joRENGXjrO/RZ39Fpg4wEOjVSG0pV9v40g=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1gcgm9IN0ppPk9bkPotAtmM0bW+QgKUsw2FRYMQiMNc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -574,14 +574,12 @@ const MEASURE_CREDITS = ['shooter', 'defender', 'blocker', 'goaltender', 'winner
 const MEASURE_STATUS = ['live', 'proposed'];
 
 const MEASURES = [
-  { id: 'attempts', name: 'shot attempts', chip: 'Attempts', layer: '＋ Control (Corsi)',
+  { id: 'attempts', name: 'shot attempts', chip: 'Attempts', layer: '＋ Attempts',
     says: 'Every puck a team put at the net — on goal, missed, or blocked by a body.',
     counts: 'goals + shots on goal + missed + blocked', of: 'game', credit: 'shooter',
     unit: 'count', strength: 'all', score: 'any', scopes: ['game', 'season'],
     typical: 'middle half', witness: null, family: 'possession',
-    keys: { lens: 'corsi', perTeam: 'corsi' },
-    pending: [{ ruling: '5', what: 'level possession folds in as a filter' },
-              { ruling: 'wording', what: 'the layer label says "Control (Corsi)", the chip says "Attempts"' }] },
+    keys: { lens: 'corsi', perTeam: 'corsi' } },
   { id: 'level5', name: '5-on-5 CF% while the score was tied', layer: 'control while the score was tied',
     says: 'Of every 100 shot attempts at 5-on-5 with the score tied in this team\u2019s own games — both sides counted — this many were its own.',
     counts: 'own attempts at strict 5-on-5, score tied', of: 'both sides’ attempts, same filter',
@@ -638,11 +636,11 @@ const MEASURES = [
     counts: 'goals', of: 'unblocked attempts, inside vs outside', credit: 'none', unit: 'share',
     strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
     policy: SLOT_POLICY.slot, keys: { printed: 'slotGoals' } },
-  { id: 'dmen', name: 'shot attempts taken by defencemen', says: 'Of every 100 shot attempts this team took, this many came from one of its own defencemen.',
+  { id: 'dmen', name: 'shot attempts taken by defencemen', chip: 'Who shoots', layer: '＋ Who shoots',
+    heading: 'How many shot attempts defencemen take', says: 'Of every 100 shot attempts this team took, this many came from one of its own defencemen.',
     counts: 'attempts by a defenceman', of: 'own attempts', credit: 'shooter', unit: 'share',
-    strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure', witness: null,
-    keys: { row: 'dmen', derivation: 'dmen' },
-    pending: [{ ruling: '5', what: 'add the Who shoots layer' }] },
+    strength: 'all', score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: null,
+    keys: { row: 'dmen', derivation: 'dmen', lens: 'shooters', perTeam: 'dmenShare', printed: 'dmenAttempts' } },
   { id: 'shiftLength', name: 'average shift length', says: 'How long this team\u2019s skaters stay on the ice each time they go out, on average, in seconds.',
     counts: 'skater seconds on the ice', of: 'skater shifts', credit: 'team', unit: 'seconds',
     strength: 'all', score: 'any', scopes: ['game', 'season', 'archive'], typical: 'mean',

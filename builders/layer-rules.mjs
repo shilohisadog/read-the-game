@@ -32,6 +32,7 @@ import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
+import { shooters } from '../src/lib/layers/shooters.js';
 import { anchorOf } from '../src/lib/anchors.js';
 import { EXPLAINED, PRINTED_KEYS, explainedLabel } from '../src/lib/methods.js';
 import { stable } from './measure.mjs';
@@ -40,7 +41,7 @@ import { claimOf } from '../src/lib/registry.js';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Every layer the replay can switch on, in the order the chips carry them. */
-export const LAYERS = [corsi, danger, blocked, goaltending, whistle, zonestart];
+export const LAYERS = [corsi, danger, blocked, goaltending, whistle, zonestart, shooters];
 
 export function rules(explained) {
   return LAYERS.map(l => {
