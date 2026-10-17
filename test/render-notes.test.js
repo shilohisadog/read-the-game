@@ -1214,7 +1214,7 @@ test('a first-time viewer is told where to click, and why', () => {
      truth, reached from entirely true data. `moreLevelControlLost` is computed by
      the same function over the same games. Each figure carries its OWN
      denominator because the two populations differ. */
-  assert.match(w, /while the score was level/,
+  assert.match(w, /while the score was tied/,
     'the page states the paradox and not the thing that resolves it');
   // 3,855 - 1,527 = 2,328 — the page states the WINNING side, present tense.
   assert.match(w, /2,328 of 3,855/, 'the level-control claim ships without its count');

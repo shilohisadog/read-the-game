@@ -51,7 +51,7 @@ const DERIVATION = {
                 + 'things, so the totals differ:',
     evidenceTail: 'Shot attempts on their own point the wrong way: the team with '
                 + 'more of them lost slightly more often than it won. Filter to '
-                + '5-on-5 with the score level and that turns around. '
+                + '5-on-5 with the score tied and that turns around. '
                 + 'That is what the condition is doing.',
     caveat: 'An attempt is an attempt. A point shot from sixty feet counts here '
           + 'exactly the same as a tip at the edge of the crease, and this number '

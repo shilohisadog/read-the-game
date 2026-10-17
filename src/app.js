@@ -253,7 +253,7 @@ const CTX={roster:R,homeId:HID,awayId:AID,homeAb:HAB,awayAb:AAB,
 /* The work overlay's name for the rung it is reporting. Three states now, and
    the third is not "even strength" with extra steps — it is a different
    population and has to say so, or the overlay narrates a count it is not. */
-const MODE=()=>levelOnly?'score level, 5-on-5, regulation'
+const MODE=()=>levelOnly?'score tied, 5-on-5, regulation'
                         :evenOnly?'even strength':'all situations';
 // COMPUTED ONCE, because a stint is a property of the GAME and only the query is
 // a property of the moment. A prefix would give the same answer -- any goal at
@@ -4230,7 +4230,7 @@ function drawNewcomer(){
     +`attempts loses more often than it wins</b> — ${R2.count.toLocaleString()} of `
     +`${R2.n.toLocaleString()} games.`
     +(R3&&R3.n
-      ?` But count only the attempts taken <b>while the score was level</b>, and it `
+      ?` But count only the attempts taken <b>while the score was tied</b>, and it `
        +`turns over: that team wins ${(R3.n-R3.count).toLocaleString()} of `
        +`${R3.n.toLocaleString()}. Which attempts you count changes the answer.`
       :'')
@@ -4815,7 +4815,7 @@ const COUNT_NOTE={
  even:'Attempts taken while both sides had the same number of skaters. Power plays and an '
       +'empty net are left out — part of an attempt lead can be nothing but time '
       +'spent a skater up.',
- level:'Attempts taken at 5-on-5 while the SCORE was level, in regulation. '
+ level:'Attempts taken at 5-on-5 while the SCORE was tied, in regulation. '
        +'A team that is behind shoots more, so this is the count that is about '
        +'play rather than the scoreboard.'};
 function setStrength(v){evenOnly=(v==='even');levelOnly=(v==='level');

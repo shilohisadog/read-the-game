@@ -537,7 +537,7 @@ test('⭐⭐ each rung of the counting ladder is a subset of the one above', () 
   // AND THE CONTROL SAYS WHICH RUNG IS ON, because a filtered count with nothing
   // naming it is the defect the drawer's summary exists to prevent.
   press('level');
-  assert.match(String(a.$('zCountOn').textContent), /score was level/i,
+  assert.match(String(a.$('zCountOn').textContent), /score was tied/i,
     'the drawer summary does not name the rung that is on');
   press('all');
   assert.match(String(a.$('zCountOn').textContent), /all situations/i);

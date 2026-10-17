@@ -672,7 +672,7 @@ test('⭐⭐ the score condition is argued with published counts, not with a mec
     moreAttemptsLost: { count: 2228, n: 4100, rate: 0.543,
       what: 'the team with more shot attempts lost' },
     moreLevelControlLost: { count: 1560, n: 3925, rate: 0.397,
-      what: 'the team that controlled play while the score was level lost' } } });
+      what: 'the team that controlled play while the score was tied lost' } } });
   const lvl = m.club.find(c => c.key === 'level5');
   assert.equal(lvl.evidence.length, 2);
   assert.equal(lvl.evidence[0].what, 'the team with more shot attempts lost');

@@ -1380,7 +1380,7 @@ test('⭐ a game record carries the defencemen\'s attempts, and they are a SUBSE
   }
 });
 
-test('⭐ …and 5-on-5 attempts while the score was level, both sides, from the SAME population', () => {
+test('⭐ …and 5-on-5 attempts while the score was tied, both sides, from the SAME population', () => {
   /* MUTATION: count at all strengths, or over the whole game rather than while
      level. Either makes `lvl5` exceed the attempts it is drawn from. */
   const r = measureGame(EXTRACT);

@@ -114,7 +114,7 @@ export function sentenceFor(o) {
   // NO EDGE IS A REAL ANSWER, and it is 274 of 4,312 games — one in sixteen.
   // There is nothing to compare, so nothing is compared.
   if (!level) {
-    return { lead: 'Neither team controlled play while the score was level.',
+    return { lead: 'Neither team controlled play while the score was tied.',
              rate: null, absent: foreign };
   }
 
@@ -135,13 +135,13 @@ export function sentenceFor(o) {
   let lead;
   if (!ledAttempts) {
     lead = `The attempts were even at ${pair(lh, la)}. ${ledLevel} led ${lvl} `
-         + `while the score was level.`;
+         + `while the score was tied.`;
   } else if (ledAttempts === ledLevel) {
     lead = `${ledLevel} led the attempts ${att}, and led ${lvl} while the score `
-         + `was level.`;
+         + `was tied.`;
   } else {
     lead = `${ledAttempts} led the attempts ${att}, but ${ledLevel} led ${lvl} `
-         + `while the score was level.`;
+         + `while the score was tied.`;
   }
   // A SHOOTOUT IS NOT PLAY, SO IT CANNOT BE REPORTED AS WHAT THE PLAY PRODUCED.
   //
@@ -163,9 +163,9 @@ export function sentenceFor(o) {
   // shootout happens only when the score is tied after overtime. ~6% of games
   // reach one (13 of 219 sampled), so this is roughly 250 games in the archive.
   if (shootout && won) {
-    lead += ` The game was level when play ended; ${won} won the shootout.`;
+    lead += ` The game was tied when play ended; ${won} won the shootout.`;
   } else {
-    lead += won === null ? ' The game ended level.'
+    lead += won === null ? ' The game ended tied.'
           : won === ledLevel ? ` ${ledLevel} won.`
           : ` ${ledLevel} lost.`;
   }

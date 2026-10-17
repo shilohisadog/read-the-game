@@ -291,7 +291,7 @@ test('with a season under way the page draws both frames and both clubs', async 
      removing it was SPACE. */
   assert.doesNotMatch(said, /is how long a shift lasts/, 'the shift tile is off this card');
   assert.doesNotMatch(said, /hits a team lands/, 'and so is the hits tile');
-  assert.match(said, /5-on-5 CF% while the score was level/, 'a club row');
+  assert.match(said, /5-on-5 CF% while the score was tied/, 'a club row');
   assert.match(said, /BUF 12 games · PIT 11 games\. This figure needs 35 before it holds steady/,
     'both teams\u2019 game counts on one line, with the target named once');
   assert.match(said, /Every Buffalo Sabres game we hold/);
@@ -344,7 +344,7 @@ test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself
     `?game=${GID}`, '2026-09-23T12:00:00Z');
   await settle();
   const said = textOf(ids.pv);
-  assert.match(said, /5-on-5 CF% while the score was level/, 'the measure is named');
+  assert.match(said, /5-on-5 CF% while the score was tied/, 'the measure is named');
   assert.match(said, /no games yet/, 'and each club says it has nothing on it');
   assert.match(said, /Across a full season teams ranged from 44% to 57% in 96 team-seasons/,
     'the caption names the span AND what it was measured over');
@@ -1282,7 +1282,7 @@ test('⛔⛔ no players.json means NO BLOCK, not a block with no numbers', async
   const said = textOf(ids.pv);
   assert.ok(!walk(ids.pv).some(x => hasCls(x, 'pvwatchers')), 'a block was drawn anyway');
   assert.doesNotMatch(said, /Someone to watch/);
-  assert.match(said, /5-on-5 CF% while the score was level/, 'the rest of the card still draws');
+  assert.match(said, /5-on-5 CF% while the score was tied/, 'the rest of the card still draws');
 });
 
 test('⛔ one side with no players is no comparison, so no block', async () => {
@@ -1330,7 +1330,7 @@ test('⛔ a players document without game dates names NOBODY', async () => {
   const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
   assert.equal(blockText(ids), null, 'a player was named with nothing to show he is playing');
-  assert.match(textOf(ids.pv), /5-on-5 CF% while the score was level/, 'the rest of the card draws');
+  assert.match(textOf(ids.pv), /5-on-5 CF% while the score was tied/, 'the rest of the card draws');
 });
 
 // A published extract for the fixture game: its presence is what makes it played.
@@ -1357,7 +1357,7 @@ test('⛔ a played game whose lineup cannot be read names NOBODY', async () => {
                               '2026-10-05T12:00:00Z');
   await settle();
   assert.equal(blockText(ids), null, 'named a player for a game whose lineup we never read');
-  assert.match(textOf(ids.pv), /5-on-5 CF% while the score was level/, 'the rest of the card draws');
+  assert.match(textOf(ids.pv), /5-on-5 CF% while the score was tied/, 'the rest of the card draws');
 });
 
 test('⛔ the preview never downloads the whole catalog', () => {
@@ -1467,7 +1467,7 @@ test('⭐ each club row reads in its own unit, and the possession group is intro
   const kids = walk(sect);
   const cards = kids.filter(x => (x.className || '').split(' ').includes('pvm'));
   const label = c => textOf(walk(c).find(x => x.className === 'pvlab'));
-  assert.deepEqual(cards.map(label), ['5-on-5 CF% while the score was level',
+  assert.deepEqual(cards.map(label), ['5-on-5 CF% while the score was tied',
     'share of the shots on goal', 'shot attempts against, per game',
     'shot attempts blocked, per game', 'shot attempts taken by defencemen',
     'shot attempts from the slot', 'average shift length']);
@@ -1478,7 +1478,7 @@ test('⭐ each club row reads in its own unit, and the possession group is intro
     'the heading and its sentence sit directly above the first possession row');
   const says = textOf(sect.kids.find(x => x.className === 'pvgsays'));
   assert.match(says, /^The next four cards all measure one thing: how much a team has the puck\./);
-  assert.match(says, /The first, 5-on-5 CF% while the score was level, measures it directly\./);
+  assert.match(says, /The first, 5-on-5 CF% while the score was tied, measures it directly\./);
   // The direction words follow the sign of each published r.
   assert.match(says, /tend to take a bigger share of the shots on goal, face fewer of the other team’s attempts, and block fewer shots\./);
   assert.match(says, /over 96 full team-seasons, each of the other three tracked the first at 0\.61 to 0\.85/);

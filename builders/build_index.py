@@ -1318,7 +1318,7 @@ __HELPERS__
       if (lv && lv.n) {
         var b = side(lv);
         rel.appendChild(el('span', null, ' Count only the attempts taken while the '
-          + 'score was level' + (a[0] === b[0] ? ' and it holds: ' : ' and it turns over: ')
+          + 'score was tied' + (a[0] === b[0] ? ' and it holds: ' : ' and it turns over: ')
           + 'that team '));
         rel.appendChild(el('b', null,
           b[0] + ' ' + b[1].toLocaleString() + ' of ' + lv.n.toLocaleString() + '.'));
@@ -1351,12 +1351,12 @@ __HELPERS__
          two could have been different populations, and `measured` is
          `records.length` unfiltered. */
       if (measures.measured && measures.measured >= at.n) {
-        var gap = ' Totals differ because a game level on a measure is not a case '
-          + 'for it: of ' + measures.measured.toLocaleString() + ' games measured, '
-          + (measures.measured - at.n).toLocaleString() + ' were level on attempts';
+        var gap = ' Totals differ because a game with equal counts is not a case '
+          + 'for either team: of ' + measures.measured.toLocaleString() + ' games measured, '
+          + (measures.measured - at.n).toLocaleString() + ' had equal attempts';
         if (lv && lv.n && measures.measured >= lv.n) {
-          gap += ' and ' + (measures.measured - lv.n).toLocaleString()
-            + ' on attempts while the score was level';
+          gap += ', and ' + (measures.measured - lv.n).toLocaleString()
+            + ' had equal attempts while the score was tied';
         }
         rel.appendChild(el('span', null, gap + '.'));
       }
@@ -2555,7 +2555,7 @@ FIGURE_CLAUSE = {
     # still even. Checked before it was written.
     "score": ("per 60 minutes of play with the same number of skaters on each "
               "side, a team takes __EVEN_TRAIL_PER60__ shot attempts while "
-              "trailing, __EVEN_TIED_PER60__ while the score is level, and "
+              "trailing, __EVEN_TIED_PER60__ while the score is tied, and "
               "__EVEN_LEAD_PER60__ while leading"),
     "zones": ("after a face-off in one team&rsquo;s end, the team attacking "
               "that end takes __ZONE_ATK__ shot attempts before the next "
@@ -2988,7 +2988,7 @@ LEARN_CARDS = [
     # both recorded fields. The door opens the goal that ENDED a game, so sudden
     # death is shown rather than asserted.
     ("rules", "overtime", "Overtime",
-     "A hockey game does not end level. If the score is tied after sixty "
+     "A hockey game does not end in a tie. If the score is tied after sixty "
      "minutes, both teams drop to three skaters and a goaltender, and the next "
      "goal wins &mdash; five minutes of it, and a shootout after that if nobody "
      "scores. In the playoffs there is no shootout and nobody leaves the ice: "

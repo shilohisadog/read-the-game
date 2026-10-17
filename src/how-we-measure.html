@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-577ndmtkSbdPzTsobjledn2pwVxO1Rc63ZW4owPx8Bc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gblAhMqTSRNsBkDjyX0m5gUvcymJosFSIMqcZJqCzkQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -700,9 +700,9 @@ const MEASURES = [
     keys: { lens: 'corsi', perTeam: 'corsi' },
     pending: [{ ruling: '5', what: 'level possession folds in as a filter' },
               { ruling: 'wording', what: 'the layer label says "Control (Corsi)", the chip says "Attempts"' }] },
-  { id: 'level5', name: '5-on-5 CF% while the score was level', layer: 'control while the score was level',
-    says: 'Of every 100 shot attempts at 5-on-5 with the score level in this team\u2019s own games — both sides counted — this many were its own.',
-    counts: 'own attempts at strict 5-on-5, score level', of: 'both sides’ attempts, same filter',
+  { id: 'level5', name: '5-on-5 CF% while the score was tied', layer: 'control while the score was tied',
+    says: 'Of every 100 shot attempts at 5-on-5 with the score tied in this team\u2019s own games — both sides counted — this many were its own.',
+    counts: 'own attempts at strict 5-on-5, score tied', of: 'both sides’ attempts, same filter',
     credit: 'shooter', unit: 'share', strength: '5v5', score: 'level', scopes: ['season'],
     typical: 'league figure', witness: null, family: 'possession',
     keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' } },
@@ -867,8 +867,8 @@ const MEASURES = [
     counts: 'games the attempts leader lost', of: 'games with an edge', credit: 'none',
     unit: 'share', strength: 'all', score: 'any', scopes: ['archive'],
     typical: null, witness: null, keys: {} },
-  { id: 'levelLeaderLost', name: 'the team that controlled level play lost', says: 'Of games where one team led level-score attempts by k or more, how many it lost.',
-    counts: 'games the level leader lost', of: 'games led by k or more', credit: 'none',
+  { id: 'levelLeaderLost', name: 'the team that controlled play while the score was tied lost', says: 'Of games where one team led tied-score attempts by k or more, how many it lost.',
+    counts: 'games the tied-score leader lost', of: 'games led by k or more', credit: 'none',
     unit: 'share', strength: '5v5', score: 'level', scopes: ['archive'], typical: null,
     witness: null, keys: {} },
 
@@ -957,7 +957,7 @@ const words = id => ({ label: measure(id).name, says: measure(id).says });
 
 const CLUB_ROWS = [
   { key: 'level5', ...words('level5'),
-    counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score level',
+    counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score tied',
     of: t => ({ count: t.level5.for, n: t.level5.for + t.level5.against }),
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }),
     unit: 'share', group: 'possession', fields: ['lvl5'] },
@@ -1340,7 +1340,7 @@ const PRINTED = {
       { is: 'While trailing', at: ['census', 'pace', 'evenTrail'],
         said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
         as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
-      { is: 'While the score is level', at: ['census', 'pace', 'evenTied'],
+      { is: 'While the score is tied', at: ['census', 'pace', 'evenTied'],
         said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
         as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
       { is: 'While leading', at: ['census', 'pace', 'evenLead'],
@@ -1348,7 +1348,7 @@ const PRINTED = {
         as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
     ],
     why: 'It is the evidence behind the condition on the 5-on-5 number. '
-       + 'That one is measured only while the score is level, '
+       + 'That one is measured only while the score is tied, '
        + 'and this is why: the same teams, at the same strength, take a '
        + 'measurably different number of attempts depending on nothing but the '
        + 'scoreboard. Part of any attempt lead is the time a team spent behind.',
@@ -1441,7 +1441,7 @@ const DERIVATION = {
                 + 'things, so the totals differ:',
     evidenceTail: 'Shot attempts on their own point the wrong way: the team with '
                 + 'more of them lost slightly more often than it won. Filter to '
-                + '5-on-5 with the score level and that turns around. '
+                + '5-on-5 with the score tied and that turns around. '
                 + 'That is what the condition is doing.',
     caveat: 'An attempt is an attempt. A point shot from sixty feet counts here '
           + 'exactly the same as a tip at the edge of the crease, and this number '

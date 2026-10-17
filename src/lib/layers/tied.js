@@ -63,7 +63,7 @@ export const tiedControl = {
   label: measure('level5').layer,
 
   /** The rule, in one sentence, for printing next to the number it produced. */
-  rule: '5-on-5 shot attempts taken while the score was level, in regulation',
+  rule: '5-on-5 shot attempts taken while the score was tied, in regulation',
 
   /**
    * @param events  the whole game, in order
@@ -102,15 +102,15 @@ export const tiedControl = {
         // true, 8.6% of overtime is a power play. Both statements are correct
         // about different things, and the copy is what made them collide. If a
         // reader who knows hockey reads it that way, a novice will.
-        ? `overtime — the SCORE is level throughout it, so every attempt would `
+        ? `overtime — the SCORE is tied throughout it, so every attempt would `
           + `count; and regular-season overtime is 3-on-3, not 5-on-5`
         : null;
       const notLevel = level ? null
-        : `the score was not level — an attempt taken while behind is evidence `
+        : `the score was not tied — an attempt taken while behind is evidence `
           + `of the scoreboard, not of control`;
       // Level play is counted at 5-on-5 only (Kevin's ruling 2, 2026-10-17).
       const notEven = whyNotEven(e, ctx)
-        || (e.sit !== '1551' ? 'not 5-on-5 — level play is counted with five skaters a side' : null);
+        || (e.sit !== '1551' ? 'not 5-on-5 — tied-score play is counted with five skaters a side' : null);
 
       // The shootout moves the scoreboard by exactly one, at the end. Counting
       // its goals into the running score would retroactively un-level a game

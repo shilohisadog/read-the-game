@@ -255,7 +255,7 @@ export function fakeDom() {
        `syncStrength` copies the pressed button's own text into the drawer's
        summary, so a fake with empty text lets a summary that says NOTHING pass
        as one that says what is on. Three rungs since 2026-09-21. */
-    '#rg .sbtn': [['all', 'All situations'], ['even', 'Even strength only'], ['level', 'While the score was level']]
+    '#rg .sbtn': [['all', 'All situations'], ['even', 'Even strength only'], ['level', 'While the score was tied']]
       .map(([s, textContent]) => Object.assign(el(), { dataset: { s }, textContent })),
     // The next-play ring. Its buttons carry the real labels, because `syncCue`
     // copies the pressed one into the drawer's summary — a fake with empty text
@@ -695,7 +695,7 @@ export const CURVE_AND_MIX = {
        k=1 row above, because that is exactly what `moreLevelControlLost` is:
        the club that controlled level play by 1 or more, and how often it lost.
        A fixture whose two halves disagreed would be testing the formatting. */
-    moreLevelControlLost: { what: 'the team that controlled play while the score was level lost',
+    moreLevelControlLost: { what: 'the team that controlled play while the score was tied lost',
                             population: 'NHL regular season and playoffs',
                             n: 3855, count: 1527, rate: 1527 / 3855 },
   },

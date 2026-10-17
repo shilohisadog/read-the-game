@@ -102,14 +102,14 @@ const NEWEST_ID = CATALOG.games
   .pop().id;
 
 const MEASURES = {
-  rule: '5-on-5 shot attempts taken while the score was level, in regulation',
+  rule: '5-on-5 shot attempts taken while the score was tied, in regulation',
   featured: [{ id: 2023020867, ab: 'DAL', edge: 33 }],
   baseRates: {
     moreShotsOnGoalLost: { what: 'the team with more shots on goal lost',
       population: 'NHL regular season and playoffs', n: 3957, count: 1811, rate: 0.4577 },
     moreAttemptsLost: { what: 'the team with more shot attempts lost',
       population: 'NHL regular season and playoffs', n: 4029, count: 2194, rate: 0.5445 },
-    moreLevelControlLost: { what: 'the team that controlled play while the score was level lost',
+    moreLevelControlLost: { what: 'the team that controlled play while the score was tied lost',
       population: 'NHL regular season and playoffs', n: 3855, count: 1527, rate: 0.3961 },
   },
 };
@@ -421,9 +421,9 @@ test('the hero says why its three totals differ, and the subtraction holds', asy
 
   // 1200 measured, 1000 with an attempts leader, 900 with a level-score leader.
   assert.match(line, /1,200 games measured/, 'the population is not named');
-  assert.match(line, /200 were level on attempts/, '1200 - 1000 = 200');
-  assert.match(line, /300 on attempts while the score was level/, '1200 - 900 = 300');
-  assert.match(line, /not a case for it/, 'the RULE is missing, so the numbers explain nothing');
+  assert.match(line, /200 had equal attempts/, '1200 - 1000 = 200');
+  assert.match(line, /300 had equal attempts while the score was tied/, '1200 - 900 = 300');
+  assert.match(line, /not a case for either team/, 'the RULE is missing, so the numbers explain nothing');
 
   /* ⭐ AND EVERY TOTAL ON THE LINE MUST RECONCILE, which is the claim a reader
      would actually make with a pencil. Parsed back out of the rendered sentence
@@ -439,8 +439,8 @@ test('the hero says why its three totals differ, and the subtraction holds', asy
   const attempts = num(/more shot attempts \w+ [\d,]+ of ([\d,]+) games\./, 'the attempts total');
   const levelN   = num(/that team \w+ [\d,]+ of ([\d,]+)\./, 'the level-score total');
   const population = num(/of ([\d,]+) games measured/, 'the measured population');
-  const gapA = num(/([\d,]+) were level on attempts/, 'the attempts gap');
-  const gapL = num(/and ([\d,]+) on attempts while the score was level/, 'the level-score gap');
+  const gapA = num(/([\d,]+) had equal attempts/, 'the attempts gap');
+  const gapL = num(/, and ([\d,]+) had equal attempts while the score was tied/, 'the level-score gap');
 
   assert.equal(attempts + gapA, population,
     `${attempts} + ${gapA} is not ${population} — the attempts gap does not reconcile`);
@@ -1187,7 +1187,7 @@ test('⛔⛔ each front-door figure sits with its OWN subject, now that the word
   const text = strip[1].replace(/<[^>]+>/g, ' ');
 
   for (const [key, subject] of [['evenTrail', 'while trailing'],
-                                ['evenTied', 'while the score is level'],
+                                ['evenTied', 'while the score is tied'],
                                 ['evenLead', 'while leading']]) {
     assert.match(text, new RegExp(`${r(key)}(?: shot attempts)? ${subject}`),
       `the front door does not attribute ${r(key)} to "${subject}" — the three `
@@ -1894,15 +1894,15 @@ test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires'
  */
 test('⛔ the hero states BOTH rates, each with its own denominator', () =>
   heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE,
-                 level: { what: 'the team that controlled play while the score was level lost',
+                 level: { what: 'the team that controlled play while the score was tied lost',
                           population: 'NHL regular season and playoffs', n: 900, count: 300 } })
     .then(cap => {
       // The leader loses 800 of 1,000 …
       assert.match(cap, /loses 800 of 1,000 games/, `the first rate is missing: "${cap}"`);
-      // … and while the score was level the same club WINS 600 of 900. Different
+      // … and while the score was tied the same club WINS 600 of 900. Different
       // verb AND different denominator, which is the entire point of the pair.
       assert.match(cap, /wins 600 of 900/, `the level-control rate is missing: "${cap}"`);
-      assert.match(cap, /while the score was level/,
+      assert.match(cap, /while the score was tied/,
         'the second rate does not say what makes it different from the first');
       // ⭐ THE CONNECTIVE IS READ, NEVER ASSUMED. These two rates point opposite
       // ways, so the sentence may say so. A hard-coded "turns over" would be a
@@ -1913,7 +1913,7 @@ test('⛔ the hero states BOTH rates, each with its own denominator', () =>
 
 test('⭐ …and when the archive stops reversing, the sentence stops saying it does', () =>
   heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE,
-                 level: { what: 'the team that controlled play while the score was level lost',
+                 level: { what: 'the team that controlled play while the score was tied lost',
                           population: 'NHL regular season and playoffs', n: 900, count: 700 } })
     .then(cap => {
       // Both rates now point the SAME way, so "turns over" would be false.
@@ -1928,7 +1928,7 @@ test('⭐ …and a hero with no second rate says the first one alone', () =>
   heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE, level: null })
     .then(cap => {
       assert.match(cap, /loses 800 of 1,000 games/, 'the first rate went with the second');
-      assert.doesNotMatch(cap, /while the score was level|turns over|and it holds/,
+      assert.doesNotMatch(cap, /while the score was tied|turns over|and it holds/,
         `a dangling clause survived the missing rate: "${cap}"`);
     }));
 

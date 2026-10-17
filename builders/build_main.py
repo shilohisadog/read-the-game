@@ -546,7 +546,7 @@ __CSS__</style>
      costs a selector; shipping it wide would put a button on screen whose third
      position is sometimes meaningless, which is the "a dare" rule. -->
 <details class="zone zcount" id="zCount"><summary class="zh">Counting<span class="zon" id="zCountOn"></span></summary>
-<div class="figpick"><div class="grp" role="group" aria-label="Which attempts are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button><button class="lyr sbtn" data-s="level" aria-pressed="false">While the score was level</button></div>
+<div class="figpick"><div class="grp" role="group" aria-label="Which attempts are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button><button class="lyr sbtn" data-s="level" aria-pressed="false">While the score was tied</button></div>
 <span class="fnote" id="nCount"></span></div>
 </details>
 <details class="zone zdisp"><summary class="zh">Trails<span class="zon" id="zTrailsOn"></span></summary>

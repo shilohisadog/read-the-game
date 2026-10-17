@@ -39,7 +39,7 @@ const whole = r => [r.lead, r.rate, r.absent].filter(Boolean).join(' ');
 test('the leader of the level count is named, with both numbers and the result', () => {
   const r = say({});
   assert.match(r.lead, /BUF led the attempts 55–47/);
-  assert.match(r.lead, /led 30–18 while the score was level/);
+  assert.match(r.lead, /led 30–18 while the score was tied/);
   assert.match(r.lead, /BUF lost\./);
   /* ⭐ BOTH SIDES, SUMMING TO THE POPULATION — Kevin's compromise, 2026-10-01,
      between a loss framing that teaches and a win framing that reads naturally.
@@ -52,7 +52,7 @@ test('the leader of the level count is named, with both numbers and the result',
  * ⛔⛔ THE TWO HALVES MUST CLOSE, OR THE SENTENCE INVENTS GAMES.
  *
  * The win count is not published — it is `n - count`, and that subtraction is
- * only wins because `archive.js::eligible` refuses a game whose score is level:
+ * only wins because `archive.js::eligible` refuses a game whose score is tied:
  * "no winner; NHL games always have one". If a third outcome ever enters that
  * function the sentence quietly starts claiming victories nobody had, with every
  * other test here still green: the prose would stay grammatical, the fraction
@@ -97,7 +97,7 @@ test('the winner is stated as plainly as the loser, and carries the same rate', 
 
 test('no edge is a real answer, and 264 games have one', () => {
   const r = say({ diff: 0 });
-  assert.equal(r.lead, 'Neither team controlled play while the score was level.');
+  assert.equal(r.lead, 'Neither team controlled play while the score was tied.');
   assert.equal(r.rate, null, 'there is no edge to have a rate about');
   assert.equal(r.absent, null, 'and nothing is missing that needed explaining');
 });
@@ -116,7 +116,7 @@ test('the rate is ALWAYS a fraction and never a bare percentage', () => {
 
 test('NO CAUSAL CONNECTIVE joins the game to the rate', () => {
   // CHENG offered this as a precaution; the confound gives it a mechanism.
-  // `level` counts attempts taken WHILE the score was level, so its size depends
+  // `level` counts attempts taken WHILE the score was tied, so its size depends
   // on how long the game stayed level — a team up 3-0 early has few available.
   // The reference class is therefore selected on a variable related to the
   // outcome, and a causal reading is not merely unsupported but wrong.
@@ -172,14 +172,14 @@ test('a shootout is never reported as what the PLAY produced', () => {
   const wonIt = say({ shootout: true, score: { h: 3, a: 2 } });
 
   for (const r of [lostIt, wonIt]) {
-    assert.match(r.lead, /The game was level when play ended/);
+    assert.match(r.lead, /The game was tied when play ended/);
     assert.doesNotMatch(r.lead, /BUF (won|lost)\./,
       'the control leader is never said to have won or lost a shootout game');
     assert.doesNotMatch(r.lead, /MIN (won|lost)\.$/);
     // The game still says what it WAS — the counts are unaffected, and they are
     // the honest part.
     assert.match(r.lead, /BUF led the attempts 55–47/);
-    assert.match(r.lead, /led 30–18 while the score was level/);
+    assert.match(r.lead, /led 30–18 while the score was tied/);
   }
   // And the shootout's winner is named, because it is a fact and the reader can
   // see it on the scoreboard. MIN won 3-2 in the first, BUF won 3-2 in the second.
@@ -256,7 +256,7 @@ test('an unnamed competition degrades to a true sentence, not a broken one', () 
 test('⭐ a game with NO EDGE is still told it is outside the population', () => {
   // FOUND BY LOOKING, not by reasoning: the first all-star game opened from the
   // new calendar — MCD at MAT, 3 February 2024 — rendered "Neither team
-  // controlled play while the score was level." and nothing else. The scope
+  // controlled play while the score was tied." and nothing else. The scope
   // check sat AFTER the no-edge early return, so a game with no control edge
   // never reached it.
   //
@@ -299,7 +299,7 @@ test('the sign of the differential is read, never assumed', () => {
   // side led would name the wrong club in every game the visitors controlled,
   // and would still read perfectly.
   const visitorLed = say({ diff: -12, levelCounts: { [HOME]: 18, [AWAY]: 30 } });
-  assert.match(visitorLed.lead, /MIN led 30–18 while the score was level/);
+  assert.match(visitorLed.lead, /MIN led 30–18 while the score was tied/);
   assert.match(visitorLed.lead, /MIN won\./, 'MIN won 3-2, and MIN led the level count');
 });
 

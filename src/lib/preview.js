@@ -111,7 +111,7 @@ export const CLUB_ROWS = [
        ⚠️ "BOTH SIDES" AGAIN MEANS THIS CLUB AND ITS OPPONENTS. Spelling it "both
        clubs" would read as WSH against TBL — the trap the note above already
        names, arriving one line lower. */
-    counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score level',
+    counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score tied',
     /* THE ONE INDUSTRY LABEL ON THE SITE, and it may only sit on strict 5-on-5
        (`1551`) — score-close and score-adjusted CF% are different defined terms.
        The level condition is not decoration: every trailing club pushes, so a

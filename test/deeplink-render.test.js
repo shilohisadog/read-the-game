@@ -81,7 +81,7 @@ function fakeDom() {
   const byId = new Map();
   const GROUPS = {
     '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
-    '#rg .sbtn': [['all', 'All situations'], ['even', 'Even strength only'], ['level', 'While the score was level']]
+    '#rg .sbtn': [['all', 'All situations'], ['even', 'Even strength only'], ['level', 'While the score was tied']]
       .map(([s, textContent]) => Object.assign(el(), { dataset: { s }, textContent })),
     /* ⏹ THE `.sbtn` STUB WENT ON 2026-09-07 WITH THE CONTROL ITSELF, and it is
        named here rather than silently dropped: a fake that keeps modelling a
@@ -291,7 +291,7 @@ for (const [q, want, label] of [
   ['?strength=all', 'all', 'ALL SITUATIONS'],
   ['', 'all', 'ALL SITUATIONS'],                 // the page's own default
   ['?strength=sideways', 'all', 'ALL SITUATIONS'], // garbage falls back, visibly
-  ['?strength=level', 'level', 'SCORE LEVEL, 5-ON-5, REGULATION'],
+  ['?strength=level', 'level', 'SCORE TIED, 5-ON-5, REGULATION'],
 ]) {
   test(`the layer box states the mode the URL asked for: "${q}" -> ${label}`, () => {
     const d = open(q ? `${q}&layer=corsi&at=2-10:00` : '?layer=corsi&at=2-10:00');

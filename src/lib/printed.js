@@ -218,7 +218,7 @@ const PRINTED = {
       { is: 'While trailing', at: ['census', 'pace', 'evenTrail'],
         said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
         as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
-      { is: 'While the score is level', at: ['census', 'pace', 'evenTied'],
+      { is: 'While the score is tied', at: ['census', 'pace', 'evenTied'],
         said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
         as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
       { is: 'While leading', at: ['census', 'pace', 'evenLead'],
@@ -233,7 +233,7 @@ const PRINTED = {
        the fix, and kept "above", which was the defect — on a page where this
        sits in a different place entirely. */
     why: 'It is the evidence behind the condition on the 5-on-5 number. '
-       + 'That one is measured only while the score is level, '
+       + 'That one is measured only while the score is tied, '
        + 'and this is why: the same teams, at the same strength, take a '
        + 'measurably different number of attempts depending on nothing but the '
        + 'scoreboard. Part of any attempt lead is the time a team spent behind.',

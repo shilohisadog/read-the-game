@@ -462,7 +462,7 @@ test('⭐⭐ the score-effects card is measured at EVEN STRENGTH, and says so', 
   const tied = (fig, subject) => new RegExp(`${fig}(?: shot attempts)? ${subject}`);
   assert.match(blurb, tied(r('evenTrail'), 'while trailing'),
     `the trailing rate (${r('evenTrail')}) is not the one attributed to trailing`);
-  assert.match(blurb, tied(r('evenTied'), 'while the score is level'),
+  assert.match(blurb, tied(r('evenTied'), 'while the score is tied'),
     `the level rate (${r('evenTied')}) is not the one attributed to a level score`);
   assert.match(blurb, tied(r('evenLead'), 'while leading'),
     `the leading rate (${r('evenLead')}) is not the one attributed to leading`);

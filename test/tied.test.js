@@ -1,5 +1,5 @@
 /**
- * Control while the score was level.
+ * Control while the score was tied.
  *
  * WHY THIS MODULE EXISTS AT ALL. The featured game on the homepage is chosen by
  * ranking every game in the archive on this number, so it decides what a novice
@@ -44,7 +44,7 @@ const goal = (actor, o = {}) => shot(actor, { type: 'goal', ...o });
 
 const run = events => tiedControl.reduce(events, CTX);
 
-test('attempts with the score level are counted for the shooting team', () => {
+test('attempts with the score tied are counted for the shooting team', () => {
   const r = run([shot(1), shot(1), shot(2)]);
   assert.equal(r.t[HOME], 2);
   assert.equal(r.t[AWAY], 1);
@@ -56,7 +56,7 @@ test('the goal that breaks the tie is itself counted', () => {
   // own state would silently drop one attempt per lead change, and the error
   // would be invisible because the count would still look plausible.
   const r = run([goal(1)]);
-  assert.equal(r.t[HOME], 1, 'the go-ahead goal happened while the score was level');
+  assert.equal(r.t[HOME], 1, 'the go-ahead goal happened while the score was tied');
 });
 
 test('once someone leads, attempts stop counting and say why', () => {

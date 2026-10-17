@@ -680,7 +680,7 @@ export function summarise(records) {
   featured.sort((x, y) => y.edge - x.edge || x.id - y.id);
 
   return {
-    rule: '5-on-5 shot attempts taken while the score was level, in regulation',
+    rule: '5-on-5 shot attempts taken while the score was tied, in regulation',
     scope: POPULATION,
     /* ⭐ WHAT THIS DOCUMENT IS MEASURED THROUGH — the newest game date among the
        games above, derived from them, so this file stays a function of its input.
@@ -722,7 +722,7 @@ export function summarise(records) {
       // and exactly zero is no edge — which `rateOf` drops from `n`.
       moreLevelControlLost:
         rateOf(games, g => [g.level, 0],
-               'the team that controlled play while the score was level lost'),
+               'the team that controlled play while the score was tied lost'),
     },
   };
 }
