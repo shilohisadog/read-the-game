@@ -729,14 +729,15 @@ HELPERS = r"""  var $ = function (id) { return document.getElementById(id); };
     return e.length ? e[e.length - 1] : null;
   }
   /* A DATED PAGE OLDER THAN TODAY'S says its date and offers today's; the newest
-     edition says nothing, since it is today's. `rest` is the undated link's tail. */
-  function asOf(id, ed, newest, rest) {
+     edition says nothing, since it is today's. `rest` is the undated link's tail;
+     null means there is no today's to offer, and `end` closes the sentence. */
+  function asOf(id, ed, newest, rest, end) {
     var p = $(id);
     p.textContent = '';
     p.hidden = ed === newest;
     if (p.hidden) return;
-    p.appendChild(el('strong', null, 'Figures as of ' + when(ed) + '. '));
-    p.appendChild(el('a', null, 'See today\u2019s \u2192')).href = location.pathname + (rest || '');
+    p.appendChild(el('strong', null, 'Figures as of ' + when(ed) + (end || '. ')));
+    if (rest != null) p.appendChild(el('a', null, 'See today\u2019s \u2192')).href = location.pathname + rest;
   }
   function withAsof(href) {
     if (!ASOF) return href;
@@ -4175,14 +4176,17 @@ __HELPERS__
                                game: upcoming ? null : r[4], players: r[5] },
                           ed ? man.sealedAt : new Date().toISOString());
           draw(p);
-          sayEdition(ed, p, newestOf(got[1]));
+          sayEdition(ed, p, newestOf(got[1]), !!r[4]);
         });
     });
   }
 
   /* WHICH VERSION THIS IS — said only when it differs from today's. The newest
-     edition IS today's figures, so it says nothing (Kevin, 2026-10-17). */
-  function sayEdition(ed, p, newest) {
+     edition IS today's figures, so it says nothing (Kevin, 2026-10-17).
+     A game since played has no "today's" preview: the undated link redirects to
+     the edition before the game (functions/_middleware.js::editionFor). */
+  function sayEdition(ed, p, newest, played) {
+    if (ed && played) return asOf('pvedition', ed, null, null, ', going into the game.');
     if (ed) return asOf('pvedition', ed, newest, '?game=' + q);
     var line = ASOF ? 'No saved version exists for ' + when(ASOF) + ', so these are today\u2019s figures.'
       : p.state === 'played' ? 'This preview was not saved before the game, so these are '
@@ -5662,7 +5666,7 @@ __HELPERS__
   (ASOF ? Promise.all([grab('editions/' + ASOF + '/data/measures.json'), grab('editions/index.json')])
         : Promise.resolve([null, null])).then(function (got) {
     var saved = got[0];
-    if (ASOF && saved) asOf('hmedition', ASOF, newestOf(got[1]), location.hash);
+    if (ASOF && saved) asOf('hmedition', ASOF, newestOf(got[1]), location.hash || '');
     else if (ASOF) {
       $('hmedition').textContent = 'No saved version exists for ' + when(ASOF) + ', so this is today\u2019s arithmetic.';
       $('hmedition').hidden = false;

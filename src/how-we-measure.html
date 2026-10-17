@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rIAhqiTLeWPtAzFxKDWSHjXTqil2HMM8Y8eTFqAxfEk=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BYjyiyrf2vVJ+qHxdeAZx+40nVkq8RXSOY5WBw/Od+o=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1929,13 +1929,13 @@ function sections(create) {
     var e = (index && index.editions) || [];
     return e.length ? e[e.length - 1] : null;
   }
-  function asOf(id, ed, newest, rest) {
+  function asOf(id, ed, newest, rest, end) {
     var p = $(id);
     p.textContent = '';
     p.hidden = ed === newest;
     if (p.hidden) return;
-    p.appendChild(el('strong', null, 'Figures as of ' + when(ed) + '. '));
-    p.appendChild(el('a', null, 'See today\u2019s \u2192')).href = location.pathname + (rest || '');
+    p.appendChild(el('strong', null, 'Figures as of ' + when(ed) + (end || '. ')));
+    if (rest != null) p.appendChild(el('a', null, 'See today\u2019s \u2192')).href = location.pathname + rest;
   }
   function withAsof(href) {
     if (!ASOF) return href;
@@ -2192,7 +2192,7 @@ function sections(create) {
   (ASOF ? Promise.all([grab('editions/' + ASOF + '/data/measures.json'), grab('editions/index.json')])
         : Promise.resolve([null, null])).then(function (got) {
     var saved = got[0];
-    if (ASOF && saved) asOf('hmedition', ASOF, newestOf(got[1]), location.hash);
+    if (ASOF && saved) asOf('hmedition', ASOF, newestOf(got[1]), location.hash || '');
     else if (ASOF) {
       $('hmedition').textContent = 'No saved version exists for ' + when(ASOF) + ', so this is today\u2019s arithmetic.';
       $('hmedition').hidden = false;

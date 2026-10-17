@@ -1554,6 +1554,18 @@ test('⭐ the newest edition says nothing; an older one says its date and offers
   assert.equal(a.href, `/preview?game=${GID}`, 'today\'s link must drop the date');
 });
 
+test('⛔ once the game is played, the edition line offers no "today\'s" — that link redirects back here', async () => {
+  const played = { game: { id: GID, date: '2026-10-02', type: 2 },
+    teams: { away: { ab: 'BUF', id: 7 }, home: { ab: 'PIT', id: 5 } },
+    quoted: { away: { score: 2 }, home: { score: 3 } }, roster: {} };
+  const p = runPaths({ ...LATER, ...edition(DOCS), [`extract/${GID}.json`]: played,
+                       'editions/index.json': { editions: [ED, '2026-10-09'] } },
+                     `?game=${GID}&asof=${ED}`, '2026-10-10T12:00:00Z');
+  await p.settle();
+  assert.equal(p.ids.pvedition.hidden, false);
+  assert.deepEqual(p.ids.pvedition.kids.map(k => k.textContent), ['Figures as of October 1, 2026, going into the game.']);
+});
+
 test('⛔ a saved preview stays as it stood: no score for a game still on that night\'s schedule', async () => {
   const played = { game: { id: GID, date: '2026-10-02', type: 2 },
     teams: { away: { ab: 'BUF', id: 7 }, home: { ab: 'PIT', id: 5 } },
