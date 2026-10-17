@@ -40,7 +40,7 @@ html,body{margin:0;height:100%;background:#0b121a;color:#fff;font:14px/1.35 syst
 </head>
 <body>
 <canvas id="cv"></canvas><div class="vig" id="vig"></div>
-<div class="hud"><div class="who" id="who"></div><div class="what" id="what"></div><div class="tip" id="tip" hidden></div></div>
+<div class="hud"><div class="who" id="who"></div><div class="what" id="what"></div><div class="tip" id="tip" hidden></div><div class="tip" id="near" hidden>Too close to see from the crease — shown from behind the net</div></div>
 <div class="side" id="side"></div>
 <div class="stamp" id="stamp"></div>
 <div class="info" id="info"><b>What's recorded, and drawn:</b> where the shot was taken from, whether it was saved or went in, the shot type, the shooter's team, number, height and which way he shoots, and who was in net.<br><br>
@@ -136,8 +136,11 @@ function target(s) {
     const dist = from.distanceTo(chest);
     return Math.min(S.baseFov(), Math.max(12, THREE.MathUtils.radToDeg(2 * Math.atan((H / 0.42) / 2 / dist))));
   };
-  if (seat === 'crease') { const pos = new THREE.Vector3(0, 3.9, -2.2); return { pos, look: chest, fov: lens(pos) }; }
-  if (seat === 'net') { const pos = new THREE.Vector3(s.w * -0.12, 6.4, 9.5); return { pos, look: chest, fov: lens(pos) }; }
+  // Closer than 10 ft the shooter is on top of the crease camera, so it steps back behind the net.
+  const near = seat === 'crease' && Math.hypot(s.d, s.w) < 10;
+  $('near').hidden = !near;
+  if (seat === 'crease' && !near) { const pos = new THREE.Vector3(0, 3.9, -2.2); return { pos, look: chest, fov: lens(pos) }; }
+  if (seat === 'net' || near) { const pos = new THREE.Vector3(s.w * -0.12, 6.4, 9.5); return { pos, look: chest, fov: lens(pos) }; }
   return { pos: new THREE.Vector3(-58, 34, -s.d * 0.55 - 4), look: new THREE.Vector3(s.w * 0.5, 0, -s.d * 0.5), fov: S.baseFov() };
 }
 const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
