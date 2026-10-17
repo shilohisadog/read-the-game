@@ -32,50 +32,47 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-15 (end of day)
+## ⏭ 0.00 PICK UP HERE — 2026-10-17
+
+### ✅ Done 2026-10-15 → 17, each verified on the live site
+
+- **The measures audit** (`docs/measures-audit.md`) and **the list of measures**
+  (`src/lib/registry.js`, `test/registry.test.js`) — the meaning half of the data-model
+  review. Kevin's rulings 1–6 built:
+  1. every surface reads its wording from the list (`8b97ca2`);
+  2. "level" = strict 5-on-5, one definition (`b3ae498`), and the score is **tied**,
+     never "level", on every page (`fc4cc3c`);
+  3. the whole-game panel ranks save % and offensive-zone face-offs; the slot box
+     divides by located attempts (`776185b`);
+  4. typical shift = the mean, 47.8 s, shown as a division; median, band and
+     under-a-minute share deleted (`0463592`);
+  5. Attempts has one name; **Who shoots** is the seventh chip (`0787b58`);
+  6. unread `measures.json` keys deleted, 39.7 → 32.7 KB (`91ed1d0`, `17b441b`).
+- **Data-model item 9:** a derive takes 3 min 14 s, down from 31 (`ac829b2`).
+- **Front door:** a started night we do not hold yet is announced (`c5c465d`); the
+  nightly "more attempts lost X of Y" line is gone (`710515d`).
 
 ### ⏭ NEXT, in Kevin's order
 
-1. **The measures audit — DONE as a document** (`docs/measures-audit.md`), Kevin ruled
-   §6 the same day. **The list of measures is BUILT** (`src/lib/registry.js`, held to
-   every surface's keys and wordings by `test/registry.test.js`) but no surface READS
-   it yet. Next, one commit each, every one verified on the live site:
-   ✅ (a) surfaces take their name/says from the list (2026-10-15: preview rows,
-   player rows, tiles, methods headings, layer labels, chips — rendered text of two
-   previews and the methods page byte-identical before/after, game page DOM
-   unchanged over 270 frames); ✅ (b) ruling 3 (`776185b`; new per-team classes
-   `savePct`, `ozStarts`; derive 38805112349 republished, verified live: marks at
-   the published positions) — the whole-game
-   panel ranks save fraction and offensive-zone face-offs, the slot box divides by
-   located attempts; ✅ DONE `ac829b2`, measured: derive 31 min → 3 min 14 s (run 38811819027: pull 30 s,
-   390 files; upload 32 s, 4,658 of 4,658 extracts unchanged so ETag = MD5 holds on R2).
-   Was: data-model item 9 — the derive spends ~13 of
-   its ~20 min (31 min on 2026-10-15: pull 18.5, upload 11) re-downloading ~18,000 immutable raw files to a fresh runner (derive 38 s,
-   measure 6 s); cache `ingest/raw` between runs so only new games download, then time
-   the first run after; AND the extract upload (9+ min, Kevin 2026-10-15): `aws s3 sync`
-   re-sends all ~4,600 extracts because derive rewrote them (newer mtime) — upload only
-   those whose MD5 differs from the published ETag (verify ETag = MD5 on the first run);
-   ✅ (c) ruling 2 — level = strict 5-on-5 everywhere (2026-10-17, built as a deletion) (moves the
-   front door's "level leader lost" figure); ✅ (d) ruling 4 — typical shift = mean
-   (color line); ✅ (e) ruling 5 — fold level into Attempts, Goaltending unranked, add
-   the Who shoots layer; ✅ (f) ruling 6 — delete unread `measures.json` keys;
-   (g) ruling 7 — per-player face-off % (needs `losingPlayerId` kept by extract.py).
-   Each entry's `pending` field in the list names the ruling that changes it.
-2. **"Before the game / tonight"** on a played preview (now possible: editions
-   hold what the preview said).
-3. **The season over time** (new requirement): who was the player to watch most,
-   how a team's possession and every team measure moved (`docs/editions-design.md` §9).
-4. **Later:** a Verbose / Minimal choice for the color line; replay option A (goal
-   markers opening at the faceoff of the play the goal ended).
+1. **Ruling 7 — per-player face-off win %.** Needs `losingPlayerId` kept by
+   `extract.py` and a full re-derive; there is no player page yet (the preview's
+   player block is the only player surface). Proposed on the list, unbuilt: goalie
+   W–L, team face-offs, shots on goal count, pace by time of game.
+2. **"Before the game / tonight"** on a played preview.
+3. **The season over time** (`docs/editions-design.md` §9).
+4. **Later:** a Verbose / Minimal choice for the color line; replay option A.
 
-**Still waiting on Kevin:** data-model item 6, item 12 (reduced motion), the lesson
-strip below the fold on a landscape phone.
+**Still waiting on Kevin:** data-model item 6 (gshots, app.js score fallback), item 12
+(reduced motion), the lesson strip below the fold on a landscape phone.
 
-**Check 2026-10-17:** the nightly's measure job — on 10-16 it published, then failed the
-suite on the step-2 panel test (axis ends without `%`), so it never committed; fixed and the
-refresh committed by hand in `c5c465d`. A rerun cannot confirm it (it replays the old commit).
-**Also check tomorrow:** the first NIGHTLY seal — the 2026-10-16 deploy run dispatched by
-the ingest should log "Sealed the edition for 2026-10-15".
+### ⚠️ Before changing any PUBLISHED field
+
+Download the published extracts fresh, run `node builders/measure.mjs --out <dir>`,
+diff against the published `measures.json` (only the intended fields may move),
+commit it with `tools/quoted-figures.mjs` + `tools/snapshots.mjs`, gate with `&&`,
+push, dispatch `derive.yml`. Before DELETING a key, grep its bare name in the
+workflows' inline Python too. The nightly commits `measures.json` while you work: on
+a conflict, regenerate rather than pick a side.
 
 ## ⏭ 0.00 (earlier) — 2026-10-13 (evening)
 
