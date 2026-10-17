@@ -323,7 +323,7 @@ export function perGame(records) {
  * like they should add up are not.
  *
  * ⚠️ AND THE UNIT IS `team-games`, OVERRIDDEN after `distribution()`, the same way
- * `attemptMix` and `goalieNight` already override theirs. `n` here is twice the
+ * `attemptMix` already overrides its own. `n` here is twice the
  * number of games, and a reader told "34" when the figure was built from 68
  * would be reading the wrong population's weakness.
  */
@@ -489,87 +489,6 @@ export function saveShare(records) {
  * without trusting any of them — which is the only meaning of "locked in" that
  * survives somebody actually checking.
  */
-/**
- * ⭐⭐ HOW FAR OUT EACH KIND OF ATTEMPT IS RECORDED — the site's sharpest piece of
- * self-disclosure, and until now it existed only in a comment.
- *
- * `src/lib/attribution.js` explains that a blocked shot's coordinate is the
- * BLOCKER's, not the shooter's, and therefore nearer the net than the shot was
- * taken. It cites a median 24.2 ft against 33.4 for a shot on goal — over an
- * EIGHTY-GAME SAMPLE, in prose, published nowhere a page could read. A reader
- * had to take the disclaimer on trust, which is the one thing this site asks of
- * nobody.
- *
- * ⛔ NO THRESHOLD, DELIBERATELY. "Beyond 50 ft" was the tempting form and 50 is a
- * number we would have chosen — a parameter with no source, which is the defect
- * `docs/game-sentence.md` §3 removed from the goalie card rather than argued
- * separately. A distribution states the whole shape and lets the reader pick the
- * cut; the blue line, if anyone wants one, is 64 ft out (`NET_X - BLUE_LINE_X`)
- * and comes from the rink rather than from us.
- *
- * A SHARE OF A POPULATION, NOT AN OUTCOME RATE — the distinction `attemptMix`
- * turns on. There is no winner in it, so there is no causal reading to misread.
- */
-export function reachOf(records) {
-  const by = {};
-  for (const g of records) {
-    if (!g.reach) continue;      // an older record shape: counted, never guessed at
-    for (const [type, ds] of Object.entries(g.reach)) (by[type] ||= []).push(...ds);
-  }
-  const out = {};
-  for (const type of Object.keys(by).sort()) {
-    out[type] = distribution(by[type],
-      `feet from the attacking net at which a ${type.replace(/-/g, ' ')} is RECORDED `
-      + '(n counts EVENTS, not games; for a blocked shot this is where the puck was '
-      + 'stopped, which is the BLOCKER\'s position and not where the shot was taken)',
-      POPULATION);
-    out[type].unit = 'events';
-  }
-  return out;
-}
-
-/**
- * ⭐ WHAT A GOALTENDER'S NIGHT LOOKS LIKE — as two integers, never as a rate.
- *
- * The novice question behind the goaltending card is "is .900 good?", and the
- * card deliberately does not answer it in those terms: `docs/game-sentence.md`
- * §3 made it print "33 of 35" always, because a percentage over a small
- * denominator needs a minimum-n threshold and twenty was a number we chose.
- *
- * So the anchor is published in the card's own idiom. Shots faced and goals
- * allowed are both INTEGERS, which `distribution` takes unchanged, and a reader
- * forms the fraction themselves — which is the whole of what the fraction rule
- * asks for.
- *
- * ⛔ AND NO MINIMUM-SHOTS FILTER, WHICH IS A MEASURED CHOICE RATHER THAN A
- * PREFERENCE. Over a 600-game sample the middle half of the save fraction is
- * .857-.935 with no filter, .857-.935 above ten shots faced and .864-.938 above
- * twenty. The threshold does not move the answer, so the honest form is the one
- * that does not have one. `test/measure.test.js` pins the population as EVERY
- * appearance.
- *
- * `n` HERE COUNTS GOALTENDER APPEARANCES, not games — two per game when both
- * teams' starters go the distance, more when anybody is pulled. Named in `what`
- * for the reason `attemptMix` names its own unit.
- */
-export function goalieNight(records) {
-  const faced = [], allowed = [];
-  for (const g of records) {
-    if (!g.goalies) continue;    // an older record shape: counted, never guessed at
-    for (const k of g.goalies) { faced.push(k.faced); allowed.push(k.faced - k.saves); }
-  }
-  const said = '(n counts GOALTENDER APPEARANCES, not games, and excludes the shootout)';
-  const one = (v, what) => {
-    const d = distribution(v, what + ' ' + said, POPULATION);
-    d.unit = 'appearances';
-    return d;
-  };
-  return {
-    faced: one(faced, 'shots one goaltender faced in one game'),
-    allowed: one(allowed, 'goals one goaltender allowed in one game'),
-  };
-}
-
 export function slotShare(records) {
   let goalsIn = 0, goalsPlaced = 0, unplaced = 0, seen = 0;
   let attIn = 0, attPlaced = 0, attSeen = 0;
@@ -671,22 +590,8 @@ export function summarise(records) {
   // The featured list: teams that controlled play while the score was level and
   // LOST. Controlling and winning is not a paradox and not a lesson — without
   // that condition the top of the list fills with teams that dominated and won.
-  const featured = [];
-  for (const g of games) {
-    if (g.score.h === g.score.a) continue;
-    const homeLost = g.score.h < g.score.a;
-    const edge = homeLost ? g.level : -g.level;   // the loser's control edge
-    if (edge > 0) {
-      featured.push({ id: g.id, ab: homeLost ? g.homeAb : g.awayAb, edge });
-    }
-  }
-  // Ties broken by id so the file diffs cleanly and input order cannot change
-  // the output. Determinism is a property we assert, not one we hope for.
-  featured.sort((x, y) => y.edge - x.edge || x.id - y.id);
 
   return {
-    rule: '5-on-5 shot attempts taken while the score was tied, in regulation',
-    scope: POPULATION,
     /* ⭐ WHAT THIS DOCUMENT IS MEASURED THROUGH — the newest game date among the
        games above, derived from them, so this file stays a function of its input.
        Every figure below is true OF THIS SPAN and of no other, which is the fact
@@ -695,7 +600,6 @@ export function summarise(records) {
        measuring stopped. The invariant that holds it to the archive is
        `measure.mjs::measuredThrough`. */
     dataThrough: dataThrough(games),
-    featured: featured.slice(0, 10),
     // The reference class for a single game's edge. See levelCurve.
     levelCurve: levelCurve(games),
     // What those attempts turned into. A share of a population, not an outcome
@@ -706,10 +610,8 @@ export function summarise(records) {
     slot: slotShare(games),
     // ⭐ HOW FAR OUT EACH KIND OF ATTEMPT IS RECORDED. The one number that makes
     // the blocked-shot coordinate legible rather than merely disclaimed.
-    reach: reachOf(games),
     // ⭐ AND WHAT A GOALTENDER'S NIGHT LOOKS LIKE, as two integers rather than a
-    // rate — see `goalieNight`.
-    goalieNight: goalieNight(games),
+    // rate.
     // ⭐ AND WHAT A NORMAL NIGHT LOOKS LIKE — a distribution rather than a rate,
     // which is the one thing no figure above can be asked. See `perGame`.
     perGame: perGame(games),

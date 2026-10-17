@@ -151,7 +151,11 @@ mostly a merge of those, plus the definitions that are today implicit.
    **Layers, agreed:** level possession folds into Attempts as a filter;
    Goaltending stays on the rink but is not ranked as a club figure; add **Who
    shoots**. Shift length stays off the rink.
-6. **Unread `measures.json` keys: delete** (or name a reader).
+6. **Unread `measures.json` keys: delete** (or name a reader). ✅ built 2026-10-17: removed `featured`, `reach`, `goalieNight`,
+   `rule`, `scope`, `census.faceoffZone`, `census.drawStrength`, `census.state` — the file is
+   39.7 → 32.8 KB. `faceoffZone` and `state` are still TALLIED, unpublished: tests cross-check
+   `endZone`, `pace` and power-play goals against them. (`census.shift` and `census.shooter`
+   gained readers in rulings 4 and 5.)
 
 ---
 

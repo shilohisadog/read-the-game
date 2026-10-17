@@ -34,7 +34,7 @@ const page = n => readFileSync(new URL(`../src/${n}`, import.meta.url), 'utf8');
    ⚠️ Named from the module's own export list rather than invented: if one of
    these is legitimately needed by a list page one day, the right move is to
    delete it from here deliberately, which is a decision with a diff. */
-const ARCHIVE_ONLY = ['levelCurve', 'perGame', 'reachOf', 'goalieNight',
+const ARCHIVE_ONLY = ['levelCurve', 'perGame',
                       'saveShare', 'slotShare', 'summarise', 'rowFor'];
 
 for (const name of ['index.html', 'calendar.html']) {

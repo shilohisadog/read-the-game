@@ -16,7 +16,8 @@
  * WHAT EACH QUESTION IS FOR, since a measurement with no claim behind it is just
  * arithmetic:
  *
- *   faceoffZone   Is a draw worth different amounts in different places? An
+ *   faceoffZone   (Internal witness for endZone; not published.) Is a draw worth
+ *                 different amounts in different places? An
  *                 8-game sample said 2.71x in the offensive zone against 0.61x
  *                 in the defensive — which would explain why the archive's
  *                 faceoff-share result is a null (50.4%): the season total adds
@@ -26,9 +27,8 @@
  *                 the same physical draw lands in the O row or the D row
  *                 depending only on who won. This fixes the end and splits by
  *                 who won, so the place is held constant.
- *   drawStrength  Is a draw worth more on the power play? 8 games said 4.50x
- *                 against 1.29x at even strength.
- *   state         Goals per sixty minutes of even strength against the same on
+ *   state         (Internal witness for pace and power-play goals; not published.)
+ *                 Goals per sixty minutes of even strength against the same on
  *                 a power play. 8 games said 4.65 and 7.40.
  *   club          Per club-game hits and attempts, so the "you hit the team that
  *                 has the puck" hypothesis can be tested. CHENG proposed it and
@@ -159,7 +159,6 @@ export function censusGame(events, ctx) {
 
   const faceoffZone = { O: zeroSplit(), N: zeroSplit(), D: zeroSplit() };
   const endZone = { won: { n: 0, atk: 0, def: 0, g: 0 }, lost: { n: 0, atk: 0, def: 0, g: 0 } };
-  const drawStrength = { even: zeroSplit(), pp: zeroSplit() };
   const state = { even: { secs: 0, goals: 0 }, pp: { secs: 0, goals: 0 },
                   en: { secs: 0, goals: 0 }, unknown: { secs: 0, goals: 0 } };
   const club = { h: { hits: 0, attempts: 0 }, a: { hits: 0, attempts: 0 } };
@@ -347,12 +346,6 @@ export function censusGame(events, ctx) {
       t.g   += won ? gw : gl;
     }
 
-    // Was the draw won by a club that had the advantage?
-    const s = situation(e.sit, ctx);
-    if (s != null) {
-      if (s.kind === EVEN) add(drawStrength.even);
-      else if (s.kind === POWER_PLAY && e.own === s.advantage) add(drawStrength.pp);
-    }
   }
 
   /* ⭐ THE CORRELATION IS CARRIED AS SUFFICIENT STATISTICS, NOT AS A RATE.
@@ -382,7 +375,9 @@ export function censusGame(events, ctx) {
   shift.players = seen.size;
 
   whistles.ppChances = ppOpportunities(events, ctx);
-  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter, pace, shift, whistles };
+  // faceoffZone and state are internal witnesses (tests cross-check endZone, pace and
+  // power-play goals against them); censusRates does not publish them.
+  return { faceoffZone, endZone, state, club, hitCorr, shooter, pace, shift, whistles };
 }
 
 /** Add one game's census into a running total, in place. */
@@ -424,31 +419,6 @@ export function censusRates(t) {
   return {
     games: t.games || 0,
     // What a draw is worth where it happens, and who it is worth it to.
-    faceoffZone: {
-      ...Object.fromEntries(['O', 'N', 'D'].map(k => {
-        const z = t.faceoffZone?.[k] || { n: 0 };
-        return [k, { n: z.n || 0, winnerPerDraw: perDraw(z),
-                     loserPerDraw: z.n > 0 ? +(z.al / z.n).toFixed(3) : null,
-                     ratio: ratio(z.aw, z.al) }];
-      })),
-      /* ⚠️ THE SENTENCE SAYS THE THING THAT MAKES THIS FIGURE EASY TO MISREAD.
-         O and D are the SAME physical draws sorted by who won them, so "the
-         offensive zone" here means "draws this club won in it" and the place
-         cannot be separated from the win. `endZone` is the version that can.
-         A reader who does not know that will read these three rows as a
-         comparison of places, which they are not. */
-      what: 'face-offs sorted by the zone the team that WON them was attacking '
-          + 'toward, and the shot attempts each team took before the next '
-          + 'whistle (n counts FACE-OFFS, not games). The offensive and '
-          + 'defensive rows are the same draws seen from the two sides, so this '
-          + 'cannot separate where a draw happened from who won it \u2014 '
-          + 'endZone is the pair that can, because it splits by which team was '
-          + 'attacking that end rather than by the winner.',
-    },
-    /* THE CONTROLLED ANSWER, and the one a sentence may quote. `zoneWorth` is
-       what the attacking club generates having LOST the draw — that is what
-       being there is worth on its own — and `winningWorth` is what winning it
-       adds on top. An 8-game sample put those at 1.29 and 0.30. */
     endZone: {
       n: ezN,
       /* ⭐⭐ WHAT THE ZONE IS WORTH, ASKED WITHOUT ASKING WHO WON THE DRAW —
@@ -522,48 +492,6 @@ export function censusRates(t) {
       }
       return out;
     })(),
-    drawStrength: {
-      ...Object.fromEntries(['even', 'pp'].map(k => {
-        const z = t.drawStrength?.[k] || { n: 0 };
-        return [k, { n: z.n || 0, ratio: ratio(z.aw, z.al) }];
-      })),
-      what: 'face-offs split by whether the team that won them was at even '
-          + 'strength or on the power play, and the shot attempts that team '
-          + 'took before the next whistle set against the attempts the team '
-          + 'that lost the draw took (n counts FACE-OFFS, not games). A draw '
-          + 'won on the power play is followed by a power play, so this says '
-          + 'what winning one is worth in that situation and not what the draw '
-          + 'itself contributed.',
-    },
-    state: {
-      ...Object.fromEntries(['even', 'pp', 'en', 'unknown'].map(k => {
-        const s = t.state?.[k] || { secs: 0, goals: 0 };
-        return [k, { minutes: +(s.secs / 60).toFixed(1), goals: s.goals, per60: per60(s) }];
-      })),
-      /* ⚠️ `unknown` IS NAMED IN THE SENTENCE, because a bucket a reader cannot
-         see is a bucket they will assume is empty. It is the play whose skater
-         count the record does not let us settle, and its size is the honest
-         limit on every other row here. */
-      what: 'the minutes played in each situation and the goals scored in them, '
-          + 'scaled to sixty \u2014 even strength, on the power play, and with a '
-          + 'net empty (minutes counts MINUTES and goals counts GOALS, neither '
-          + 'counts games). The unknown row is play whose skater count the '
-          + 'record does not settle, and it is published even at zero because a '
-          + 'bucket that appears only when it is full is one nobody notices '
-          + 'arriving.',
-    },
-    /* ⭐⭐ HOW FAST A CLUB ATTEMPTS, BY THE TWO CONDITIONS THAT MOVE THE COUNT
-       WITHOUT ANYBODY PLAYING BETTER. `attemptMix` says what an attempt becomes
-       and `state` says how often a goal arrives; neither says how the SITUATION
-       changes the rate the site puts on screen. That is the gap Kevin found in
-       the learn cards — no card, and no sentence anywhere, explains what "all
-       situations" costs the number a reader is watching.
-
-       ⛔ RATES ARE PER CLUB-HOUR, and the accumulator's own comment says why.
-       ⭐ `balanced` IS THE INVARIANT PUBLISHED AS A FACT: one club leads exactly
-       when the other trails, so those two buckets must cover identical seconds.
-       Published even when true, for the reason `unknown` is — a field that only
-       appears when it breaks is a field nobody notices arriving. */
     pace: (() => {
       const KEYS = ['even', 'ppFor', 'ppAgainst', 'lead', 'tied', 'trail',
                     'evenLead', 'evenTied', 'evenTrail'];

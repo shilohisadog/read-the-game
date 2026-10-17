@@ -316,7 +316,8 @@ test('⭐ the census measurements that a page prints say what they are', () => {
      and a new one arrives red. */
   const r = censusRates(censusAdd({}, censusGame(GAMES[0].events, ctxOf(GAMES[0]))));
   const published = Object.keys(r).filter(k => r[k] && typeof r[k] === 'object');
-  assert.ok(published.length >= 9,
+  // Six since ruling 6 (2026-10-17): faceoffZone, state and drawStrength are no longer published.
+  assert.ok(published.length >= 6,
     `only ${published.length} census sub-objects found — the scan is looking at the wrong shape`);
   assert.deepEqual(published.filter(k => typeof r[k].what !== 'string'), [],
     'a census sub-object publishes figures and no sentence saying what they are');
@@ -326,48 +327,6 @@ test('⭐ the census measurements that a page prints say what they are', () => {
     assert.doesNotMatch(r[k].what, /\d[\d,]*\.?\d*\s?%|\b\d{3,}\b/,
       `census.${k}'s what states a FIGURE — a number typed into prose beside the `
       + 'code that computes it is the same drift one step earlier');
-  }
-});
-
-test('a power-play draw was won BY the club with the advantage, and the gap is the refusal', () => {
-  /* ⚠️ THE OBVIOUS IMPLEMENTATION IS WRONG AND IT IS WRONG QUIETLY. "A faceoff
-     that happened during a power play" counts the SHORT-HANDED club's wins into
-     the power-play bucket, which is a different question with a different answer
-     — and the ratio would look entirely reasonable. Same shape as the
-     short-handed goal rule, where "fewer skaters" is not "penalised".
-
-     ⭐⭐ THIS USED TO CARRY A CORRECTION TERM, AND THE CORRECTION IS NOW ZERO.
-     The census asked `situation()`, which knew EIGHT LITERAL CODES and refused
-     the rest, so five-on-three draws were counted by the hand-rule below and
-     refused by the census. The test allowed for that by subtracting the refused
-     ones — and to do it, it carried a NINTH copy of those eight codes right
-     here. A test holding its own duplicate of the list under test is the drift
-     it was written to detect, one file further along.
-
-     `situation()` now reads the digits, so the two counts agree EXACTLY and the
-     allowance is gone. That is strictly stronger: an exact equality has no slack
-     for a future refusal to hide in, so the day the league sends a code we
-     cannot read during a power-play draw, this fails and names it — which is the
-     "somebody looks" the correction term was standing in for. The hand-rule
-     stays fully independent: it reads `sit` and never asks `census.js`. */
-  for (const g of GAMES) {
-    const c = censusGame(g.events, ctxOf(g));
-    const ctx = ctxOf(g);
-    let byHand = 0;
-    const seen = new Set();
-    for (const e of g.events) {
-      if (e.type !== 'faceoff' || e.own == null || e.x == null || e.pt === 'SO') continue;
-      if (!e.sit || e.sit.length !== 4) continue;
-      const aw = +e.sit[1], hm = +e.sit[2];
-      if (e.sit[0] === '0' || e.sit[3] === '0' || aw === hm) continue;
-      const advantage = aw > hm ? ctx.awayId : ctx.homeId;
-      if (e.own !== advantage) continue;
-      byHand++; seen.add(e.sit);
-    }
-    assert.equal(c.drawStrength.pp.n, byHand,
-      `game ${g.game.id}: the census counted ${c.drawStrength.pp.n} power-play draws and ` +
-      `the ice held ${byHand}. The codes involved were ${[...seen].sort().join(', ')} — ` +
-      `if one of those is new, the decoder refused it and the census lost a draw.`);
   }
 });
 
@@ -479,8 +438,6 @@ test('a rate with no denominator is null, never zero', () => {
      when what happened is that no five-on-three occurred. Same standing
      `situation()` takes on a code it does not know. */
   const r = censusRates({});
-  assert.equal(r.state.pp.per60, null);
-  assert.equal(r.faceoffZone.O.winnerPerDraw, null);
   assert.equal(r.endZone.zoneWorth, null);
   assert.equal(r.hits.r, null);
   assert.equal(r.games, 0);

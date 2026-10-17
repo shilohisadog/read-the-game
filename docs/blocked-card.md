@@ -5,7 +5,7 @@
 > run that was current when it was written, and they are the evidence its
 > argument was made from. **The archive now holds 4,312 measured games**, and
 > the three base rates are **54.1% of 4,215** (the team with more shot attempts lost),
-> **45.6% of 4,141** (more shots on goal) and **39.7% of 4,038** (more control while the score
+> **45.6% of 4,142** (more shots on goal) and **39.7% of 4,038** (more control while the score
 > was level). The body below is left exactly as it was argued — see
 > [README.md](README.md) on why a measurement here is dated rather than updated.
 <!-- /snapshot -->

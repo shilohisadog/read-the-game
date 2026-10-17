@@ -33,9 +33,6 @@ import { zonestart } from '../src/lib/layers/zonestart.js';
 import { shooters } from '../src/lib/layers/shooters.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { situation, DECLINED } from '../src/lib/strength.js';
-// The SAME two functions danger.js calls at line 118 — a distance measured here
-// cannot disagree with a distance measured by the layer.
-import { attackDirection, distanceToNet } from '../src/lib/rink.js';
 import { inScope, summarise, dataThrough, playerSeasons } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 import { reliability, agreement } from '../src/lib/reliability.js';
@@ -158,35 +155,6 @@ export function measureGame(g) {
     if (inSlot.has(id)) goals.slot++;
   }
 
-  /* ⭐⭐ HOW FAR OUT EACH KIND OF ATTEMPT IS RECORDED — the number that makes the
-     blocked-shot coordinate legible instead of merely disclaimed.
-
-     `src/lib/attribution.js` has said for months that a blocked shot's
-     coordinate is the BLOCKER's and therefore nearer the net than the shot was
-     taken, citing a median 24.2 ft against 33.4 for a shot on goal — over an
-     EIGHTY-GAME SAMPLE, in a comment, published nowhere. It is the site's
-     sharpest piece of self-disclosure and no page could read it.
-
-     ⭐ THE DIRECTION RULE IS `danger.js`'s, IMPORTED. `attackDirection` and
-     `distanceToNet` are the same two functions the slot layer calls at
-     danger.js:118, so a distance measured here cannot disagree with a distance
-     measured there. Restating either would be a second answer to a question
-     src/lib already answers, which is the one thing this file exists not to do.
-
-     ⛔ AND A MEDIAN NEEDS NO THRESHOLD. "Beyond 50 ft" was the tempting form and
-     50 is a number we would have chosen — a parameter with no source, which is
-     the defect `docs/game-sentence.md` §3 removed from the goalie card. The
-     distances are published as a distribution and the reader picks the cut. */
-  const reach = {};
-  for (const id of all.counted) {
-    const e = g.events[id];
-    if (e.x == null || e.y == null) continue;
-    const team = shootingTeam(e, g.roster);
-    if (team == null) continue;          // unresolvable, and never guessed at
-    (reach[e.type] ||= []).push(
-      Math.round(distanceToNet(e.x, e.y, attackDirection(team, ctx.homeId))));
-  }
-
   const goalies = [];
   for (const [pid, v] of Object.entries(nets.g)) {
     const p = g.roster[pid];
@@ -243,7 +211,7 @@ export function measureGame(g) {
     // Blocks CREDITED to each side — the team that did the blocking, which is
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
-    slot, located, goals, goalies, reach, faced, saves, oz,
+    slot, located, goals, goalies, faced, saves, oz,
     /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
        rink puts a live count on each lens, and it is `LEDGER[id](sl)
        .counted.length` for every one of them — so a reference class built on
@@ -818,7 +786,6 @@ function main(argv) {
     seasonThrough: Object.fromEntries(Object.entries(doc.perGame)
       .map(([y, e]) => [y, `${e.corsi && e.corsi.n} game(s) through ${e.dataThrough}`])),
     skippedNoQuote: skipped.length,
-    featured: doc.featured[0],
     rates: Object.fromEntries(Object.entries(r).map(([k, v]) =>
       [k, v.rate == null ? null : `${(v.rate * 100).toFixed(1)}% of ${v.n}`])),
     seasons: Object.fromEntries(Object.entries(teams.seasons).map(([y, t]) =>
@@ -832,9 +799,6 @@ function main(argv) {
       // this table does not have. See the header of layers/zonestart.js.
       draw: `attacking club ${doc.census.endZone.zoneWorth}/draw having lost it, +`
           + `${doc.census.endZone.winningWorth} (n=${doc.census.endZone.n})`,
-      drawOnPP: `${doc.census.drawStrength.pp.ratio}x on the power play vs `
-          + `${doc.census.drawStrength.even.ratio}x at even strength`,
-      goalsPer60: `even ${doc.census.state.even.per60}, power play ${doc.census.state.pp.per60}`,
       /* WHAT THE SITUATION DOES TO THE NUMBER ON SCREEN, which is the thing no
          learn card explained (Kevin, 2026-09-10). Per CLUB-hour. */
       pace: `attempts/60 — even ${doc.census.pace.even.per60}, on the power play `
@@ -851,8 +815,6 @@ function main(argv) {
           + `leading ${doc.census.pace.evenLead.per60} `
           + `(${doc.census.pace.trailingLiftEven}x)`,
       hits: `r=${doc.census.hits.r}, opposite in ${doc.census.hits.opposite} of games`,
-      unreadableStrength: `${doc.census.state.unknown.minutes} min of play whose `
-          + `situation code strength.js does not know`,
       shooter: `a defenceman's attempt is blocked `
           + `${(doc.census.shooter.D.blocked * 100).toFixed(1)}% of the time and a `
           + `forward's ${(doc.census.shooter.F.blocked * 100).toFixed(1)}%; they score `

@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole, measuredThrough, newestNight } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
-import { summarise, slotShare, perGame, reachOf, goalieNight, dataThrough } from '../src/lib/archive.js';
+import { summarise, slotShare, perGame, dataThrough } from '../src/lib/archive.js';
 import { distribution, quantile, shareAtOrBelow, sitsIn } from '../src/lib/distribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { tiedControl } from '../src/lib/layers/tied.js';
@@ -303,89 +303,6 @@ test('⭐ and the slot counts NEST, on every real game — the division is sanct
       `${f}: ${r.goals.placed} placed goals against ${located} located attempts`);
   }
   assert.ok(games >= 7, `only ${games} fixture games carried both halves`);
-});
-
-test('\u2b50\u2b50 the archive publishes HOW FAR OUT each kind of attempt is recorded', () => {
-  /* \u26a0\ufe0f THIS CLAIM HAS BEEN LOAD-BEARING AND UNPUBLISHED FOR MONTHS.
-     `src/lib/attribution.js` excludes blocked shots from SHOT_TYPES because their
-     coordinate is the BLOCKER's and therefore nearer the net than the shot was
-     taken \u2014 citing a median 24.2 ft against 33.4, from an EIGHTY-GAME SAMPLE, in
-     a comment. The slot rule depends on it and no page could read it. */
-  const agg = reachOf([
-    { reach: { 'blocked-shot': [10, 20], 'shot-on-goal': [30] } },
-    { reach: { 'blocked-shot': [30], 'shot-on-goal': [40, 50] } },
-    { /* an older record shape, carrying no distances at all */ },
-  ]);
-  assert.equal(agg['blocked-shot'].n, 3, 'distances are pooled across records');
-  assert.equal(agg['shot-on-goal'].n, 3);
-  assert.equal(agg['blocked-shot'].min, 10);
-  assert.equal(agg['blocked-shot'].max, 30);
-  assert.equal(agg['blocked-shot'].unit, 'events',
-    'the unit still says games, which is out by a factor of about a hundred');
-  for (const v of Object.values(agg)) {
-    assert.ok(v.population, 'a published distribution carries no population');
-    assert.match(v.what, /n counts EVENTS/, 'the distribution does not name its own unit');
-  }
-  assert.match(agg['blocked-shot'].what, /BLOCKER/,
-    'the blocked-shot distribution does not say whose position it records');
-
-  // \u26d4 AND NO THRESHOLD ANYWHERE IN IT. "Beyond 50 ft" was the tempting form and
-  // 50 is a number we would have chosen \u2014 the defect game-sentence.md \u00a73 removed.
-  assert.deepEqual(Object.keys(agg['blocked-shot']).filter(k => /beyond|over|above|min[A-Z]/.test(k)), [],
-    'a chosen cutoff has appeared in the published shape');
-});
-
-test('\u2b50 and a blocked shot really is recorded nearer the net \u2014 on every fixture', () => {
-  /* THE DIRECTION IS THE CLAIM, and it is what SHOT_TYPES is built on. If a
-     direction bug ever inverted `attackDirection` here, the distances would all
-     be measured to the wrong net and this ordering would break \u2014 which is the
-     only cheap check that the imported rule is being applied the way danger.js
-     applies it. Pinned on real games rather than on hand-made numbers. */
-  const dir = new URL('fixtures/extracts/', import.meta.url);
-  const pool = {};
-  for (const f of readdirSync(dir).filter(f => /^\d+\.json$/.test(f))) {
-    const r = measureGame(JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
-    if (!r || !r.reach) continue;
-    for (const [t, ds] of Object.entries(r.reach)) (pool[t] ||= []).push(...ds);
-  }
-  const med = a => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
-  assert.ok(pool['blocked-shot'] && pool['blocked-shot'].length > 100,
-    `only ${pool['blocked-shot']?.length || 0} blocked shots across the fixtures`);
-  const b = med(pool['blocked-shot']), s = med(pool['shot-on-goal']);
-  assert.ok(b < s,
-    `a blocked shot is recorded a median ${b} ft out and a shot on goal ${s} \u2014 the `
-    + 'ordering attribution.js excludes blocked shots FOR has inverted, so either the '
-    + 'attacking direction is wrong here or the feed has changed');
-  // AND EVERY DISTANCE IS ON THE ICE. 200 ft is the length of the rink.
-  for (const [t, ds] of Object.entries(pool))
-    assert.ok(Math.max(...ds) <= 200, `a ${t} was measured ${Math.max(...ds)} ft from the net`);
-});
-
-test('\u2b50 a goaltender\u2019s night is published as TWO INTEGERS, never as a rate', () => {
-  /* `docs/game-sentence.md` \u00a73: the goalie card prints "33 of 35" and never a save
-     percentage, because a percentage over a small denominator needs a minimum-n
-     threshold and twenty was a number we chose. The archive anchor is published
-     in the same idiom \u2014 shots faced and goals allowed, both integers, and the
-     reader forms the fraction. */
-  const agg = goalieNight([
-    { goalies: [{ faced: 30, saves: 28 }, { faced: 20, saves: 20 }] },
-    { goalies: [{ faced: 1, saves: 0 }] },
-    { /* an older record shape */ },
-  ]);
-  assert.equal(agg.faced.n, 3, 'every appearance is counted');
-  assert.equal(agg.allowed.n, 3);
-  assert.deepEqual([agg.allowed.min, agg.allowed.max], [0, 2], 'goals allowed is faced minus saves');
-  assert.equal(agg.faced.unit, 'appearances', 'the unit says games, and there are two a game');
-  for (const v of [agg.faced, agg.allowed])
-    assert.match(v.what, /GOALTENDER APPEARANCES/, 'the distribution does not name its own unit');
-
-  /* \u26d4 THE ONE-SHOT APPEARANCE IS IN THERE, AND THAT IS THE POINT. Filtering it
-     out would need a minimum, and the minimum does not change the answer: over a
-     600-game sample the middle half of the save fraction is .857-.935 unfiltered,
-     .857-.935 above ten shots faced and .864-.938 above twenty. So the honest
-     form is the one with no parameter in it. */
-  assert.equal(agg.faced.min, 1,
-    'a short appearance was filtered out, which is a threshold with no source');
 });
 
 test('the two shot measures are computed separately and may disagree', () => {
