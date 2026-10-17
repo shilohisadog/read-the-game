@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4O70Ei1GMydmGAf9JRNRpzZAicd3iLgZJFfxCnJLAxs=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hWXTcOP30AUkuyiU4kUU628oQ/WqScZtV8e+6Lduen0=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -587,8 +587,7 @@ const MEASURES = [
     counts: 'own attempts at strict 5-on-5, score level', of: 'both sides’ attempts, same filter',
     credit: 'shooter', unit: 'share', strength: '5v5', score: 'level', scopes: ['season'],
     typical: 'league figure', witness: null, family: 'possession',
-    keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' },
-    pending: [{ ruling: '2', what: 'tied-control admits 4-on-4 and 3-on-3; level means strict 5-on-5 everywhere' }] },
+    keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' } },
   { id: 'corsiShare', name: 'shot-attempt share, all situations', says: 'Of every 100 shot attempts in a team’s games, this many were its own.',
     counts: 'own attempts', of: 'both sides’ attempts', credit: 'shooter', unit: 'share',
     strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure',
@@ -753,8 +752,7 @@ const MEASURES = [
   { id: 'levelLeaderLost', name: 'the team that controlled level play lost', says: 'Of games where one team led level-score attempts by k or more, how many it lost.',
     counts: 'games the level leader lost', of: 'games led by k or more', credit: 'none',
     unit: 'share', strength: '5v5', score: 'level', scopes: ['archive'], typical: null,
-    witness: null, keys: {},
-    pending: [{ ruling: '2', what: 'computed from tied-control today; level means strict 5-on-5' }] },
+    witness: null, keys: {} },
 
   ...[['playerGoals', 'goals per game', 'goals', 'How many of this team\u2019s goals he has scored himself, per game played.'],
       ['playerAssists', 'assists per game', 'assists', 'The passes the league credited to him on somebody else\u2019s goal.'],

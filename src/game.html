@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VLrJ+h3Izek21H86/PLlBDuCbD5YJIsCVZY+etQUy0c=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-BlTQQ+Zq0kSq6GTGxDgdHTg/3YJ1xchAaJlyHl/+dVw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-D7rQvHfwftU6EOaSwg8y/WgzDvsi63CjW4HJnWVj3To=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-BlTQQ+Zq0kSq6GTGxDgdHTg/3YJ1xchAaJlyHl/+dVw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -899,8 +899,7 @@ const MEASURES = [
     counts: 'own attempts at strict 5-on-5, score level', of: 'both sides’ attempts, same filter',
     credit: 'shooter', unit: 'share', strength: '5v5', score: 'level', scopes: ['season'],
     typical: 'league figure', witness: null, family: 'possession',
-    keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' },
-    pending: [{ ruling: '2', what: 'tied-control admits 4-on-4 and 3-on-3; level means strict 5-on-5 everywhere' }] },
+    keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' } },
   { id: 'corsiShare', name: 'shot-attempt share, all situations', says: 'Of every 100 shot attempts in a team’s games, this many were its own.',
     counts: 'own attempts', of: 'both sides’ attempts', credit: 'shooter', unit: 'share',
     strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure',
@@ -1065,8 +1064,7 @@ const MEASURES = [
   { id: 'levelLeaderLost', name: 'the team that controlled level play lost', says: 'Of games where one team led level-score attempts by k or more, how many it lost.',
     counts: 'games the level leader lost', of: 'games led by k or more', credit: 'none',
     unit: 'share', strength: '5v5', score: 'level', scopes: ['archive'], typical: null,
-    witness: null, keys: {},
-    pending: [{ ruling: '2', what: 'computed from tied-control today; level means strict 5-on-5' }] },
+    witness: null, keys: {} },
 
   ...[['playerGoals', 'goals per game', 'goals', 'How many of this team\u2019s goals he has scored himself, per game played.'],
       ['playerAssists', 'assists per game', 'assists', 'The passes the league credited to him on somebody else\u2019s goal.'],
@@ -3227,7 +3225,7 @@ const tiedControl = {
   id: 'tied-control',
   label: measure('level5').layer,
 
-  rule: 'even-strength shot attempts taken while the score was level, in regulation',
+  rule: '5-on-5 shot attempts taken while the score was level, in regulation',
 
   reduce(events, ctx) {
     const { roster, homeId, awayId } = ctx;
@@ -3250,7 +3248,8 @@ const tiedControl = {
       const notLevel = level ? null
         : `the score was not level — an attempt taken while behind is evidence `
           + `of the scoreboard, not of control`;
-      const notEven = whyNotEven(e, ctx);
+      const notEven = whyNotEven(e, ctx)
+        || (e.sit !== '1551' ? 'not 5-on-5 — level play is counted with five skaters a side' : null);
 
       if (e.type === 'goal' && e.pt !== 'SO') (e.own === homeId ? hs++ : as++);
 
@@ -3639,7 +3638,7 @@ const DERIVATION = {
                 + 'things, so the totals differ:',
     evidenceTail: 'Shot attempts on their own point the wrong way: the team with '
                 + 'more of them lost slightly more often than it won. Filter to '
-                + 'even strength with the score level and that turns around. '
+                + '5-on-5 with the score level and that turns around. '
                 + 'That is what the condition is doing.',
     caveat: 'An attempt is an attempt. A point shot from sixty feet counts here '
           + 'exactly the same as a tip at the edge of the crease, and this number '
@@ -4327,7 +4326,7 @@ let levelOnly=false;
 let trails='play';
 const CTX={roster:R,homeId:HID,awayId:AID,homeAb:HAB,awayAb:AAB,
            get evenOnly(){return evenOnly;}};
-const MODE=()=>levelOnly?'score level, even strength, regulation'
+const MODE=()=>levelOnly?'score level, 5-on-5, regulation'
                         :evenOnly?'even strength':'all situations';
 const PBOX=stints(G.events,CTX);
 const PLAYS=plays(G.events);
@@ -5427,10 +5426,10 @@ function syncStrength(){
 const COUNT_NOTE={
  all:'Every attempt in the game, which is what the marks on the ice add up to. '
     +'The other two take populations out and say which.',
- even:'Attempts taken while the sides were level in skaters. Power plays and an '
+ even:'Attempts taken while both sides had the same number of skaters. Power plays and an '
       +'empty net are left out — part of an attempt lead can be nothing but time '
       +'spent a skater up.',
- level:'Attempts taken at even strength while the SCORE was level, in regulation. '
+ level:'Attempts taken at 5-on-5 while the SCORE was level, in regulation. '
        +'A team that is behind shoots more, so this is the count that is about '
        +'play rather than the scoreboard.'};
 function setStrength(v){evenOnly=(v==='even');levelOnly=(v==='level');

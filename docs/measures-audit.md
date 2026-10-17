@@ -128,7 +128,10 @@ mostly a merge of those, plus the definitions that are today implicit.
 ## 6. Kevin's rulings — 2026-10-15
 
 1. **The list of measures: yes, first.** Items 2–6 land on it, one at a time.
-2. **"Level" means strict 5-on-5, everywhere.**
+2. **"Level" means strict 5-on-5, everywhere.** ✅ built 2026-10-17 as a DELETION (Kevin: is this something that should
+   exist at all?): measured first over 4,310 games — 4-on-4 is 1.1% of level-score attempts,
+   the leader-won figure moves 2,440/4,039 → 2,435/4,036, 17 verdicts flip. One definition
+   now (`tiedControl` at `1551`); measure.mjs's second calculation is gone.
 3. **The whole-game panel** (*"Every count in the whole game"*, the six scaled rows
    that open at the horn): Goaltending ranks **save percentage**; Zone starts ranks
    **offensive-zone face-offs**; the slot box divides by attempts **with a recorded

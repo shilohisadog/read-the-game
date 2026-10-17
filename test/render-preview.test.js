@@ -98,7 +98,9 @@ test('the game summary is a card, and its rate is DRAWN as well as said', () => 
   // number.
   // The reference game's level-control differential, and a curve row for it. The
   // shell fetches this; the inlined page never does, so it is supplied here.
-  const CURVE = [{ k: 12, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 }];
+  // The row's k is the game's own level edge, read from the record, never typed.
+  const edge = Math.abs(measureGame(rich).level);
+  const CURVE = [{ k: edge, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 }];
   const a = boot(rich, { levelCurve: CURVE });
   const v = a.$('verdict').innerHTML;
   assert.match(v, /class="vk">What this game was</, 'the card does not say what it is');

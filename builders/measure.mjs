@@ -30,7 +30,7 @@ import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
-import { shootingTeam, corsiTeam as corsiTeamOf, SHOT_TYPES } from '../src/lib/attribution.js';
+import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { situation, DECLINED } from '../src/lib/strength.js';
 // The SAME two functions danger.js calls at line 118 — a distance measured here
 // cannot disagree with a distance measured by the layer.
@@ -133,21 +133,8 @@ export function measureGame(g) {
   }
 
 
-  /* ⭐⭐ 5-ON-5 WHILE THE SCORE WAS LEVEL — the card's one industry label, and the
-     narrowest population on this record. `tiedControl` is even strength in
-     regulation while the score is level, which ADMITS 4-on-4 and 3-on-3; the
-     label "5-on-5 CF%" may only sit on strict `1551` (docs/preview-and-corsi.md
-     §9.1 Q5/Q8), so the level set is narrowed by the league's own situation code
-     rather than by a second reading of strength. Both halves matter: level score
-     removes the chasing (`tied.js`), and `1551` is what the label means. */
-  const inLevel = new Set(level.counted);
-  const lvl5 = { h: 0, a: 0 };
-  for (const id of all.counted) {
-    const e = g.events[id];
-    if (e.sit !== '1551' || !inLevel.has(id)) continue;
-    const s = sideOf(corsiTeamOf(e, g.roster));
-    if (s) lvl5[s]++;
-  }
+  // 5-on-5 while the score was level: tiedControl's own count, one definition (ruling 2).
+  const lvl5 = { h: level.t[ctx.homeId], a: level.t[ctx.awayId] };
 
   const located = { h: 0, a: 0 };
   for (const id of all.counted) {

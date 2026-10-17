@@ -291,7 +291,7 @@ for (const [q, want, label] of [
   ['?strength=all', 'all', 'ALL SITUATIONS'],
   ['', 'all', 'ALL SITUATIONS'],                 // the page's own default
   ['?strength=sideways', 'all', 'ALL SITUATIONS'], // garbage falls back, visibly
-  ['?strength=level', 'level', 'SCORE LEVEL, EVEN STRENGTH, REGULATION'],
+  ['?strength=level', 'level', 'SCORE LEVEL, 5-ON-5, REGULATION'],
 ]) {
   test(`the layer box states the mode the URL asked for: "${q}" -> ${label}`, () => {
     const d = open(q ? `${q}&layer=corsi&at=2-10:00` : '?layer=corsi&at=2-10:00');

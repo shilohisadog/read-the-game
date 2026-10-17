@@ -102,7 +102,7 @@ const NEWEST_ID = CATALOG.games
   .pop().id;
 
 const MEASURES = {
-  rule: 'even-strength shot attempts taken while the score was level, in regulation',
+  rule: '5-on-5 shot attempts taken while the score was level, in regulation',
   featured: [{ id: 2023020867, ab: 'DAL', edge: 33 }],
   baseRates: {
     moreShotsOnGoalLost: { what: 'the team with more shots on goal lost',

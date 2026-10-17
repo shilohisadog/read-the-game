@@ -63,7 +63,7 @@ export const tiedControl = {
   label: measure('level5').layer,
 
   /** The rule, in one sentence, for printing next to the number it produced. */
-  rule: 'even-strength shot attempts taken while the score was level, in regulation',
+  rule: '5-on-5 shot attempts taken while the score was level, in regulation',
 
   /**
    * @param events  the whole game, in order
@@ -108,7 +108,9 @@ export const tiedControl = {
       const notLevel = level ? null
         : `the score was not level — an attempt taken while behind is evidence `
           + `of the scoreboard, not of control`;
-      const notEven = whyNotEven(e, ctx);
+      // Level play is counted at 5-on-5 only (Kevin's ruling 2, 2026-10-17).
+      const notEven = whyNotEven(e, ctx)
+        || (e.sit !== '1551' ? 'not 5-on-5 — level play is counted with five skaters a side' : null);
 
       // The shootout moves the scoreboard by exactly one, at the end. Counting
       // its goals into the running score would retroactively un-level a game

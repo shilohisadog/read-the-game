@@ -35,8 +35,7 @@ export const MEASURES = [
     counts: 'own attempts at strict 5-on-5, score level', of: 'both sides’ attempts, same filter',
     credit: 'shooter', unit: 'share', strength: '5v5', score: 'level', scopes: ['season'],
     typical: 'league figure', witness: null, family: 'possession',
-    keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' },
-    pending: [{ ruling: '2', what: 'tied-control admits 4-on-4 and 3-on-3; level means strict 5-on-5 everywhere' }] },
+    keys: { row: 'level5', derivation: 'level5', lens: 'tied-control' } },
   { id: 'corsiShare', name: 'shot-attempt share, all situations', says: 'Of every 100 shot attempts in a team’s games, this many were its own.',
     counts: 'own attempts', of: 'both sides’ attempts', credit: 'shooter', unit: 'share',
     strength: 'all', score: 'any', scopes: ['season'], typical: 'league figure',
@@ -206,8 +205,7 @@ export const MEASURES = [
   { id: 'levelLeaderLost', name: 'the team that controlled level play lost', says: 'Of games where one team led level-score attempts by k or more, how many it lost.',
     counts: 'games the level leader lost', of: 'games led by k or more', credit: 'none',
     unit: 'share', strength: '5v5', score: 'level', scopes: ['archive'], typical: null,
-    witness: null, keys: {},
-    pending: [{ ruling: '2', what: 'computed from tied-control today; level means strict 5-on-5' }] },
+    witness: null, keys: {} },
 
   // Players — per game played, current season; typical is the median skater.
   ...[['playerGoals', 'goals per game', 'goals', 'How many of this team\u2019s goals he has scored himself, per game played.'],

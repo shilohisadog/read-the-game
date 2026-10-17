@@ -146,7 +146,7 @@ test('the result is deterministic — same input, same bytes', () => {
 
 test('the rule travels with the numbers it produced', () => {
   const s = summarise([rec(2023020001, { level: 3, score: { h: 0, a: 1 } })]);
-  assert.match(s.rule, /even-strength.*level.*regulation/i,
+  assert.match(s.rule, /5-on-5.*level.*regulation/i,
     'the featured number is meaningless without the sentence that made it');
 });
 
