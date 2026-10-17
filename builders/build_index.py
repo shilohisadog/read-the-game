@@ -2186,17 +2186,13 @@ def _archive():
     # ⛔ THE MEDIAN COMES FROM THE DISTRIBUTION, not from an average of per-game
     # medians -- `census.js` carries 1-second bins for exactly that reason.
     sh = (m.get("census") or {}).get("shift") or {}
-    for k in ("median", "underMinute", "perPlayerGame", "n"):
+    for k in ("mean", "perPlayerGame", "n"):
         if sh.get(k) is None:
             raise SystemExit(
                 f"learn: measures.json census.shift.{k} is missing -- the shift card "
                 "cannot state how long a shift is. Re-run derive.")
     out.update({
-        "__SHIFT_MED__": f"{sh['median']:.0f}",
-        # A PERCENTAGE HERE, like the slot card and unlike the summary band: this
-        # is a share of a named population with its n one clause away, not a
-        # threshold anybody chose.
-        "__SHIFT_UNDER__": f"{sh['underMinute'] * 100:.0f}",
+        "__SHIFT_MEAN__": f"{sh['mean']:.0f}",
         "__SHIFT_PER__": f"{sh['perPlayerGame']:.0f}",
         "__SHIFT_N__": num(sh["n"]),
     })
@@ -2522,8 +2518,7 @@ FIGURE_CLAUSE = {
     "slot": ("a shot taken from inside the slot goes in __SLOT_IN_PCT__% of the "
              "time &mdash; __SLOT_IN_GOALS__ goals from __SLOT_IN_ATT__ "
              "attempts. From outside it, __SLOT_OUT_PCT__%"),
-    "shifts": ("a shift lasts a median of __SHIFT_MED__ seconds, "
-               "__SHIFT_UNDER__% of them under a minute, measured over "
+    "shifts": ("a shift lasts __SHIFT_MEAN__ seconds on average, measured over "
                "__SHIFT_N__ shifts"),
     # ⛔⛔⛔ "even-strength play" CAME OUT OF THIS SENTENCE ON 2026-10-09, and
     # three prior rulings decided HOW. The first outside review: *"the first
@@ -2611,8 +2606,7 @@ FIGURE_DERIVATION = {
     "__EVEN_TRAIL_PER60__":   "scoreEffects",
     "__EVEN_TIED_PER60__":    "scoreEffects",
     "__EVEN_LEAD_PER60__":    "scoreEffects",
-    "__SHIFT_MED__":          "shift",
-    "__SHIFT_UNDER__":        "shift",
+    "__SHIFT_MEAN__":         "shift",
     "__SHIFT_PER__":          "shift",
     "__SHIFT_N__":            "shift",
     "__ZONE_ATK__":           "zoneStarts",

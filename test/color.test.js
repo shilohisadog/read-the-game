@@ -16,7 +16,7 @@ const roster = {
   24: { tid: AWAY, nm: 'Away24', pos: 'D' }, 29: { tid: AWAY, nm: 'AwayG', pos: 'G' },
 };
 const ctx = { roster, homeId: HOME, awayId: AWAY, homeAb: 'HOM', awayAb: 'AWY' };
-const RATES = { census: { shift: { median: 46 }, whistles: { ppGoals: 5275, ppChances: 24991 } },
+const RATES = { census: { shift: { mean: 47.8 }, whistles: { ppGoals: 5275, ppChances: 24991 } },
   slot: { scoredFromInside: { count: 19626, n: 168930 }, scoredFromOutside: { count: 6634, n: 201723 } } };
 const ev = (type, s, x, extra = {}) => ({ type, per: 1, pt: 'REG', s, x, y: 0, sit: '1551', ...extra });
 // Home attacks +x (home defends -x), so x > 25 is the AWY end.
@@ -81,11 +81,11 @@ test('the slot: the base rate on a team\'s first shot from there, a count after'
 test('the shift clock speaks once per group, when every skater is past the typical shift', () => {
   const g = game([ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
     ev('takeaway', 40, -40, { own: AWAY, actor: 20 }),            // 40 s: not yet
-    ev('takeaway', 50, 40, { own: HOME, actor: 10 }),             // 50 s: every HOM skater past 46
+    ev('takeaway', 50, 40, { own: HOME, actor: 10 }),             // 50 s: every HOM skater past the mean, 48
     ev('takeaway', 55, -40, { own: AWAY, actor: 20 })],           // the same group: silence
     // (ends alternate, so no zone stretch speaks instead)
     shiftsFor([10, 11, 12, 13, 14], HOME, 0, 90));
-  assert.deepEqual(notesOf(g), [[2, 'Every HOM skater on the ice has been out longer than a typical shift (about 46 seconds): 50 seconds each.']]);
+  assert.deepEqual(notesOf(g), [[2, 'Every HOM skater on the ice has been out longer than a typical shift (about 48 seconds): 50 seconds each.']]);
 });
 
 test('the zone stretch counts events in a row and the attempts in that time, never who had the puck', () => {

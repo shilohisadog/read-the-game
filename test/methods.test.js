@@ -66,7 +66,7 @@ const MEASURES = {
     endZone: { what: 'shot attempts taken before the next whistle after an '
                  + 'end-zone face-off, out of every end-zone face-off',
       atk: 235614, def: 126603, n: 165420, atkPerDraw: 1.424, defPerDraw: 0.765 },
-    shift: { n: 3101105, median: 46, p25: 34, p75: 59, underMinute: 0.759 },
+    shift: { n: 3101105, secs: 148232819, mean: 47.8, perPlayerGame: 20.8 },
     hits: { n: 4192, r: -0.07, opposite: 0.481, totalHits: 188512 },
     whistles: { penalties: 30827, offsides: 18700, icings: 35930,
                 ppChances: 22872, ppGoals: 4982, shGoals: 560 } },
@@ -499,12 +499,13 @@ test('⛔⛔⛔ EVERY LEAGUE FIGURE PRINTS ITS OWN DIVISION, not a promise of on
         `${f.key}'s published value is not its own numerator over its own denominator`);
     }
   }
-  /* The one row that is a percentile rather than a ratio says so by having no
-     numerator — writing a median as a division would be arithmetic we did not do. */
-  assert.equal(m.league.find(f => f.key === 'shift').work.count, null);
-  assert.equal(m.league.find(f => f.key === 'shift').work.value, 46);
-  assert.ok(m.league.filter(f => f.work.count == null).length === 1,
-    'only the median may be published without a numerator');
+  // The shift is a mean since ruling 4, so every league row is now a real division.
+  const sh = m.league.find(f => f.key === 'shift');
+  assert.equal(sh.work.count, 148232819);
+  assert.equal(sh.work.n, 3101105);
+  assert.equal(sh.work.value, 148232819 / 3101105);
+  assert.deepEqual(m.league.filter(f => f.work.count == null).map(f => f.key), [],
+    'a league row was published without a numerator');
 
   /* ⚠️ AND THIS LAST ONE IS A SOURCE ASSERTION, WHICH IS WEAK, AND IT IS HERE
      ANYWAY. `deepEqual` above cannot tell a value passed through from the same

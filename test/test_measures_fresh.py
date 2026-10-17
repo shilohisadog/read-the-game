@@ -65,7 +65,7 @@ class DriftDetection(unittest.TestCase):
 
     def test_a_path_the_archive_stopped_carrying_is_its_own_sentence(self):
         local, live = live_copy(), live_copy()
-        del live["census"]["shift"]["median"]
+        del live["census"]["shift"]["mean"]
         drift = mf.drift_against(local, live)
         self.assertTrue(any("no longer carries it" in d for d in drift), drift)
 

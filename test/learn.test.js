@@ -609,7 +609,7 @@ test('⛔ a card footer names the moment in the PAGE\'S own words, not a second 
     'the overtime door no longer carries the page\'s overtime label');
 });
 
-test('⭐⭐ the shift card states the median from the DISTRIBUTION, carries its n, and ends on the lesson', () => {
+test('⭐⭐ the shift card states the published mean, carries its n, and ends on the lesson', () => {
   /* ⭐ KEVIN, AFTER THE INVENTORY FOUND `shifts` UNREAD: *"the shift length card
      might be educational too."* Players hopping over the boards mid-play is the
      single most confusing part of a first hockey game and no surface said a word.
@@ -624,10 +624,10 @@ test('⭐⭐ the shift card states the median from the DISTRIBUTION, carries its
   const sh = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'))
     .census.shift;
 
-  assert.match(blurb, new RegExp(`median of ${sh.median} seconds`),
-    `the card does not state the published median (${sh.median}s)`);
-  assert.match(blurb, new RegExp(`${(sh.underMinute * 100).toFixed(0)}% of them under a minute`),
-    'the under-a-minute share is not the published one, or is not attributed to it');
+  assert.match(blurb, new RegExp(`a shift lasts ${Math.round(sh.mean)} seconds on average`),
+    `the card does not state the published mean (${sh.mean}s)`);
+  // One figure per lesson (Kevin, 2026-10-17): no median, no under-a-minute share.
+  assert.doesNotMatch(blurb, /median|under a minute/, 'a second figure for the same lesson came back');
   assert.ok(blurb.includes(sh.n.toLocaleString('en-US')),
     'the figure is stated without its n — every published frequency must carry one');
 

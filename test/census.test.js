@@ -156,14 +156,8 @@ test('the control holds the zone constant and lets only the winner vary', () => 
   }
 });
 
-test('⭐⭐ a shift is measured from the DISTRIBUTION, and goaltenders are not in it', () => {
-  /* ⛔ A MEDIAN IS NOT A SUM. The tally carries 1-second bins so the archive can
-     be reduced once; averaging per-game medians would be a statistic of
-     statistics. This checks the published quantile against the raw rows.
-
-     ⛔ AND THE GOALTENDER IS THE WHOLE REASON THE POPULATION IS NAMED. His
-     "shift" is most of the game, and three of them among forty skaters would
-     drag a median the card states as a fact about how hockey is played. */
+test('⭐⭐ a shift is the mean of the skaters\u2019 rows, and goaltenders are not in it', () => {
+  // Checked against the raw rows; a goaltender's shift is most of the game and must stay out.
   const withShifts = GAMES.filter(g => g.shifts && g.shifts.length);
   assert.ok(withShifts.length, 'no fixture carries shifts — this test has no subject');
   let t = {};
@@ -180,13 +174,12 @@ test('⭐⭐ a shift is measured from the DISTRIBUTION, and goaltenders are not 
       const d = s.e - s.s;
       if (d > 0) raw.push(d);
     }
-  raw.sort((a, b) => a - b);
+  const sum = raw.reduce((a, d) => a + d, 0);
   assert.equal(r.n, raw.length, 'the published n is not the number of skater shifts');
-  assert.equal(r.median, raw[Math.ceil(raw.length * 0.5) - 1],
-    'the published median is not the median of the rows');
-  assert.equal(r.p25, raw[Math.ceil(raw.length * 0.25) - 1], 'p25 disagrees with the rows');
-  assert.equal(r.underMinute, +(raw.filter(d => d < 60).length / raw.length).toFixed(3),
-    'the under-a-minute share disagrees with the rows');
+  assert.equal(r.secs, sum, 'the published seconds are not the sum of the rows');
+  assert.equal(r.mean, +(sum / raw.length).toFixed(1), 'the published mean is not the mean of the rows');
+  for (const gone of ['median', 'p25', 'p75', 'underMinute', 'over'])
+    assert.ok(!(gone in r), `${gone} is still published (ruling 4: the mean only)`);
 
   /* ⛔ THE CONTROL: a goaltender's row must actually be excluded, or the line
      above is passing because no fixture has one. Injecting a 3,600-second shift
@@ -204,20 +197,18 @@ test('⭐⭐ a shift is measured from the DISTRIBUTION, and goaltenders are not 
     { ...ctxOf(g0), shifts: [...g0.shifts, { p: +skater, t: 1, s: 0, e: 3600 }] });
   assert.equal(withS.shift.n, plain.shift.n + 1,
     'a skater\'s shift did NOT reach the population — the exclusion is over-broad');
-  assert.equal(withS.shift.over, plain.shift.over + 1,
-    'a 3,600-second shift was not counted as an overflow');
+  assert.equal(withS.shift.secs, plain.shift.secs + 3600, 'a skater\u2019s seconds did not reach the sum');
 });
 
 test('⚠️ absent shifts leave the buckets untouched, rather than adding an empty game', () => {
   /* 3 of 87 extracts in a 2026-09-10 sample carry no shifts at all. An empty
      array must not enter the denominator, and `censusRates` must say `null`
-     rather than 0 — a median of zero is a claim, and "we have none" is not. */
+     rather than 0 — a mean of zero is a claim, and "we have none" is not. */
   const g = GAMES[0];
   const none = censusGame(g.events, { ...ctxOf(g), shifts: [] });
   assert.equal(none.shift.n, 0);
   const r = censusRates(censusAdd({}, none)).shift;
-  assert.equal(r.median, null, 'an empty population published a median anyway');
-  assert.equal(r.underMinute, null, 'an empty population published a share anyway');
+  assert.equal(r.mean, null, 'an empty population published a mean anyway');
 });
 
 test('⭐ the zone figure is the SAME draws summed the other way — the attacking club, not the winner', () => {

@@ -269,15 +269,15 @@ const DERIVATION = {
           + 'We show it so you know who to watch, not to rank anybody.' },
   shift: {
     unit: 'seconds',
-    label: measure('shiftMedian').heading,
-    count: 'the middle shift length, in seconds',
-    of: 'every shift in the archive with a start and an end recorded',
+    label: measure('shiftArchive').heading,
+    count: 'the seconds skaters spent on the ice, shift by shift',
+    of: 'every shift in the archive with a start and an end recorded, so the answer is seconds per shift',
     why: 'The most bewildering thing about a first hockey game is that nobody '
        + 'stays on the ice. Players change every forty-odd seconds, while play is '
        + 'still going, and nothing on the broadcast explains it.',
-    caveat: 'The middle half means the 25th to the 75th percentile \u2014 a '
-          + 'definition, not a band we chose. Games whose record carries no shift '
-          + 'information are left out of the count rather than treated as zero.' },
+    caveat: 'The same division as a team\u2019s average shift length on the preview, '
+          + 'over every game we hold. Goaltenders are left out, and games whose record '
+          + 'carries no shift information are left out rather than treated as zero.' },
   hits: {
     unit: 'hits, per team per game',
     label: measure('hits').heading,

@@ -850,8 +850,7 @@ function main(argv) {
       paceByScore: `attempts/60 — trailing ${doc.census.pace.trail.per60}, tied `
           + `${doc.census.pace.tied.per60}, leading ${doc.census.pace.lead.per60} `
           + `(${doc.census.pace.trailingLift}x)`,
-      shift: `a skater's shift — median ${doc.census.shift.median}s, `
-          + `${(doc.census.shift.underMinute * 100).toFixed(1)}% under a minute, `
+      shift: `a skater's shift — mean ${doc.census.shift.mean}s, `
           + `${doc.census.shift.perPlayerGame} per skater per game `
           + `(n=${doc.census.shift.n.toLocaleString()})`,
       paceByScoreEven: `at even strength only — trailing `

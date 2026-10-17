@@ -110,12 +110,8 @@ function extraLeagueRows(measures, c, perClubGame, ratio) {
      game is that nobody stays on the ice, and the archive has answered it for
      three seasons in a field no surface reads. */
   const sh = c.shift;
-  if (sh && sh.n > 0 && sh.median != null) out.push({ key: 'shift', n: sh.n,
-    /* ⛔ NO NUMERATOR, BECAUSE THERE IS NO DIVISION. The median is the middle
-       value of 3.1 million shifts; writing it as a ratio would be arithmetic we
-       did not do, on the page that exists to show the arithmetic we did. */
-    work: { count: null, n: sh.n, value: sh.median },
-    median: sh.median, p25: sh.p25, p75: sh.p75, underMinute: sh.underMinute });
+  if (sh && sh.n > 0 && sh.mean != null) out.push({ key: 'shift', n: sh.n,
+    work: ratio(sh.secs, sh.n), mean: sh.mean });
 
   /* ⛔⛔ A MEASURED NULL, PUBLISHED AS ONE. `opposite` is the share of games in
      which the club that landed more hits had FEWER shot attempts — 0.481 is a

@@ -52,7 +52,8 @@ export function colorNotes(game, ctx, rates) {
   const ab = id => (id === ctx.homeId ? ctx.homeAb : id === ctx.awayId ? ctx.awayAb : '');
   const other = id => (id === ctx.homeId ? ctx.awayId : ctx.homeId);
   const census = (rates && rates.census) || {};
-  const SHIFT = census.shift && census.shift.median;
+  // The typical shift is the archive's mean (ruling 4), to the second.
+  const SHIFT = census.shift && census.shift.mean != null ? Math.round(census.shift.mean) : null;
   const pp = census.whistles && census.whistles.ppGoals ? Math.round(census.whistles.ppChances / census.whistles.ppGoals) : null;
   const slot = rates && rates.slot && rates.slot.scoredFromInside && rates.slot.scoredFromOutside
     ? [Math.round(rates.slot.scoredFromInside.n / rates.slot.scoredFromInside.count),

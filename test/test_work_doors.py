@@ -166,7 +166,7 @@ class WorkDoors(unittest.TestCase):
         every reader of the second figure to the wrong explanation.
         """
         with self.assertRaises(SystemExit) as cm:
-            B._how_door("it takes __ZONE_ATK__ against __SHIFT_MED__", "invented")
+            B._how_door("it takes __ZONE_ATK__ against __SHIFT_MEAN__", "invented")
         self.assertIn("one card cannot carry one door to two", str(cm.exception))
 
         with self.assertRaises(SystemExit) as cm:

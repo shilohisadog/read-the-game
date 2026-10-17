@@ -103,8 +103,7 @@ WATCHED = [
     ("census", "pace", "evenLead", "per60"),
     # AND THE SHIFT FIGURES, which the "How long a shift is" card prints. `n` is
     # watched with them because the card quotes its own population.
-    ("census", "shift", "median"),
-    ("census", "shift", "underMinute"),
+    ("census", "shift", "mean"),
     ("census", "shift", "perPlayerGame"),
     ("census", "shift", "n"),
     ("census", "endZone", "atkPerDraw"),

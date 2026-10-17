@@ -128,7 +128,7 @@ const DOCS = {
     attemptMix: { games: 4192, byType: { 'shot-on-goal': 215529, goal: 25597,
       'blocked-shot': 138880, 'missed-shot': 120714 } },
     census: { games: 4192,
-      shift: { n: 3101105, median: 46, p25: 34, p75: 59, underMinute: 0.759 },
+      shift: { n: 3101105, secs: 148232819, mean: 47.8, perPlayerGame: 20.8 },
       hits: { n: 4192, r: -0.07, opposite: 0.481, totalHits: 188512 },
       whistles: { penalties: 30434, offsides: 18700, ppChances: 22720, ppGoals: 4982, shGoals: 560 } },
     settle: { target: 0.7, admission: 41, seasons: ['2023', '2024'],

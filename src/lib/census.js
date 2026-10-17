@@ -193,23 +193,8 @@ export function censusGame(events, ctx) {
      rather than being folded into `F` where it would quietly move a rate. */
   const shooter = { D: zeroShot(), F: zeroShot(), G: zeroShot(), unknown: zeroShot() };
 
-  /* ⭐⭐ HOW LONG A SHIFT IS — the one thing in `shifts` the site has never read.
-     Kevin, 2026-09-10: *"the shift length card might be educational too."* Line
-     changes on the fly are the most confusing thing about a first hockey game,
-     and no surface says how short a shift actually is.
-
-     ⛔ SKATERS ONLY. A goaltender's "shift" is most of the game, and three of
-     them in a population of forty would drag a median that the card states as a
-     fact about how hockey is played. `pos` is on every roster row.
-
-     ⛔ A HISTOGRAM IN THE TALLY, SUMMARIES IN THE PUBLISHED FILE. A median cannot
-     be averaged across games — it is not a sum — so the archive has to carry the
-     DISTRIBUTION and reduce it once, which is exactly what `censusAdd`'s generic
-     recursive sum does with a bucket object. `secs` are integers, so 1-second
-     bins are exact and no binning choice is being made on the site's behalf.
-     `over` is the overflow, published rather than folded in: a bucket that only
-     appears when it breaks is a bucket nobody notices arriving. */
-  const shift = { n: 0, secs: 0, over: 0, players: 0, bins: {} };
+  // Skater shifts and their seconds; goaltenders are left out (their shift is most of the game).
+  const shift = { n: 0, secs: 0, players: 0 };
 
   /* ⭐ THE THREE FIGURES THE PREVIEW CARD'S LEAGUE ROWS ARE MADE OF.
      `docs/preview-and-corsi.md` §11.2 measured that no club difference in
@@ -385,7 +370,6 @@ export function censusGame(events, ctx) {
   /* ⚠️ ABSENT SHIFTS ARE NOT ZERO SHIFTS. Some extracts carry none — 3 of 87 in
      a 2026-09-10 sample — and an empty array must leave the buckets untouched
      rather than adding a game to the denominator with no rows in it. */
-  const SHIFT_CAP = 600;
   const seen = new Set();
   for (const r of (ctx.shifts || [])) {
     if ((ctx.roster?.[r.p] || {}).pos === 'G') continue;
@@ -394,8 +378,6 @@ export function censusGame(events, ctx) {
     seen.add(r.p);
     shift.n++;
     shift.secs += d;
-    if (d > SHIFT_CAP) shift.over++;
-    else shift.bins[d] = (shift.bins[d] || 0) + 1;
   }
   shift.players = seen.size;
 
@@ -623,56 +605,18 @@ export function censusRates(t) {
       out.balancedEven = (t.pace?.evenLead?.secs || 0) === (t.pace?.evenTrail?.secs || 0);
       return out;
     })(),
-    /* ⭐⭐ HOW LONG A SHIFT IS, reduced from the distribution rather than averaged.
-       ⛔ A MEDIAN IS NOT A SUM, which is why the tally carries 1-second bins and
-       this is the only place they are read. Averaging per-game medians would be
-       a statistic of statistics with no defensible meaning; this is the real
-       quantile of the whole archive's shifts.
-       ⭐ `underMinute` IS A FRACTION, never a percentage, and it carries `n`
-       like every other published share. */
+    // How long a shift lasts: seconds on the ice divided by shifts (Kevin's ruling 4, the mean).
     shift: (() => {
-      /* ⛔ THE SENTENCE SITS ABOVE THE BRANCH BECAUSE A BRANCH CAN LOSE IT. The
-         first version wrote it into the populated return only, and an archive
-         with no shift data published figures with nothing saying what they are —
-         caught by the gate one minute later. A description is a property of the
-         MEASUREMENT, so it does not depend on whether the measurement found
-         anything.
-         ⚠️ IT SAYS "MIDDLE VALUE" AND NOT "AVERAGE", because the two differ here
-         and the difference is the whole reason the bins exist. It also names the
-         goaltender exclusion, which is the one a reader would otherwise catch us
-         on: a goaltender's shift is most of the game. */
-      const what = 'how long a skater\u2019s shift lasts, in seconds, taken from '
-          + 'the whole archive\u2019s shifts rather than by averaging each '
-          + 'game\u2019s own middle value (n counts SHIFTS, not games). The '
-          + 'middle half is the twenty-fifth to the seventy-fifth of them, which '
-          + 'is a definition and not a band anybody chose. Goaltenders are left '
-          + 'out, since a goaltender\u2019s shift is most of the game, and a '
-          + 'shift the record gives no end for is left out rather than counted '
-          + 'as nothing.';
+      const what = 'how long a skater\u2019s shift lasts, on average, in seconds: the '
+          + 'seconds every skater spent on the ice, shift by shift, divided by the number '
+          + 'of shifts (n counts SHIFTS, not games). Goaltenders are left out, since a '
+          + 'goaltender\u2019s shift is most of the game, and a shift the record gives no '
+          + 'end for is left out rather than counted as nothing.';
       const t2 = t.shift || {};
-      const bins = t2.bins || {};
       const n = t2.n || 0;
-      if (!n) return { n: 0, median: null, p25: null, p75: null, underMinute: null,
-                       perPlayerGame: null, over: 0, what };
-      const at = (frac) => {
-        const want = frac * n;
-        let seen = 0;
-        for (const k of Object.keys(bins).map(Number).sort((a, b) => a - b)) {
-          seen += bins[k];
-          if (seen >= want) return k;
-        }
-        return null;   // everything is in the overflow, which `over` will show
-      };
-      let under = 0;
-      for (const k of Object.keys(bins)) if (+k < 60) under += bins[k];
-      return {
-        n,
-        median: at(0.5), p25: at(0.25), p75: at(0.75),
-        underMinute: +(under / n).toFixed(3),
-        perPlayerGame: t2.players ? +(n / t2.players).toFixed(1) : null,
-        over: t2.over || 0,
-        what,
-      };
+      if (!n) return { n: 0, secs: 0, mean: null, perPlayerGame: null, what };
+      return { n, secs: t2.secs, mean: +(t2.secs / n).toFixed(1),
+               perPlayerGame: t2.players ? +(n / t2.players).toFixed(1) : null, what };
     })(),
     /* DOES HITTING RUN INVERSE TO HAVING THE PUCK? CHENG's hypothesis, killed on
        one game and unmeasurable on eight (r = -0.15). A NEGATIVE r supports it.
