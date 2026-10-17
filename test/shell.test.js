@@ -590,9 +590,9 @@ test('the deploy gate cannot pass on a blank expectation', () => {
   assert.equal(usable({ teams: '', date: '' }), false);
   assert.equal(usable({ teams: 'MTL at TOR', date: '' }), false, 'half an expectation is still blank');
   assert.equal(usable(null), false);
-  assert.equal(usable({ teams: 'MTL at TOR', date: '14 June 2026' }), true);
+  assert.equal(usable({ teams: 'MTL at TOR', date: 'June 14, 2026' }), true);
   // And a blank one REJECTS rather than matching anything handed to it.
-  assert.equal(judgeLine('MTL at TOR · 14 June 2026', { teams: '', date: '' }).ok, false);
+  assert.equal(judgeLine('MTL at TOR · June 14, 2026', { teams: '', date: '' }).ok, false);
 });
 
 /* --------------------------------------------------------------- preview

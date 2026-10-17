@@ -257,7 +257,7 @@ test('outside the workshop, the page names no game and no team', () => {
   page = page.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|<!--[\s\S]*?-->/g, '');
 
   assert.doesNotMatch(page, /\b(MIN|BUF)\b(?![A-Z])/, 'a team abbreviation is typed in');
-  assert.doesNotMatch(page, /10 November 2023|Nov 10 2023/, 'a date is typed in');
+  assert.doesNotMatch(page, /November 10, 2023|Nov 10 2023/, 'a date is typed in');
   assert.doesNotMatch(page, /all \d+ events/, 'a per-game event total is typed in');
   assert.doesNotMatch(page, /\d+ shots</, 'a shot count is typed in');
 });

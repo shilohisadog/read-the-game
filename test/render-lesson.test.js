@@ -16,7 +16,7 @@ test('a lesson door arrives with the lesson named, the card’s own sentence, an
   assert.match(box.innerHTML, /Lesson · The attempt that never arrived/);
   assert.match(box.innerHTML, /A body got in front of this one before it reached the goaltender/);
   assert.doesNotMatch(box.innerHTML, /__[A-Z_]+__/, 'a raw token reached the page');
-  assert.match(box.innerHTML, /This example: Minnesota Wild at Buffalo Sabres, 10 November 2023/);
+  assert.match(box.innerHTML, /This example: Minnesota Wild at Buffalo Sabres, November 10, 2023/);
   assert.match(box.innerHTML, /href="\/what-you-can-see\.html#blocked">Back to the lesson/);
 });
 

@@ -87,7 +87,7 @@ test('⭐ the tags name both clubs in full, from the same table the page uses', 
      which is why the next assertion reads the shared table instead. */
   const t = tagsFor(G(), 'https://readthegame.co/preview?game=1');
   assert.equal(t.title, 'Boston Bruins at Washington Capitals — what to watch for');
-  assert.match(t.description, /25 September 2026/);
+  assert.match(t.description, /September 25, 2026/);
   assert.equal(t.url, 'https://readthegame.co/preview?game=1');
 });
 
@@ -125,8 +125,8 @@ test('⛔⛔ the unfurl promises no video and forecasts nothing', () => {
 });
 
 test('preseason and a played game are each said, and neither invents the other', () => {
-  assert.match(tagsFor(G({ preseason: true }), 'u').description, /^Preseason · 25 September 2026\./);
-  assert.match(tagsFor(G({ played: true }), 'u').description, /^played 25 September 2026\./);
+  assert.match(tagsFor(G({ preseason: true }), 'u').description, /^Preseason · September 25, 2026\./);
+  assert.match(tagsFor(G({ played: true }), 'u').description, /^played September 25, 2026\./);
   const plain = tagsFor(G(), 'u').description;
   assert.ok(!/Preseason/.test(plain) && !/played/.test(plain), plain);
 });
@@ -153,7 +153,7 @@ test('⚠️ a fixture with no league date loses the day and keeps the rest', ()
  */
 test('⭐ the replay names its two clubs and the night it was played', () => {
   const t = tagsFor(G({ played: true }), 'u', 'replay');
-  assert.equal(t.title, 'Boston Bruins at Washington Capitals — 25 September 2026');
+  assert.equal(t.title, 'Boston Bruins at Washington Capitals — September 25, 2026');
   /* AND IT IS NOT THE PREVIEW'S SENTENCE. The preview promises what each club does
      more than the league; the replay holds one game's events. One `tagsFor`
      returning one string for both would have been the cheap version of this. */
@@ -181,7 +181,7 @@ test('⛔⛔ the replay unfurl carries no result, and no figure but the date', (
       `a figure reached the replay's description, which is read before the page: ${t.description}`);
     /* The title carries the day and nothing else numeric: strip the date and no
        digit may remain, so a score added beside it goes red. */
-    assert.doesNotMatch(t.title.replace(/\d+ [A-Z][a-z]+ \d{4}/, ''), /\d/,
+    assert.doesNotMatch(t.title.replace(/[A-Z][a-z]+ \d{1,2}, \d{4}/, ''), /\d/,
       `a figure reached the replay's title beside its date: ${t.title}`);
     const said = `${t.title} ${t.description}`;
     assert.ok(!/\b(won|lost|beat|defeated|shutout|final score)\b/i.test(said), said);

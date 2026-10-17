@@ -19,7 +19,7 @@ import { CHECKS } from '../tools/browser/run.mjs';
 import { HIT_FLOOR, judgeStates, readState } from '../tools/browser/states.mjs';
 
 test('the freshness line is read out of the rendered page', () => {
-  assert.equal(stateOf('<p id="state" class="x">Data through 14 June 2026.</p>'), 'Data through 14 June 2026.');
+  assert.equal(stateOf('<p id="state" class="x">Data through June 14, 2026.</p>'), 'Data through June 14, 2026.');
   assert.equal(stateOf('<p id="other">Data through</p>'), '', 'a different element must not answer for #state');
   assert.equal(stateOf('<html><body></body></html>'), '');
 });
@@ -29,7 +29,7 @@ test('⭐ the CORS failure is a FAILURE, and an empty page is not a pass', () =>
   // that only asked "did the page render" was green through it.
   assert.equal(judge('No data loaded yet').ok, false);
   assert.equal(judge('').ok, false, 'a page that rendered nothing is not a page that works');
-  assert.equal(judge('Data through 14 June 2026. No games in the last 14 days.').ok, true);
+  assert.equal(judge('Data through June 14, 2026. No games in the last 14 days.').ok, true);
 });
 
 test('every check named in deploy.yml exists, and every check here is used by it', () => {
@@ -210,19 +210,19 @@ test('what the page should say is DERIVED from the catalog it reads', () => {
     { id: 2, d: '2026-06-14', a: 'MTL', h: 'TOR', v: 1 },
     { id: 3, d: '2026-06-20', a: 'BUF', h: 'OTT', v: 0 },   // refused: never the answer
   ] };
-  assert.deepEqual(expectation(cat), { id: 2, teams: 'MTL at TOR', date: '14 June 2026' });
+  assert.deepEqual(expectation(cat), { id: 2, teams: 'MTL at TOR', date: 'June 14, 2026' });
   assert.throws(() => expectation({ games: [] }), /no viewable game/);
 });
 
 test('⭐ both halves are checked — the clubs AND the date', () => {
-  const want = { teams: 'MTL at TOR', date: '14 June 2026' };
-  assert.equal(judgeLine('MTL at TOR · 14 June 2026', want).ok, true);
-  assert.equal(judgeLine('MTL at TOR · 13 June 2026', want).ok, false, 'a wrong date passed while only "something rendered" was checked');
-  assert.equal(judgeLine('BUF at OTT · 14 June 2026', want).ok, false);
+  const want = { teams: 'MTL at TOR', date: 'June 14, 2026' };
+  assert.equal(judgeLine('MTL at TOR · June 14, 2026', want).ok, true);
+  assert.equal(judgeLine('MTL at TOR · June 13, 2026', want).ok, false, 'a wrong date passed while only "something rendered" was checked');
+  assert.equal(judgeLine('BUF at OTT · June 14, 2026', want).ok, false);
   assert.equal(judgeLine('This game could not be loaded — HTTP 404', want).ok, false);
   assert.equal(judgeLine('—', want).ok, false, 'the placeholder is not a game');
   assert.equal(judgeLine('', want).ok, false);
-  assert.equal(gameLineOf('<p id="gl" class="x">MTL at TOR · 14 June 2026</p>'), 'MTL at TOR · 14 June 2026');
+  assert.equal(gameLineOf('<p id="gl" class="x">MTL at TOR · June 14, 2026</p>'), 'MTL at TOR · June 14, 2026');
 });
 
 /* ------------------------------------------------------- the policy's verdict */

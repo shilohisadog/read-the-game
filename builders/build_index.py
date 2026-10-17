@@ -718,11 +718,26 @@ HELPERS = r"""  var $ = function (id) { return document.getElementById(id); };
 
   function when(d) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
-    return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
+    return m ? MON[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1] : (d || '');
   }
   /* A DATED LINK (`asof=`) shows a saved edition: that night's data, under
      `editions/<date>/` (docs/editions-design.md). Links between dated pages keep it. */
   var ASOF = (/[?&]asof=(\d{4}-\d{2}-\d{2})(?=&|#|$)/.exec(location.search) || [])[1] || null;
+  // The newest sealed edition in editions/index.json, or null.
+  function newestOf(index) {
+    var e = (index && index.editions) || [];
+    return e.length ? e[e.length - 1] : null;
+  }
+  /* A DATED PAGE OLDER THAN TODAY'S says its date and offers today's; the newest
+     edition says nothing, since it is today's. `rest` is the undated link's tail. */
+  function asOf(id, ed, newest, rest) {
+    var p = $(id);
+    p.textContent = '';
+    p.hidden = ed === newest;
+    if (p.hidden) return;
+    p.appendChild(el('strong', null, 'Figures as of ' + when(ed) + '. '));
+    p.appendChild(el('a', null, 'See today\u2019s \u2192')).href = location.pathname + (rest || '');
+  }
   function withAsof(href) {
     if (!ASOF) return href;
     var at = href.indexOf('#'), base = at < 0 ? href : href.slice(0, at), frag = at < 0 ? '' : href.slice(at);
@@ -3220,7 +3235,7 @@ MONTHS = ("January", "February", "March", "April", "May", "June", "July",
 
 
 def _when(iso):
-    """"2023-11-10" -> "10 November 2023", or None for anything that is not one.
+    """"2023-11-10" -> "November 10, 2023", or None for anything that is not one.
 
     ⭐ ONE PYTHON SPELLING, and it is ASSERTED AGAINST THE JAVASCRIPT rather than
     trusted. `src/lib/day.js::formatDate` is the same function for the browser,
@@ -3236,7 +3251,7 @@ def _when(iso):
     different machine.
     """
     m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", str(iso or ""))
-    return f"{int(m[3])} {MONTHS[int(m[2]) - 1]} {m[1]}" if m else None
+    return f"{MONTHS[int(m[2]) - 1]} {int(m[3])}, {m[1]}" if m else None
 
 LEARN_GROUPS = [
     ("rules", "The game itself &mdash; the league&rsquo;s rules, named as they happen"),
@@ -3811,7 +3826,7 @@ __HELPERS__
         : (a.startTimeUTC < b.startTimeUTC ? -1 : 1);
     });
     var total = n.held + ahead.length;
-    main.appendChild(headline(DAY[weekdayOf(date)] + ' ' + when(date),
+    main.appendChild(headline(DAY[weekdayOf(date)] + ', ' + when(date),
       total ? plural(total, 'game') : null));
     if (ahead.length) main.appendChild(fixtures(ahead));
 
@@ -4146,8 +4161,9 @@ __HELPERS__
     // The extract answers whether the game was played (a 404 means not held)
     // and who dressed for it; see `heldFrom` and `watchFor`.
     // A dated link reads its edition when one was saved; the game file is always the newest.
-    (ASOF ? grab('editions/' + ASOF + '/manifest.json') : Promise.resolve(null)).then(function (man) {
-      var ed = ASOF && man ? ASOF : null;
+    (ASOF ? Promise.all([grab('editions/' + ASOF + '/manifest.json'), grab('editions/index.json')])
+          : Promise.resolve([null, null])).then(function (got) {
+      var man = got[0], ed = ASOF && man ? ASOF : null;
       var at = function (n) { return ed ? 'editions/' + ed + '/data/' + n : n; };
       return Promise.all([grab(at('schedule.json')), grab(at('teams.json')), grab(at('measures.json')),
                           grab(at('recent.json')), grab('extract/' + q + '.json'), grab(at('players.json'))])
@@ -4159,16 +4175,16 @@ __HELPERS__
                                game: upcoming ? null : r[4], players: r[5] },
                           ed ? man.sealedAt : new Date().toISOString());
           draw(p);
-          sayEdition(ed, p);
+          sayEdition(ed, p, newestOf(got[1]));
         });
     });
   }
 
-  /* WHICH VERSION THIS IS, said rather than implied. */
-  function sayEdition(ed, p) {
-    var line = ed ? 'A saved version: as it stood with games through ' + when(ed)
-                    + '. This link always shows these figures.'
-      : ASOF ? 'No saved version exists for ' + when(ASOF) + ', so these are today\u2019s figures.'
+  /* WHICH VERSION THIS IS — said only when it differs from today's. The newest
+     edition IS today's figures, so it says nothing (Kevin, 2026-10-17). */
+  function sayEdition(ed, p, newest) {
+    if (ed) return asOf('pvedition', ed, newest, '?game=' + q);
+    var line = ASOF ? 'No saved version exists for ' + when(ASOF) + ', so these are today\u2019s figures.'
       : p.state === 'played' ? 'This preview was not saved before the game, so these are '
                     + 'today\u2019s figures, and they include the game itself.'
       : '';
@@ -5245,7 +5261,7 @@ same building. A measure of shots that missed the net passed every steadiness te
 we had and failed that one badly. It was on this site for about four hours.</p>
 
 <h2 id="q6">6. You combined three seasons without levelling them first.</h2>
-<p><b>Right, and we found it ourselves on 23 September 2026.</b> The league&rsquo;s
+<p><b>Right, and we found it ourselves on September 23, 2026.</b> The league&rsquo;s
 recording of some events changed a great deal between those seasons &mdash;
 giveaways nearly doubled in one off-season, which no team did. Pooled without
 removing each season&rsquo;s own level, a league-wide change like that reads as a
@@ -5643,11 +5659,12 @@ __HELPERS__
   }
 
   // A dated link reads that night's measurements, so its arithmetic matches the page that linked here.
-  (ASOF ? grab('editions/' + ASOF + '/data/measures.json') : Promise.resolve(null)).then(function (saved) {
-    if (ASOF) {
-      $('hmedition').textContent = saved
-        ? 'A saved version: the arithmetic as it stood with games through ' + when(ASOF) + '.'
-        : 'No saved version exists for ' + when(ASOF) + ', so this is today\u2019s arithmetic.';
+  (ASOF ? Promise.all([grab('editions/' + ASOF + '/data/measures.json'), grab('editions/index.json')])
+        : Promise.resolve([null, null])).then(function (got) {
+    var saved = got[0];
+    if (ASOF && saved) asOf('hmedition', ASOF, newestOf(got[1]), location.hash);
+    else if (ASOF) {
+      $('hmedition').textContent = 'No saved version exists for ' + when(ASOF) + ', so this is today\u2019s arithmetic.';
       $('hmedition').hidden = false;
     }
     return saved || grab('measures.json');

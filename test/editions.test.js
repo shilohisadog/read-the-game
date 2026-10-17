@@ -98,7 +98,8 @@ function runMethods(search, byPath) {
       if (k === 'classList') return { add() {}, remove() {}, toggle() {}, contains: () => false };
       if (k === 'querySelectorAll' || k === 'getElementsByTagName') return () => [];
       if (k === 'querySelector' || k === 'closest') return () => null;
-      return typeof k === 'string' ? (...a) => (k === 'appendChild' ? a[0] : stub()) : undefined;
+      if (k === 'appendChild') return c => (t.kids.push(c), c);
+      return typeof k === 'string' ? () => stub() : undefined;
     },
     set(t, k, v) { t[k] = v; return true; } });
   const document = new Proxy({}, { get(_, k) {
@@ -121,14 +122,21 @@ function runMethods(search, byPath) {
 }
 
 test('a dated methods page reads that night\'s measurements and says so', async () => {
-  const m = runMethods('?asof=2026-10-14', { 'editions/2026-10-14/data/measures.json': { dataThrough: '2026-10-14' } });
+  const saved = { 'editions/2026-10-14/data/measures.json': { dataThrough: '2026-10-14' } };
+  const m = runMethods('?asof=2026-10-14', { ...saved, 'editions/index.json': { editions: ['2026-10-14', '2026-10-15'] } });
   await m.settle();
-  assert.deepEqual(m.asked, ['editions/2026-10-14/data/measures.json']);
-  assert.match(m.ids.hmedition.textContent, /A saved version: the arithmetic as it stood with games through 14 October 2026/);
+  assert.deepEqual(m.asked, ['editions/2026-10-14/data/measures.json', 'editions/index.json']);
+  assert.equal(m.ids.hmedition.hidden, false);
+  assert.deepEqual(m.ids.hmedition.kids.map(k => k.textContent), ['Figures as of October 14, 2026. ', 'See today\u2019s \u2192']);
+  // The newest edition is today's figures, so it says nothing (Kevin, 2026-10-17).
+  const newest = runMethods('?asof=2026-10-14', { ...saved, 'editions/index.json': { editions: ['2026-10-13', '2026-10-14'] } });
+  await newest.settle();
+  assert.equal(newest.ids.hmedition.hidden, true);
+  assert.deepEqual(newest.ids.hmedition.kids, []);
   const gone = runMethods('?asof=2026-09-01', { 'measures.json': { dataThrough: '2026-10-14' } });
   await gone.settle();
-  assert.deepEqual(gone.asked, ['editions/2026-09-01/data/measures.json', 'measures.json']);
-  assert.match(gone.ids.hmedition.textContent, /No saved version exists for 1 September 2026/);
+  assert.deepEqual(gone.asked, ['editions/2026-09-01/data/measures.json', 'editions/index.json', 'measures.json']);
+  assert.match(gone.ids.hmedition.textContent, /No saved version exists for September 1, 2026/);
   const now = runMethods('', { 'measures.json': { dataThrough: '2026-10-14' } });
   await now.settle();
   assert.deepEqual(now.asked, ['measures.json'], 'an undated methods page reads anything but today\'s');

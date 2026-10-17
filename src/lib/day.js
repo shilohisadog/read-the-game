@@ -1,5 +1,6 @@
 /**
- * A DATE, AS A READER WOULD WRITE IT. "2023-11-10" -> "10 November 2023".
+ * A DATE, AS A READER WOULD WRITE IT. "2023-11-10" -> "November 10, 2023" (Kevin,
+ * 2026-10-17: the North American order, everywhere on the site).
  *
  * ⭐ ITS OWN FILE SO THE REPLAY CAN HAVE IT WITHOUT THE FRONT DOOR'S STATE
  * MODEL. This lived in `ingest-state.js`, which is 10 KB of pipeline-state prose
@@ -12,11 +13,11 @@
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
   'August', 'September', 'October', 'November', 'December'];
 
-/** "2023-11-10" -> "10 November 2023", or null for anything that is not one.
+/** "2023-11-10" -> "November 10, 2023", or null for anything that is not one.
  *  PARSED BY HAND rather than with `Date`, which would apply the viewer's
  *  timezone to a date that has none and can slip a day westward. */
 export function formatDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
   if (!m) return null;
-  return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
+  return `${MONTHS[+m[2] - 1]} ${+m[3]}, ${m[1]}`;
 }

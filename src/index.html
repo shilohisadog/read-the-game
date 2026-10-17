@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fGDK8nAgWTJNKsrpVs4dYJv3wO+wWQXrV/eG8Ke3uPg=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XpNMdgMsf9bu9hzAhJyoXUCqmpawkyi02Vln+KIH0u4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -352,7 +352,7 @@ watching. Each of these is drawn first, then shown in a real game.</p>
 
 <section class="countsin">
 <h2 id="counts-h">What we count</h2>
-<p class="note">Our own measurements rather than the league&rsquo;s, over 4,312 games, up to 16 October 2026. Each one opens the lesson behind it.</p>
+<p class="note">Our own measurements rather than the league&rsquo;s, over 4,312 games, up to October 16, 2026. Each one opens the lesson behind it.</p>
 <div class="cgrid">
 <div class="cardw"><a class="ccard" href="/slot.html"><span class="lt">Shots from the slot</span><span class="ld">A shot taken from inside the slot goes in 11.6% of the time &mdash; 19,691 goals from 169,489 attempts. From outside it, 3.3%.</span></a><p class="cw"><a href="/how-we-measure.html#m-slotGoals">How we counted this &rarr;</a></p></div>
 <div class="cardw"><a class="ccard" href="/what-you-can-see.html#shifts"><span class="lt">How long a shift is</span><span class="ld">A shift lasts 48 seconds on average, measured over 3,154,714 shifts.</span></a><p class="cw"><a href="/how-we-measure.html#m-shift">How we counted this &rarr;</a></p></div>
@@ -380,7 +380,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
 function formatDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
   if (!m) return null;
-  return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
+  return `${MONTHS[+m[2] - 1]} ${+m[3]}, ${m[1]}`;
 }
 
 
@@ -736,9 +736,21 @@ function disputedNote(n) {
 
   function when(d) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
-    return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
+    return m ? MON[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1] : (d || '');
   }
   var ASOF = (/[?&]asof=(\d{4}-\d{2}-\d{2})(?=&|#|$)/.exec(location.search) || [])[1] || null;
+  function newestOf(index) {
+    var e = (index && index.editions) || [];
+    return e.length ? e[e.length - 1] : null;
+  }
+  function asOf(id, ed, newest, rest) {
+    var p = $(id);
+    p.textContent = '';
+    p.hidden = ed === newest;
+    if (p.hidden) return;
+    p.appendChild(el('strong', null, 'Figures as of ' + when(ed) + '. '));
+    p.appendChild(el('a', null, 'See today\u2019s \u2192')).href = location.pathname + (rest || '');
+  }
   function withAsof(href) {
     if (!ASOF) return href;
     var at = href.indexOf('#'), base = at < 0 ? href : href.slice(0, at), frag = at < 0 ? '' : href.slice(at);

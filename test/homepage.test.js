@@ -627,7 +627,7 @@ test('an unreachable archive is a stated condition, not a blank page', () => {
 test('the freshness line is fetched, and reports what it was given', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {
-    assert.match(String(r.ids.state.textContent), /Data through 14 June 2026\./);
+    assert.match(String(r.ids.state.textContent), /Data through June 14, 2026\./);
     assert.equal(r.ids.state.attrs['data-state'], 'quiet');
   });
 });
@@ -1024,7 +1024,7 @@ test('the hero names its clubs in full, in the headline and the line under it', 
     // provenance line now, which was already there and had room.
     assert.doesNotMatch(r.ids.heroline.textContent, /\d{4}/,
       'the date is back in the headline, where it wraps');
-    assert.match(r.ids.herokick.textContent, /\d{1,2} \w+ \d{4}/,
+    assert.match(r.ids.herokick.textContent, /\w+ \d{1,2}, \d{4}/,
       'the provenance line lost the date the headline gave up');
   });
 });
@@ -1359,7 +1359,7 @@ test('the front door leads with the most recent game, and it PLAYS', () => {
     // left in it at all, so the check is simply that there are none.
     assert.doesNotMatch(r.ids.heroline.textContent, /\d/,
       'the hero line is stating a score again');
-    assert.match(r.ids.herokick.textContent, /9 February 2024/,
+    assert.match(r.ids.herokick.textContent, /February 9, 2024/,
       'the provenance line lost the date the headline gave up');
     assert.equal(r.ids.herogo.href, 'game.html?game=2023020200');
 
@@ -1791,7 +1791,7 @@ test('a dark night still opens onto the last night the archive holds', async () 
      preseason, the all-star games, the Olympics and the 4 Nations Face-Off are
      "archived, derived and VIEWABLE, and never enter a computed number" — so a
      rate may not pool them and a sentence about what this archive HOLDS may not
-     exclude them. It went live: on 20 September 2026 the front door said "Next
+     exclude them. It went live: on September 20, 2026 the front door said "Next
      CAR at FLA, Sunday, September 20" beside "The last night we hold is 14 June
      2026", with games from the 19th and 20th in the catalog.
 
@@ -2055,11 +2055,11 @@ const STALLED_RUN = '2026-06-14T00:00:00.000Z';   // 4 days 12 hours before it
 const FRESH_CASES = [
   { name: 'quiet, with the card above it — Kevin\'s case',
     index: INDEX, recent: { asOf: new Date().toISOString(), games: [] },
-    quiet: true, says: /Data through 14 June 2026\./ },
+    quiet: true, says: /Data through June 14, 2026\./ },
   { name: 'current, with a slate above it',
     index: { ...INDEX, coverage: { windowDays: 14, finalInWindow: 2, gamesInWindow: 2,
                                    heldInWindow: 2 } },
-    recent: RECENT, quiet: true, says: /Data through 14 June 2026\./ },
+    recent: RECENT, quiet: true, says: /Data through June 14, 2026\./ },
   { name: 'behind — a limit the card never mentions',
     index: { ...INDEX, coverage: { windowDays: 14, finalInWindow: 12, gamesInWindow: 12,
                                    heldInWindow: 7 } },
@@ -2069,7 +2069,7 @@ const FRESH_CASES = [
     recent: RECENT, quiet: false, says: /Last checked 4 days ago/ },
   { name: 'halted — the loudest thing we can tell a reader',
     index: { ...INDEX, halted: { since: '2026-03-03' } },
-    recent: RECENT, quiet: false, says: /Updates paused 3 March 2026/ },
+    recent: RECENT, quiet: false, says: /Updates paused March 3, 2026/ },
   { name: 'unknown — an index older than the schema',
     index: { dataThrough: '2026-06-14' },
     recent: RECENT, quiet: false, says: /When we last checked is unknown/ },
@@ -2180,7 +2180,7 @@ test('⛔ the dark-night door and the game page name the same newest game', asyn
   assert.equal(doorDate, openDate,
     `the front door sends a reader to ${doorDate} and /game opens a game from ${openDate} — `
     + 'one of these two is filtering on something the other is not, which is exactly how '
-    + '"The last night we hold is 14 June 2026" shipped beside a September fixture');
+    + '"The last night we hold is June 14, 2026" shipped beside a September fixture');
   assert.equal(openDate, '2026-09-20', 'neither picked the newest VIEWABLE game (the refused one must be skipped)');
 });
 

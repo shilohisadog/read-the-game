@@ -29,8 +29,8 @@ const text = r => r.lines.join(' ');
 test('a date is formatted without letting a timezone move it', () => {
   // Date.parse('2026-01-14') is UTC midnight; rendering it in a western
   // timezone would show the 13th. The date has no time, so it gets none.
-  assert.equal(formatDate('2026-01-14'), '14 January 2026');
-  assert.equal(formatDate('2023-11-10'), '10 November 2023');
+  assert.equal(formatDate('2026-01-14'), 'January 14, 2026');
+  assert.equal(formatDate('2023-11-10'), 'November 10, 2023');
   assert.equal(formatDate('nonsense'), null);
   assert.equal(formatDate(undefined), null);
 });
@@ -38,7 +38,7 @@ test('a date is formatted without letting a timezone move it', () => {
 test('healthy and current: the data date, and nothing else', () => {
   const r = describe(idx(), NOW);
   assert.equal(r.state, 'current');
-  assert.equal(text(r), 'Data through 14 January 2026.');
+  assert.equal(text(r), 'Data through January 14, 2026.');
   assert.doesNotMatch(text(r), /checked/i, 'nobody needs telling the job ran an hour ago');
 });
 
@@ -50,7 +50,7 @@ test('healthy with no hockey: says so, and is NOT reported as stale', () => {
     coverage: { windowDays: 14, finalInWindow: 0, heldInWindow: 0,
                 erroredInWindow: 0 } }), NOW);
   assert.equal(r.state, 'quiet');
-  assert.match(text(r), /Data through 10 November 2023\./);
+  assert.match(text(r), /Data through November 10, 2023\./);
   assert.match(text(r), /No games in the last 14 days\./);
   assert.doesNotMatch(text(r), /paused|checked/i);
 });
@@ -70,7 +70,7 @@ test('stale carries the cadence, because a gap means nothing without one', () =>
   assert.equal(r.state, 'stalled');
   assert.match(text(r), /Checked daily\./, 'the base rate ships with the number');
   assert.match(text(r), /Last checked 4 days ago\./);
-  assert.match(text(r), /Data through 14 January 2026\./, 'the data date is still shown');
+  assert.match(text(r), /Data through January 14, 2026\./, 'the data date is still shown');
 });
 
 test('the staleness threshold is a boundary, not a vibe', () => {
@@ -183,7 +183,7 @@ test('halted explains itself, and outranks staleness', () => {
     halted: { since: '2026-01-09T11:00:00Z', reason: "gameState 'PPD' in 4 games" },
     lastRun: '2026-01-15T11:00:00Z' }), NOW);
   assert.equal(r.state, 'halted');
-  assert.match(text(r), /Updates paused 9 January 2026\./);
+  assert.match(text(r), /Updates paused January 9, 2026\./);
   assert.match(text(r), /stopped rather than guess/);
 });
 
@@ -273,7 +273,7 @@ test('⛔ NO STATE ANNOUNCES THE SEASON — that sentence lives in daily.js now'
      version wiring it back into whichever branch somebody is editing.
      ⚠️ THE PATTERN IS THE VERB, NOT A MONTH. A first draft of the earlier
      version of this check matched /September 2026/ and went red on a correct
-     page, because a halt states its own date: "Updates paused 8 September 2026".
+     page, because a halt states its own date: "Updates paused September 8, 2026".
      The subject here is the announcement. */
   const states = [
     describe(summerIdx(), SUMMER),
@@ -298,7 +298,7 @@ test('the quiet state is a full stop, and the page carries the rest above it', (
   // league listed nothing — and it is complete as that.
   const r = describe(summerIdx(), SUMMER);
   assert.equal(r.state, 'quiet');
-  assert.equal(text(r), 'Data through 14 June 2026. No games in the last 14 days.');
+  assert.equal(text(r), 'Data through June 14, 2026. No games in the last 14 days.');
 });
 
 test('a third argument is ignored rather than obeyed', () => {

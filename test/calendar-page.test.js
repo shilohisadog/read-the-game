@@ -198,7 +198,7 @@ test('the screen reader is told what the dashed box means, since it cannot see i
   const { ids, settle } = run(MONTH, '?month=2026-02');
   await settle();
   const spoken = withClass(ids.main, 'cell').map(c => c.attrs['aria-label']).filter(Boolean);
-  const mixed = spoken.find(s => /13 February/.test(s));
+  const mixed = spoken.find(s => /February 13,/.test(s));
   assert.match(mixed, /1 game counted/);
   assert.match(mixed, /not counted here: Olympics/);
 });

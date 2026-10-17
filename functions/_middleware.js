@@ -96,7 +96,7 @@ export function dayOf(g) {
   if (!m) return null;
   const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
                'August', 'September', 'October', 'November', 'December'];
-  return `${+m[3]} ${MON[+m[2] - 1]} ${m[1]}`;
+  return `${MON[+m[2] - 1]} ${+m[3]}, ${m[1]}`;
 }
 
 /**

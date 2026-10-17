@@ -928,7 +928,7 @@ test('⛔⛔ the two date formatters agree, across the language boundary', () =>
       `the two formatters disagree about ${JSON.stringify(dates[k])}`);
   /* AND THE SPECIMENS INCLUDE A REAL ANSWER, so this cannot be satisfied by two
      functions that both return null for everything. */
-  assert.equal(formatDate('2026-10-02'), '2 October 2026');
+  assert.equal(formatDate('2026-10-02'), 'October 2, 2026');
 });
 
 test('⭐⭐ every static page that names a population says what it is measured up to', () => {

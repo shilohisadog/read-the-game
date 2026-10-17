@@ -165,7 +165,7 @@ function run(over = {}, search = `?game=${GID}`, at = null) {
     static now() { return new Real(at).getTime(); }
   } : Real;
   new Function('document', 'fetch', 'location', 'Date', script)(
-    document, fetch, { search, origin: 'https://readthegame.co' }, Clock);
+    document, fetch, { search, pathname: '/preview', origin: 'https://readthegame.co' }, Clock);
   return { ids, document, settle: () => new Promise(r => setTimeout(r, 0)) };
 }
 
@@ -197,13 +197,13 @@ test('⛔ an empty column says WHEN counting starts, not only that it is empty',
   await settle();
   const said = textOf(ids.pv);
   assert.match(said, /No games counted yet this season/, 'the subject must be on the page');
-  assert.match(said, /the regular season starts 29 September 2026/);
+  assert.match(said, /the regular season starts September 29, 2026/);
 
   const moved = run({ 'teams.json': { through: '2026-09-18', seasons: {} },
     'schedule.json': { ...DOCS['schedule.json'],
       season: { regularSeasonStartDate: '2026-10-07' } } }, `?game=${GID}`, BEFORE);
   await moved.settle();
-  assert.match(textOf(moved.ids.pv), /starts 7 October 2026/,
+  assert.match(textOf(moved.ids.pv), /starts October 7, 2026/,
     'the date is the feed’s, so moving the feed moves the sentence');
 });
 
@@ -1020,7 +1020,7 @@ test('⛔⛔ the player figures say what they are COUNTED THROUGH, and name the 
   await settle();
   const block = walk(ids.pv).find(x => hasCls(x, 'pvwatchers'));
   const said = textOf(block);
-  assert.match(said, /Counted through 28 September 2026/,
+  assert.match(said, /Counted through September 28, 2026/,
     'the player figures must say what they are measured through');
   /* ⛔ THE CADENCE IS PART OF THE CLAIM AND IT MOVED. Kevin, 2026-10-07: *"we
      need to refresh the data nightly, so there's the potential of new 'players
@@ -1317,7 +1317,7 @@ test('⛔⛔ a leader who did not dress for his team\u2019s last game is not nam
   assert.doesNotMatch(said, /Injured/, 'the leader who sat out was named');
   assert.match(said, /#11 Scorer/, 'the next scorer who dressed is the pick');
   assert.match(said, /among the players it dressed for its last game/);
-  assert.match(said, /Buffalo Sabres last played 28 September 2026, Pittsburgh Penguins 27 September 2026/);
+  assert.match(said, /Buffalo Sabres last played September 28, 2026, Pittsburgh Penguins September 27, 2026/);
   assert.match(said, /ruled out since then could still be named/, 'the residual risk is stated');
 });
 
@@ -1376,7 +1376,7 @@ test('⭐⭐ where the league’s boxscores differ, the card says their figure a
   const { ids, settle } = run({ 'players.json': docs }, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
   const said = textOf(walk(ids.pv).find(x => hasCls(x, 'pvwatchers')));
-  assert.match(said, /Scorer 25 in 10 games \(the league’s boxscores say 24; the two differ on 21 September 2026 against Toronto Maple Leafs\)/);
+  assert.match(said, /Scorer 25 in 10 games \(the league’s boxscores say 24; the two differ on September 21, 2026 against Toronto Maple Leafs\)/);
   assert.doesNotMatch(said, /Captain \d+ in 11 games \(the league/, 'a player with no difference says nothing extra');
   assert.equal((said.match(/boxscores say/g) || []).length, 1, 'only the shots row differs');
 });
@@ -1393,7 +1393,7 @@ test('⭐ the two teams open with their records, dated, and say what a record is
   // Kevin, 2026-10-13: the record as the intro to the team rows.
   const { ids, settle } = run({ 'teams.json': withRecords() }, `?game=${GID}`, '2026-10-13T12:00:00Z');
   await settle();
-  assert.match(clubsText(ids), /Buffalo Sabres 3–3–0 and Pittsburgh Penguins 3–2–1 this regular season, through 12 October 2026\. The record says who won; the rows below say how each team plays\./);
+  assert.match(clubsText(ids), /Buffalo Sabres 3–3–0 and Pittsburgh Penguins 3–2–1 this regular season, through October 12, 2026\. The record says who won; the rows below say how each team plays\./);
   assert.doesNotMatch(clubsText(ids), /standings say/, 'standings that agree add nothing');
 });
 
@@ -1517,7 +1517,7 @@ function runPaths(byPath, search, at) {
     constructor(...a) { super(...(a.length ? a : [at])); }
     static now() { return new Real(at).getTime(); } };
   new Function('document', 'fetch', 'location', 'Date', script)(
-    document, fetch, { search, origin: 'https://readthegame.co' }, Clock);
+    document, fetch, { search, pathname: '/preview', origin: 'https://readthegame.co' }, Clock);
   return { ids, asked, settle: () => new Promise(r => setTimeout(r, 0)) };
 }
 const edition = (docs, date = ED) => ({
@@ -1533,8 +1533,25 @@ test('⭐ a dated preview reads that night\'s edition, and the newest game file'
   await p.settle();
   const loose = p.asked.filter(a => !a.startsWith('editions/') && a !== `extract/${GID}.json`);
   assert.deepEqual(loose, [], `a dated preview read today's files: ${loose.join(', ')}`);
-  assert.match(p.ids.pvedition.textContent, /A saved version: as it stood with games through 1 October 2026/);
-  assert.equal(p.ids.pvedition.hidden, false);
+});
+
+/* THE EDITION LINE SPEAKS ONLY WHEN IT DIFFERS FROM TODAY'S (Kevin, 2026-10-17:
+   "do we need to say it at all?"). Paired: the newest edition is silent, an
+   older one says its date and links to today's. */
+test('⭐ the newest edition says nothing; an older one says its date and offers today\'s', async () => {
+  const at = index => runPaths({ ...LATER, ...edition(DOCS), [`extract/${GID}.json`]: null,
+                                 'editions/index.json': { editions: index } },
+                               `?game=${GID}&asof=${ED}`, '2026-10-10T12:00:00Z');
+  const newest = at(['2026-09-30', ED]);
+  await newest.settle();
+  assert.equal(newest.ids.pvedition.hidden, true, 'the newest edition announced itself');
+  assert.equal(textOf(newest.ids.pvedition), '');
+  const older = at([ED, '2026-10-09']);
+  await older.settle();
+  assert.equal(older.ids.pvedition.hidden, false);
+  assert.deepEqual(older.ids.pvedition.kids.map(k => k.textContent), ['Figures as of October 1, 2026. ', 'See today\u2019s \u2192']);
+  const a = walk(older.ids.pvedition).find(x => x.tagName === 'A' || x.tag === 'a' || x.href);
+  assert.equal(a.href, `/preview?game=${GID}`, 'today\'s link must drop the date');
 });
 
 test('⛔ a saved preview stays as it stood: no score for a game still on that night\'s schedule', async () => {
@@ -1556,7 +1573,7 @@ test('⛔ a saved preview stays as it stood: no score for a game still on that n
 test('a date with no saved edition says so and shows today\'s figures', async () => {
   const p = runPaths({ ...LATER }, `?game=${GID}&asof=2026-09-01`, '2026-10-10T12:00:00Z');
   await p.settle();
-  assert.match(p.ids.pvedition.textContent, /No saved version exists for 1 September 2026/);
+  assert.match(p.ids.pvedition.textContent, /No saved version exists for September 1, 2026/);
   assert.ok(p.asked.includes('teams.json'), 'it did not fall back to today\'s files');
 });
 

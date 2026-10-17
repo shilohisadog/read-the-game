@@ -82,7 +82,7 @@ test('⭐ "Last night" IS EARNED FROM THE GAME DATES, and degrades instead of ly
   const stale = daily(recent([leaderLost({ date: '2026-01-11' })],
     '2026-01-12T11:00:00Z'), sched(LEAGUE), NOW);
   assert.equal(stale.state, 'slate', 'the block still has something true to say');
-  assert.equal(stale.kicker, '11 January 2026', 'it named a night that was not last night');
+  assert.equal(stale.kicker, 'January 11, 2026', 'it named a night that was not last night');
   assert.equal(stale.count, 1);
 
   /* THE PAIRED HALF, which is what makes the one above mean anything: the same
@@ -206,7 +206,7 @@ test('⭐ off-season: the league\'s own dates, in one sentence', () => {
   assert.equal(r.state, 'offseason');
   assert.equal(r.kicker, 'Next');
   assert.equal(text(r),
-    'Preseason opens 19 September 2026, the regular season 29 September 2026.');
+    'Preseason opens September 19, 2026, the regular season September 29, 2026.');
 });
 
 test('⭐ …and a date that has already arrived is not announced', () => {
@@ -214,8 +214,8 @@ test('⭐ …and a date that has already arrived is not announced', () => {
   // past opening night is the stale-fixture failure schedule.json exists to
   // prevent, arriving through the reader instead of the writer.
   const r = daily(recent([]), sched(LEAGUE), '2026-09-25T12:00:00Z');
-  assert.equal(text(r), 'The regular season opens 29 September 2026.');
-  assert.doesNotMatch(text(r), /19 September/, 'it announced a date already past');
+  assert.equal(text(r), 'The regular season opens September 29, 2026.');
+  assert.doesNotMatch(text(r), /September 19/, 'it announced a date already past');
 });
 
 test('⭐ …and when both have passed there is no block at all', () => {
@@ -271,7 +271,7 @@ test('the season line needs the league to have said it — no document, no claim
 
 test('whenHockeyReturns is the same quotation, callable on its own', () => {
   assert.equal(whenHockeyReturns(sched(LEAGUE), '2026-09-09T12:00:00Z'),
-    'Preseason opens 19 September 2026, the regular season 29 September 2026.');
+    'Preseason opens September 19, 2026, the regular season September 29, 2026.');
   assert.equal(whenHockeyReturns(sched(LEAGUE), '2026-10-05T12:00:00Z'), null);
   assert.equal(whenHockeyReturns(null, NOW), null);
 });

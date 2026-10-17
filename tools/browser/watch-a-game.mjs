@@ -36,7 +36,7 @@ export function expectation(catalog) {
   v.sort((a, b) => (a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1)));
   const g = v[v.length - 1];
   const [y, m, d] = g.d.split('-');
-  return { id: g.id, teams: `${g.a} at ${g.h}`, date: `${+d} ${MONTHS[+m - 1]} ${y}` };
+  return { id: g.id, teams: `${g.a} at ${g.h}`, date: `${MONTHS[+m - 1]} ${+d}, ${y}` };
 }
 
 /** The game line as the shell rendered it. Its placeholder is an em-dash, so emptiness is not the signal. */

@@ -359,7 +359,7 @@ const CARD_DOCS = {
 
 test('⛔⛔⛔ EVERY WORK DOOR THE CARD WRITES LANDS ON A SECTION THAT EXISTS', async () => {
   /* THE GATE. Both pages are rendered for real and their output compared; nothing
-     here trusts a constant. On 23 September 2026 the card had ten figures and
+     here trusts a constant. On September 23, 2026 the card had ten figures and
      zero work doors, and the reason the gap survived a green suite is that every
      check asked a narrower question than the rule does.
 
@@ -876,7 +876,7 @@ test('⛔⛔ the paths are checked against the REAL published document, not the 
 
 test('⛔ a figure with no published sentence is not printed at all', () => {
   /* ⭐ THE RULE APPLIED TO OURSELVES. `census.js` published no `what` on nine
-     sub-objects until 24 September 2026, and the four derivations that needed
+     sub-objects until September 24, 2026, and the four derivations that needed
      them were hand-written for exactly that reason. If a sentence goes missing
      again the page must lose the figure and SAY so, rather than print a number
      with nothing behind it on the one page that refuses those.

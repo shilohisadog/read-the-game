@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TD/v/XZQWbLSQGkuQhEbuDxlcHqyZt+GON8uAFOXtpM=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-12CABlalbKbiCVq1wzDo7+3kqM16oHwn5BTP/XDLrfk=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -560,9 +560,21 @@ function otherInMonth(games, month) {
 
   function when(d) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
-    return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
+    return m ? MON[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1] : (d || '');
   }
   var ASOF = (/[?&]asof=(\d{4}-\d{2}-\d{2})(?=&|#|$)/.exec(location.search) || [])[1] || null;
+  function newestOf(index) {
+    var e = (index && index.editions) || [];
+    return e.length ? e[e.length - 1] : null;
+  }
+  function asOf(id, ed, newest, rest) {
+    var p = $(id);
+    p.textContent = '';
+    p.hidden = ed === newest;
+    if (p.hidden) return;
+    p.appendChild(el('strong', null, 'Figures as of ' + when(ed) + '. '));
+    p.appendChild(el('a', null, 'See today\u2019s \u2192')).href = location.pathname + (rest || '');
+  }
   function withAsof(href) {
     if (!ASOF) return href;
     var at = href.indexOf('#'), base = at < 0 ? href : href.slice(0, at), frag = at < 0 ? '' : href.slice(at);
@@ -802,7 +814,7 @@ function otherInMonth(games, month) {
         : (a.startTimeUTC < b.startTimeUTC ? -1 : 1);
     });
     var total = n.held + ahead.length;
-    main.appendChild(headline(DAY[weekdayOf(date)] + ' ' + when(date),
+    main.appendChild(headline(DAY[weekdayOf(date)] + ', ' + when(date),
       total ? plural(total, 'game') : null));
     if (ahead.length) main.appendChild(fixtures(ahead));
 

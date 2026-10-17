@@ -1,7 +1,7 @@
 """⭐⭐⭐ EVERY FIGURE ON THE SITE HAS A DOOR TO ITS WORK.
 
 Kevin's standing rule is not "most figures": a reader who finds one naked number
-has learned that "check our work" is decorative. On 24 September 2026 three pages
+has learned that "check our work" is decorative. On September 24, 2026 three pages
 printed measured figures and carried ZERO doors between them, while the preview
 card had carried one per figure since the day before.
 

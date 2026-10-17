@@ -69,7 +69,7 @@ test('⛔ a game that has started says STARTED, and never says it is under way',
      about two and a half hours after it starts, and the archive does not hold it
      until the night is ingested — up to thirteen hours later — so the page told
      a reader a finished game was live. Kevin saw exactly that on the live site
-     on 23 September 2026. It was also a real-time claim on a site whose whole
+     on September 23, 2026. It was also a real-time claim on a site whose whole
      position is that it is a replay and never live.
 
      MUTATION: rename the state back and the first assertion fires; give it an

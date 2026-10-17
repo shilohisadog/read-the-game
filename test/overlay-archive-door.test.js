@@ -512,7 +512,7 @@ test('⛔ neither population figure in the panel is a bare count', () => {
      a season being played that is the whole question. Two populations, two
      dates, because they are measured over different sets of games.
      MUTATION: drop `SPAN()` from either call in app.js and this names which. */
-  const UPTO = /, up to \d{1,2} [A-Z][a-z]+ \d{4}/;
+  const UPTO = /, up to [A-Z][a-z]+ \d{1,2}, \d{4}/;
   assert.match(leadText, UPTO,
     'the lead names a population and never says when the measuring stopped: '
     + JSON.stringify(leadText));
