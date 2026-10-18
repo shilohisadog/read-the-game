@@ -26,7 +26,7 @@
  * `ends=fixed` — 1,076 renderings of this loop.
  */
 import { ATTEMPT_TYPES } from './attribution.js';
-import { NET_X } from './rink.js';
+import { NET_X, distanceToNet } from './rink.js';
 import { SvgPen } from './svgpen.js';
 import { FIG } from './figures.js';
 
@@ -207,10 +207,19 @@ export function eventMarks({ evs, i, cur, moment, from = i, zoneFrom = null },
  * the nearest rule that could plausibly have caused it, and the attribution went
  * unchecked for a day. See `docs/step2-decomposition.md` §0.5.
  */
+/** A line shorter than this (feet) has no room for its distance label. A layout choice, ours. */
+export const SHOT_LABEL_ROOM_FT = 20;
+
 export function shotLine(cur, cp, HID, AX) {
  if(!cp||!(cur.type==='shot-on-goal'||cur.type==='goal'))return '';
- const netx=(cur.own===HID)?NET_X:-NET_X;
- return `<line class="shotline" x1="${cp.x.toFixed(1)}" y1="${cp.y.toFixed(1)}" x2="${AX(netx,cur.per)}" y2="42.5"/>`;
+ const netx=(cur.own===HID)?NET_X:-NET_X, x2=AX(netx,cur.per);
+ const line=`<line class="shotline" x1="${cp.x.toFixed(1)}" y1="${cp.y.toFixed(1)}" x2="${x2}" y2="42.5"/>`;
+ // The distance the color line says, at the line's middle: the same feet, to the same point.
+ if(cur.x==null||cur.y==null)return line;
+ const ft=Math.round(distanceToNet(cur.x,cur.y,cur.own===HID?1:-1));
+ if(ft<SHOT_LABEL_ROOM_FT)return line;
+ const mx=(cp.x+ +x2)/2, my=(cp.y+42.5)/2+4.2;
+ return line+`<text class="shotft" x="${mx.toFixed(1)}" y="${my.toFixed(1)}" text-anchor="middle">${ft} ft</text>`;
 }
 
 /**
