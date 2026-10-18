@@ -708,9 +708,9 @@ export function playerSeasons(records, qualify) {
       // the club and sweater it prints are the most recent ones we hold.
       // `each` is the per-game sequence the split-half above needs, and it is
       // DROPPED before publication — see the `clubs` block below.
-      const row = was || { p: r.p, gp: 0, g: 0, a: 0, s: 0, c: 0, each: [],
+      const row = was || { p: r.p, gp: 0, g: 0, a: 0, s: 0, c: 0, fw: 0, ft: 0, each: [],
                            lgSum: { g: 0, a: 0, s: 0 }, lgGames: 0, lgOff: [] };
-      row.each.push({ g: r.g, a: r.a, s: r.s, c: r.c });
+      row.each.push({ g: r.g, a: r.a, s: r.s, c: r.c, fw: r.fw || 0, ft: r.ft || 0 });
       row.nm = r.nm; row.n = r.n; row.pos = r.pos; row.t = r.t;
       // The league's boxscore figures for this game, where it has a row for him.
       if (r.lg) {
@@ -725,6 +725,7 @@ export function playerSeasons(records, qualify) {
       }
       if (g.date && !(row.last > g.date)) row.last = g.date;
       row.gp += 1; row.g += r.g; row.a += r.a; row.s += r.s; row.c += r.c;
+      row.fw += r.fw || 0; row.ft += r.ft || 0;
       season.set(r.p, row);
     }
   }
@@ -798,7 +799,7 @@ export function playerSeasons(records, qualify) {
     // The league's season figure is published only where it differs from ours
     // and the boxscore covered every game he played, with the games it differs on.
     clubs[ab] = [...keep.values()].sort((x, y) => y.g - x.g || x.p - y.p)
-      .map(({ each, lgSum, lgGames, lgOff, ...rest }) => {
+      .map(({ each, lgSum, lgGames, lgOff, fw, ft, ...rest }) => {
         if (lgGames !== rest.gp || !lgOff.length) return rest;
         const lg = {};
         for (const k of ['g', 'a', 's']) if (lgSum[k] !== rest[k]) lg[k] = lgSum[k];
@@ -815,7 +816,55 @@ export function playerSeasons(records, qualify) {
      it counted. These rows move WEEKLY -- `derive.yml`, not the nightly -- so
      they are the figures on the site most able to be a week behind. */
   const through = dataThrough(games.filter(g => seasonOfId(g.id) === latest));
-  return { season: latest, through, qualify, target: TARGET, range, need, clubs, lastGame };
+  return { season: latest, through, qualify, target: TARGET, range, need, clubs, lastGame,
+           fo: faceoffSeasons(bySeason, complete, qualify) };
+}
+
+/** A player who takes at least this many face-offs a game is a regular taker.
+ *  ⚠️ A POLICY, not a measurement: face-offs per game has no natural break between
+ *  centres and the winger who takes the odd one, so the line is ours and printed. */
+export const REGULAR_TAKER = 5;
+
+/**
+ * Every player's face-offs, every season, for the Face-offs chip's `Is that a lot?`:
+ * `seasons[yr][pid] = [won, taken, games]`. The axis is the win share of regular
+ * takers (REGULAR_TAKER a game, `qualify` games, completed seasons); `need` is the
+ * games the share needs to repeat at TARGET, split on alternate games like `needFor`.
+ * Every season is kept because a replay can be of any game in the archive.
+ */
+function faceoffSeasons(bySeason, complete, qualify) {
+  const seasons = {};
+  for (const [yr, season] of bySeason) {
+    const o = {};
+    for (const r of [...season.values()].sort((x, y) => x.p - y.p)) {
+      if (r.ft) o[r.p] = [r.fw, r.ft, r.gp];
+    }
+    seasons[yr] = o;
+  }
+  const pool = [];
+  for (const [yr, season] of bySeason) {
+    if (!complete.has(yr)) continue;
+    for (const r of season.values()) {
+      if (r.gp >= qualify && r.ft >= REGULAR_TAKER * r.gp) pool.push(r);
+    }
+  }
+  const a = [], b = [], halves = [];
+  for (const r of pool) {
+    const odd = r.each.filter((_, i) => i % 2 === 0), even = r.each.filter((_, i) => i % 2 === 1);
+    const share = h => { const t = h.reduce((n, x) => n + x.ft, 0); return t ? h.reduce((n, x) => n + x.fw, 0) / t : NaN; };
+    const x = share(odd), y = share(even);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    a.push(x); b.push(y); halves.push(odd.length);
+  }
+  halves.sort((x, y) => x - y);
+  return {
+    regular: REGULAR_TAKER,
+    range: withWhat(spreadOf(pool.map(r => r.fw / r.ft)),
+      `share of face-offs won, over players with at least ${qualify} games who took at least `
+      + `${REGULAR_TAKER} face-offs a game in a completed season (n counts PLAYER-SEASONS)`),
+    need: gamesToTarget(pearson(a, b), halves[halves.length >> 1] || 0),
+    seasons,
+  };
 }
 
 /**

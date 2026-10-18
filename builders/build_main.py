@@ -1049,7 +1049,12 @@ function reveal(){if(MSG)MSG.hidden=true;if(APP)APP.hidden=false;}
 function draw(g,rates){
   if(APP&&APP.hidden)throw new Error(
     'boot() ran inside a hidden subtree — reveal() must come first');
-  boot(g,rates);}
+  boot(g,rates,doc);}
+// A published document as of the link's edition; a night never saved falls back to today's.
+function doc(name){
+  return LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/'+name)
+                     .catch(function(){return grab(ORIGIN+'/'+name);})
+                   :grab(ORIGIN+'/'+name);}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
 // The newest viewable game; front.json carries it (src/lib/front.js::newestOf).
@@ -1095,10 +1100,8 @@ function lessonGame(id){
     // preview, and measures.json exists only to feed it, so fetching it would be
     // a request on a homepage for bytes nobody reads.
     if(LINK0.preview){reveal();draw(g,null);return null;}
-    // A dated link reads that night's measurements; a night never saved falls back to today's.
-    return (LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/measures.json')
-                      .catch(function(){return grab(ORIGIN+'/measures.json');})
-                     :grab(ORIGIN+'/measures.json'))
+    // A dated link reads that night's measurements.
+    return doc('measures.json')
       .catch(function(){return null;})
       .then(function(rates){reveal();draw(g,rates);newestEdition();});})
   .catch(function(e){

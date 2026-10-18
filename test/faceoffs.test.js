@@ -65,3 +65,71 @@ test('a team-game’s face-off share is its wins of all the face-offs, as a whol
   assert.equal(c.n, 4, 'two games with face-offs give four team-games; a record without `fo` drops out');
   assert.deepEqual([c.min, c.max], [40, 60]);
 });
+
+/* -------------------------------------------------------------------------
+ * A player's season face-off share — the Face-offs chip's `Is that a lot?`.
+ * ------------------------------------------------------------------------- */
+import { playersIn } from '../src/lib/league.js';
+import { playerSeasons, REGULAR_TAKER } from '../src/lib/archive.js';
+import { boot, rich, pickLayer } from './helpers/page.js';
+
+test('a player row counts the face-offs he won and took, both players named, shootout out', () => {
+  const rows = playersIn(G);
+  const named = draws.filter(e => e.actor != null && e.lose != null);
+  assert.equal(rows.reduce((n, r) => n + r.fw, 0), named.length, 'every named face-off has one winner');
+  assert.equal(rows.reduce((n, r) => n + r.ft, 0), 2 * named.length, 'and two players who took it');
+  const one = named[0].actor;
+  const mine = named.filter(e => e.actor === one || e.lose === one);
+  const r = rows.find(x => x.p === one);
+  assert.deepEqual([r.fw, r.ft], [mine.filter(e => e.actor === one).length, mine.length]);
+});
+
+test('the season table carries every taker, the axis only regular takers of finished seasons', () => {
+  const sk = (p, fw, ft) => ({ p, t: 'AAA', nm: `P${p}`, n: p, pos: 'C', g: 0, a: 0, s: 0, c: 0, fw, ft });
+  const recs = [];
+  // #1 a regular taker at 60%, #2 a winger who takes one a game, both two games, a finished season.
+  for (const id of [2023020001, 2023030001]) recs.push({ id, players: [sk(1, 6, 10), sk(2, 1, 1)] });
+  recs.push({ id: 2026020001, players: [sk(3, 9, 10)] });
+  const out = playerSeasons(recs, 2);
+  assert.deepEqual(out.fo.seasons['2023'], { 1: [12, 20, 2], 2: [2, 2, 2] });
+  assert.deepEqual(out.fo.seasons['2026'], { 3: [9, 10, 1] }, 'the open season is published, for its own games');
+  assert.equal(out.fo.regular, REGULAR_TAKER);
+  assert.equal(out.fo.range.n, 1, 'the winger at one a game and the open season stay off the axis');
+  assert.equal(out.fo.range.median, 0.6);
+  assert.ok(!('fw' in out.clubs.AAA[0]), 'the preview rows do not carry the face-off fields');
+});
+
+/** Everything the fake DOM holds under a node, as text. */
+const RATES = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url)));
+const textOf = n => (n._text || '') + (n._html || '') + (n._kids || []).map(textOf).join('');
+
+test('the Face-offs panel places tonight’s busiest takers by their season share', async () => {
+  const season = String(rich.game.id).slice(0, 4);
+  const busiest = Object.entries(faceoffs.reduce(rich.events,
+    { homeId: rich.teams.home.id, awayId: rich.teams.away.id, roster: rich.roster }).by)
+    .sort((x, y) => (y[1].w + y[1].l) - (x[1].w + x[1].l))[0][0];
+  const asked = [];
+  const doc = name => { asked.push(name); return Promise.resolve({ season: '2099', qualify: 41,
+    fo: { regular: 5, need: 29, range: { min: 0.35, max: 0.65, median: 0.51, n: 450 },
+          seasons: { [season]: { [busiest]: [300, 500, 60] } } } }); };
+  const a = boot(rich, RATES, '', null, doc);
+  pickLayer(a, 'faceoffs');
+  a.at(+a.$('scrub').max, () => {});
+  assert.deepEqual(asked, [], 'nothing is fetched until the reader asks');
+  a.$('alot').click();
+  await new Promise(r => setImmediate(r));
+  assert.deepEqual(asked, ['players.json']);
+  const t = textOf(a.$('alotBody'));
+  assert.match(t, /How often a player wins his face-offs/);
+  assert.match(t, /60% of 500 face-offs in 60 games/, 'the season share, with its count and its games');
+  assert.match(t, /450 full seasons by regular takers/);
+  assert.match(t, /playoffs included/, 'a finished season says what it counts');
+});
+
+test('with no way to fetch, the Face-offs panel says so and asks for nothing', () => {
+  const a = boot(rich, RATES);
+  pickLayer(a, 'faceoffs');
+  a.at(+a.$('scrub').max, () => {});
+  a.$('alot').click();
+  assert.match(textOf(a.$('alotBody')), /season figures could not be read/);
+});

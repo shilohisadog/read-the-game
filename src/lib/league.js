@@ -22,7 +22,7 @@ export function playersIn(g) {
   for (const [pid, r] of Object.entries(g.roster || {})) {
     if (r.pos === 'G') continue;
     out.set(Number(pid), { p: Number(pid), t: ab[r.tid], nm: r.nm, n: r.n, pos: r.pos,
-                           g: 0, a: 0, s: 0, c: 0 });
+                           g: 0, a: 0, s: 0, c: 0, fw: 0, ft: 0 });
   }
   const bump = (id, k, by) => { const r = out.get(id); if (r) r[k] += by; };
   for (const e of g.events) {
@@ -45,6 +45,11 @@ export function playersIn(g) {
       case 'blocked-shot':
         if (e.pt === 'SO') break;
         bump(e.actor, 'c', 1);
+        break;
+      // `fw` face-offs won, `ft` taken; both players are named since SCHEMA 7.
+      case 'faceoff':
+        if (e.pt === 'SO' || e.actor == null || e.lose == null) break;
+        bump(e.actor, 'fw', 1); bump(e.actor, 'ft', 1); bump(e.lose, 'ft', 1);
         break;
       default: break;
     }

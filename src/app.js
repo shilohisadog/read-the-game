@@ -24,7 +24,7 @@ import {
 import {
   ATTRIBUTION, corsiTeam, missSay, shootingTeam, SHOT_TYPES
 } from './lib/attribution.js';
-import { claimOf } from './lib/registry.js';
+import { claimOf, measure } from './lib/registry.js';
 import { framed, inShootout, notAPlay, sitAt } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
@@ -80,7 +80,7 @@ import { SX, SY, furniture, netGlyph } from './lib/rinkart.js';
 import { SvgPen } from './lib/svgpen.js';
 import { FIG, PLAYER_FT, GOAL_SCALE, sizeFor } from './lib/figures.js';
 
-export function boot(G,RATES){
+export function boot(G,RATES,DOC){
 /* ⭐ AND THE RINK'S PAINT SITS INSIDE IT, for the opposite reason.
    `src/lib/rinkart.js` owns `SX`/`SY` and the whole SVG of an NHL sheet, so that
    the learn page's rule diagrams and this replay cannot draw two different
@@ -1592,6 +1592,56 @@ function foCaveat(){
  if(!fr||!fr.first||fr.first.winnerShare==null||!b||b.rate==null||!b.n)return null;
  return `Winning a face-off usually earns the next shot attempt (about ${Math.round(100*fr.first.winnerShare)}% of the time). `
   +`But over a whole game, the team that won more face-offs won only ${Math.round(100*(1-b.rate))}% of ${b.n.toLocaleString()} games.`;}
+/* The Face-offs `Is that a lot?`: tonight's busiest takers, each placed by his season
+   share on every regular taker's full season (`players.json` `fo`, `archive.js::
+   faceoffSeasons`). Fetched only when opened; a page with no DOC reaches nothing. */
+let FO_DOC=null;
+function centresSection(host,at){
+ const sec=document.createElement('section');sec.className='fcent';
+ const h=document.createElement('h3');h.textContent=measure('playerFaceoffs').heading;
+ sec.appendChild(h);
+ const say=t=>{const p=document.createElement('p');p.className='wnone';p.textContent=t;sec.appendChild(p);};
+ host.appendChild(sec);
+ const F=faceoffs.reduce(upto(at),CTX);
+ const top=tid=>Object.entries(F.by).filter(([pid])=>R[pid]&&R[pid].tid===tid)
+  .sort((x,y)=>(y[1].w+y[1].l)-(x[1].w+x[1].l)||x[0]-y[0]).slice(0,2).map(([pid])=>pid);
+ const who=[...top(AID).map(p=>[p,'sa',AAB]),...top(HID).map(p=>[p,'sh',HAB])];
+ if(!who.length){say('No face-offs yet in what you have watched.');return;}
+ if(!DOC){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+ FO_DOC=FO_DOC||DOC('players.json').catch(()=>null);
+ FO_DOC.then(P=>{
+  const fo=P&&P.fo, rg=fo&&fo.range, seas=String((G.game&&G.game.id)||'').slice(0,4);
+  const rows=fo&&fo.seasons&&fo.seasons[seas];
+  if(!rg||!rows||!(rg.max>rg.min)){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+  const pc=v=>Math.round(100*v);
+  const when=seas===P.season?'this season'+SPAN(P.through):'in the '+seas+'-'+String(+seas+1).slice(2)+' season, playoffs included';
+  const lead=document.createElement('p');lead.className='walot';
+  lead.textContent='Each dot is a player\u2019s share of the face-offs he won '+when+', '
+   +'placed among the '+rg.n.toLocaleString()+' full seasons by regular takers in the archive; the tick is the middle one, '+pc(rg.median)+'%. '
+   +'A regular taker played at least '+P.qualify+' games and took at least '+fo.regular+' face-offs a game \u2014 that line is ours.'
+   +(fo.need?' A share needs about '+fo.need+' games to hold steady; a paler dot has played fewer.':'');
+  sec.appendChild(lead);
+  const ul=document.createElement('ul');ul.className='srows fcrows';
+  for(const [pid,mk,ab] of who){
+   const li=document.createElement('li'), r=rows[pid], p=R[pid];
+   const nm=document.createElement('span');
+   nm.innerHTML='<span class="stm '+mk+'">#'+ESC(String(p.n))+' '+ESC(p.nm)+' \u00b7 '+ESC(ab)+'</span> \u2014 '
+    +(r?pc(r[0]/r[1])+'% of '+r[1].toLocaleString()+' face-offs in '+r[2]+' game'+(r[2]===1?'':'s')
+       :'no season figure published yet');
+   li.appendChild(nm);
+   if(r){
+    const sc=document.createElement('span');sc.className='sscale';
+    const tr=document.createElement('span');tr.className='strack';
+    const at01=v=>Math.max(0,Math.min(100,100*(v-rg.min)/(rg.max-rg.min))).toFixed(1)+'%';
+    const md=document.createElement('span');md.className='smed';md.style.left=at01(rg.median);tr.appendChild(md);
+    const pt=document.createElement('span');pt.className='spt '+mk;pt.style.left=at01(r[0]/r[1]);
+    if(fo.need)pt.style.opacity=String(Math.max(.5,Math.min(1,r[2]/fo.need)));
+    tr.appendChild(pt);sc.appendChild(tr);
+    const ends=document.createElement('span');ends.className='sends';
+    ends.innerHTML='<span>'+pc(rg.min)+'%</span><span>'+pc(rg.max)+'%</span>';
+    sc.appendChild(ends);li.appendChild(sc);}
+   ul.appendChild(li);}
+  sec.appendChild(ul);});}
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
 /* ⚠️ AND ATTEMPTS GOES THROUGH `counted`, WHICH IS THE WHOLE POINT OF `counted`.
@@ -2323,6 +2373,7 @@ function renderAlot(at=i){
  /* ⛔ AND IT SAYS SO RATHER THAN SHOWING A HEADING OVER NOTHING. An anchor in
     `layer-rules.json` that neither table answers to is our gap, and the empty
     panel above is exactly how it hid the first time. */
+ if(id==='faceoffs'){centresSection(host,at);drew++;}
  if(!drew){
   host.appendChild(document.createElement('p')).className='wnone';
   host.lastChild.textContent='The archive figures behind this layer could not '

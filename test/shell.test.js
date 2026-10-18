@@ -439,7 +439,7 @@ test('boot() CANNOT RUN INSIDE THE HIDDEN SUBTREE', () => {
   const s = scriptOf(shell);
   const at = s.indexOf('function draw(');
   assert.notEqual(at, -1, 'the shell has no draw() — the ordering guard is gone');
-  const body = s.slice(at, s.indexOf('}', s.indexOf('boot(g,rates);', at)) + 1);
+  const body = s.slice(at, s.indexOf('}', s.indexOf('boot(g,rates,doc);', at)) + 1);
   assert.match(body, /APP\s*&&\s*APP\.hidden/,
     'draw() does not check whether the app is still hidden');
   assert.match(body, /throw new Error/,

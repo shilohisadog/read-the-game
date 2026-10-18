@@ -515,7 +515,7 @@ export function pickLayer(a, token) {
   return a;
 }
 
-export function boot(game, rates, search = '', store = null) {
+export function boot(game, rates, search = '', store = null, doc = undefined) {
   const dom = fakeDom();
   /**
    * THE REPLAY CLOCK, CAPTURED RATHER THAN STUBBED OUT.
@@ -571,7 +571,7 @@ export function boot(game, rates, search = '', store = null) {
   // this harness can only ever see the "no comparison shown" branch, which is
   // how a test for the drawn rate first went red against a page structurally
   // incapable of having one.
-  if (game || rates) b(game || rich, rates);
+  if (game || rates || doc) b(game || rich, rates, doc);
   const scrub = dom.$('scrub');
   dom.posted = posted;
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);

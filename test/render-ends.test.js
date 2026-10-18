@@ -291,7 +291,7 @@ test('the hero opens on hockey, never on the pre-game frame', () => {
  *
  * AUDITED FIRST, AND THE PREMISE WAS HALF WRONG. The modules do share one
  * SCRIPT, but not one SCOPE: build_main.py inlines `__LIB__` ABOVE
- * `function boot(G,RATES){`, and `SX` is a `const` in boot's body. A function
+ * `function boot(G,RATES,DOC){`, and `SX` is a `const` in boot's body. A function
  * declared at top level can never see a binding inside another function's body,
  * whenever it is called. So the guard already exists.
  *
@@ -302,7 +302,7 @@ test('the hero opens on hockey, never on the pre-game frame', () => {
  * satisfied by a probe that was simply broken -- the mutation-that-measures-the-
  * harness this file has been bitten by before.
  */
-const PROBE_AT = 'function boot(G,RATES){';
+const PROBE_AT = 'function boot(G,RATES,DOC){';
 
 function probeGlobals() {
   const dom = fakeDom();

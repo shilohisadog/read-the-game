@@ -1873,6 +1873,9 @@
    nothing to be distinguished from. */
 #rg .spt.sa{background:var(--away);top:30%}
 #rg .spt.sh{background:var(--home);top:70%}
+/* The Face-offs panel's player rows: one dot each, centred, and the middle season's tick. */
+#rg .fcrows .spt.sa,#rg .fcrows .spt.sh{top:50%}
+#rg .smed{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:#7d95a8}
 #rg .spt.snone{background:#2b3b46}
 /* ⛔⛔⛔ `.stm`, AND IT WAS `.sc` FOR ONE DEPLOY. `#rg .sc` is THE SCOREBOARD'S
    SCORE — `font-size:1.8rem;font-weight:800`, the big 1 and 3 beside the club

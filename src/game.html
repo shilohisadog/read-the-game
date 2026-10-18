@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-cpI5mOI7cLaXMBCimdBOYfoThzgU8w/cEDc4iKwmOvc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-K/XdIo9TyryF15SWOtL5m8RqcJuFwr99s2725ti3rik='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RMxhls5y+7UDZTigBm8Yul+Hcbv+9D5YgSXj0ny12zY=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-xYxwwatmya2/6UUFb7wPj1SeMd/rM5aw30IZBp4yiOo='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -395,6 +395,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  transform:translate(-50%,-50%);background:#1f7a4d;border:2px solid #fff}
 #rg .spt.sa{background:var(--away);top:30%}
 #rg .spt.sh{background:var(--home);top:70%}
+#rg .fcrows .spt.sa,#rg .fcrows .spt.sh{top:50%}
+#rg .smed{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:#7d95a8}
 #rg .spt.snone{background:#2b3b46}
 #rg .srows .stm{font-size:.84rem;font-weight:700;color:var(--ink);
  font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -992,11 +994,12 @@ const MEASURES = [
     counts: 'face-offs won', of: 'face-offs', credit: 'winner', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: 'right rail',
     holds: false, keys: { lens: 'faceoffs', perTeam: 'foShare' } },
-  { id: 'playerFaceoffs', name: 'face-off win percentage', status: 'proposed',
+  { id: 'playerFaceoffs', name: 'face-off win percentage',
+    heading: 'How often a player wins his face-offs',
     says: 'Of every 100 face-offs a player took, this many he won.',
     counts: 'face-offs won', of: 'face-offs taken', credit: 'player', unit: 'share', strength: 'all',
-    score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg',
-    keys: {}, pending: [{ ruling: '7', what: 'needs the losing player, which extract.py drops' }] },
+    score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg (not yet kept)',
+    keys: {} },
   { id: 'endZoneWorth', name: 'what a face-off in one end is worth', heading: 'What a face-off in one end is worth',
     says: 'Shot attempts that follow a face-off in one end, per face-off.',
     counts: 'attempts after the face-off', of: 'face-offs in that end', credit: 'none', unit: 'rate',
@@ -1814,7 +1817,7 @@ function playersIn(g) {
   for (const [pid, r] of Object.entries(g.roster || {})) {
     if (r.pos === 'G') continue;
     out.set(Number(pid), { p: Number(pid), t: ab[r.tid], nm: r.nm, n: r.n, pos: r.pos,
-                           g: 0, a: 0, s: 0, c: 0 });
+                           g: 0, a: 0, s: 0, c: 0, fw: 0, ft: 0 });
   }
   const bump = (id, k, by) => { const r = out.get(id); if (r) r[k] += by; };
   for (const e of g.events) {
@@ -1832,6 +1835,10 @@ function playersIn(g) {
       case 'blocked-shot':
         if (e.pt === 'SO') break;
         bump(e.actor, 'c', 1);
+        break;
+      case 'faceoff':
+        if (e.pt === 'SO' || e.actor == null || e.lose == null) break;
+        bump(e.actor, 'fw', 1); bump(e.actor, 'ft', 1); bump(e.lose, 'ft', 1);
         break;
       default: break;
     }
@@ -4307,7 +4314,7 @@ const COMPETITIONS = {"1":"preseason","12":"all-star","19":"4 Nations","2":"regu
 const LESSONS = {"icing":{"title":"Icing","says":"The puck is sent the length of the ice and play comes straight back. Watch where the face-off goes \u2014 that dot is the whole punishment.","back":"/icing.html","ref":"?game=2023020204&at=1-15:02&layer=whistle&strength=all"},"faceoffs":{"title":"Face-offs","says":"Nine spots on the ice and the rule picks one \u2014 a face-off, often just called the draw. An icing brings the face-off all the way back \u2014 same second as the whistle, and deep in the offending team\u2019s own end.","back":"/faceoffs.html","ref":"?game=2023020204&at=1-15:02&layer=whistle&strength=all"},"offside":{"title":"Offside","says":"This is the one rule we can draw but never replay: the feed records the call and the restart, never the crossing. So in a real game, watch the line rather than the play.","back":"/offside.html","ref":"?game=2023020204&at=1-04:48&layer=whistle&strength=all"},"penalties":{"title":"Penalties","says":"A penalty is time off the ice: the offender sits, and his team plays a skater short \u2014 unless the other team commits a penalty of the same duration at the same time, and then both teams skate with the same number of players. The side with the extra skater is on a power play: the same penalty, named from the other bench.","back":"/penalties.html","ref":"?game=2023020204&at=1-19:35.1&layer=whistle&strength=all"},"overtime":{"title":"Overtime","says":"A hockey game does not end in a tie. If the score is tied after sixty minutes, both teams drop to three skaters and a goaltender, and the next goal wins \u2014 five minutes of it, and a shootout after that if nobody scores. In the playoffs there is no shootout and nobody leaves the ice: they play full periods, five a side, until someone scores.","back":"/what-you-can-see.html#overtime","ref":"?game=2025021172&at=4-01:33.1&strength=all"},"empty-net":{"title":"The empty net","says":"Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here \u2014 the goalie is simply no longer on the ice.","back":"/empty-net.html","ref":"?game=2023020204&at=3-01:40&strength=all"},"control":{"title":"Control","says":"Every shot attempt, counted for both teams as it happens \u2014 whether it reached the goaltender, missed the net, or a body blocked it on the way.","back":"/control.html","ref":"?game=2023020204&at=1-18:40.1&layer=corsi&strength=all"},"blocked":{"title":"The attempt that never arrived","says":"A body got in front of this one before it reached the goaltender, and it counts as an attempt all the same.","back":"/what-you-can-see.html#blocked","ref":"?game=2023020204&at=1-18:40.2&layer=corsi&strength=all"},"slot":{"title":"Shots from the slot","says":"A shot taken from inside the slot goes in 11.6% of the time \u2014 19,756 goals from 170,058 attempts. From outside it, 3.3%. That gap is what the slot shading is for.","back":"/slot.html","ref":"?game=2023020204&at=1-16:03&layer=slot&strength=all"},"goaltending":{"title":"Goaltending","says":"Saves as a fraction, built while you watch. This is the first shot the goaltender had to deal with.","back":"/what-you-can-see.html#goaltending","ref":"?game=2023020204&at=1-18:40.1&layer=goaltending&strength=all"},"situations":{"title":"All situations","says":"Hockey is not always five on five. A penalty puts one team a skater short \u2014 that team is killing it, the other is on the power play \u2014 and the count under the ice adds every situation together, which is what all situations means. Measured per 60 minutes in each: 95 attempts on the power play, 59 at even strength, 13 killing a penalty. So part of a team\u2019s attempt lead can be nothing but the time it spent on the power play.","back":"/what-you-can-see.html#situations","ref":"?game=2023020204&at=1-17:39&layer=corsi&strength=all"},"zones":{"title":"The attacking zone","says":"Two blue lines cut the ice into three zones. The shaded strip at each one is a boundary one team is trying to hold play inside and the other to push it out. After a face-off in one team\u2019s end, the team attacking that end takes 1.42 shot attempts before the next whistle, against 0.76 for the team defending it \u2014 across 170,800 face-offs. Those defending attempts are shots at the far end, which is what getting the puck out looks like; at the line itself we count nothing, because holding it leaves no event in the record.","back":"/what-you-can-see.html#zones","ref":"?game=2023020204&at=1-14:56&layer=zonestart&strength=all"},"shifts":{"title":"How long a shift is","says":"Nobody stays on the ice for long. Hockey is played in short bursts and skaters come off while the play is still running \u2014 a skater takes about 21 shifts a night, and a shift lasts 48 seconds on average, measured over 3,165,143 shifts. So the five in front of you now are mostly not the five who were there a minute ago.","back":"/what-you-can-see.html#shifts","ref":"?game=2023020204&at=1-09:06&strength=all"},"score":{"title":"Score effects","says":"A team that is behind takes more shot attempts, and a team that is ahead takes fewer \u2014 that is what score effects means. Measured in even-strength play: per 60 minutes of play with the same number of skaters on each side, a team takes 63 shot attempts while trailing, 59 while the score is tied, and 53 while leading. So part of a team\u2019s attempt lead can be nothing but the time it spent behind.","back":"/what-you-can-see.html#score","ref":"?game=2023020204&at=3-15:52&layer=corsi&strength=even"}};
 const LEARNCARDS = {"corsi":[{"id":"blocked","title":"The attempt that never arrived"},{"id":"control","title":"Control"},{"id":"score","title":"Score effects"},{"id":"situations","title":"All situations"}],"whistle":[{"id":"faceoffs","title":"Face-offs"},{"id":"icing","title":"Icing"},{"id":"offside","title":"Offside"},{"id":"penalties","title":"Penalties"}],"goaltending":[{"id":"goaltending","title":"Goaltending"}],"slot":[{"id":"slot","title":"Shots from the slot"}],"zonestart":[{"id":"zones","title":"The attacking zone"}]};
 const LAYERWORK = {"corsi":[{"anchor":"m-attempts","label":"Where a shot attempt ends"}],"slot":[{"anchor":"m-slotAttempts","label":"How many shot attempts are taken from the slot"}],"blocked":[{"anchor":"m-attempts","label":"Where a shot attempt ends"}],"goaltending":[{"anchor":"m-saves","label":"How often a goaltender makes the save"}],"whistle":[{"anchor":"m-penalties","label":"How many penalties a team takes"},{"anchor":"m-offside","label":"How often a team is offside"},{"anchor":"m-icing","label":"How often a team ices the puck"}],"zonestart":[{"anchor":"m-zoneStarts","label":"What a face-off in one end is worth"}],"shooters":[{"anchor":"m-dmenAttempts","label":"How many shot attempts defencemen take"}],"faceoffs":[{"anchor":"m-faceoffRun","label":"Who takes the shots after a face-off"}]};
-function boot(G,RATES){
+function boot(G,RATES,DOC){
 
 
 
@@ -4740,6 +4747,53 @@ function foCaveat(){
  if(!fr||!fr.first||fr.first.winnerShare==null||!b||b.rate==null||!b.n)return null;
  return `Winning a face-off usually earns the next shot attempt (about ${Math.round(100*fr.first.winnerShare)}% of the time). `
   +`But over a whole game, the team that won more face-offs won only ${Math.round(100*(1-b.rate))}% of ${b.n.toLocaleString()} games.`;}
+let FO_DOC=null;
+function centresSection(host,at){
+ const sec=document.createElement('section');sec.className='fcent';
+ const h=document.createElement('h3');h.textContent=measure('playerFaceoffs').heading;
+ sec.appendChild(h);
+ const say=t=>{const p=document.createElement('p');p.className='wnone';p.textContent=t;sec.appendChild(p);};
+ host.appendChild(sec);
+ const F=faceoffs.reduce(upto(at),CTX);
+ const top=tid=>Object.entries(F.by).filter(([pid])=>R[pid]&&R[pid].tid===tid)
+  .sort((x,y)=>(y[1].w+y[1].l)-(x[1].w+x[1].l)||x[0]-y[0]).slice(0,2).map(([pid])=>pid);
+ const who=[...top(AID).map(p=>[p,'sa',AAB]),...top(HID).map(p=>[p,'sh',HAB])];
+ if(!who.length){say('No face-offs yet in what you have watched.');return;}
+ if(!DOC){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+ FO_DOC=FO_DOC||DOC('players.json').catch(()=>null);
+ FO_DOC.then(P=>{
+  const fo=P&&P.fo, rg=fo&&fo.range, seas=String((G.game&&G.game.id)||'').slice(0,4);
+  const rows=fo&&fo.seasons&&fo.seasons[seas];
+  if(!rg||!rows||!(rg.max>rg.min)){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+  const pc=v=>Math.round(100*v);
+  const when=seas===P.season?'this season'+SPAN(P.through):'in the '+seas+'-'+String(+seas+1).slice(2)+' season, playoffs included';
+  const lead=document.createElement('p');lead.className='walot';
+  lead.textContent='Each dot is a player\u2019s share of the face-offs he won '+when+', '
+   +'placed among the '+rg.n.toLocaleString()+' full seasons by regular takers in the archive; the tick is the middle one, '+pc(rg.median)+'%. '
+   +'A regular taker played at least '+P.qualify+' games and took at least '+fo.regular+' face-offs a game \u2014 that line is ours.'
+   +(fo.need?' A share needs about '+fo.need+' games to hold steady; a paler dot has played fewer.':'');
+  sec.appendChild(lead);
+  const ul=document.createElement('ul');ul.className='srows fcrows';
+  for(const [pid,mk,ab] of who){
+   const li=document.createElement('li'), r=rows[pid], p=R[pid];
+   const nm=document.createElement('span');
+   nm.innerHTML='<span class="stm '+mk+'">#'+ESC(String(p.n))+' '+ESC(p.nm)+' \u00b7 '+ESC(ab)+'</span> \u2014 '
+    +(r?pc(r[0]/r[1])+'% of '+r[1].toLocaleString()+' face-offs in '+r[2]+' game'+(r[2]===1?'':'s')
+       :'no season figure published yet');
+   li.appendChild(nm);
+   if(r){
+    const sc=document.createElement('span');sc.className='sscale';
+    const tr=document.createElement('span');tr.className='strack';
+    const at01=v=>Math.max(0,Math.min(100,100*(v-rg.min)/(rg.max-rg.min))).toFixed(1)+'%';
+    const md=document.createElement('span');md.className='smed';md.style.left=at01(rg.median);tr.appendChild(md);
+    const pt=document.createElement('span');pt.className='spt '+mk;pt.style.left=at01(r[0]/r[1]);
+    if(fo.need)pt.style.opacity=String(Math.max(.5,Math.min(1,r[2]/fo.need)));
+    tr.appendChild(pt);sc.appendChild(tr);
+    const ends=document.createElement('span');ends.className='sends';
+    ends.innerHTML='<span>'+pc(rg.min)+'%</span><span>'+pc(rg.max)+'%</span>';
+    sc.appendChild(ends);li.appendChild(sc);}
+   ul.appendChild(li);}
+  sec.appendChild(ul);});}
 const layerOf=id=>LENS[id]||null;
 const LEDGER=Object.fromEntries(Object.entries(LENS).map(([id,m])=>
  [id,id==='corsi'?counted:sl=>m.reduce(sl,CTX)]));
@@ -4962,6 +5016,7 @@ function renderAlot(at=i){
   if(leagueBy[a]){
    host.appendChild(SECTION.figureSection(leagueBy[a],
     overs.length===want.length?null:SECTION.leagueNums(leagueBy[a]),{}));drew++;}});
+ if(id==='faceoffs'){centresSection(host,at);drew++;}
  if(!drew){
   host.appendChild(document.createElement('p')).className='wnone';
   host.lastChild.textContent='The archive figures behind this layer could not '
@@ -5710,7 +5765,11 @@ function reveal(){if(MSG)MSG.hidden=true;if(APP)APP.hidden=false;}
 function draw(g,rates){
   if(APP&&APP.hidden)throw new Error(
     'boot() ran inside a hidden subtree — reveal() must come first');
-  boot(g,rates);}
+  boot(g,rates,doc);}
+function doc(name){
+  return LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/'+name)
+                     .catch(function(){return grab(ORIGIN+'/'+name);})
+                   :grab(ORIGIN+'/'+name);}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
 function newest(f){
@@ -5737,9 +5796,7 @@ function lessonGame(id){
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
   .then(function(g){
     if(LINK0.preview){reveal();draw(g,null);return null;}
-    return (LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/measures.json')
-                      .catch(function(){return grab(ORIGIN+'/measures.json');})
-                     :grab(ORIGIN+'/measures.json'))
+    return doc('measures.json')
       .catch(function(){return null;})
       .then(function(rates){reveal();draw(g,rates);newestEdition();});})
   .catch(function(e){
