@@ -7,7 +7,18 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const API = 'https://api-web.nhle.com/v1';
-const get = async u => { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); };
+const nap = ms => new Promise(r => setTimeout(r, ms));
+// Polite: a pause between requests, and backing off when the league says 429.
+async function get(u) {
+  for (let k = 0; k < 6; k++) {
+    await nap(250);
+    const r = await fetch(u);
+    if (r.status === 429) { await nap(2000 * 2 ** k); continue; }
+    if (!r.ok) throw new Error(`${u}: ${r.status}`);
+    return r.json();
+  }
+  throw new Error(`${u}: still rate-limited`);
+}
 const people = new Map();
 async function person(id) {
   if (!people.has(id)) {
@@ -32,7 +43,7 @@ for (const id of process.argv.slice(2)) {
     const homeGoalie = (roster[gk] || {}).tid === HOME;
     const side = homeGoalie ? p.homeTeamDefendingSide : (p.homeTeamDefendingSide === 'left' ? 'right' : 'left');
     const f = side === 'left' ? { d: x + 89, w: -y } : { d: 89 - x, w: y };
-    shots.push({ per: p.periodDescriptor.number, rem: p.timeRemaining, goalie: gk, shooter: who,
+    shots.push({ per: p.periodDescriptor.number, rem: p.timeRemaining, goalie: gk, shooter: who, sit: p.situationCode || null,
       out: p.typeDescKey === 'goal' ? 'goal' : 'save', type: p.details.shotType || null,
       d: f.d, w: f.w, x, y, side, clip: p.details.highlightClipSharingUrl || null });
   }

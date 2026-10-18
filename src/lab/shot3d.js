@@ -177,7 +177,7 @@ function numberTex(num, fg, bg) {
 /* Poses, in the skater's own frame: +x his right, +y up, +z toward the net.
    Feet (H = his height in feet). Blade / hands for a LEFT shot (blade on his
    left); a right shot mirrors x. Three keys: load, contact, follow-through. */
-const POSES = {
+export const POSES = {
   wrist:     { lean: 0.22, crouch: 0.10, keys: [
     { blade: [-1.5, 0.05, -0.5], top: [0.05, 0.60, 0.15], bot: [-0.55, 0.47, 0.30] },
     { blade: [-1.0, 0.05, 1.1],  top: [0.10, 0.60, 0.35], bot: [-0.45, 0.47, 0.70] },
