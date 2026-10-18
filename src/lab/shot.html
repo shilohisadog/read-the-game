@@ -43,8 +43,8 @@ html,body{margin:0;height:100%;background:#0b121a;color:#fff;font:14px/1.35 syst
 <div class="hud"><div class="who" id="who"></div><div class="what" id="what"></div><div class="what" id="others"></div><div class="tip" id="tip" hidden></div><div class="tip" id="near" hidden>Too close to see from the crease — shown from behind the net</div></div>
 <div class="side" id="side"></div>
 <div class="stamp" id="stamp"></div>
-<div class="info" id="info"><b>What's recorded, and drawn:</b> where the shot was taken from, whether it was saved or went in, the shot type, the shooter's team, number, height and which way he shoots, and who was in net.<br><br>
-<b>What isn't recorded, and isn't drawn:</b> the puck's path, height or speed, where it crossed the line, screens, and where the goaltender stood. So the dashed line shows only the direction toward the net and fades out at the crease, and the moment cuts from the release to the outcome. The stick motion is the general motion of that shot type, not this player's.</div>
+<div class="info" id="info"><b>What's recorded, and drawn:</b> where the shot was taken from, whether it was saved or went in, the shot type, the shooter's team, number, height and which way he shoots, and who was in net, with his height and catching hand.<br><br>
+<b>What isn't recorded, and isn't drawn:</b> the puck's path, height or speed, where it crossed the line, screens, where the goaltender stood, and where the other skaters were. So the goaltender is drawn in his crease facing the shooter, in a ready stance and never a save, and the other skaters are not drawn. So the dashed line shows only the direction toward the net and fades out at the crease, and the moment cuts from the release to the outcome. The stick motion is the general motion of that shot type, not this player's.</div>
 <div class="lab">LAB</div>
 <div class="bar">
   <select id="game"></select><span id="goalies"></span><span class="sep"></span>
@@ -54,7 +54,7 @@ html,body{margin:0;height:100%;background:#0b121a;color:#fff;font:14px/1.35 syst
 </div>
 <script type="module">
 import { stage, skater, poseOf, lineOfFire } from './shot3d.js';
-import { loadPlayer, makePlayer } from './player.js';
+import { loadPlayer, makePlayer, makeGoalie } from './player.js';
 import { colourOf } from '../lib/teams.js';
 
 const GAMES = ['2026020121', '2026020120', '2026020119'];
@@ -73,7 +73,7 @@ const lamp = new THREE.PointLight(0xff1a30, 0, 120, 1.2); lamp.position.set(0, 1
 
 let G = null, gi = 0, shots = [], at = 0, seat = SEATS[q.get('seat')] ? q.get('seat') : 'tv';
 const MODEL = await loadPlayer().catch(e => { console.warn('player model', e); return null; });
-let actor = null, line = null, marks = null, t0 = 0, playing = false, showPast = true;
+let actor = null, keeper = null, line = null, marks = null, t0 = 0, playing = false, showPast = true;
 const cam = { pos: new THREE.Vector3(0, 5, 8), look: new THREE.Vector3(0, 2, -30) }, from = { pos: cam.pos.clone(), look: cam.look.clone() };
 
 async function load(id) {
@@ -98,6 +98,16 @@ function show(k) {
   if (line) { scene.remove(line); line = null; }
   const spec = { heightIn: p.inches, hand: p.hand, colour: colourOf(p.team), number: p.num };
   actor = MODEL ? makePlayer(MODEL, spec) : skater(spec);
+  // The goaltender who was in net, in his crease, squared to the shooter.
+  if (keeper) scene.remove(keeper.root);
+  keeper = null;
+  if (MODEL) {
+    keeper = makeGoalie(MODEL, { heightIn: gk.inches, catches: gk.hand, colour: colourOf(gk.team), number: gk.num });
+    const L = Math.hypot(s.w, s.d) || 1, gx = s.w / L * 2.5, gd = s.d / L * 2.5;
+    keeper.root.position.set(gx, 0, -gd);
+    keeper.root.rotation.y = Math.atan2(s.w - gx, gd - s.d);
+    scene.add(keeper.root); keeper.root.updateMatrixWorld(true); keeper.pose();
+  }
   actor.root.position.set(s.w, 0, -s.d);
   actor.root.rotation.y = Math.atan2(-s.w, s.d);          // facing the middle of the net
   scene.add(actor.root);

@@ -47,7 +47,7 @@ for (const id of process.argv.slice(2)) {
       out: p.typeDescKey === 'goal' ? 'goal' : 'save', type: p.details.shotType || null,
       d: f.d, w: f.w, x, y, side, clip: p.details.highlightClipSharingUrl || null });
   }
-  for (const s of shots) Object.assign(roster[s.shooter] ||= {}, await person(s.shooter));
+  for (const id of new Set(shots.flatMap(s => [s.shooter, s.goalie]))) Object.assign(roster[id] ||= {}, await person(id));
   const goalies = [...new Set(shots.map(s => s.goalie))];
   const out = { id: +id, date: g.gameDate, away: g.awayTeam.abbrev, home: g.homeTeam.abbrev,
     score: { [g.awayTeam.abbrev]: g.awayTeam.score, [g.homeTeam.abbrev]: g.homeTeam.score }, goalies, roster, shots };
