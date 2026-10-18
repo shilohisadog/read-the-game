@@ -96,7 +96,10 @@ GAME = "2023020204"
 #      `quoted.pp` (the rail's power-play goals/opportunities). Copied only; the
 #      site's own JS compares them (src/lib/league.js). Measured first over the
 #      archive: goals, assists and saves agree on every game.
-SCHEMA = 6
+#   7  2026-10-18, plus `lose` on a face-off and `st` (shot type) on shots on goal,
+#      misses and goals — Kevin's ruling 7 (per-player face-off %) and the shot type
+#      kept from docs/see-the-shot-3d.md. Coverage measured over the whole archive first.
+SCHEMA = 7
 
 # ⭐ WHAT IS NOT PLAY — one statement, and `derive.py` reads it from here.
 #
@@ -129,7 +132,7 @@ PLAYABLE_SKIP = {"stoppage", "period-start", "period-end", "game-end",
 ACTOR = json.loads((DATA / "attribution.json").read_text())
 
 # NOTE: still dropped, deliberately, pending a decision on what needs them:
-#   shotType, losingPlayerId, hitteePlayerId, running awaySOG/homeSOG, and
+#   hitteePlayerId, running awaySOG/homeSOG, and
 #   zoneCode on events other than penalties. Raw feeds are archived, so nothing
 #   is lost -- but re-extracting a season is not free, so these are worth
 #   deciding on rather than defaulting.
@@ -241,6 +244,14 @@ def extract(pbp, shifts, box=None, rail=None):
         # the blocker lost half of every blocked-shot event.
         if t == "blocked-shot" and d.get("blockingPlayerId") is not None:
             ev["blk"] = d["blockingPlayerId"]
+        # The face-off loser; the winner is `actor`. On 264,681 of 264,681 archive
+        # draws (tools/feed_fields.py, 2026-10-18).
+        if t == "faceoff" and d.get("losingPlayerId") is not None:
+            ev["lose"] = d["losingPlayerId"]
+        # The league's shot type: on every shot on goal and miss, 98.3% of goals,
+        # never a blocked shot (tools/feed_fields.py, 2026-10-18).
+        if t in ("shot-on-goal", "missed-shot", "goal") and d.get("shotType"):
+            ev["st"] = d["shotType"]
         # THE PENALTY, BEYOND THE FACT THAT ONE HAPPENED. `own` is the OFFENDING
         # team -- verified 8 of 8 against rosterSpots, and re-checked on every
         # game by validate() rather than trusted, because `own` is the field that

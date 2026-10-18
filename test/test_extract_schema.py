@@ -52,12 +52,12 @@ EXPECTED_DOC = {"events", "game", "goalies", "gshots", "quoted", "roster",
 #   unreconciled   a game whose own arithmetic did not close.
 EXPECTED_DOC_OPTIONAL = {"recap", "unreconciled"}
 EXPECTED_EVENT = {
-    "a1", "a2", "actor", "blk", "clip", "clock", "drew", "goalie", "min",
+    "a1", "a2", "actor", "blk", "clip", "clock", "drew", "goalie", "lose", "min",
     "miss", "own", "pen", "per", "pt", "rem", "rsn", "rsn2", "s", "sev",
-    "sit", "srv", "type", "x", "y", "zone",
+    "sit", "srv", "st", "type", "x", "y", "zone",
 }
 # The number that must move when either set above does.
-EXPECTED_SCHEMA = 6
+EXPECTED_SCHEMA = 7
 
 
 def _rich():
@@ -652,3 +652,26 @@ class LeagueRows(unittest.TestCase):
         self.assertIsNone(E._quoted_pp(None))
         self.assertIsNone(E._quoted_pp({"teamGameStats": [
             {"category": "powerPlay", "homeValue": "1/3", "awayValue": None}]}), "half a figure is none")
+
+
+class FaceoffLoserAndShotType(unittest.TestCase):
+    """SCHEMA 7: `lose` on a face-off, `st` on a shot that reached or missed the net."""
+
+    def _events(self, plays):
+        return E.extract(_game(plays, ROSTER), {"data": []}, BOX, RAIL)["events"]
+
+    def test_the_loser_is_kept_beside_the_winner(self):
+        ev = [e for e in self._events(PLAYS) if e["type"] == "faceoff"]
+        self.assertEqual([(e["actor"], e["lose"]) for e in ev], [(10, 20), (11, 21), (20, 10)])
+
+    def test_shot_type_on_shots_misses_and_goals_and_never_a_block(self):
+        plays = [
+            _play("shot-on-goal", HOME, "01:00", shootingPlayerId=10, shotType="wrist"),
+            _play("missed-shot", AWAY, "02:00", shootingPlayerId=20, shotType="slap", reason="wide-left"),
+            # The league records no type on a block; a stray one is still not carried.
+            _play("blocked-shot", HOME, "03:00", shootingPlayerId=10, blockingPlayerId=20, shotType="snap"),
+            _play("shot-on-goal", HOME, "04:00", shootingPlayerId=11),
+        ]
+        st = [(e["type"], e.get("st")) for e in self._events(plays) if e["type"] != "period-start"]
+        self.assertEqual(st, [("shot-on-goal", "wrist"), ("missed-shot", "slap"),
+                              ("blocked-shot", None), ("shot-on-goal", None)])
