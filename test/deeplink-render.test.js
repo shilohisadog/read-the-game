@@ -345,7 +345,7 @@ const checked = (d, l) =>
   String(d.GROUPS['#rg .pk'].find(b => b.dataset.l === l).getAttribute('aria-checked'));
 const BUTTON_OF = { corsi: 'corsi', slot: 'slot', goaltending: 'goaltending',
                     whistle: 'whistle', blocked: 'blocked',
-                    zonestart: 'zonestart', shooters: 'shooters' };
+                    zonestart: 'zonestart', shooters: 'shooters', faceoffs: 'faceoffs' };
 
 test('every layer token has a chip, and every chip a token', () => {
   assert.deepEqual(Object.keys(BUTTON_OF).sort(), [...LAYER_TOKENS].sort());

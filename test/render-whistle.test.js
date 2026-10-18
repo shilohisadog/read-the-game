@@ -334,7 +334,7 @@ test('the stoppage is named by the box and not by the ice', () => {
 
   // AND THE ICE STILL NARRATES ITS OWN EVENT. Removing the clause must not have
   // taken the label with it.
-  assert.match(ice, /Won the faceoff/,
+  assert.match(ice, /Won the face-off/,
     'the ice stopped naming the faceoff too — the removal took the label with it');
 });
 

@@ -162,7 +162,7 @@ __CSS__</style>
        the record, the rulebook and the archive. Pressing it opens where the notes
        come from. The row is reserved so it never moves Play. -->
   <details class="playd" id="playd"><summary class="playline" title="Where these notes come from"><span id="playline"></span></summary>
-  <p class="playwork">Each note comes from one of three places: the league&rsquo;s
+  <p class="playwork" id="playwork">Each note comes from one of three places: the league&rsquo;s
   record of this game, the NHL rulebook, or how often something happened across
   three seasons of games we hold. None of them says which team had the puck &mdash;
   the record does not say &mdash; or why anyone did anything. &ldquo;Events in a
@@ -410,7 +410,7 @@ __CSS__</style>
      thing, even when considering past guidance (which was based on previous UX
      situation)." -->
 <div class="newcomer" id="newcomer"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">__CHIP_CORSI__</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">__CHIP_SLOT__</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">__CHIP_BLOCKED__</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">__CHIP_GOALTENDING__</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">__CHIP_WHISTLE__</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">__CHIP_ZONESTART__</span><span class="pkn" id="n_zonestart">0</span></button><button class="pk" id="pkShooters" data-l="shooters" role="radio" aria-checked="false"><span class="pkl">__CHIP_SHOOTERS__</span><span class="pkn" id="n_shooters">0</span></button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">__CHIP_CORSI__</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">__CHIP_SLOT__</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">__CHIP_BLOCKED__</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">__CHIP_GOALTENDING__</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">__CHIP_WHISTLE__</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">__CHIP_ZONESTART__</span><span class="pkn" id="n_zonestart">0</span></button><button class="pk" id="pkShooters" data-l="shooters" role="radio" aria-checked="false"><span class="pkl">__CHIP_SHOOTERS__</span><span class="pkn" id="n_shooters">0</span></button><button class="pk" id="pkFaceoffs" data-l="faceoffs" role="radio" aria-checked="false"><span class="pkl">__CHIP_FACEOFFS__</span><span class="pkn" id="n_faceoffs">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
 <div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
@@ -758,7 +758,7 @@ LIB = ["rink.js", "registry.js", "attribution.js", "layer.js", "strength.js", "b
        # dependencies -- every condition it ranks arrives as an argument.
        "announce.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
-       "layers/blocked.js", "layers/zonestart.js", "layers/shooters.js",
+       "layers/blocked.js", "layers/zonestart.js", "layers/shooters.js", "layers/faceoffs.js",
        # The color line. AFTER stretch.js and the whistle and goaltending layers it reads.
        "color.js",
        # BEFORE sentence.js, which asks it which competition a game is.
@@ -1049,7 +1049,12 @@ function reveal(){if(MSG)MSG.hidden=true;if(APP)APP.hidden=false;}
 function draw(g,rates){
   if(APP&&APP.hidden)throw new Error(
     'boot() ran inside a hidden subtree — reveal() must come first');
-  boot(g,rates);}
+  boot(g,rates,doc);}
+// A published document as of the link's edition; a night never saved falls back to today's.
+function doc(name){
+  return LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/'+name)
+                     .catch(function(){return grab(ORIGIN+'/'+name);})
+                   :grab(ORIGIN+'/'+name);}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
 // The newest viewable game; front.json carries it (src/lib/front.js::newestOf).
@@ -1095,10 +1100,8 @@ function lessonGame(id){
     // preview, and measures.json exists only to feed it, so fetching it would be
     // a request on a homepage for bytes nobody reads.
     if(LINK0.preview){reveal();draw(g,null);return null;}
-    // A dated link reads that night's measurements; a night never saved falls back to today's.
-    return (LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/measures.json')
-                      .catch(function(){return grab(ORIGIN+'/measures.json');})
-                     :grab(ORIGIN+'/measures.json'))
+    // A dated link reads that night's measurements.
+    return doc('measures.json')
       .catch(function(){return null;})
       .then(function(rates){reveal();draw(g,rates);newestEdition();});})
   .catch(function(e){

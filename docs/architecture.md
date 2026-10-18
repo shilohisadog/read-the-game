@@ -39,14 +39,14 @@ header, and §4 records what it cost us the one time we did it anyway.
 | tier | what it does | where it lives | lines |
 |---|---|---|---|
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 787 |
-| **interpretation** | feed → events; the two gates | `extract.py` | 1,529 |
+| **interpretation** | feed → events; the two gates | `extract.py` | 1,540 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 832 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (57 modules) | 13,170 |
-| **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 896 |
-| **presentation** | generates the pages | `build_*.py` (8) | 8,144 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 5,194 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (58 modules) | 13,422 |
+| **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 901 |
+| **presentation** | generates the pages | `build_*.py` (8) | 8,148 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 5,280 |
 
-<sub>Counted 2026-10-17 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **57 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 40 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,194 lines **3,742 are comment-only and 1281 are code**, and **417 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-10-18 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **58 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 41 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,280 lines **3,751 are comment-only and 1358 are code**, and **417 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---

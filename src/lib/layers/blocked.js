@@ -3,7 +3,7 @@
  * other side of it.
  *
  * WHY THIS LAYER EXISTS, AND IT IS ONE SENTENCE. Over the whole archive —
- * 514,420 attempts in 4,312 games — **51.9% of shot attempts never reach the
+ * 516,032 attempts in 4,326 games — **51.9% of shot attempts never reach the
  * goalie at all, and 27.7% are blocked by a body.** A novice reading "58
  * attempts" on the scoreboard hears 58 chances; about thirty of them never got
  * there. This layer is that correction, made visible on the ice.
@@ -48,7 +48,7 @@ const NOT_BLOCKED = {
   'shot-on-goal': 'reached the goalie — nothing stopped it on the way',
   'missed-shot': 'missed the net on its own — wide or high, not blocked',
   hit: 'a hit — physical play, but nothing was shot',
-  faceoff: 'a faceoff — possession changes, nothing was shot',
+  faceoff: 'a face-off — possession changes, nothing was shot',
   giveaway: 'a giveaway — losing the puck is not a shot',
   takeaway: 'a takeaway — winning the puck is not a shot',
   penalty: 'a penalty — changes the game, but nothing was shot',

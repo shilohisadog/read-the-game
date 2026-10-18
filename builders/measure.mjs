@@ -31,6 +31,7 @@ import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
 import { shooters } from '../src/lib/layers/shooters.js';
+import { faceoffs } from '../src/lib/layers/faceoffs.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { situation, DECLINED } from '../src/lib/strength.js';
 import { inScope, summarise, dataThrough, playerSeasons } from '../src/lib/archive.js';
@@ -106,6 +107,7 @@ export function measureGame(g) {
      per-game distribution counts draws, which is what the chip counts. */
   const draws = zonestart.reduce(g.events, lay);
   const dshots = shooters.reduce(g.events, lay);
+  const fos = faceoffs.reduce(g.events, lay);
   const sideOf = tid => tid === ctx.homeId ? 'h' : tid === ctx.awayId ? 'a' : null;
 
   const slot = { h: 0, a: 0 };
@@ -190,6 +192,8 @@ export function measureGame(g) {
      disagree with the per-goalie rows beside it. */
   const faced = { h: 0, a: 0 }, saves = { h: 0, a: 0 };
   for (const k of goalies) { faced[k.side] += k.faced; saves[k.side] += k.saves; }
+  // Face-offs each side won, anywhere — the Face-offs layer's own count (ruling 7).
+  const fo = { h: fos.t[ctx.homeId], a: fos.t[ctx.awayId] };
   // Face-offs each side won in its attacking end — the Zone starts box's figure.
   const oz = { h: draws.z[ctx.homeId].O, a: draws.z[ctx.awayId].O };
 
@@ -211,7 +215,7 @@ export function measureGame(g) {
     // Blocks CREDITED to each side — the team that did the blocking, which is
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
-    slot, located, goals, goalies, faced, saves, oz,
+    slot, located, goals, goalies, faced, saves, oz, fo,
     /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
        rink puts a live count on each lens, and it is `LEDGER[id](sl)
        .counted.length` for every one of them — so a reference class built on
@@ -234,6 +238,7 @@ export function measureGame(g) {
       whistle: stops.counted.length,
       zonestart: draws.counted.length,
       shooters: dshots.counted.length,
+      faceoffs: fos.counted.length,
     },
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.

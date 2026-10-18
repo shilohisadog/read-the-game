@@ -24,7 +24,7 @@ import {
 import {
   ATTRIBUTION, corsiTeam, missSay, shootingTeam, SHOT_TYPES
 } from './lib/attribution.js';
-import { claimOf } from './lib/registry.js';
+import { claimOf, measure } from './lib/registry.js';
 import { framed, inShootout, notAPlay, sitAt } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
@@ -51,6 +51,7 @@ import {
 import { blocked } from './lib/layers/blocked.js';
 import { zonestart } from './lib/layers/zonestart.js';
 import { shooters } from './lib/layers/shooters.js';
+import { faceoffs } from './lib/layers/faceoffs.js';
 import { periodLabel } from './lib/period.js';
 import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
@@ -79,7 +80,7 @@ import { SX, SY, furniture, netGlyph } from './lib/rinkart.js';
 import { SvgPen } from './lib/svgpen.js';
 import { FIG, PLAYER_FT, GOAL_SCALE, sizeFor } from './lib/figures.js';
 
-export function boot(G,RATES){
+export function boot(G,RATES,DOC){
 /* ⭐ AND THE RINK'S PAINT SITS INSIDE IT, for the opposite reason.
    `src/lib/rinkart.js` owns `SX`/`SY` and the whole SVG of an NHL sheet, so that
    the learn page's rule diagrams and this replay cannot draw two different
@@ -341,6 +342,14 @@ function counted(slice){return levelOnly?tiedControl.reduce(slice,CTX)
                                         :corsi.reduce(slice,CTX);}
 function lens(k){return counted(upto(k));}
 const $=id=>document.getElementById(id);
+// Where the long-run notes' thresholds come from, from the published archive.
+{const rl=RATES&&RATES.census&&RATES.census.runLength,pw=$('playwork');
+ if(pw&&rl&&rl.runs&&rl.events&&rl.events.p75!=null&&rl.secs&&rl.secs.p90!=null){
+  const t=rl.secs.p90,sp=document.createElement('span');
+  sp.textContent=' A long run of play is noted once it passes '+rl.events.p75+' events (3 in 4 of the '
+   +rl.runs.toLocaleString()+' runs of play we have measured, face-off to whistle, end within that), and again past '
+   +Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+' of play (9 in 10 end sooner).';
+  pw.appendChild(sp);}}
 /**
  * ⭐⭐ A SUBTREE WHOSE MARKUP DID NOT CHANGE IS NOT REWRITTEN, and the reason is
  * not performance: REPLACING AN ELEMENT RESTARTS ITS ENTRANCE ANIMATION.
@@ -1337,7 +1346,7 @@ function captionIcing(e){const z=ICING.get(e).zone;
  const side=who===AAB?'a':who===HAB?'h':null;
  sayCaption(side,who,'🧊 Icing',
   ' · from behind centre, past the far goal line'
-  +(z?` &mdash; faceoff back in ${side?'their':ESC(z)+"'s"} end`:''),e);}
+  +(z?` &mdash; face-off back in ${side?'their':ESC(z)+"'s"} end`:''),e);}
 /* OFFSIDE, AT THE ONLY FRAME IT CAN EVER BE SAID ON.
    ⛔ AND IT NEVER SAYS WHERE THE DRAW COMES BACK TO, which is the one clause a
    reader would expect after icing's. "The faceoff goes back outside the zone"
@@ -1371,7 +1380,7 @@ function captionOffside(e){
  const who=OFFSIDE.get(e).offender;
  const side=who===AAB?'a':who===HAB?'h':null;
  sayCaption(side,who,'🔵 Offside',' &middot; a skater crossed the blue line ahead of the puck'
-  +(who?'':' &mdash; a centre-ice draw names neither team'),e);}
+  +(who?'':' &mdash; a centre-ice face-off names neither team'),e);}
 /* THE TWO LINES RULE 81 NAMES, at the frame it is being explained. Same markup
    `drawWhistles` emits for the same reason, through one writer so the geometry
    and the class cannot drift into two versions. */
@@ -1467,7 +1476,7 @@ function chipLabel(id){
    mapping in one visible place instead of scattering it. `test/lbox.test.js`
    asserts every key here equals its own module's `id`, so the two cannot drift. */
 const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whistle:whistle,
- zonestart:zonestart,shooters:shooters};
+ zonestart:zonestart,shooters:shooters,faceoffs:faceoffs};
 /**
  * ⭐ WHAT EACH LAYER PUTS ON SCREEN — and this half stayed with the page.
  *
@@ -1546,12 +1555,12 @@ const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whis
 const SPAN=d=>{const w=formatDate(d);return w?', up to '+w:'';};
 
 const ZONE_SAY=(()=>{
- const ICE='Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the team that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the team that won it in the end that team was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two teams. ';
+ const ICE='Every face-off in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many face-offs have been taken there. The ring takes the colour of the team that has won MORE of them, grey when they are even, and the boldest ring is the most recent face-off. The two figures below the ice are the part the ice cannot show by itself: a face-off is an OFFENSIVE-zone start for the team that won it in the end that team was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two teams. ';
  const ez=RATES&&RATES.census&&RATES.census.endZone;
  const lost=ez&&ez.zoneWorth, add=ez&&ez.winningWorth, n=ez&&ez.n;
  if(lost==null||add==null||!n)
   return ICE+'Why it is worth watching: across the archive the team attacking '
-   +'that end takes more attempts before the next whistle when it wins the draw '
+   +'that end takes more attempts before the next whistle when it wins the face-off '
    +'than when it loses it \u2014 but most of what an offensive-zone start is worth '
    +'arrives either way. The figures for that are not on this page, which carries '
    +'a single game and asks for nothing else.';
@@ -1565,13 +1574,13 @@ const ZONE_SAY=(()=>{
     census figure and the archive runs ahead of it between derives. See `renderSum`. */
  /* THE ARCHIVE'S OWN SPAN, not a season's: `census.endZone` is counted over
     every game the measurement covers. */
- return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone draws '
+ return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone face-offs '
   +'we have measured'+SPAN(RATES&&RATES.dataThrough)+', the team attacking that end '
   +'averages '+won+' shot attempts '
-  +'before the next whistle when it WINS the draw, and '+lost+' when it LOSES it. '
+  +'before the next whistle when it WINS the face-off, and '+lost+' when it LOSES it. '
   +'Winning is worth the difference \u2014 '+add+' of an attempt \u2014 while the '+lost
   +' arrives either way, '+ratio+' times as much. Most of what an offensive-zone '
-  +'start is worth has nothing to do with winning the draw.';})();
+  +'start is worth has nothing to do with winning the face-off.';})();
 const DRAWS={
  corsi:'The box below the ice counts every attempt for each team as the replay runs.',
  slot:'An amber ring marks each one. Click a ring to see the distance and angle it was measured by.',
@@ -1583,7 +1592,66 @@ const DRAWS={
     at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
  zonestart:ZONE_SAY,
  shooters:'Attempts a defenceman took keep their mark and every other mark dims. The box below the ice counts each team\u2019s, out of all the attempts it has taken so far.',
+ faceoffs:'Each face-off keeps its mark, in the colour of the team that won it, and every other mark dims. The box below the ice counts the face-offs each team has won and names the player on each side who has taken the most.',
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the team that MADE it, the way a broadcast does. A block by a teammate is credited to neither team, so the two figures need not add up to the total.'};
+/* The Face-offs row's caveat (Kevin, 2026-10-18), every figure from the published
+   archive: how often the face-off's winner takes the next shot attempt, and how often
+   the team that won more face-offs won the game. Null until both are published. */
+function foCaveat(){
+ const fr=RATES&&RATES.census&&RATES.census.faceoffRun, b=RATES&&RATES.baseRates&&RATES.baseRates.moreFaceoffsLost;
+ if(!fr||!fr.first||fr.first.winnerShare==null||!b||b.rate==null||!b.n)return null;
+ return `Winning a face-off usually earns the next shot attempt (about ${Math.round(100*fr.first.winnerShare)}% of the time). `
+  +`But over a whole game, the team that won more face-offs won only ${Math.round(100*(1-b.rate))}% of ${b.n.toLocaleString()} games.`;}
+/* The Face-offs `Is that a lot?`: tonight's busiest takers, each placed by his season
+   share on every regular taker's full season (`players.json` `fo`, `archive.js::
+   faceoffSeasons`). Fetched only when opened; a page with no DOC reaches nothing. */
+let FO_DOC=null;
+function centresSection(host,at){
+ const sec=document.createElement('section');sec.className='fcent';
+ const h=document.createElement('h3');h.textContent=measure('playerFaceoffs').heading;
+ sec.appendChild(h);
+ const say=t=>{const p=document.createElement('p');p.className='wnone';p.textContent=t;sec.appendChild(p);};
+ host.appendChild(sec);
+ const F=faceoffs.reduce(upto(at),CTX);
+ const top=tid=>Object.entries(F.by).filter(([pid])=>R[pid]&&R[pid].tid===tid)
+  .sort((x,y)=>(y[1].w+y[1].l)-(x[1].w+x[1].l)||x[0]-y[0]).slice(0,2).map(([pid])=>pid);
+ const who=[...top(AID).map(p=>[p,'sa',AAB]),...top(HID).map(p=>[p,'sh',HAB])];
+ if(!who.length){say('No face-offs yet in what you have watched.');return;}
+ if(!DOC){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+ FO_DOC=FO_DOC||DOC('players.json').catch(()=>null);
+ FO_DOC.then(P=>{
+  const fo=P&&P.fo, rg=fo&&fo.range, seas=String((G.game&&G.game.id)||'').slice(0,4);
+  const rows=fo&&fo.seasons&&fo.seasons[seas];
+  if(!rg||!rows||!(rg.max>rg.min)){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+  const pc=v=>Math.round(100*v);
+  const when=seas===P.season?'this season'+SPAN(P.through):'in the '+seas+'-'+String(+seas+1).slice(2)+' season, playoffs included';
+  const lead=document.createElement('p');lead.className='walot';
+  lead.textContent='Each dot is a player\u2019s share of the face-offs he won '+when+', '
+   +'placed among the '+rg.n.toLocaleString()+' full seasons by regular takers in the archive; the tick is the middle one, '+pc(rg.median)+'%. '
+   +'A regular taker played at least '+P.qualify+' games and took at least '+fo.regular+' face-offs a game \u2014 that line is ours.'
+   +(fo.need?' A share needs about '+fo.need+' games to hold steady; a paler dot has played fewer.':'');
+  sec.appendChild(lead);
+  const ul=document.createElement('ul');ul.className='srows fcrows';
+  for(const [pid,mk,ab] of who){
+   const li=document.createElement('li'), r=rows[pid], p=R[pid];
+   const nm=document.createElement('span');
+   nm.innerHTML='<span class="stm '+mk+'">#'+ESC(String(p.n))+' '+ESC(p.nm)+' \u00b7 '+ESC(ab)+'</span> \u2014 '
+    +(r?pc(r[0]/r[1])+'% of '+r[1].toLocaleString()+' face-offs in '+r[2]+' game'+(r[2]===1?'':'s')
+       :'no season figure published yet');
+   li.appendChild(nm);
+   if(r){
+    const sc=document.createElement('span');sc.className='sscale';
+    const tr=document.createElement('span');tr.className='strack';
+    const at01=v=>Math.max(0,Math.min(100,100*(v-rg.min)/(rg.max-rg.min))).toFixed(1)+'%';
+    const md=document.createElement('span');md.className='smed';md.style.left=at01(rg.median);tr.appendChild(md);
+    const pt=document.createElement('span');pt.className='spt '+mk;pt.style.left=at01(r[0]/r[1]);
+    if(fo.need)pt.style.opacity=String(Math.max(.5,Math.min(1,r[2]/fo.need)));
+    tr.appendChild(pt);sc.appendChild(tr);
+    const ends=document.createElement('span');ends.className='sends';
+    ends.innerHTML='<span>'+pc(rg.min)+'%</span><span>'+pc(rg.max)+'%</span>';
+    sc.appendChild(ends);li.appendChild(sc);}
+   ul.appendChild(li);}
+  sec.appendChild(ul);});}
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
 /* ⚠️ AND ATTEMPTS GOES THROUGH `counted`, WHICH IS THE WHOLE POINT OF `counted`.
@@ -1866,12 +1934,14 @@ function renderSum(){
   // Zone starts: face-offs each team won in the other team's end.
   if(id==='zonestart')return L.z?{[AID]:L.z[AID].O,[HID]:L.z[HID].O}:null;
   // Who shoots: of every 100 attempts a team took, the ones its defencemen took.
+  // Face-offs: of every 100 face-offs in the game, the ones each team won.
+  if(id==='faceoffs'){const s=L.t[AID]+L.t[HID];return s?{[AID]:Math.round(100*L.t[AID]/s),[HID]:Math.round(100*L.t[HID]/s)}:null;}
   if(id==='shooters')return L.all&&L.all[AID]&&L.all[HID]
    ?{[AID]:Math.round(100*L.t[AID]/L.all[AID]),[HID]:Math.round(100*L.t[HID]/L.all[HID])}:null;
   return L.t||null;};
  /* Lenses whose per-team figure is a different quantity from the game's total, so
     with no per-team class they draw no scale rather than fall back to the game's. */
- const TEAM_ONLY={goaltending:1,zonestart:1,shooters:1};
+ const TEAM_ONLY={goaltending:1,zonestart:1,shooters:1,faceoffs:1};
  Object.keys(LENS).forEach(id=>{
   const L=LENS[id].reduce(G.events,{...CTX,evenOnly:false});
   const n=L.counted.length;
@@ -1901,7 +1971,7 @@ function renderSum(){
   const bare=by&&!cls&&TEAM_ONLY[id];
   const split=by&&(cls||bare);
   const d=cls?cls:(bare?null:(own?own[id]:null));
-  const u=(cls&&cls.suffix)||(bare&&(id==='goaltending'||id==='shooters')?'%':'');
+  const u=(cls&&cls.suffix)||(bare&&(id==='goaltending'||id==='shooters'||id==='faceoffs')?'%':'');
   /* ⭐ THE CLASS NAMES ARE WHOLE LITERALS, NOT `'s'+cls`. `test/css-orphans.test.js`
      counts every word inside every shipped string to decide whether a CSS rule
      still dresses anything, and a name spliced from a prefix and a letter is
@@ -1997,6 +2067,7 @@ function renderSum(){
      ⛔ IT IS NOT GATED ON THE SCALE. A row with no reference class still prints a
      count, and a count with nowhere to go is exactly what this closes — the same
      independence `work-overlay.test.js` asserts for the work panel's two rows. */
+  if(id==='faceoffs'){const fc=foCaveat();if(fc){const c=document.createElement('span');c.className='scav';c.textContent=fc;li.appendChild(c);}}
   const doors=LAYERWORK[id]||[];
   if(doors.length){
    const d=document.createElement('span');
@@ -2312,6 +2383,7 @@ function renderAlot(at=i){
  /* ⛔ AND IT SAYS SO RATHER THAN SHOWING A HEADING OVER NOTHING. An anchor in
     `layer-rules.json` that neither table answers to is our gap, and the empty
     panel above is exactly how it hid the first time. */
+ if(id==='faceoffs'){centresSection(host,at);drew++;}
  if(!drew){
   host.appendChild(document.createElement('p')).className='wnone';
   host.lastChild.textContent='The archive figures behind this layer could not '
@@ -3068,7 +3140,7 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    is the same rule that keeps a `clock` note from opening the shots sentence. */
 (()=>{const k=$('unrecKey');if(!k)return;
  const NOUN={sog:'shots on goal',hits:'hits',giveaways:'giveaways',
-  takeaways:'takeaways',faceoffWins:'faceoffs won',pim:'penalty minutes',
+  takeaways:'takeaways',faceoffWins:'face-offs won',pim:'penalty minutes',
   blocked:'blocked shots'};
  // WHICH DOCUMENT OF THE LEAGUE'S. Shots come from the boxscore and the team
  // totals from the game summary; the note says which, and a note that does not
@@ -3568,7 +3640,7 @@ $('whyBk').addEventListener('click',e=>{const t=e.target;
    have made a sentence elsewhere on the page false -- the same dependency that
    broke "start with the game at the top" and "Press Play below", and this time
    a test holds the two ends together rather than a comment. */
-const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
+const LAB={faceoff:'Won the face-off',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
 /* NARRATION IS NO LONGER A CONTROL (Kevin, 2026-08-26: "for display options, I
    vote to remove players and narration"). The ice names every event, always.
 
@@ -3863,7 +3935,7 @@ function drawZoneStarts(Z,slice){
   const split=d.h>d.a?`${HAB} ${d.h}, ${AAB} ${d.a}`
             :d.a>d.h?`${AAB} ${d.a}, ${HAB} ${d.h}`
             :`${AAB} ${d.a}, ${HAB} ${d.h} — even`;
-  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="4.6" stroke="${col}"><title>${d.n} draw${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
+  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="4.6" stroke="${col}"><title>${d.n} face-off${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
   /* ⭐ `y` IS THE CENTRE, NOT A NUDGED BASELINE, and that is why this diverges
      from `.whn` next door. The old form wrote `cy+1.2`, a magic offset tuned to
      one font-size -- so the size lived in the CSS and its centring lived here,
@@ -3926,8 +3998,8 @@ function drawWhistles(W){
  // RECORDED fact (which end the dot is in) beside the RULE (where that dot goes),
  // and leaves the reader to put them together. It does not assert who iced it.
  const zone=(w.rsn==='icing'&&w.zone)
-   ?` The faceoff came back into ${ESC(w.zone)}'s end.`:'';
- const where=(w.placed?'Play restarted at the ringed faceoff dot.'
+   ?` The face-off came back into ${ESC(w.zone)}'s end.`:'';
+ const where=(w.placed?'Play restarted at the ringed face-off dot.'
    :`Not shown on the ice — ${ESC(w.unplaced)}.`)+zone;
  $('whistlePanel').innerHTML=
    /* THE CARD SAYS IT IS LOOKING BACKWARDS, which is the whole of Kevin's
@@ -3951,7 +4023,7 @@ function drawWhistles(W){
      computing one. */
   +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">${sinceLine(w)}</span><br>${say}</p>`
   /* TRIMMED TO THE RESTART AND ITS SOURCE. Kevin, looking at the live offside
-     card: "remove all text after 'Play restarted at the ringed faceoff dot.' We
+     card: "remove all text after 'Play restarted at the ringed face-off dot.' We
      don't need 'TV timeout' or the 'Goalie covered the puck....' line."
      So the secondary reason, the running count and the whole tally row are gone.
      THE RULE CITATION STAYED, and that is a flag rather than a decision: it is
@@ -4299,7 +4371,7 @@ function drawNewcomer(){
   document.getElementById('rg').classList.remove('newcomer');});}
 document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
-let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false,zoneOn=false,shootOn=false;
+let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false,zoneOn=false,shootOn=false,foOn=false;
 /* ⚠️ AND IT LIVES HERE, NOT BESIDE THE THING IT DRAWS. `zoneState()` runs at
    BOOT, one line below its own definition, and it calls `syncPick` -- so with
    this block further down the file `let picking` was still in its temporal
@@ -4326,7 +4398,8 @@ const PICKS=[['corsi',()=>corsiOn,v=>{corsiOn=v;setCorsi();}],
              ['goaltending',()=>goalieOn,v=>{goalieOn=v;setGoalie();}],
              ['whistle',()=>whistleOn,v=>{whistleOn=v;setWhistle();}],
              ['zonestart',()=>zoneOn,v=>{zoneOn=v;setZone();}],
-             ['shooters',()=>shootOn,v=>{shootOn=v;setShooters();}]];
+             ['shooters',()=>shootOn,v=>{shootOn=v;setShooters();}],
+             ['faceoffs',()=>foOn,v=>{foOn=v;setFaceoffs();}]];
 let picking=false;
 function pick(want){
  // GUARDED because each setter calls lyrState -> syncPick, and syncPick reads
@@ -4680,6 +4753,17 @@ function lboxFor(id,at,L){
     the box under the rink -- so reading `L.z` here returns undefined and takes
     the whole render down with it. Every layer past `corsi` in this chain does
     the same thing for the same reason. */
+ if(id==='faceoffs'){
+  const F=faceoffs.reduce(sl,CTX), n=F.counted.length;
+  // The player on each side who has taken the most face-offs so far, with his record.
+  const most=tid=>{let best=null;
+   for(const [pid,r] of Object.entries(F.by)){const p=R[pid];if(!p||p.tid!==tid)continue;
+    if(!best||r.w+r.l>best.r.w+best.r.l)best={p,r};}
+   return best?`${best.p.nm} ${best.r.w}\u2013${best.r.l}`:null;};
+  const tops=[most(AID),most(HID)].filter(Boolean);
+  return {a:F.t[AID],k:'FACE-OFFS WON',h:F.t[HID],
+   n:n?(tops.length?`Most taken: ${tops.join(' \u00b7 ')}`:`${n} face-off${n===1?'':'s'}`)
+     :'No face-offs yet in what you have watched.'};}
  if(id==='shooters'){
   const D=shooters.reduce(sl,CTX), tot=D.all[AID]+D.all[HID];
   return {a:D.t[AID],k:'BY DEFENCEMEN',h:D.t[HID],
@@ -4705,7 +4789,7 @@ function lboxFor(id,at,L){
 /** The centre label alone, for the pre-game frame where there is nothing to count. */
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
  blocked:()=>'BLOCKS',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES',
- zonestart:()=>'OFFENSIVE-ZONE STARTS',shooters:()=>'BY DEFENCEMEN'};
+ zonestart:()=>'OFFENSIVE-ZONE STARTS',shooters:()=>'BY DEFENCEMEN',faceoffs:()=>'FACE-OFFS WON'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -4870,6 +4954,7 @@ function setWhistle(){document.getElementById('rg').classList.toggle('whistle',w
 function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);syncPick();render(i,'');}
 function setZone(){document.getElementById('rg').classList.toggle('zonestart',zoneOn);syncPick();render(i,'');}
 function setShooters(){document.getElementById('rg').classList.toggle('shooters',shootOn);syncPick();render(i,'');}
+function setFaceoffs(){document.getElementById('rg').classList.toggle('faceoffs',foOn);syncPick();render(i,'');}
 /* ⭐ THE GAME OPENS BEFORE THE FIRST PLAY -- on the state, not on a play.
    It used to open on the LAST event, which put the final score, the finished
    counters and -- on a shootout game -- the shootout notice on screen before a
@@ -4920,6 +5005,7 @@ const LAYER_APPLY={
  [blocked.id]:()=>{blockOn=true;setBlock();},
  [zonestart.id]:()=>{zoneOn=true;setZone();},
  [shooters.id]:()=>{shootOn=true;setShooters();},
+ [faceoffs.id]:()=>{foOn=true;setFaceoffs();},
 };
 /* ⭐ ONE CALL, NOT A SECOND SPELLING. This read `if(LINK.strength==='even')` and
    set the flag itself, which was harmless while there was one flag and would be

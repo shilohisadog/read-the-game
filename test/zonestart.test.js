@@ -251,7 +251,7 @@ test('the zone-start copy no longer teaches the convention that was removed', ()
   assert.doesNotMatch(copy, /no number means one/i,
     'the help text still says an absent number means one draw, and every ring now '
     + 'carries its count');
-  assert.match(copy, /number inside it is how many draws/,
+  assert.match(copy, /number inside it is how many face-offs/,
     'the copy stopped explaining what the number on a ring is');
 });
 
@@ -288,7 +288,7 @@ test('⭐⭐ a face-off ring is stroked for the club that won the draws at that 
   /* `N draw(s) here — AB n, AB n` and, when the two are level, `— even`. The
      abbreviations are checked against the fixture below so a harness booting the
      wrong game cannot make this vacuous. */
-  const TITLE = /^(\d+) draws? here — ([A-Z]{2,3}) (\d+), ([A-Z]{2,3}) (\d+)( — even)?$/;
+  const TITLE = /^(\d+) face-offs? here — ([A-Z]{2,3}) (\d+), ([A-Z]{2,3}) (\d+)( — even)?$/;
 
   for (const g of GAMES) {
     const home = g.teams.home.ab, away = g.teams.away.ab;

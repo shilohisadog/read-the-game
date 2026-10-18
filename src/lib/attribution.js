@@ -190,7 +190,8 @@ export function missSay(ev) {
  * obvious.
  */
 export const ATTRIBUTION = {
-  faceoff:               { field: 'winningPlayerId',     say: '{a} won the draw' },
+  faceoff:               { field: 'winningPlayerId',     say: '{a} beat {b}',
+                           with: 'lose' },
   'shot-on-goal':        { field: 'shootingPlayerId',    say: '{a} shot on goal' },
   'missed-shot':         { field: 'shootingPlayerId',    say: '{a} missed the net' },
   /* ⭐⭐ THE ONE ROW WHOSE SENTENCE IS NOT ABOUT ITS `field`, AND THE PAGE ALREADY

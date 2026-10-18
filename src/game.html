@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qUBVv3R03dYZwP8fpN6DrwrSXWMYIjOkBEVSbiEybEA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-Cm0rlZAF2XviVCAFJX0ECZICHYrTum0zTSobZQLwUs0='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bv6TXZEPKUKnrAFxs+zSSTkBzgX2I4YY7C/zGIQA37Y=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-xYxwwatmya2/6UUFb7wPj1SeMd/rM5aw30IZBp4yiOo='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -395,6 +395,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  transform:translate(-50%,-50%);background:#1f7a4d;border:2px solid #fff}
 #rg .spt.sa{background:var(--away);top:30%}
 #rg .spt.sh{background:var(--home);top:70%}
+#rg .fcrows .spt.sa,#rg .fcrows .spt.sh{top:50%}
+#rg .smed{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:#7d95a8}
 #rg .spt.snone{background:#2b3b46}
 #rg .srows .stm{font-size:.84rem;font-weight:700;color:var(--ink);
  font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -403,6 +405,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .srows .stm.sa::before{background:var(--away)}
 #rg .srows .stm.sh::before{background:var(--home)}
 #rg .srows .sdoor{display:block;margin:5px 0 0;font-size:.78rem;line-height:1.45}
+#rg .srows .scav{display:block;margin:5px 0 0;font-size:.8rem;line-height:1.45;color:var(--ink)}
 #rg .srows .sdoor a{color:var(--blue);text-decoration:none;
  border-bottom:1px solid color-mix(in srgb,var(--blue) 35%,transparent)}
 #rg .srows .sdoor a:hover{border-bottom-color:var(--blue)}
@@ -541,6 +544,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  font-family:system-ui,sans-serif}
 #rg.blocked .att:not(.blkd):not(.cur),#rg.blocked .goal:not(.cur){opacity:.2}
 #rg.shooters .att:not(.dsh):not(.cur),#rg.shooters .goal:not(.dsh):not(.cur){opacity:.2}
+#rg.faceoffs .ev:not(.fo):not(.cur){opacity:.2}
+#rg.faceoffs .excl.fo{opacity:1;r:1.7px}
+#rg.faceoffs .fo.fwh{fill:var(--home)}
+#rg.faceoffs .fo.fwa{fill:#fff;stroke:var(--away);stroke-width:.7}
 #rg.blocked .ring.blk{stroke-width:1.3;opacity:1}
 #rg .blockpanel{display:none}
 #rg.blocked .blockpanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
@@ -707,7 +714,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <p class="who" id="who" aria-live="polite"></p>
   
   <details class="playd" id="playd"><summary class="playline" title="Where these notes come from"><span id="playline"></span></summary>
-  <p class="playwork">Each note comes from one of three places: the league&rsquo;s
+  <p class="playwork" id="playwork">Each note comes from one of three places: the league&rsquo;s
   record of this game, the NHL rulebook, or how often something happened across
   three seasons of games we hold. None of them says which team had the puck &mdash;
   the record does not say &mdash; or why anyone did anything. &ldquo;Events in a
@@ -754,7 +761,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="side">
 
 <div class="newcomer" id="newcomer"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot shots</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">Zone starts</span><span class="pkn" id="n_zonestart">0</span></button><button class="pk" id="pkShooters" data-l="shooters" role="radio" aria-checked="false"><span class="pkl">Who shoots</span><span class="pkn" id="n_shooters">0</span></button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot shots</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">Zone starts</span><span class="pkn" id="n_zonestart">0</span></button><button class="pk" id="pkShooters" data-l="shooters" role="radio" aria-checked="false"><span class="pkl">Who shoots</span><span class="pkn" id="n_shooters">0</span></button><button class="pk" id="pkFaceoffs" data-l="faceoffs" role="radio" aria-checked="false"><span class="pkl">Face-offs</span><span class="pkn" id="n_faceoffs">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
 <div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
@@ -981,21 +988,28 @@ const MEASURES = [
     strength: 'all', score: 'any', scopes: ['season'], typical: null,
     witness: 'boxscore decision (not yet kept — check the field)', keys: {} },
 
-  { id: 'faceoffWins', name: 'face-offs won', status: 'proposed',
-    says: 'Face-offs a team won, and its share of all the draws.',
+  { id: 'faceoffWins', name: 'face-offs won', chip: 'Face-offs', layer: '＋ Face-offs',
+    heading: 'How many face-offs a team wins',
+    says: 'Of every 100 face-offs in this team\u2019s games, this many it won.',
     counts: 'face-offs won', of: 'face-offs', credit: 'winner', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: 'right rail',
-    holds: false, keys: {} },
-  { id: 'playerFaceoffs', name: 'face-off win percentage', status: 'proposed',
-    says: 'Of every 100 draws a player took, this many he won.',
-    counts: 'draws won', of: 'draws taken', credit: 'player', unit: 'share', strength: 'all',
-    score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg',
-    keys: {}, pending: [{ ruling: '7', what: 'needs the losing player, which extract.py drops' }] },
+    holds: false, keys: { lens: 'faceoffs', perTeam: 'foShare' } },
+  { id: 'playerFaceoffs', name: 'face-off win percentage',
+    heading: 'How often a player wins his face-offs',
+    says: 'Of every 100 face-offs a player took, this many he won.',
+    counts: 'face-offs won', of: 'face-offs taken', credit: 'player', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg (not yet kept)',
+    keys: {} },
   { id: 'endZoneWorth', name: 'what a face-off in one end is worth', heading: 'What a face-off in one end is worth',
     says: 'Shot attempts that follow a face-off in one end, per face-off.',
-    counts: 'attempts after the draw', of: 'face-offs in that end', credit: 'none', unit: 'rate',
+    counts: 'attempts after the face-off', of: 'face-offs in that end', credit: 'none', unit: 'rate',
     strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
     keys: { printed: 'zoneStarts' } },
+  { id: 'faceoffRun', name: 'who takes the shots after a face-off', heading: 'Who takes the shots after a face-off',
+    says: 'Of the shot attempts in the run of play a face-off opens, the ones the team that won it took: the first, the second, the third, and later.',
+    counts: 'attempts by the face-off\u2019s winner', of: 'attempts in the run', credit: 'winner', unit: 'share',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    keys: { printed: 'faceoffRun' } },
 
   { id: 'penalties', name: 'penalties a team takes', heading: 'How many penalties a team takes', tile: 'penalties a team takes',
     says: 'Penalties called on one team, per game.',
@@ -1121,7 +1135,8 @@ function missSay(ev) {
 }
 
 const ATTRIBUTION = {
-  faceoff:               { field: 'winningPlayerId',     say: '{a} won the draw' },
+  faceoff:               { field: 'winningPlayerId',     say: '{a} beat {b}',
+                           with: 'lose' },
   'shot-on-goal':        { field: 'shootingPlayerId',    say: '{a} shot on goal' },
   'missed-shot':         { field: 'shootingPlayerId',    say: '{a} missed the net' },
   'blocked-shot':        { field: 'shootingPlayerId',    say: '{b} blocked a shot',
@@ -1155,7 +1170,7 @@ function shootoutWinner(events, homeId, awayId) {
 
 const NOT_AN_ATTEMPT = {
   hit: 'a hit — physical play, but not a shot attempt',
-  faceoff: 'a faceoff — possession changes, no attempt on goal',
+  faceoff: 'a face-off — possession changes, no attempt on goal',
   giveaway: 'a giveaway — losing the puck is not a shot',
   takeaway: 'a takeaway — winning the puck is not a shot',
   penalty: 'a penalty — changes the game, but is not an attempt',
@@ -1448,7 +1463,7 @@ const PEN = {
   'interference-goalkeeper': 'Goaltender interference',
   'delaying-game': 'Delay of game',
   'delaying-game-puck-over-glass': 'Delay of game — puck over the glass',
-  'delaying-game-face-off-violation': 'Delay of game — faceoff violation',
+  'delaying-game-face-off-violation': 'Delay of game — face-off violation',
   'delaying-game-illegal-play-by-goalie': 'Delay of game — illegal play by the goaltender',
   'delaying-game-unsuccessful-challenge': 'Delay of game — unsuccessful challenge',
   'closing-hand-on-puck': 'Closing his hand on the puck',
@@ -1487,7 +1502,7 @@ const PEN = {
   'goalie-participation-beyond-center': 'Goaltender participating beyond centre',
 
   'delaying-game-bench': 'Delay of game — bench',
-  'delaying-game-bench-face-off-violation': 'Delay of game — bench faceoff violation',
+  'delaying-game-bench-face-off-violation': 'Delay of game — bench face-off violation',
   'delaying-game-smothering-puck': 'Delay of game — smothering the puck',
   'game-misconduct-head-coach': 'Game misconduct — head coach',
   bench: 'Bench penalty',
@@ -1802,7 +1817,7 @@ function playersIn(g) {
   for (const [pid, r] of Object.entries(g.roster || {})) {
     if (r.pos === 'G') continue;
     out.set(Number(pid), { p: Number(pid), t: ab[r.tid], nm: r.nm, n: r.n, pos: r.pos,
-                           g: 0, a: 0, s: 0, c: 0 });
+                           g: 0, a: 0, s: 0, c: 0, fw: 0, ft: 0 });
   }
   const bump = (id, k, by) => { const r = out.get(id); if (r) r[k] += by; };
   for (const e of g.events) {
@@ -1820,6 +1835,10 @@ function playersIn(g) {
       case 'blocked-shot':
         if (e.pt === 'SO') break;
         bump(e.actor, 'c', 1);
+        break;
+      case 'faceoff':
+        if (e.pt === 'SO' || e.actor == null || e.lose == null) break;
+        bump(e.actor, 'fw', 1); bump(e.actor, 'ft', 1); bump(e.lose, 'ft', 1);
         break;
       default: break;
     }
@@ -2167,6 +2186,7 @@ function eventMarks({ evs, i, cur, moment, from = i, zoneFrom = null },
    let cls=e.type==='goal'?'goal':ATT.has(e.type)?'att':'excl';
    if(e.type==='blocked-shot')cls+=' blkd'; 
    if((ATT.has(e.type)||e.type==='goal')&&(R[e.actor]||{}).pos==='D')cls+=' dsh'; 
+   if(e.type==='faceoff')cls+=e.own===HID?' fo fwh':e.own===AID?' fo fwa':' fo'; 
    if(k===i)cls+=' cur';
    else if(trails==='play')cls+=' inplay';
    if(zoneFrom!=null&&k>=zoneFrom)cls+=' inzone';
@@ -2206,7 +2226,7 @@ function puckMark(cp, moment) {
 
 function trailsNote(trails, ASPLAYED) {
  return trails!=='all'
-   ?'This play keeps the marks since the last faceoff, numbered in order, and clears them when the next play begins. Keep every mark leaves the attempts on the ice as they happen.'
+   ?'This play keeps the marks since the last face-off, numbered in order, and clears them when the next play begins. Keep every mark leaves the attempts on the ice as they happen.'
    :ASPLAYED
    ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
    :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
@@ -2512,7 +2532,7 @@ const WHY = {
   icing: {
     name: 'Icing',
     say: 'Icing — the puck was sent from behind the centre line all the way past '
-       + 'the far goal line untouched. The faceoff comes back to the offending '
+       + 'the far goal line untouched. The face-off comes back to the offending '
        + 'end, and that team may not change players before it.',
     from: 'rule: NHL Rule 81',
   },
@@ -2525,7 +2545,7 @@ const WHY = {
   'goalie-stopped-after-sog': {
     name: 'Goaltender covered the puck',
     say: 'The goaltender caught or covered the puck after a shot, which stops play '
-       + 'and brings a faceoff.',
+       + 'and brings a face-off.',
     from: 'field: rsn',
   },
   'puck-frozen': {
@@ -2743,12 +2763,12 @@ const whistle = {
         const t = events[j].type;
         if (CLOSES_PLAY.has(t)) {
           unplaced = 'the period ended before play restarted, so there is no '
-                   + 'faceoff to place this on';
+                   + 'face-off to place this on';
           break;
         }
         if (t === 'faceoff') {
           if (events[j].x == null) {
-            unplaced = 'the restarting faceoff has no recorded location';
+            unplaced = 'the restarting face-off has no recorded location';
           } else {
             spot = events[j];
           }
@@ -2756,7 +2776,7 @@ const whistle = {
         }
       }
       if (!spot && !unplaced) {
-        unplaced = 'no faceoff follows this whistle in the recorded events';
+        unplaced = 'no face-off follows this whistle in the recorded events';
       }
 
       counted.push(id);
@@ -2840,7 +2860,7 @@ const NOT_BLOCKED = {
   'shot-on-goal': 'reached the goalie — nothing stopped it on the way',
   'missed-shot': 'missed the net on its own — wide or high, not blocked',
   hit: 'a hit — physical play, but nothing was shot',
-  faceoff: 'a faceoff — possession changes, nothing was shot',
+  faceoff: 'a face-off — possession changes, nothing was shot',
   giveaway: 'a giveaway — losing the puck is not a shot',
   takeaway: 'a takeaway — winning the puck is not a shot',
   penalty: 'a penalty — changes the game, but nothing was shot',
@@ -2906,21 +2926,21 @@ const blocked = {
 
 
 const NOT_A_DRAW = {
-  'shot-on-goal': 'a shot, not a faceoff',
-  'blocked-shot': 'a shot, not a faceoff',
-  'missed-shot': 'a shot, not a faceoff',
-  goal: 'a goal, not a faceoff',
-  hit: 'a hit, not a faceoff',
-  giveaway: 'a giveaway, not a faceoff',
-  takeaway: 'a takeaway, not a faceoff',
-  penalty: 'a penalty, not a faceoff',
-  stoppage: 'the whistle that caused a draw, not the draw itself',
+  'shot-on-goal': 'a shot, not a face-off',
+  'blocked-shot': 'a shot, not a face-off',
+  'missed-shot': 'a shot, not a face-off',
+  goal: 'a goal, not a face-off',
+  hit: 'a hit, not a face-off',
+  giveaway: 'a giveaway, not a face-off',
+  takeaway: 'a takeaway, not a face-off',
+  penalty: 'a penalty, not a face-off',
+  stoppage: 'the whistle that caused a face-off, not the face-off itself',
 };
 
 const zonestart = {
   work: ['zoneStarts'],
-  counts: 'every faceoff, and for the team that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
-  credits: 'Each draw is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one team and never two.',
+  counts: 'every face-off, and for the team that won it, whether that face-off was in its offensive zone, the neutral zone, or its defensive zone',
+  credits: 'Each face-off is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other.',
   id: 'zonestart',
   label: measure('zoneStarts').layer,
 
@@ -2935,7 +2955,7 @@ const zonestart = {
       const notPlay = inShootout(e);
       const notDraw = e.type === 'faceoff'
         ? null
-        : (NOT_A_DRAW[e.type] || NOT_A_PLAY[e.type] || `not a faceoff (${e.type})`);
+        : (NOT_A_DRAW[e.type] || NOT_A_PLAY[e.type] || `not a face-off (${e.type})`);
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
       if (notPlay || notDraw || notEven) {
@@ -2954,9 +2974,9 @@ const zonestart = {
         surprising.push({
           id,
           why: e.own == null || t[e.own] === undefined
-            ? 'the feed did not record which team won this draw, so it is counted '
+            ? 'the feed did not record which team won this face-off, so it is counted '
             + 'and credited to neither'
-            : 'the feed recorded no coordinate for this draw, so it is counted '
+            : 'the feed recorded no coordinate for this face-off, so it is counted '
             + 'and placed in no zone',
           derivedFrom: `event.own=${e.own}, event.x=${e.x}`,
         });
@@ -3021,9 +3041,67 @@ const shooters = {
 
 
 
+const faceoffs = {
+  work: ['faceoffRun'],
+  counts: 'every face-off, credited to the team whose player won it',
+  credits: 'Each face-off is credited to the team that won it; both players who took it are named.',
+  id: 'faceoffs',
+  label: measure('faceoffWins').layer,
+
+  reduce(events, ctx) {
+    const { homeId, awayId } = ctx;
+    const t = { [homeId]: 0, [awayId]: 0 }, by = {};
+    const counted = [], excluded = [], unplaced = [];
+    const tally = (pid, k) => { if (pid == null) return; (by[pid] ||= { w: 0, l: 0 })[k]++; };
+    events.forEach((e, id) => {
+      const notPlay = inShootout(e);
+      const notDraw = e.type === 'faceoff' ? null
+        : (NOT_A_DRAW[e.type] || NOT_A_PLAY[e.type] || `not a face-off (${e.type})`);
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+      if (notPlay || notDraw || notEven) {
+        const dims = {};
+        if (notPlay) dims.play = notPlay;
+        if (notDraw) dims.type = notDraw;
+        if (notEven) dims.strength = notEven;
+        excluded.push({ id, why: notPlay || notDraw || notEven, dims });
+        return;
+      }
+      counted.push(id);
+      if (e.own == null || t[e.own] === undefined) { unplaced.push(id); return; }
+      t[e.own]++;
+      tally(e.actor, 'w');
+      tally(e.lose, 'l');
+    });
+    return { t, by, counted, excluded, unplaced };
+  },
+};
+
+
+
+
+
+
+
+
+const SHOT_WORDS = {
+  wrist: 'A wrist shot', snap: 'A snap shot', slap: 'A slapshot', backhand: 'A backhand',
+  'tip-in': 'A tipped shot', deflected: 'A deflected shot', 'wrap-around': 'A wraparound',
+  bat: 'A puck batted out of the air', poke: 'A poke at the puck',
+  'between-legs': 'A shot from between his legs', cradle: 'A lacrosse-style "Michigan"',
+};
+const SHOTS_TYPED = new Set(['shot-on-goal', 'missed-shot', 'goal']);
+
+function shotLead(e, shooter, homeId) {
+  if (!SHOTS_TYPED.has(e.type) || shooter == null) return null;
+  const what = (e.st && SHOT_WORDS[e.st]) || 'A shot';
+  if (e.x == null || e.y == null) return e.st ? `${what}.` : null;
+  const ft = Math.round(distanceToNet(e.x, e.y, attackDirection(shooter, homeId)));
+  return `${what} from ${ft} ${ft === 1 ? 'foot' : 'feet'}.`;
+}
 
 const PERIOD_DONE = ['', 'After one period', 'After two periods', 'After three periods'];
 const ORD = k => `${k}${k % 100 >= 11 && k % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][k % 10] || 'th'}`;
+const clockOf = t => (t < 60 ? `${t} seconds` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
 const countOf = (k, one) => `${k} ${one}${k === 1 ? '' : 's'}`;
 const PILL_SAYS = new Set(['icing', 'offside']);
 
@@ -3054,6 +3132,8 @@ function colorNotes(game, ctx, rates) {
   const slot = rates && rates.slot && rates.slot.scoredFromInside && rates.slot.scoredFromOutside
     ? [Math.round(rates.slot.scoredFromInside.n / rates.slot.scoredFromInside.count),
        Math.round(rates.slot.scoredFromOutside.n / rates.slot.scoredFromOutside.count)] : null;
+  const RUN = census.runLength && census.runLength.events && census.runLength.secs
+    ? { events: census.runLength.events.p75, secs: census.runLength.secs.p90 } : null;
   const icing = new Map(icingRestarts(ev, ctx).map(r => [r.event, r]));
   const PLAYS = plays(ev);
 
@@ -3061,7 +3141,7 @@ function colorNotes(game, ctx, rates) {
   const score = { [ctx.homeId]: 0, [ctx.awayId]: 0 };
   const tally = { att: { [ctx.homeId]: 0, [ctx.awayId]: 0 }, sog: { [ctx.homeId]: 0, [ctx.awayId]: 0 },
                   slot: { [ctx.homeId]: 0, [ctx.awayId]: 0 } };
-  const toldWhy = new Set(), toldShift = new Set(), toldSlot = new Set();
+  const toldWhy = new Set(), toldShift = new Set(), toldSlot = new Set(), toldRun = new Set();
   let lastStop = null, endedPeriod = 0;
 
   ev.forEach((e, n) => {
@@ -3111,7 +3191,7 @@ function colorNotes(game, ctx, rates) {
         const fresh = skatersOn(game, e, other(tid)).filter(x => x.on === 0).length;
         const secs = mine.length && Math.min(...mine) > 0
           ? `: its ${mine.length} skaters stay on, ${secsSpan(mine).replace(' each', '')} into their shift` : '';
-        if (mine.length) say = `${off} may not change players for this faceoff${secs}.`
+        if (mine.length) say = `${off} may not change players for this face-off${secs}.`
           + `${fresh ? ` ${ab(other(tid))} sent out ${countOf(fresh, 'fresh skater')}.` : ''}`;
       }
     } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn)
@@ -3125,6 +3205,18 @@ function colorNotes(game, ctx, rates) {
         toldSlot.add(shooter);
         say = `That shot came from the slot, the area right in front of the net. About 1 shot in ${slot[0]} from there goes in; from farther out, about 1 in ${slot[1]}.`;
       } else if (toldSlot.has(shooter)) say = `Another shot from the slot: ${ab(shooter)}'s ${ORD(tally.slot[shooter])} of the game.`;
+    }
+    if (!say && RUN && play && e.pt !== 'SO') {
+      const k = ev.slice(play.from, n + 1).filter(markable).length, t = e.s - ev[play.from].s;
+      const began = ev.slice(0, play.from).reverse().find(x => x.type !== 'faceoff');
+      const since = began && began.type === 'period-start' ? 'since the period began' : 'since the last whistle';
+      if (t > RUN.secs && !toldRun.has(play.from + ':2')) {
+        toldRun.add(play.from + ':1'); toldRun.add(play.from + ':2');
+        say = `Still no whistle after ${clockOf(t)} of play and ${k} events.`;
+      } else if (k > RUN.events && !toldRun.has(play.from + ':1')) {
+        toldRun.add(play.from + ':1');
+        say = `${k} events and ${clockOf(t)} of play ${since}.`;
+      }
     }
     if (!say && SHIFT) for (const tid of [hid, aid]) {
       const on = skatersOn(game, e, tid);
@@ -3143,6 +3235,8 @@ function colorNotes(game, ctx, rates) {
           + `${run.att[atk] ? countOf(run.att[atk], 'shot attempt') : 'no shot attempts'}${run.att[run.end] ? ` and ${name[run.end]} ${run.att[run.end]}` : ''}.`;
       }
     }
+    const lead = shotLead(e, shooter, ctx.homeId);
+    if (lead) say = say ? `${lead} ${say}` : lead;
     if (say) notes.set(n, say);
   });
   return notes;
@@ -3607,6 +3701,28 @@ const PRINTED = {
           + 'remains is still a description and not a cause: a team that is '
           + 'behind is also, on average, the weaker team that night, and this '
           + 'measurement cannot take that apart.' },
+  faceoffRun: {
+    label: measure('faceoffRun').heading,
+    where: 'The How we counted door of the Face-offs layer, and its row in What this game was.',
+    reads: [
+      { is: 'The first shot attempt after a face-off', at: ['census', 'faceoffRun', 'first'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'The second', at: ['census', 'faceoffRun', 'second'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'The third', at: ['census', 'faceoffRun', 'third'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'Every one after that', at: ['census', 'faceoffRun', 'later'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'Games the team that won more face-offs lost', at: ['baseRates', 'moreFaceoffsLost'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'Every whistle ends in a face-off, so a game is dozens of separate stretches of '
+       + 'play, each one starting with a face-off. The team that wins one usually takes '
+       + 'the next shot attempt, but the edge shrinks with every shot after that, and '
+       + 'over a whole game winning more face-offs barely changes who wins.',
+    caveat: 'A run lasts until the next whistle. Only shot attempts are counted, because '
+          + 'the record does not say who had the puck between them: this is the first '
+          + 'shot attempt, not the first touch.' },
   zoneStarts: {
     label: measure('endZoneWorth').heading,
     where: 'The front door, and The attacking zone card on '
@@ -3620,11 +3736,11 @@ const PRINTED = {
         unit: 'attempts per face-off' },
     ],
     why: 'It prices the place a face-off is taken. A novice is told that where a '
-       + 'draw happens matters; this says by how much, in the only currency the '
+       + 'face-off happens matters; this says by how much, in the only currency the '
        + 'record holds — shot attempts before the next whistle.',
     caveat: 'It says nothing at all about the contest AT the blue line, which is '
           + 'a different question and one the record cannot answer: holding a '
-          + 'line produces no event, so there is nothing to count. And a draw in '
+          + 'line produces no event, so there is nothing to count. And a face-off in '
           + 'one end is not randomly assigned — the side already pressing is '
           + 'the one that gets them — so part of this gap is the teams and '
           + 'not the place.' },
@@ -3790,7 +3906,7 @@ const DERIVATION = {
        + 'the reason a team carrying the puck up the ice sometimes slows down at a '
        + 'blue line for no visible reason.',
     caveat: 'The league\u2019s feed does not label a stoppage "offside". We work it '
-          + 'out from where the restart faceoff was placed, plus the rule. That is '
+          + 'out from where the restart face-off was placed, plus the rule. That is '
           + 'a dependable reading, but it is a reading.' },
   icing: {
     unit: 'icings, per team per game',
@@ -3799,9 +3915,9 @@ const DERIVATION = {
     of: 'two teams per game',
     why: 'The other stoppage a newcomer cannot read, and the one whose '
        + 'consequence you can watch: the team that iced the puck may not change '
-       + 'its line before the faceoff, and the faceoff is all the way back in '
+       + 'its line before the face-off, and the face-off is all the way back in '
        + 'its own end.',
-    caveat: 'Read the same way as offside, from the restart faceoff and the rule, '
+    caveat: 'Read the same way as offside, from the restart face-off and the rule, '
           + 'and it carries the same risk. Where our reading disagrees with the '
           + 'rulebook, that is evidence about our reading first.' },
   attempts: {
@@ -4095,7 +4211,8 @@ function sections(create) {
 
 
 
-const LAYER_TOKENS = [corsi, goaltending, danger, whistle, blocked, zonestart, shooters].map(l => l.id);
+
+const LAYER_TOKENS = [corsi, goaltending, danger, whistle, blocked, zonestart, shooters, faceoffs].map(l => l.id);
 
 const DEFAULT_STRENGTH = 'all';
 const STRENGTHS = ['all', 'even', 'level'];
@@ -4105,11 +4222,11 @@ const DEFAULT_ENDS = 'as-played';
 
 const LINK_NOTES = {
   outOfGame: {
-    text: 'That moment isn’t in this game — starting from the opening faceoff.',
+    text: 'That moment isn’t in this game — starting from the opening face-off.',
     from: 'display: the link named a period or a clock this game never reached',
   },
   unreadable: {
-    text: 'That link named a moment we couldn’t read — starting from the opening faceoff.',
+    text: 'That link named a moment we couldn’t read — starting from the opening face-off.',
     from: 'display: the link’s `at` did not parse as a period and a clock',
   },
 };
@@ -4228,10 +4345,10 @@ function format({ game, events, index, layers = [], strength = DEFAULT_STRENGTH 
 }
 
 const COMPETITIONS = {"1":"preseason","12":"all-star","19":"4 Nations","2":"regular season","20":"4 Nations","3":"playoffs","4":"all-star","9":"Olympics"};
-const LESSONS = {"icing":{"title":"Icing","says":"The puck is sent the length of the ice and play comes straight back. Watch where the faceoff goes \u2014 that dot is the whole punishment.","back":"/icing.html","ref":"?game=2023020204&at=1-15:02&layer=whistle&strength=all"},"faceoffs":{"title":"Faceoffs","says":"Nine spots on the ice and the rule picks one. An icing brings the draw all the way back \u2014 same second as the whistle, and deep in the offending team\u2019s own end.","back":"/faceoffs.html","ref":"?game=2023020204&at=1-15:02&layer=whistle&strength=all"},"offside":{"title":"Offside","says":"This is the one rule we can draw but never replay: the feed records the call and the restart, never the crossing. So in a real game, watch the line rather than the play.","back":"/offside.html","ref":"?game=2023020204&at=1-04:48&layer=whistle&strength=all"},"penalties":{"title":"Penalties","says":"A penalty is time off the ice: the offender sits, and his team plays a skater short \u2014 unless the other team commits a penalty of the same duration at the same time, and then both teams skate with the same number of players. The side with the extra skater is on a power play: the same penalty, named from the other bench.","back":"/penalties.html","ref":"?game=2023020204&at=1-19:35.1&layer=whistle&strength=all"},"overtime":{"title":"Overtime","says":"A hockey game does not end in a tie. If the score is tied after sixty minutes, both teams drop to three skaters and a goaltender, and the next goal wins \u2014 five minutes of it, and a shootout after that if nobody scores. In the playoffs there is no shootout and nobody leaves the ice: they play full periods, five a side, until someone scores.","back":"/what-you-can-see.html#overtime","ref":"?game=2025021172&at=4-01:33.1&strength=all"},"empty-net":{"title":"The empty net","says":"Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here \u2014 the goalie is simply no longer on the ice.","back":"/empty-net.html","ref":"?game=2023020204&at=3-01:40&strength=all"},"control":{"title":"Control","says":"Every shot attempt, counted for both teams as it happens \u2014 whether it reached the goaltender, missed the net, or a body blocked it on the way.","back":"/control.html","ref":"?game=2023020204&at=1-18:40.1&layer=corsi&strength=all"},"blocked":{"title":"The attempt that never arrived","says":"A body got in front of this one before it reached the goaltender, and it counts as an attempt all the same.","back":"/what-you-can-see.html#blocked","ref":"?game=2023020204&at=1-18:40.2&layer=corsi&strength=all"},"slot":{"title":"Shots from the slot","says":"A shot taken from inside the slot goes in 11.6% of the time \u2014 19,691 goals from 169,489 attempts. From outside it, 3.3%. That gap is what the slot shading is for.","back":"/slot.html","ref":"?game=2023020204&at=1-16:03&layer=slot&strength=all"},"goaltending":{"title":"Goaltending","says":"Saves as a fraction, built while you watch. This is the first shot the goaltender had to deal with.","back":"/what-you-can-see.html#goaltending","ref":"?game=2023020204&at=1-18:40.1&layer=goaltending&strength=all"},"situations":{"title":"All situations","says":"Hockey is not always five on five. A penalty puts one team a skater short \u2014 that team is killing it, the other is on the power play \u2014 and the count under the ice adds every situation together, which is what all situations means. Measured per 60 minutes in each: 95 attempts on the power play, 59 at even strength, 13 killing a penalty. So part of a team\u2019s attempt lead can be nothing but the time it spent on the power play.","back":"/what-you-can-see.html#situations","ref":"?game=2023020204&at=1-17:39&layer=corsi&strength=all"},"zones":{"title":"The attacking zone","says":"Two blue lines cut the ice into three zones. The shaded strip at each one is a boundary one team is trying to hold play inside and the other to push it out. After a face-off in one team\u2019s end, the team attacking that end takes 1.42 shot attempts before the next whistle, against 0.76 for the team defending it \u2014 across 170,231 draws. Those defending attempts are shots at the far end, which is what getting the puck out looks like; at the line itself we count nothing, because holding it leaves no event in the record.","back":"/what-you-can-see.html#zones","ref":"?game=2023020204&at=1-14:56&layer=zonestart&strength=all"},"shifts":{"title":"How long a shift is","says":"Nobody stays on the ice for long. Hockey is played in short bursts and skaters come off while the play is still running \u2014 a skater takes about 21 shifts a night, and a shift lasts 48 seconds on average, measured over 3,154,714 shifts. So the five in front of you now are mostly not the five who were there a minute ago.","back":"/what-you-can-see.html#shifts","ref":"?game=2023020204&at=1-09:06&strength=all"},"score":{"title":"Score effects","says":"A team that is behind takes more shot attempts, and a team that is ahead takes fewer \u2014 that is what score effects means. Measured in even-strength play: per 60 minutes of play with the same number of skaters on each side, a team takes 63 shot attempts while trailing, 59 while the score is tied, and 53 while leading. So part of a team\u2019s attempt lead can be nothing but the time it spent behind.","back":"/what-you-can-see.html#score","ref":"?game=2023020204&at=3-15:52&layer=corsi&strength=even"}};
-const LEARNCARDS = {"corsi":[{"id":"blocked","title":"The attempt that never arrived"},{"id":"control","title":"Control"},{"id":"score","title":"Score effects"},{"id":"situations","title":"All situations"}],"whistle":[{"id":"faceoffs","title":"Faceoffs"},{"id":"icing","title":"Icing"},{"id":"offside","title":"Offside"},{"id":"penalties","title":"Penalties"}],"goaltending":[{"id":"goaltending","title":"Goaltending"}],"slot":[{"id":"slot","title":"Shots from the slot"}],"zonestart":[{"id":"zones","title":"The attacking zone"}]};
-const LAYERWORK = {"corsi":[{"anchor":"m-attempts","label":"Where a shot attempt ends"}],"slot":[{"anchor":"m-slotAttempts","label":"How many shot attempts are taken from the slot"}],"blocked":[{"anchor":"m-attempts","label":"Where a shot attempt ends"}],"goaltending":[{"anchor":"m-saves","label":"How often a goaltender makes the save"}],"whistle":[{"anchor":"m-penalties","label":"How many penalties a team takes"},{"anchor":"m-offside","label":"How often a team is offside"},{"anchor":"m-icing","label":"How often a team ices the puck"}],"zonestart":[{"anchor":"m-zoneStarts","label":"What a face-off in one end is worth"}],"shooters":[{"anchor":"m-dmenAttempts","label":"How many shot attempts defencemen take"}]};
-function boot(G,RATES){
+const LESSONS = {"icing":{"title":"Icing","says":"The puck is sent the length of the ice and play comes straight back. Watch where the face-off goes \u2014 that dot is the whole punishment.","back":"/icing.html","ref":"?game=2023020204&at=1-15:02&layer=whistle&strength=all"},"faceoffs":{"title":"Face-offs","says":"Nine spots on the ice and the rule picks one \u2014 a face-off, often just called the draw. An icing brings the face-off all the way back \u2014 same second as the whistle, and deep in the offending team\u2019s own end.","back":"/faceoffs.html","ref":"?game=2023020204&at=1-15:02&layer=whistle&strength=all"},"offside":{"title":"Offside","says":"This is the one rule we can draw but never replay: the feed records the call and the restart, never the crossing. So in a real game, watch the line rather than the play.","back":"/offside.html","ref":"?game=2023020204&at=1-04:48&layer=whistle&strength=all"},"penalties":{"title":"Penalties","says":"A penalty is time off the ice: the offender sits, and his team plays a skater short \u2014 unless the other team commits a penalty of the same duration at the same time, and then both teams skate with the same number of players. The side with the extra skater is on a power play: the same penalty, named from the other bench.","back":"/penalties.html","ref":"?game=2023020204&at=1-19:35.1&layer=whistle&strength=all"},"overtime":{"title":"Overtime","says":"A hockey game does not end in a tie. If the score is tied after sixty minutes, both teams drop to three skaters and a goaltender, and the next goal wins \u2014 five minutes of it, and a shootout after that if nobody scores. In the playoffs there is no shootout and nobody leaves the ice: they play full periods, five a side, until someone scores.","back":"/what-you-can-see.html#overtime","ref":"?game=2025021172&at=4-01:33.1&strength=all"},"empty-net":{"title":"The empty net","says":"Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here \u2014 the goalie is simply no longer on the ice.","back":"/empty-net.html","ref":"?game=2023020204&at=3-01:40&strength=all"},"control":{"title":"Control","says":"Every shot attempt, counted for both teams as it happens \u2014 whether it reached the goaltender, missed the net, or a body blocked it on the way.","back":"/control.html","ref":"?game=2023020204&at=1-18:40.1&layer=corsi&strength=all"},"blocked":{"title":"The attempt that never arrived","says":"A body got in front of this one before it reached the goaltender, and it counts as an attempt all the same.","back":"/what-you-can-see.html#blocked","ref":"?game=2023020204&at=1-18:40.2&layer=corsi&strength=all"},"slot":{"title":"Shots from the slot","says":"A shot taken from inside the slot goes in 11.6% of the time \u2014 19,756 goals from 170,058 attempts. From outside it, 3.3%. That gap is what the slot shading is for.","back":"/slot.html","ref":"?game=2023020204&at=1-16:03&layer=slot&strength=all"},"goaltending":{"title":"Goaltending","says":"Saves as a fraction, built while you watch. This is the first shot the goaltender had to deal with.","back":"/what-you-can-see.html#goaltending","ref":"?game=2023020204&at=1-18:40.1&layer=goaltending&strength=all"},"situations":{"title":"All situations","says":"Hockey is not always five on five. A penalty puts one team a skater short \u2014 that team is killing it, the other is on the power play \u2014 and the count under the ice adds every situation together, which is what all situations means. Measured per 60 minutes in each: 95 attempts on the power play, 59 at even strength, 13 killing a penalty. So part of a team\u2019s attempt lead can be nothing but the time it spent on the power play.","back":"/what-you-can-see.html#situations","ref":"?game=2023020204&at=1-17:39&layer=corsi&strength=all"},"zones":{"title":"The attacking zone","says":"Two blue lines cut the ice into three zones. The shaded strip at each one is a boundary one team is trying to hold play inside and the other to push it out. After a face-off in one team\u2019s end, the team attacking that end takes 1.42 shot attempts before the next whistle, against 0.76 for the team defending it \u2014 across 170,800 face-offs. Those defending attempts are shots at the far end, which is what getting the puck out looks like; at the line itself we count nothing, because holding it leaves no event in the record.","back":"/what-you-can-see.html#zones","ref":"?game=2023020204&at=1-14:56&layer=zonestart&strength=all"},"shifts":{"title":"How long a shift is","says":"Nobody stays on the ice for long. Hockey is played in short bursts and skaters come off while the play is still running \u2014 a skater takes about 21 shifts a night, and a shift lasts 48 seconds on average, measured over 3,165,143 shifts. So the five in front of you now are mostly not the five who were there a minute ago.","back":"/what-you-can-see.html#shifts","ref":"?game=2023020204&at=1-09:06&strength=all"},"score":{"title":"Score effects","says":"A team that is behind takes more shot attempts, and a team that is ahead takes fewer \u2014 that is what score effects means. Measured in even-strength play: per 60 minutes of play with the same number of skaters on each side, a team takes 63 shot attempts while trailing, 59 while the score is tied, and 53 while leading. So part of a team\u2019s attempt lead can be nothing but the time it spent behind.","back":"/what-you-can-see.html#score","ref":"?game=2023020204&at=3-15:52&layer=corsi&strength=even"}};
+const LEARNCARDS = {"corsi":[{"id":"blocked","title":"The attempt that never arrived"},{"id":"control","title":"Control"},{"id":"score","title":"Score effects"},{"id":"situations","title":"All situations"}],"whistle":[{"id":"faceoffs","title":"Face-offs"},{"id":"icing","title":"Icing"},{"id":"offside","title":"Offside"},{"id":"penalties","title":"Penalties"}],"goaltending":[{"id":"goaltending","title":"Goaltending"}],"slot":[{"id":"slot","title":"Shots from the slot"}],"zonestart":[{"id":"zones","title":"The attacking zone"}]};
+const LAYERWORK = {"corsi":[{"anchor":"m-attempts","label":"Where a shot attempt ends"}],"slot":[{"anchor":"m-slotAttempts","label":"How many shot attempts are taken from the slot"}],"blocked":[{"anchor":"m-attempts","label":"Where a shot attempt ends"}],"goaltending":[{"anchor":"m-saves","label":"How often a goaltender makes the save"}],"whistle":[{"anchor":"m-penalties","label":"How many penalties a team takes"},{"anchor":"m-offside","label":"How often a team is offside"},{"anchor":"m-icing","label":"How often a team ices the puck"}],"zonestart":[{"anchor":"m-zoneStarts","label":"What a face-off in one end is worth"}],"shooters":[{"anchor":"m-dmenAttempts","label":"How many shot attempts defencemen take"}],"faceoffs":[{"anchor":"m-faceoffRun","label":"Who takes the shots after a face-off"}]};
+function boot(G,RATES,DOC){
 
 
 
@@ -4400,6 +4517,13 @@ function counted(slice){return levelOnly?tiedControl.reduce(slice,CTX)
                                         :corsi.reduce(slice,CTX);}
 function lens(k){return counted(upto(k));}
 const $=id=>document.getElementById(id);
+{const rl=RATES&&RATES.census&&RATES.census.runLength,pw=$('playwork');
+ if(pw&&rl&&rl.runs&&rl.events&&rl.events.p75!=null&&rl.secs&&rl.secs.p90!=null){
+  const t=rl.secs.p90,sp=document.createElement('span');
+  sp.textContent=' A long run of play is noted once it passes '+rl.events.p75+' events (3 in 4 of the '
+   +rl.runs.toLocaleString()+' runs of play we have measured, face-off to whistle, end within that), and again past '
+   +Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+' of play (9 in 10 end sooner).';
+  pw.appendChild(sp);}}
 const WROTE=new Map();
 function put(el,html){
  if(!el)return false;
@@ -4611,12 +4735,12 @@ function captionIcing(e){const z=ICING.get(e).zone;
  const side=who===AAB?'a':who===HAB?'h':null;
  sayCaption(side,who,'🧊 Icing',
   ' · from behind centre, past the far goal line'
-  +(z?` &mdash; faceoff back in ${side?'their':ESC(z)+"'s"} end`:''),e);}
+  +(z?` &mdash; face-off back in ${side?'their':ESC(z)+"'s"} end`:''),e);}
 function captionOffside(e){
  const who=OFFSIDE.get(e).offender;
  const side=who===AAB?'a':who===HAB?'h':null;
  sayCaption(side,who,'🔵 Offside',' &middot; a skater crossed the blue line ahead of the puck'
-  +(who?'':' &mdash; a centre-ice draw names neither team'),e);}
+  +(who?'':' &mdash; a centre-ice face-off names neither team'),e);}
 function ruleLines(lines,per){
  return (lines||[]).map(lx=>
   `<line class="rulel" x1="${AX(lx,per)}" y1="2" x2="${AX(lx,per)}" y2="83"/>`).join('');}
@@ -4629,27 +4753,27 @@ function chipLabel(id){
  const lab=chip.querySelector('.pkl');
  return lab?lab.textContent:chip.textContent;}
 const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whistle:whistle,
- zonestart:zonestart,shooters:shooters};
+ zonestart:zonestart,shooters:shooters,faceoffs:faceoffs};
 const SPAN=d=>{const w=formatDate(d);return w?', up to '+w:'';};
 
 const ZONE_SAY=(()=>{
- const ICE='Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the team that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the team that won it in the end that team was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two teams. ';
+ const ICE='Every face-off in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many face-offs have been taken there. The ring takes the colour of the team that has won MORE of them, grey when they are even, and the boldest ring is the most recent face-off. The two figures below the ice are the part the ice cannot show by itself: a face-off is an OFFENSIVE-zone start for the team that won it in the end that team was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two teams. ';
  const ez=RATES&&RATES.census&&RATES.census.endZone;
  const lost=ez&&ez.zoneWorth, add=ez&&ez.winningWorth, n=ez&&ez.n;
  if(lost==null||add==null||!n)
   return ICE+'Why it is worth watching: across the archive the team attacking '
-   +'that end takes more attempts before the next whistle when it wins the draw '
+   +'that end takes more attempts before the next whistle when it wins the face-off '
    +'than when it loses it \u2014 but most of what an offensive-zone start is worth '
    +'arrives either way. The figures for that are not on this page, which carries '
    +'a single game and asks for nothing else.';
  const won=+(lost+add).toFixed(3), ratio=(lost/add).toFixed(1);
- return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone draws '
+ return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone face-offs '
   +'we have measured'+SPAN(RATES&&RATES.dataThrough)+', the team attacking that end '
   +'averages '+won+' shot attempts '
-  +'before the next whistle when it WINS the draw, and '+lost+' when it LOSES it. '
+  +'before the next whistle when it WINS the face-off, and '+lost+' when it LOSES it. '
   +'Winning is worth the difference \u2014 '+add+' of an attempt \u2014 while the '+lost
   +' arrives either way, '+ratio+' times as much. Most of what an offensive-zone '
-  +'start is worth has nothing to do with winning the draw.';})();
+  +'start is worth has nothing to do with winning the face-off.';})();
 const DRAWS={
  corsi:'The box below the ice counts every attempt for each team as the replay runs.',
  slot:'An amber ring marks each one. Click a ring to see the distance and angle it was measured by.',
@@ -4657,7 +4781,60 @@ const DRAWS={
  whistle:'The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names \u2014 for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one \u2014 with no figure for either team, because a stoppage names a rule and never a team.',
  zonestart:ZONE_SAY,
  shooters:'Attempts a defenceman took keep their mark and every other mark dims. The box below the ice counts each team\u2019s, out of all the attempts it has taken so far.',
+ faceoffs:'Each face-off keeps its mark, in the colour of the team that won it, and every other mark dims. The box below the ice counts the face-offs each team has won and names the player on each side who has taken the most.',
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the team that MADE it, the way a broadcast does. A block by a teammate is credited to neither team, so the two figures need not add up to the total.'};
+function foCaveat(){
+ const fr=RATES&&RATES.census&&RATES.census.faceoffRun, b=RATES&&RATES.baseRates&&RATES.baseRates.moreFaceoffsLost;
+ if(!fr||!fr.first||fr.first.winnerShare==null||!b||b.rate==null||!b.n)return null;
+ return `Winning a face-off usually earns the next shot attempt (about ${Math.round(100*fr.first.winnerShare)}% of the time). `
+  +`But over a whole game, the team that won more face-offs won only ${Math.round(100*(1-b.rate))}% of ${b.n.toLocaleString()} games.`;}
+let FO_DOC=null;
+function centresSection(host,at){
+ const sec=document.createElement('section');sec.className='fcent';
+ const h=document.createElement('h3');h.textContent=measure('playerFaceoffs').heading;
+ sec.appendChild(h);
+ const say=t=>{const p=document.createElement('p');p.className='wnone';p.textContent=t;sec.appendChild(p);};
+ host.appendChild(sec);
+ const F=faceoffs.reduce(upto(at),CTX);
+ const top=tid=>Object.entries(F.by).filter(([pid])=>R[pid]&&R[pid].tid===tid)
+  .sort((x,y)=>(y[1].w+y[1].l)-(x[1].w+x[1].l)||x[0]-y[0]).slice(0,2).map(([pid])=>pid);
+ const who=[...top(AID).map(p=>[p,'sa',AAB]),...top(HID).map(p=>[p,'sh',HAB])];
+ if(!who.length){say('No face-offs yet in what you have watched.');return;}
+ if(!DOC){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+ FO_DOC=FO_DOC||DOC('players.json').catch(()=>null);
+ FO_DOC.then(P=>{
+  const fo=P&&P.fo, rg=fo&&fo.range, seas=String((G.game&&G.game.id)||'').slice(0,4);
+  const rows=fo&&fo.seasons&&fo.seasons[seas];
+  if(!rg||!rows||!(rg.max>rg.min)){say('The season figures could not be read, so tonight\u2019s players are not placed against anything.');return;}
+  const pc=v=>Math.round(100*v);
+  const when=seas===P.season?'this season'+SPAN(P.through):'in the '+seas+'-'+String(+seas+1).slice(2)+' season, playoffs included';
+  const lead=document.createElement('p');lead.className='walot';
+  lead.textContent='Each dot is a player\u2019s share of the face-offs he won '+when+', '
+   +'placed among the '+rg.n.toLocaleString()+' full seasons by regular takers in the archive; the tick is the middle one, '+pc(rg.median)+'%. '
+   +'A regular taker played at least '+P.qualify+' games and took at least '+fo.regular+' face-offs a game \u2014 that line is ours.'
+   +(fo.need?' A share needs about '+fo.need+' games to hold steady; a paler dot has played fewer.':'');
+  sec.appendChild(lead);
+  const ul=document.createElement('ul');ul.className='srows fcrows';
+  for(const [pid,mk,ab] of who){
+   const li=document.createElement('li'), r=rows[pid], p=R[pid];
+   const nm=document.createElement('span');
+   nm.innerHTML='<span class="stm '+mk+'">#'+ESC(String(p.n))+' '+ESC(p.nm)+' \u00b7 '+ESC(ab)+'</span> \u2014 '
+    +(r?pc(r[0]/r[1])+'% of '+r[1].toLocaleString()+' face-offs in '+r[2]+' game'+(r[2]===1?'':'s')
+       :'no season figure published yet');
+   li.appendChild(nm);
+   if(r){
+    const sc=document.createElement('span');sc.className='sscale';
+    const tr=document.createElement('span');tr.className='strack';
+    const at01=v=>Math.max(0,Math.min(100,100*(v-rg.min)/(rg.max-rg.min))).toFixed(1)+'%';
+    const md=document.createElement('span');md.className='smed';md.style.left=at01(rg.median);tr.appendChild(md);
+    const pt=document.createElement('span');pt.className='spt '+mk;pt.style.left=at01(r[0]/r[1]);
+    if(fo.need)pt.style.opacity=String(Math.max(.5,Math.min(1,r[2]/fo.need)));
+    tr.appendChild(pt);sc.appendChild(tr);
+    const ends=document.createElement('span');ends.className='sends';
+    ends.innerHTML='<span>'+pc(rg.min)+'%</span><span>'+pc(rg.max)+'%</span>';
+    sc.appendChild(ends);li.appendChild(sc);}
+   ul.appendChild(li);}
+  sec.appendChild(ul);});}
 const layerOf=id=>LENS[id]||null;
 const LEDGER=Object.fromEntries(Object.entries(LENS).map(([id,m])=>
  [id,id==='corsi'?counted:sl=>m.reduce(sl,CTX)]));
@@ -4708,10 +4885,11 @@ function renderSum(){
    if(!f[AID]||!f[HID])return null;
    return {[AID]:Math.round(100*s[AID]/f[AID]),[HID]:Math.round(100*s[HID]/f[HID])};}
   if(id==='zonestart')return L.z?{[AID]:L.z[AID].O,[HID]:L.z[HID].O}:null;
+  if(id==='faceoffs'){const s=L.t[AID]+L.t[HID];return s?{[AID]:Math.round(100*L.t[AID]/s),[HID]:Math.round(100*L.t[HID]/s)}:null;}
   if(id==='shooters')return L.all&&L.all[AID]&&L.all[HID]
    ?{[AID]:Math.round(100*L.t[AID]/L.all[AID]),[HID]:Math.round(100*L.t[HID]/L.all[HID])}:null;
   return L.t||null;};
- const TEAM_ONLY={goaltending:1,zonestart:1,shooters:1};
+ const TEAM_ONLY={goaltending:1,zonestart:1,shooters:1,faceoffs:1};
  Object.keys(LENS).forEach(id=>{
   const L=LENS[id].reduce(G.events,{...CTX,evenOnly:false});
   const n=L.counted.length;
@@ -4721,7 +4899,7 @@ function renderSum(){
   const bare=by&&!cls&&TEAM_ONLY[id];
   const split=by&&(cls||bare);
   const d=cls?cls:(bare?null:(own?own[id]:null));
-  const u=(cls&&cls.suffix)||(bare&&(id==='goaltending'||id==='shooters')?'%':'');
+  const u=(cls&&cls.suffix)||(bare&&(id==='goaltending'||id==='shooters'||id==='faceoffs')?'%':'');
   const sides=split?[['sa',AID,AAB],['sh',HID,HAB]]:[['snone',null,null]];
   const marks=sides.map(([mk,tid,ab])=>({cls:mk,ab,
    at:sitsIn(d,split?by[tid]:n)})).filter(m=>m.at);
@@ -4759,6 +4937,7 @@ function renderSum(){
    const hi=document.createElement('span');hi.textContent=N(ref0.max)+u;
    ends.appendChild(lo);ends.appendChild(hi);
    sc.appendChild(ends);li.appendChild(sc);}
+  if(id==='faceoffs'){const fc=foCaveat();if(fc){const c=document.createElement('span');c.className='scav';c.textContent=fc;li.appendChild(c);}}
   const doors=LAYERWORK[id]||[];
   if(doors.length){
    const d=document.createElement('span');
@@ -4878,6 +5057,7 @@ function renderAlot(at=i){
   if(leagueBy[a]){
    host.appendChild(SECTION.figureSection(leagueBy[a],
     overs.length===want.length?null:SECTION.leagueNums(leagueBy[a]),{}));drew++;}});
+ if(id==='faceoffs'){centresSection(host,at);drew++;}
  if(!drew){
   host.appendChild(document.createElement('p')).className='wnone';
   host.lastChild.textContent='The archive figures behind this layer could not '
@@ -5038,7 +5218,7 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
  el.textContent=`${Math.round(S.rate*100)}% of goals are scored from inside it — ${S.count.toLocaleString()} of ${S.n.toLocaleString()} across the archive.`;})();
 (()=>{const k=$('unrecKey');if(!k)return;
  const NOUN={sog:'shots on goal',hits:'hits',giveaways:'giveaways',
-  takeaways:'takeaways',faceoffWins:'faceoffs won',pim:'penalty minutes',
+  takeaways:'takeaways',faceoffWins:'face-offs won',pim:'penalty minutes',
   blocked:'blocked shots'};
  const DOC={'boxscore':'boxscore','boxscore.playerByGameStats':'boxscore',
   'right-rail.teamGameStats':'game summary'};
@@ -5165,7 +5345,7 @@ $('whyBk').addEventListener('click',e=>{const t=e.target;
  if(t&&(t.id==='whyBk'||(t.classList&&t.classList.contains('whyclose'))))hideWhy();});
 
 
-const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
+const LAB={faceoff:'Won the face-off',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
 function drawNoPlace(e){
  const g=$('noplace');
  if(!e||!inShootout(e)){g.innerHTML='';return;}
@@ -5235,7 +5415,7 @@ function drawZoneStarts(Z,slice){
   const split=d.h>d.a?`${HAB} ${d.h}, ${AAB} ${d.a}`
             :d.a>d.h?`${AAB} ${d.a}, ${HAB} ${d.h}`
             :`${AAB} ${d.a}, ${HAB} ${d.h} — even`;
-  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="4.6" stroke="${col}"><title>${d.n} draw${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
+  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="4.6" stroke="${col}"><title>${d.n} face-off${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
   out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${d.cy.toFixed(1)}">${d.n}</text>`);
  }
  put($('draws'),out.join(''));
@@ -5253,8 +5433,8 @@ function drawWhistles(W){
  const say=w.say?ESC(w.say)
    :`<span class="none">The feed recorded this stoppage as “${ESC(w.rsn||'no reason given')}”, which is one we have no sentence for. We are not guessing at one.</span>`;
  const zone=(w.rsn==='icing'&&w.zone)
-   ?` The faceoff came back into ${ESC(w.zone)}'s end.`:'';
- const where=(w.placed?'Play restarted at the ringed faceoff dot.'
+   ?` The face-off came back into ${ESC(w.zone)}'s end.`:'';
+ const where=(w.placed?'Play restarted at the ringed face-off dot.'
    :`Not shown on the ice — ${ESC(w.unplaced)}.`)+zone;
  $('whistlePanel').innerHTML=
    `<p class="whsay"><span class="wkick">Last stoppage</span>`
@@ -5346,14 +5526,15 @@ function drawNewcomer(){
   document.getElementById('rg').classList.remove('newcomer');});}
 document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
-let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false,zoneOn=false,shootOn=false;
+let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false,zoneOn=false,shootOn=false,foOn=false;
 const PICKS=[['corsi',()=>corsiOn,v=>{corsiOn=v;setCorsi();}],
              ['slot',()=>hdOn,v=>{hdOn=v;setHd();}],
              ['blocked',()=>blockOn,v=>{blockOn=v;setBlock();}],
              ['goaltending',()=>goalieOn,v=>{goalieOn=v;setGoalie();}],
              ['whistle',()=>whistleOn,v=>{whistleOn=v;setWhistle();}],
              ['zonestart',()=>zoneOn,v=>{zoneOn=v;setZone();}],
-             ['shooters',()=>shootOn,v=>{shootOn=v;setShooters();}]];
+             ['shooters',()=>shootOn,v=>{shootOn=v;setShooters();}],
+             ['faceoffs',()=>foOn,v=>{foOn=v;setFaceoffs();}]];
 let picking=false;
 function pick(want){
  if(picking)return; picking=true;
@@ -5441,6 +5622,16 @@ function lboxFor(id,at,L){
   return {a:'',k:`${n} STOPPAGE${n===1?'':'S'}`,h:'',
    n:nm?`Most recently: ${nm} ${sinceLine(w)}`.trim().replace(/\s+·/g,' ·')
        :'Play has not stopped yet in what you have watched.'};}
+ if(id==='faceoffs'){
+  const F=faceoffs.reduce(sl,CTX), n=F.counted.length;
+  const most=tid=>{let best=null;
+   for(const [pid,r] of Object.entries(F.by)){const p=R[pid];if(!p||p.tid!==tid)continue;
+    if(!best||r.w+r.l>best.r.w+best.r.l)best={p,r};}
+   return best?`${best.p.nm} ${best.r.w}\u2013${best.r.l}`:null;};
+  const tops=[most(AID),most(HID)].filter(Boolean);
+  return {a:F.t[AID],k:'FACE-OFFS WON',h:F.t[HID],
+   n:n?(tops.length?`Most taken: ${tops.join(' \u00b7 ')}`:`${n} face-off${n===1?'':'s'}`)
+     :'No face-offs yet in what you have watched.'};}
  if(id==='shooters'){
   const D=shooters.reduce(sl,CTX), tot=D.all[AID]+D.all[HID];
   return {a:D.t[AID],k:'BY DEFENCEMEN',h:D.t[HID],
@@ -5455,7 +5646,7 @@ function lboxFor(id,at,L){
  return none;}
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
  blocked:()=>'BLOCKS',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES',
- zonestart:()=>'OFFENSIVE-ZONE STARTS',shooters:()=>'BY DEFENCEMEN'};
+ zonestart:()=>'OFFENSIVE-ZONE STARTS',shooters:()=>'BY DEFENCEMEN',faceoffs:()=>'FACE-OFFS WON'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -5522,6 +5713,7 @@ function setWhistle(){document.getElementById('rg').classList.toggle('whistle',w
 function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);syncPick();render(i,'');}
 function setZone(){document.getElementById('rg').classList.toggle('zonestart',zoneOn);syncPick();render(i,'');}
 function setShooters(){document.getElementById('rg').classList.toggle('shooters',shootOn);syncPick();render(i,'');}
+function setFaceoffs(){document.getElementById('rg').classList.toggle('faceoffs',foOn);syncPick();render(i,'');}
 drawRink(1);
 const LAYER_APPLY={
  [corsi.id]:()=>{corsiOn=true;setCorsi();},
@@ -5531,6 +5723,7 @@ const LAYER_APPLY={
  [blocked.id]:()=>{blockOn=true;setBlock();},
  [zonestart.id]:()=>{zoneOn=true;setZone();},
  [shooters.id]:()=>{shootOn=true;setShooters();},
+ [faceoffs.id]:()=>{foOn=true;setFaceoffs();},
 };
 if(LINK.strength&&LINK.strength!=='all'){evenOnly=(LINK.strength==='even');
  levelOnly=(LINK.strength==='level');syncStrength();
@@ -5613,7 +5806,11 @@ function reveal(){if(MSG)MSG.hidden=true;if(APP)APP.hidden=false;}
 function draw(g,rates){
   if(APP&&APP.hidden)throw new Error(
     'boot() ran inside a hidden subtree — reveal() must come first');
-  boot(g,rates);}
+  boot(g,rates,doc);}
+function doc(name){
+  return LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/'+name)
+                     .catch(function(){return grab(ORIGIN+'/'+name);})
+                   :grab(ORIGIN+'/'+name);}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
 function newest(f){
@@ -5640,9 +5837,7 @@ function lessonGame(id){
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
   .then(function(g){
     if(LINK0.preview){reveal();draw(g,null);return null;}
-    return (LINK0.asof?grab(ORIGIN+'/editions/'+LINK0.asof+'/data/measures.json')
-                      .catch(function(){return grab(ORIGIN+'/measures.json');})
-                     :grab(ORIGIN+'/measures.json'))
+    return doc('measures.json')
       .catch(function(){return null;})
       .then(function(rates){reveal();draw(g,rates);newestEdition();});})
   .catch(function(e){

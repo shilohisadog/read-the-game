@@ -183,7 +183,7 @@ export function momentsOf(game) {
     // another door, and it is the pair that teaches the rule: same clock,
     // different ordinal, and a dot deep in the offending team's own end.
     ['faceoffs', ['whistle'], firstWhere(events, e => e.type === 'faceoff', icing),
-     'the first faceoff after that icing — the restart it forces'],
+     'the first face-off after that icing — the restart it forces'],
     ['offside', ['whistle'], firstWhere(events, e => e.rsn === 'offside'),
      "the first event the feed marks rsn='offside'"],
     ['penalties', ['whistle'], firstWhere(events, e => e.type === 'delayed-penalty'),
@@ -249,7 +249,7 @@ export function momentsOf(game) {
        in `test/learn.test.js` is what actually holds, and it holds for every
        pair rather than for the one I thought of. */
     ['zones', ['zonestart'], firstZoneStart(events, ctx),
-     'the first draw the Zone starts layer places in a team\'s offensive zone'],
+     'the first face-off the Zone starts layer places in a team\'s offensive zone'],
     /* ⭐ THE SCORE CARD OPENS ON THE FIRST ATTEMPT A TRAILING CLUB TAKES, which
        is the earliest frame where the card's subject EXISTS: before the first
        goal no club is behind, so there is nothing on the scoreboard for the

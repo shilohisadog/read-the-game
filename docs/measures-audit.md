@@ -140,6 +140,15 @@ mostly a merge of those, plus the definitions that are today implicit.
    to a player's page."* Needs `losingPlayerId`, which `extract.py` drops today, so
    it is an extract change + re-derive; and there is no player page yet (the
    preview's player block is the only player surface).
+   ⏳ 2026-10-18, in progress. **The data:** `losingPlayerId` is on 264,681 of 264,681
+   archive face-offs (`tools/feed_fields.py`); kept as `lose` at SCHEMA 7 (`b833903`),
+   archive re-derived. **Kevin ruled a separate FACE-OFFS chip** (the eighth), independent
+   of Zone starts, which keeps its name: Zone starts is the team and where play begins,
+   Face-offs is the player and who wins the draw. **Does it settle? Yes:** 461
+   centre-seasons (3 completed regular seasons, ≥41 games, ≥5 draws a game; 221,980
+   draws), chronological split-half r = 0.684 at ~37 games a half → **40 games** to
+   r = 0.7 (alternate-game halves: 27). Centre-season spread p10 44.0%, median 50.3%,
+   p90 56.8%. The lesson beside it: the team winning more draws wins 50.4% of games.
 4. **Typical shift: the mean**, everywhere ("no preference but probably mean"). ✅ built 2026-10-17:
    archive mean 47.8 s (150,727,738 ÷ 3,154,714), shown as a division on the methods page;
    median, middle half and the under-a-minute share DELETED (Kevin: one figure per lesson).

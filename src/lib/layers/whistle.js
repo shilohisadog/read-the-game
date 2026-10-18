@@ -164,7 +164,7 @@ function linesFor(rsn, x) {
  */
 /**
  * ⚠️ A `clause` FIELD LIVED HERE FOR ONE COMMIT, on 2026-08-27, because the ice
- * composed "Won the faceoff after …" and every `name` read wrong inside it — a
+ * composed "Won the face-off after …" and every `name` read wrong inside it — a
  * capital mid-sentence and a missing article, on all fifteen. It is gone with
  * that sentence: measured over 53 games, the ice named a different stoppage
  * from the box on 3.5% of the frames where it fired, so the clause was removed
@@ -254,13 +254,13 @@ export const WHY = {
   icing: {
     name: 'Icing',
     say: 'Icing — the puck was sent from behind the centre line all the way past '
-       + 'the far goal line untouched. The faceoff comes back to the offending '
+       + 'the far goal line untouched. The face-off comes back to the offending '
        + 'end, and that team may not change players before it.',
     from: 'rule: NHL Rule 81',
   },
   offside: {
     name: 'Offside',
-    // "the faceoff goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
+    // "the face-off goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
     // IN TEN. Measured over 1,094 offsides that restart immediately, across 240
     // games: 89.8% at the neutral-zone dot outside the blue line, 5.3% at centre
     // ice, 4.9% in an END zone. Not a penalty artifact — those are the immediate
@@ -277,7 +277,7 @@ export const WHY = {
   'goalie-stopped-after-sog': {
     name: 'Goaltender covered the puck',
     say: 'The goaltender caught or covered the puck after a shot, which stops play '
-       + 'and brings a faceoff.',
+       + 'and brings a face-off.',
     from: 'field: rsn',
   },
   'puck-frozen': {
@@ -605,12 +605,12 @@ export const whistle = {
         const t = events[j].type;
         if (CLOSES_PLAY.has(t)) {
           unplaced = 'the period ended before play restarted, so there is no '
-                   + 'faceoff to place this on';
+                   + 'face-off to place this on';
           break;
         }
         if (t === 'faceoff') {
           if (events[j].x == null) {
-            unplaced = 'the restarting faceoff has no recorded location';
+            unplaced = 'the restarting face-off has no recorded location';
           } else {
             spot = events[j];
           }
@@ -618,7 +618,7 @@ export const whistle = {
         }
       }
       if (!spot && !unplaced) {
-        unplaced = 'no faceoff follows this whistle in the recorded events';
+        unplaced = 'no face-off follows this whistle in the recorded events';
       }
 
       counted.push(id);
@@ -655,9 +655,9 @@ export const whistle = {
         // of pairing them a second time on its own. The ring has carried the
         // reason in a <title> since it shipped, and this layer's own notes say
         // why that was never enough: nobody hovers while watching.
-        /* ⛔ `spotId` -- the restarting faceoff's INDEX -- was removed on
+        /* ⛔ `spotId` -- the restarting face-off's INDEX -- was removed on
            2026-08-27 with its only reader. The page used it to pair a label
-           with the faceoff at that dot ("Won the faceoff after …"), and that
+           with the faceoff at that dot ("Won the face-off after …"), and that
            sentence is gone: the box below the ice names the stoppage now, and
            two surfaces naming one disagreed on 3.5% of the frames where both
            spoke. `spot` stays, because it is what PLACES the ring; the index is
@@ -760,7 +760,7 @@ export const icingRestarts = (events, ctx) => restarts(events, ctx, 'icing');
  *
  * ⛔ IT NEVER SAYS WHERE THE DRAW COMES BACK TO, and that is deliberate.
  * Measured over 1,094 immediate offside restarts across 240 games: 89.8% at the
- * neutral-zone dot, 5.3% at centre ice, 4.9% in an END zone. "The faceoff goes
+ * neutral-zone dot, 5.3% at centre ice, 4.9% in an END zone. "The face-off goes
  * back outside the zone" shipped once and is wrong about one offside in ten.
  * `linesFor` is already honest in the same way — it names a blue line only when
  * the restart is in the neutral zone, and highlights nothing rather than the

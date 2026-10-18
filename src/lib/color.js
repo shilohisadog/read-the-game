@@ -5,8 +5,11 @@
  * play by play guy"). Drafted and read as `docs/color-script.md` first.
  *
  * One note at most per frame; silence is normal. When several apply, the first in
- * this order wins: goal, penalty, restart, slot shot, shift clock, zone stretch,
- * the score between periods. The order is our editorial choice, declared here.
+ * this order wins: goal, penalty, restart, slot shot, long run, shift clock, zone
+ * stretch, the score between periods. A long run waits for the first free frame. The order is our editorial choice, declared here.
+ * A shot on goal, a miss or a goal also opens with its type and distance ("A wrist
+ * shot from 34 feet."). A blocked shot never does: the league records neither its
+ * type nor where it was taken, only where it was blocked.
  *
  * What it never says: who had the puck (`own` changes meaning by event type), why
  * anyone did anything, or a judgement such as "tired" — it gives the seconds and
@@ -16,10 +19,30 @@ import { corsiTeam } from './attribution.js';
 import { framed, inShootout } from './layer.js';
 import { isHighDangerEvent } from './layers/goaltending.js';
 import { WHY, icingRestarts } from './layers/whistle.js';
-import { liveRun, playAt, plays, zoneRuns } from './stretch.js';
+import { liveRun, markable, playAt, plays, zoneRuns } from './stretch.js';
+import { attackDirection, distanceToNet } from './rink.js';
+
+/* The league's `shotType` (SCHEMA 7, `st`), in plain words; an unknown value reads "A shot". */
+export const SHOT_WORDS = {
+  wrist: 'A wrist shot', snap: 'A snap shot', slap: 'A slapshot', backhand: 'A backhand',
+  'tip-in': 'A tipped shot', deflected: 'A deflected shot', 'wrap-around': 'A wraparound',
+  bat: 'A puck batted out of the air', poke: 'A poke at the puck',
+  'between-legs': 'A shot from between his legs', cradle: 'A lacrosse-style "Michigan"',
+};
+const SHOTS_TYPED = new Set(['shot-on-goal', 'missed-shot', 'goal']);
+
+/** "A wrist shot from 34 feet." — feet from the league's coordinates to the net shot at. */
+export function shotLead(e, shooter, homeId) {
+  if (!SHOTS_TYPED.has(e.type) || shooter == null) return null;
+  const what = (e.st && SHOT_WORDS[e.st]) || 'A shot';
+  if (e.x == null || e.y == null) return e.st ? `${what}.` : null;
+  const ft = Math.round(distanceToNet(e.x, e.y, attackDirection(shooter, homeId)));
+  return `${what} from ${ft} ${ft === 1 ? 'foot' : 'feet'}.`;
+}
 
 const PERIOD_DONE = ['', 'After one period', 'After two periods', 'After three periods'];
 const ORD = k => `${k}${k % 100 >= 11 && k % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][k % 10] || 'th'}`;
+const clockOf = t => (t < 60 ? `${t} seconds` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
 const countOf = (k, one) => `${k} ${one}${k === 1 ? '' : 's'}`;
 // Restarts the caption pill already explains; the color line adds only what it does not.
 const PILL_SAYS = new Set(['icing', 'offside']);
@@ -58,6 +81,9 @@ export function colorNotes(game, ctx, rates) {
   const slot = rates && rates.slot && rates.slot.scoredFromInside && rates.slot.scoredFromOutside
     ? [Math.round(rates.slot.scoredFromInside.n / rates.slot.scoredFromInside.count),
        Math.round(rates.slot.scoredFromOutside.n / rates.slot.scoredFromOutside.count)] : null;
+  // A run of play is long past what 3 in 4 runs reach (events), and very long past 9 in 10 (seconds).
+  const RUN = census.runLength && census.runLength.events && census.runLength.secs
+    ? { events: census.runLength.events.p75, secs: census.runLength.secs.p90 } : null;
   const icing = new Map(icingRestarts(ev, ctx).map(r => [r.event, r]));
   const PLAYS = plays(ev);
 
@@ -65,7 +91,7 @@ export function colorNotes(game, ctx, rates) {
   const score = { [ctx.homeId]: 0, [ctx.awayId]: 0 };
   const tally = { att: { [ctx.homeId]: 0, [ctx.awayId]: 0 }, sog: { [ctx.homeId]: 0, [ctx.awayId]: 0 },
                   slot: { [ctx.homeId]: 0, [ctx.awayId]: 0 } };
-  const toldWhy = new Set(), toldShift = new Set(), toldSlot = new Set();
+  const toldWhy = new Set(), toldShift = new Set(), toldSlot = new Set(), toldRun = new Set();
   let lastStop = null, endedPeriod = 0;
 
   ev.forEach((e, n) => {
@@ -121,7 +147,7 @@ export function colorNotes(game, ctx, rates) {
         // read as a contradiction of "may not change", so they are left out.
         const secs = mine.length && Math.min(...mine) > 0
           ? `: its ${mine.length} skaters stay on, ${secsSpan(mine).replace(' each', '')} into their shift` : '';
-        if (mine.length) say = `${off} may not change players for this faceoff${secs}.`
+        if (mine.length) say = `${off} may not change players for this face-off${secs}.`
           + `${fresh ? ` ${ab(other(tid))} sent out ${countOf(fresh, 'fresh skater')}.` : ''}`;
       }
     } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn)
@@ -137,7 +163,20 @@ export function colorNotes(game, ctx, rates) {
         say = `That shot came from the slot, the area right in front of the net. About 1 shot in ${slot[0]} from there goes in; from farther out, about 1 in ${slot[1]}.`;
       } else if (toldSlot.has(shooter)) say = `Another shot from the slot: ${ab(shooter)}'s ${ORD(tally.slot[shooter])} of the game.`;
     }
-    // 5. The shift clock: every skater of one team out longer than a typical shift, once per group.
+    // 5. A long run of play: once past 3 in 4 runs' events, again past 9 in 10 runs' seconds.
+    if (!say && RUN && play && e.pt !== 'SO') {
+      const k = ev.slice(play.from, n + 1).filter(markable).length, t = e.s - ev[play.from].s;
+      const began = ev.slice(0, play.from).reverse().find(x => x.type !== 'faceoff');
+      const since = began && began.type === 'period-start' ? 'since the period began' : 'since the last whistle';
+      if (t > RUN.secs && !toldRun.has(play.from + ':2')) {
+        toldRun.add(play.from + ':1'); toldRun.add(play.from + ':2');
+        say = `Still no whistle after ${clockOf(t)} of play and ${k} events.`;
+      } else if (k > RUN.events && !toldRun.has(play.from + ':1')) {
+        toldRun.add(play.from + ':1');
+        say = `${k} events and ${clockOf(t)} of play ${since}.`;
+      }
+    }
+    // 6. The shift clock: every skater of one team out longer than a typical shift, once per group.
     if (!say && SHIFT) for (const tid of [hid, aid]) {
       const on = skatersOn(game, e, tid);
       if (on.length < 4 || Math.min(...on.map(x => x.on)) <= SHIFT) continue;
@@ -147,7 +186,7 @@ export function colorNotes(game, ctx, rates) {
       say = `Every ${ab(tid)} skater on the ice has been out longer than a typical shift (about ${SHIFT} seconds): ${secsSpan(on.map(x => x.on))}.`;
       break;
     }
-    // 6. A zone stretch: the puck staying in one end, and the attempts in that time.
+    // 7. A zone stretch: the puck staying in one end, and the attempts in that time.
     if (!say && run) {
       if (run.end === 'n') say = `The puck has stayed in the neutral zone for ${run.marks} events in a row.`;
       else {
@@ -156,6 +195,8 @@ export function colorNotes(game, ctx, rates) {
           + `${run.att[atk] ? countOf(run.att[atk], 'shot attempt') : 'no shot attempts'}${run.att[run.end] ? ` and ${name[run.end]} ${run.att[run.end]}` : ''}.`;
       }
     }
+    const lead = shotLead(e, shooter, ctx.homeId);
+    if (lead) say = say ? `${lead} ${say}` : lead;
     if (say) notes.set(n, say);
   });
   return notes;

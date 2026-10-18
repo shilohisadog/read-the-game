@@ -224,7 +224,7 @@ test('a link to the opening faceoff still lands on it', () => {
   // door would open onto an empty rink, which is the failure mode B2 was ruled
   // against for the same reason -- the feature breaking, not a side effect.
   const a = boot(null, null, '?at=1-20:00');
-  assert.match(a.$('labels').innerHTML, /Won the faceoff/,
+  assert.match(a.$('labels').innerHTML, /Won the face-off/,
                'an explicit link to 20:00 in the first period stopped showing the draw');
   // WHICH PERIOD from the frame from the harness (seam B), not the scoreboard's words: one wording change to the label
   // failed this test and eight others about other things (frame-model.md §2.4).
@@ -234,7 +234,7 @@ test('a link to the opening faceoff still lands on it', () => {
 test('the first step forward lands on the opening draw', () => {
   const a = boot();
   a.$('fwd').click();
-  assert.match(a.$('labels').innerHTML, /Won the faceoff/);
+  assert.match(a.$('labels').innerHTML, /Won the face-off/);
   assert.equal(a.now().ev.per, 1, 'the first step left the first period');
   // THE PAIRING IS KEPT, DELIBERATELY. The draw really is won at 20:00, and
   // moving the clock to make the sentence sit better would be inventing a time.
@@ -248,7 +248,7 @@ test('pressing play starts the hockey, it does not wait out an empty frame', () 
   // opening frame is an orientation, not a countdown.
   const a = boot();
   a.$('play').click();
-  assert.match(a.$('labels').innerHTML, /Won the faceoff/,
+  assert.match(a.$('labels').innerHTML, /Won the face-off/,
                'Play left the viewer looking at an empty rink');
 });
 
@@ -260,7 +260,7 @@ test('the pre-game frame is not on the timeline — frame zero is still a play',
   // can place no puck and write no label, and it would fail both reads here.
   const a = boot();
   const first = a.at(0, d => ({ lab: d.$('labels').innerHTML, puck: d.$('puck').innerHTML }));
-  assert.match(first.lab, /Won the faceoff/, 'frame zero stopped being the opening draw');
+  assert.match(first.lab, /Won the face-off/, 'frame zero stopped being the opening draw');
   assert.match(first.puck, /class="puck/, 'frame zero drew no puck, so it is not a play');
 });
 
@@ -291,7 +291,7 @@ test('the hero opens on hockey, never on the pre-game frame', () => {
  *
  * AUDITED FIRST, AND THE PREMISE WAS HALF WRONG. The modules do share one
  * SCRIPT, but not one SCOPE: build_main.py inlines `__LIB__` ABOVE
- * `function boot(G,RATES){`, and `SX` is a `const` in boot's body. A function
+ * `function boot(G,RATES,DOC){`, and `SX` is a `const` in boot's body. A function
  * declared at top level can never see a binding inside another function's body,
  * whenever it is called. So the guard already exists.
  *
@@ -302,7 +302,7 @@ test('the hero opens on hockey, never on the pre-game frame', () => {
  * satisfied by a probe that was simply broken -- the mutation-that-measures-the-
  * harness this file has been bitten by before.
  */
-const PROBE_AT = 'function boot(G,RATES){';
+const PROBE_AT = 'function boot(G,RATES,DOC){';
 
 function probeGlobals() {
   const dom = fakeDom();

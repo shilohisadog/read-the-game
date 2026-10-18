@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BYjyiyrf2vVJ+qHxdeAZx+40nVkq8RXSOY5WBw/Od+o=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ocs8OLwLKTqilmCWPTNuniWBkxKQR8YGeRIyzPrlYAI=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -387,13 +387,14 @@ depend on one of them link straight to it.</p>
 <h2>Six switches, and the rule behind each one</h2>
 <p>A game page carries six layers you can turn on. Each one counts something different out of the same night, and each states its own rule beside the count while you watch. They are collected here so the rules can be read in one place &mdash; and each says which of the figures above it belongs to.</p>
 <div class="hmlay">
-<div><h3>Attempts</h3><p><b>Counts</b> every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net.</p><p class="hmlc">A blocked attempt is credited to the team that shot it — the shot was still taken, it just never arrived.</p><p class="hmld">Counted across every game we have measured, up to October 16, 2026: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
-<div><h3>Shots from the slot</h3><p><b>Counts</b> attempts from within 33 ft of the net, 22 ft either side of the middle, and in front of the goal line.</p><p class="hmlc">Credited to the team that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.</p><p class="hmld">Counted across every game we have measured, up to October 16, 2026: <a href="#m-slotAttempts">How many shot attempts are taken from the slot</a></p></div>
-<div><h3>Blocked shots</h3><p><b>Counts</b> the attempts a body stopped before they reached the goalie.</p><p class="hmlc">Each block is credited to the team that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.</p><p class="hmld">Counted across every game we have measured, up to October 16, 2026: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
-<div><h3>Goaltending</h3><p><b>Counts</b> every shot each goaltender faced, and what became of it — saved, scored on, or missed the net.</p><p class="hmlc">Each goaltender is counted for the team he plays for, against the other team’s shots — so these two columns read the opposite way round.</p><p class="hmld">Counted across every game we have measured, up to October 16, 2026: <a href="#m-saves">How often a goaltender makes the save</a></p></div>
-<div><h3>Why play stopped</h3><p><b>Counts</b> the rule that stopped play, and the dot it restarted on.</p><p class="hmlc">A stoppage names a rule and never a team, so nothing here is credited to either side.</p><p class="hmld">Counted across every game we have measured, up to October 16, 2026: <a href="#m-penalties">How many penalties a team takes</a> &middot; <a href="#m-offside">How often a team is offside</a> &middot; <a href="#m-icing">How often a team ices the puck</a></p></div>
-<div><h3>Zone starts</h3><p><b>Counts</b> every faceoff, and for the team that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone.</p><p class="hmlc">Each draw is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one team and never two.</p><p class="hmld">Counted across every game we have measured, up to October 16, 2026: <a href="#m-zoneStarts">What a face-off in one end is worth</a></p></div>
-<div><h3>Who shoots</h3><p><b>Counts</b> every shot attempt a defenceman took — on goal, missed, or blocked — out of all of a team’s attempts.</p><p class="hmlc">Each attempt is credited to the team that shot it, and counted here when the shooter is listed as a defenceman.</p><p class="hmld">Counted across every game we have measured, up to October 16, 2026: <a href="#m-dmenAttempts">How many shot attempts defencemen take</a></p></div>
+<div><h3>Attempts</h3><p><b>Counts</b> every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net.</p><p class="hmlc">A blocked attempt is credited to the team that shot it — the shot was still taken, it just never arrived.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
+<div><h3>Shots from the slot</h3><p><b>Counts</b> attempts from within 33 ft of the net, 22 ft either side of the middle, and in front of the goal line.</p><p class="hmlc">Credited to the team that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-slotAttempts">How many shot attempts are taken from the slot</a></p></div>
+<div><h3>Blocked shots</h3><p><b>Counts</b> the attempts a body stopped before they reached the goalie.</p><p class="hmlc">Each block is credited to the team that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
+<div><h3>Goaltending</h3><p><b>Counts</b> every shot each goaltender faced, and what became of it — saved, scored on, or missed the net.</p><p class="hmlc">Each goaltender is counted for the team he plays for, against the other team’s shots — so these two columns read the opposite way round.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-saves">How often a goaltender makes the save</a></p></div>
+<div><h3>Why play stopped</h3><p><b>Counts</b> the rule that stopped play, and the dot it restarted on.</p><p class="hmlc">A stoppage names a rule and never a team, so nothing here is credited to either side.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-penalties">How many penalties a team takes</a> &middot; <a href="#m-offside">How often a team is offside</a> &middot; <a href="#m-icing">How often a team ices the puck</a></p></div>
+<div><h3>Zone starts</h3><p><b>Counts</b> every face-off, and for the team that won it, whether that face-off was in its offensive zone, the neutral zone, or its defensive zone.</p><p class="hmlc">Each face-off is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-zoneStarts">What a face-off in one end is worth</a></p></div>
+<div><h3>Who shoots</h3><p><b>Counts</b> every shot attempt a defenceman took — on goal, missed, or blocked — out of all of a team’s attempts.</p><p class="hmlc">Each attempt is credited to the team that shot it, and counted here when the shooter is listed as a defenceman.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-dmenAttempts">How many shot attempts defencemen take</a></p></div>
+<div><h3>Face-offs</h3><p><b>Counts</b> every face-off, credited to the team whose player won it.</p><p class="hmlc">Each face-off is credited to the team that won it; both players who took it are named.</p><p class="hmld">Counted across every game we have measured, up to October 17, 2026: <a href="#m-faceoffRun">Who takes the shots after a face-off</a></p></div>
 </div>
 <p class="hmr">These are the layers themselves, not a description of them: the sentences above are the ones the game page prints beside each count, read out of the same code that does the counting.</p>
 </section>
@@ -465,7 +466,7 @@ broadcast leads with before it is demanding of anyone else&rsquo;s.</p>
 <section class="hmsec" id="limits">
 <p class="hmkick">What we cannot measure, and will not pretend to</p>
 <p><b>Zone entries and exits, controlled-entry rate.</b> Not in the public feed at
-any level. Everything the league records for a game is: faceoff, stoppage, hit,
+any level. Everything the league records for a game is: face-off, stoppage, hit,
 giveaway, shot on goal, takeaway, missed shot, blocked shot, goal, penalty,
 delayed penalty, and the markers for a period starting and ending. A number built
 on zone entries would be a number built on something we simply do not have.</p>
@@ -787,21 +788,28 @@ const MEASURES = [
     strength: 'all', score: 'any', scopes: ['season'], typical: null,
     witness: 'boxscore decision (not yet kept — check the field)', keys: {} },
 
-  { id: 'faceoffWins', name: 'face-offs won', status: 'proposed',
-    says: 'Face-offs a team won, and its share of all the draws.',
+  { id: 'faceoffWins', name: 'face-offs won', chip: 'Face-offs', layer: '＋ Face-offs',
+    heading: 'How many face-offs a team wins',
+    says: 'Of every 100 face-offs in this team\u2019s games, this many it won.',
     counts: 'face-offs won', of: 'face-offs', credit: 'winner', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: 'right rail',
-    holds: false, keys: {} },
-  { id: 'playerFaceoffs', name: 'face-off win percentage', status: 'proposed',
-    says: 'Of every 100 draws a player took, this many he won.',
-    counts: 'draws won', of: 'draws taken', credit: 'player', unit: 'share', strength: 'all',
-    score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg',
-    keys: {}, pending: [{ ruling: '7', what: 'needs the losing player, which extract.py drops' }] },
+    holds: false, keys: { lens: 'faceoffs', perTeam: 'foShare' } },
+  { id: 'playerFaceoffs', name: 'face-off win percentage',
+    heading: 'How often a player wins his face-offs',
+    says: 'Of every 100 face-offs a player took, this many he won.',
+    counts: 'face-offs won', of: 'face-offs taken', credit: 'player', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg (not yet kept)',
+    keys: {} },
   { id: 'endZoneWorth', name: 'what a face-off in one end is worth', heading: 'What a face-off in one end is worth',
     says: 'Shot attempts that follow a face-off in one end, per face-off.',
-    counts: 'attempts after the draw', of: 'face-offs in that end', credit: 'none', unit: 'rate',
+    counts: 'attempts after the face-off', of: 'face-offs in that end', credit: 'none', unit: 'rate',
     strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
     keys: { printed: 'zoneStarts' } },
+  { id: 'faceoffRun', name: 'who takes the shots after a face-off', heading: 'Who takes the shots after a face-off',
+    says: 'Of the shot attempts in the run of play a face-off opens, the ones the team that won it took: the first, the second, the third, and later.',
+    counts: 'attempts by the face-off\u2019s winner', of: 'attempts in the run', credit: 'winner', unit: 'share',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    keys: { printed: 'faceoffRun' } },
 
   { id: 'penalties', name: 'penalties a team takes', heading: 'How many penalties a team takes', tile: 'penalties a team takes',
     says: 'Penalties called on one team, per game.',
@@ -1366,6 +1374,28 @@ const PRINTED = {
           + 'remains is still a description and not a cause: a team that is '
           + 'behind is also, on average, the weaker team that night, and this '
           + 'measurement cannot take that apart.' },
+  faceoffRun: {
+    label: measure('faceoffRun').heading,
+    where: 'The How we counted door of the Face-offs layer, and its row in What this game was.',
+    reads: [
+      { is: 'The first shot attempt after a face-off', at: ['census', 'faceoffRun', 'first'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'The second', at: ['census', 'faceoffRun', 'second'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'The third', at: ['census', 'faceoffRun', 'third'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'Every one after that', at: ['census', 'faceoffRun', 'later'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'Games the team that won more face-offs lost', at: ['baseRates', 'moreFaceoffsLost'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'Every whistle ends in a face-off, so a game is dozens of separate stretches of '
+       + 'play, each one starting with a face-off. The team that wins one usually takes '
+       + 'the next shot attempt, but the edge shrinks with every shot after that, and '
+       + 'over a whole game winning more face-offs barely changes who wins.',
+    caveat: 'A run lasts until the next whistle. Only shot attempts are counted, because '
+          + 'the record does not say who had the puck between them: this is the first '
+          + 'shot attempt, not the first touch.' },
   zoneStarts: {
     label: measure('endZoneWorth').heading,
     where: 'The front door, and The attacking zone card on '
@@ -1379,11 +1409,11 @@ const PRINTED = {
         unit: 'attempts per face-off' },
     ],
     why: 'It prices the place a face-off is taken. A novice is told that where a '
-       + 'draw happens matters; this says by how much, in the only currency the '
+       + 'face-off happens matters; this says by how much, in the only currency the '
        + 'record holds — shot attempts before the next whistle.',
     caveat: 'It says nothing at all about the contest AT the blue line, which is '
           + 'a different question and one the record cannot answer: holding a '
-          + 'line produces no event, so there is nothing to count. And a draw in '
+          + 'line produces no event, so there is nothing to count. And a face-off in '
           + 'one end is not randomly assigned — the side already pressing is '
           + 'the one that gets them — so part of this gap is the teams and '
           + 'not the place.' },
@@ -1549,7 +1579,7 @@ const DERIVATION = {
        + 'the reason a team carrying the puck up the ice sometimes slows down at a '
        + 'blue line for no visible reason.',
     caveat: 'The league\u2019s feed does not label a stoppage "offside". We work it '
-          + 'out from where the restart faceoff was placed, plus the rule. That is '
+          + 'out from where the restart face-off was placed, plus the rule. That is '
           + 'a dependable reading, but it is a reading.' },
   icing: {
     unit: 'icings, per team per game',
@@ -1558,9 +1588,9 @@ const DERIVATION = {
     of: 'two teams per game',
     why: 'The other stoppage a newcomer cannot read, and the one whose '
        + 'consequence you can watch: the team that iced the puck may not change '
-       + 'its line before the faceoff, and the faceoff is all the way back in '
+       + 'its line before the face-off, and the face-off is all the way back in '
        + 'its own end.',
-    caveat: 'Read the same way as offside, from the restart faceoff and the rule, '
+    caveat: 'Read the same way as offside, from the restart face-off and the rule, '
           + 'and it carries the same risk. Where our reading disagrees with the '
           + 'rulebook, that is evidence about our reading first.' },
   attempts: {
@@ -1972,7 +2002,7 @@ function sections(create) {
   }
   function kick(text) { return el('p', 'hmkick', text); }
 
-  var LAYER_FOR = {"m-attempts":["Attempts","Blocked shots"],"m-dmenAttempts":["Who shoots"],"m-icing":["Why play stopped"],"m-offside":["Why play stopped"],"m-penalties":["Why play stopped"],"m-saves":["Goaltending"],"m-slotAttempts":["Shots from the slot"],"m-zoneStarts":["Zone starts"]};
+  var LAYER_FOR = {"m-attempts":["Attempts","Blocked shots"],"m-dmenAttempts":["Who shoots"],"m-faceoffRun":["Face-offs"],"m-icing":["Why play stopped"],"m-offside":["Why play stopped"],"m-penalties":["Why play stopped"],"m-saves":["Goaltending"],"m-slotAttempts":["Shots from the slot"],"m-zoneStarts":["Zone starts"]};
 
   var S = sections(function (tag) { return document.createElement(tag); });
   var printedSection = S.printedSection, figureSection = S.figureSection,

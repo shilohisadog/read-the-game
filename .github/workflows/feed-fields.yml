@@ -1,0 +1,51 @@
+# What the league's play-by-play CARRIES, counted across the whole raw archive.
+# Manual: `gh workflow run feed-fields.yml`. Reads the bucket, writes nothing to it.
+# Shares derive.yml's raw-archive cache, so a pull fetches only what is new.
+name: feed fields
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BUCKET: readthegame
+
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - name: the raw archive as the last run left it
+        uses: actions/cache@v5
+        with:
+          path: ingest/raw
+          key: derive-raw-${{ github.run_id }}
+          restore-keys: derive-raw-
+      - name: pull the raw archive
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          mkdir -p ingest
+          aws configure set default.s3.max_concurrent_requests 4
+          ok=
+          for attempt in 1 2 3; do
+            if aws s3 sync "s3://${BUCKET}/raw/" ingest/raw/ \
+                --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress > pulled.log; then ok=1; break; fi
+            echo "::warning::pull attempt $attempt hit a transient R2 error; retrying"
+            sleep $(( attempt * 20 ))
+          done
+          [ -n "$ok" ] || { echo "::error::the archive could not be pulled in three attempts"; exit 1; }
+          echo "pulled $(find ingest/raw -name latest.json | wc -l) games"
+      - name: count
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/feed_fields.py ingest | tee fields.txt
+          { echo '```'; grep -v '^{' fields.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
