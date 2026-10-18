@@ -924,6 +924,7 @@
    rather than from a list, so the next scaling animation cannot be added without
    it. */
 #rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55;transform-box:fill-box;transform-origin:center}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
+#rg .shotft{font-size:3.4px;font-weight:700;fill:var(--ink);opacity:.75;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;pointer-events:none}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
 /* ⭐ THE LAYER BOX -- ONE GRAMMAR, CONSTANT HEIGHT (§31.3).
    Three columns: away figure, what is counted, home figure; then one line
