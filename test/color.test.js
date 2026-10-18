@@ -139,3 +139,23 @@ test('a shot opens with its type and its distance to the net it was shot at', ()
   assert.equal(say[7], 'A lacrosse-style "Michigan".');
   assert.equal(say[9], 'A shot from 40 feet.');
 });
+
+test('a long run of play: once past 3 in 4 runs’ events, again past 9 in 10 runs’ seconds', () => {
+  const rates = { census: { runLength: { runs: 100, events: { p75: 3, p90: 5 }, secs: { p75: 60, p90: 100 } } } };
+  const hit = (s, x, own) => ev('hit', s, x, { own, actor: own === HOME ? 11 : 21 });
+  const g = game([ev('stoppage', 0, null), ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
+    hit(10, 40, HOME), hit(20, -40, AWAY), hit(30, 40, HOME),          // the 4th mark passes 3
+    hit(50, -40, AWAY), hit(90, 40, HOME),                              // nothing new to say
+    hit(101, -40, AWAY), hit(130, 40, HOME)]);                          // 101 s passes 100, once
+  assert.deepEqual(notesOf(g, rates), [
+    [4, '4 events and 30 seconds of play since the last whistle.'],
+    [7, 'Still no whistle after 1:41 of play and 7 events.']]);
+});
+
+test('the first run of a period counts from the period’s start, and no archive means no long-run note', () => {
+  const rates = { census: { runLength: { runs: 100, events: { p75: 2, p90: 5 }, secs: { p75: 60, p90: 999 } } } };
+  const g = game([ev('period-start', 0, null), ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
+    ev('hit', 10, 40, { own: HOME, actor: 11 }), ev('hit', 75, -40, { own: AWAY, actor: 21 })]);
+  assert.deepEqual(notesOf(g, rates), [[3, '3 events and 1:15 of play since the period began.']]);
+  assert.deepEqual(notesOf(g, null), []);
+});

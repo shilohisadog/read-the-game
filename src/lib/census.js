@@ -56,6 +56,7 @@
 import { corsi } from './layers/corsi.js';
 import { situation, EVEN, POWER_PLAY, EMPTY_NET } from './strength.js';
 import { attackDirection, attackZone } from './rink.js';
+import { plays, markable } from './stretch.js';
 
 /**
  * The run of play a faceoff opens: every event until play stops again.
@@ -392,9 +393,30 @@ export function censusGame(events, ctx) {
   shift.players = seen.size;
 
   whistles.ppChances = ppOpportunities(events, ctx);
+  /* How long each run of play lasts, face-off to the next whistle: the marks the replay
+     numbers (`events`) and the clock seconds (`secs`), each as a histogram. The color
+     line's long-run notes fire past the quantiles censusRates reads off these. */
+  const runLength = { events: {}, secs: {} };
+  for (const p of plays(events)) {
+    const t = events[p.to].s - events[p.from].s;
+    if (!(t >= 0)) continue;
+    const k = events.slice(p.from, p.to + 1).filter(markable).length;
+    runLength.events[k] = (runLength.events[k] || 0) + 1;
+    runLength.secs[t] = (runLength.secs[t] || 0) + 1;
+  }
   // faceoffZone and state are internal witnesses (tests cross-check endZone, pace and
   // power-play goals against them); censusRates does not publish them.
-  return { faceoffZone, endZone, faceoffRun, state, club, hitCorr, shooter, pace, shift, whistles };
+  return { faceoffZone, endZone, faceoffRun, state, club, hitCorr, shooter, pace, shift, whistles, runLength };
+}
+
+/** The value at share `q` of a histogram {value: count}: the smallest v with at least q of the counts at or below it. */
+function quantileOf(hist, q) {
+  const vs = Object.keys(hist || {}).map(Number).sort((a, b) => a - b);
+  const n = vs.reduce((t, v) => t + hist[v], 0);
+  if (!n) return null;
+  let c = 0;
+  for (const v of vs) { c += hist[v]; if (c >= q * n) return v; }
+  return vs[vs.length - 1];
 }
 
 /** Add one game's census into a running total, in place. */
@@ -450,6 +472,19 @@ export function censusRates(t) {
             + 'whistle: for the 1st, 2nd, 3rd and later attempt, how many the team that '
             + 'won the face-off took (w) out of all (n); and how many runs saw a shot '
             + 'attempt at all, by the winner, and by the loser (n counts FACE-OFFS)',
+      };
+    })(),
+    /* How long a run of play lasts: 3 in 4 runs end within `p75`, 9 in 10 within `p90`. */
+    runLength: (() => {
+      const r = t.runLength || {};
+      const runs = Object.values(r.events || {}).reduce((a, b) => a + b, 0);
+      return {
+        runs,
+        events: { p75: quantileOf(r.events, 0.75), p90: quantileOf(r.events, 0.9) },
+        secs: { p75: quantileOf(r.secs, 0.75), p90: quantileOf(r.secs, 0.9) },
+        what: 'each run of play, from a face-off to the next whistle: the events the replay '
+            + 'numbers on the ice, and the seconds on the game clock; 3 in 4 runs end within '
+            + 'p75 and 9 in 10 within p90 (n counts RUNS OF PLAY)',
       };
     })(),
     // What a draw is worth where it happens, and who it is worth it to.

@@ -162,7 +162,7 @@ __CSS__</style>
        the record, the rulebook and the archive. Pressing it opens where the notes
        come from. The row is reserved so it never moves Play. -->
   <details class="playd" id="playd"><summary class="playline" title="Where these notes come from"><span id="playline"></span></summary>
-  <p class="playwork">Each note comes from one of three places: the league&rsquo;s
+  <p class="playwork" id="playwork">Each note comes from one of three places: the league&rsquo;s
   record of this game, the NHL rulebook, or how often something happened across
   three seasons of games we hold. None of them says which team had the puck &mdash;
   the record does not say &mdash; or why anyone did anything. &ldquo;Events in a

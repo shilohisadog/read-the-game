@@ -342,6 +342,14 @@ function counted(slice){return levelOnly?tiedControl.reduce(slice,CTX)
                                         :corsi.reduce(slice,CTX);}
 function lens(k){return counted(upto(k));}
 const $=id=>document.getElementById(id);
+// Where the long-run notes' thresholds come from, from the published archive.
+{const rl=RATES&&RATES.census&&RATES.census.runLength,pw=$('playwork');
+ if(pw&&rl&&rl.runs&&rl.events&&rl.events.p75!=null&&rl.secs&&rl.secs.p90!=null){
+  const t=rl.secs.p90,sp=document.createElement('span');
+  sp.textContent=' A long run of play is noted once it passes '+rl.events.p75+' events (3 in 4 of the '
+   +rl.runs.toLocaleString()+' runs of play we have measured, face-off to whistle, end within that), and again past '
+   +Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+' of play (9 in 10 end sooner).';
+  pw.appendChild(sp);}}
 /**
  * ⭐⭐ A SUBTREE WHOSE MARKUP DID NOT CHANGE IS NOT REWRITTEN, and the reason is
  * not performance: REPLACING AN ELEMENT RESTARTS ITS ENTRANCE ANIMATION.
