@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BYjyiyrf2vVJ+qHxdeAZx+40nVkq8RXSOY5WBw/Od+o=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-46Vn9vzkP3DAXvKLWg34mW2QOHE32KJquIAXVi2O4Ys=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -787,11 +787,11 @@ const MEASURES = [
     strength: 'all', score: 'any', scopes: ['season'], typical: null,
     witness: 'boxscore decision (not yet kept — check the field)', keys: {} },
 
-  { id: 'faceoffWins', name: 'face-offs won', status: 'proposed',
+  { id: 'faceoffWins', name: 'face-offs won',
     says: 'Face-offs a team won, and its share of all the draws.',
     counts: 'face-offs won', of: 'face-offs', credit: 'winner', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: 'right rail',
-    holds: false, keys: {} },
+    holds: false, keys: { perTeam: 'foShare' } },
   { id: 'playerFaceoffs', name: 'face-off win percentage', status: 'proposed',
     says: 'Of every 100 draws a player took, this many he won.',
     counts: 'draws won', of: 'draws taken', credit: 'player', unit: 'share', strength: 'all',

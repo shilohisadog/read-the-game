@@ -119,11 +119,11 @@ export const MEASURES = [
     witness: 'boxscore decision (not yet kept — check the field)', keys: {} },
 
   // Face-offs.
-  { id: 'faceoffWins', name: 'face-offs won', status: 'proposed',
+  { id: 'faceoffWins', name: 'face-offs won',
     says: 'Face-offs a team won, and its share of all the draws.',
     counts: 'face-offs won', of: 'face-offs', credit: 'winner', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: 'right rail',
-    holds: false, keys: {} },
+    holds: false, keys: { perTeam: 'foShare' } },
   { id: 'playerFaceoffs', name: 'face-off win percentage', status: 'proposed',
     says: 'Of every 100 draws a player took, this many he won.',
     counts: 'draws won', of: 'draws taken', credit: 'player', unit: 'share', strength: 'all',

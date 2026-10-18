@@ -159,6 +159,11 @@ export function censusGame(events, ctx) {
 
   const faceoffZone = { O: zeroSplit(), N: zeroSplit(), D: zeroSplit() };
   const endZone = { won: { n: 0, atk: 0, def: 0, g: 0 }, lost: { n: 0, atk: 0, def: 0, g: 0 } };
+  /* Who takes each shot of the run a face-off opens: the 1st, 2nd, 3rd and later,
+     each as [taken by the team that won the face-off, all]. Run-bounded, never a
+     clock window (see runAfter). Kevin's Face-offs row, 2026-10-18. */
+  const faceoffRun = { runs: 0, withShot: 0, winnerShot: 0, loserShot: 0,
+    nth: { first: { w: 0, n: 0 }, second: { w: 0, n: 0 }, third: { w: 0, n: 0 }, later: { w: 0, n: 0 } } };
   const state = { even: { secs: 0, goals: 0 }, pp: { secs: 0, goals: 0 },
                   en: { secs: 0, goals: 0 }, unknown: { secs: 0, goals: 0 } };
   const club = { h: { hits: 0, attempts: 0 }, a: { hits: 0, attempts: 0 } };
@@ -333,6 +338,18 @@ export function censusGame(events, ctx) {
     }
     const add = (t) => { t.n++; t.aw += aw; t.al += al; t.gw += gw; t.gl += gl; };
     add(faceoffZone[z]);
+    faceoffRun.runs++;
+    let nth = 0;
+    for (let j = i + 1; j <= i + run.length; j++) {
+      const x = events[j];
+      if (!isAttempt(j) || x.own == null) continue;
+      const slot = faceoffRun.nth[['first', 'second', 'third'][nth] || 'later'];
+      slot.n++; if (x.own === e.own) slot.w++;
+      nth++;
+    }
+    if (nth) faceoffRun.withShot++;
+    if (aw) faceoffRun.winnerShot++;
+    if (al) faceoffRun.loserShot++;
 
     // The control: end-zone draws, seen from the club ATTACKING that end, so the
     // place is fixed and only the winner varies.
@@ -377,7 +394,7 @@ export function censusGame(events, ctx) {
   whistles.ppChances = ppOpportunities(events, ctx);
   // faceoffZone and state are internal witnesses (tests cross-check endZone, pace and
   // power-play goals against them); censusRates does not publish them.
-  return { faceoffZone, endZone, state, club, hitCorr, shooter, pace, shift, whistles };
+  return { faceoffZone, endZone, faceoffRun, state, club, hitCorr, shooter, pace, shift, whistles };
 }
 
 /** Add one game's census into a running total, in place. */
@@ -418,6 +435,23 @@ export function censusRates(t) {
 
   return {
     games: t.games || 0,
+    /* Who takes the shots after a face-off, in order. `firstShot` is the Face-offs
+       row's "usually earns the next shot attempt"; the later rows are how the edge
+       fades. Every rate is shown with its count. */
+    faceoffRun: (() => {
+      const fr = t.faceoffRun || { nth: {} };
+      const row = k => { const r = (fr.nth || {})[k] || { w: 0, n: 0 };
+        return { w: r.w || 0, n: r.n || 0, winnerShare: ratio(r.w || 0, r.n || 0) }; };
+      return {
+        runs: fr.runs || 0, withShot: fr.withShot || 0,
+        winnerShot: fr.winnerShot || 0, loserShot: fr.loserShot || 0,
+        first: row('first'), second: row('second'), third: row('third'), later: row('later'),
+        what: 'the shot attempts in the run of play a face-off opens, until the next '
+            + 'whistle: for the 1st, 2nd, 3rd and later attempt, how many the team that '
+            + 'won the face-off took (w) out of all (n); and how many runs saw a shot '
+            + 'attempt at all, by the winner, and by the loser (n counts FACE-OFFS)',
+      };
+    })(),
     // What a draw is worth where it happens, and who it is worth it to.
     endZone: {
       n: ezN,

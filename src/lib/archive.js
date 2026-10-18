@@ -340,6 +340,9 @@ const PER_TEAM = {
             'saves of every 100 shots', '%'],
   ozStarts: [g => g.oz, 'face-offs one team won in the other team\u2019s end in one game',
              'offensive-zone face-offs'],
+  foShare: [g => g.fo && { h: pct(g.fo.h, g.fo.h + g.fo.a), a: pct(g.fo.a, g.fo.h + g.fo.a) },
+            'of every 100 face-offs in one game, the ones one team won',
+            'face-offs won, of every 100', '%'],
   dmenShare: [g => g.dAtt && g.attempts && { h: pct(g.dAtt.h, g.attempts.h), a: pct(g.dAtt.a, g.attempts.a) },
               'of every 100 shot attempts one team took in one game, the ones its defencemen took',
               'attempts by defencemen, of every 100', '%'],
@@ -627,6 +630,9 @@ export function summarise(records) {
       // `level` is already a differential, so home's side is the value itself
       // and away's is zero: positive means home led the measure, negative away,
       // and exactly zero is no edge — which `rateOf` drops from `n`.
+      // A record from before the Face-offs layer carries no `fo` and drops out of `n`.
+      moreFaceoffsLost:
+        rateOf(games.filter(g => g.fo), g => [g.fo.h, g.fo.a], 'the team that won more face-offs lost'),
       moreLevelControlLost:
         rateOf(games, g => [g.level, 0],
                'the team that controlled play while the score was tied lost'),

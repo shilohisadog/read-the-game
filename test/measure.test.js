@@ -41,7 +41,7 @@ import { CLUB_ROWS } from '../src/lib/preview.js';
 const TIER = [
   'archive.js', 'attribution.js', 'layer.js', 'rink.js', 'strength.js', 'team-season.js',
   // registry.js: the layers read their labels from the list of measures.
-  'registry.js', 'layers/shooters.js',
+  'registry.js', 'layers/shooters.js', 'layers/faceoffs.js',
   // competitions.js joined when archive.js stopped spelling `slice(4, 6)` itself
   // and asked it instead. CAUGHT BY THIS TEST, for the second time — the tier
   // goes stale in the same edit that changes the graph, every time.

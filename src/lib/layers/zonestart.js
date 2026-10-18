@@ -69,7 +69,7 @@ import { measure } from '../registry.js';
 
 
 /** What a non-faceoff event is, said in the layer's own vocabulary. */
-const NOT_A_DRAW = {
+export const NOT_A_DRAW = {
   'shot-on-goal': 'a shot, not a faceoff',
   'blocked-shot': 'a shot, not a faceoff',
   'missed-shot': 'a shot, not a faceoff',
