@@ -36,6 +36,12 @@ const ROOT = new URL('../', import.meta.url);
  * failing is that something moved and a document did not move with it.
  */
 const GONE = {
+  // On the `lab` branch only: the 3D see-the-shot excursion, stopped 2026-10-18
+  // (docs/see-the-shot-3d.md). Never on main by design.
+  '.github/workflows/lab.yml': 'lab branch only',
+  'src/lab/': 'lab branch only',
+  'crease.js': 'lab branch only (src/lab/crease.js)',
+  'shot3d.js': 'lab branch only (src/lab/shot3d.js)',
   // Earlier builders, named in the historical narrative of how the build chain
   // got here. They are the SUBJECT of those passages, not a live dependency.
   'build_alive3.py': 'an early prototype builder, removed long before this record was indexed',

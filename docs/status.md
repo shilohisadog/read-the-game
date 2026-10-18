@@ -60,8 +60,13 @@ state.
    today's →" (link without `asof`). Every date on the site is "October 16, 2026":
    `day.js::formatDate`, the page `when()`, `_when()`, the unfurl's `dayOf`, and the
    browser check's expectation, all one order.
-1. **Ruling 7 — per-player face-off win %.** Needs `losingPlayerId` kept by
-   `extract.py` and a full re-derive; there is no player page yet (the preview's
+0a. ✅ **The lab** (`lab` branch → lab.read-the-game.pages.dev, never merged wholesale) and
+   the **3D "see the shot" excursion — STOPPED** (`docs/see-the-shot-3d.md`). Kept: (i) shot
+   type in the record, said by the color line; (ii) distance labelled on the 2D goal line.
+1. **Ruling 7 — per-player face-off win %, WITH shot type.** One re-extract keeps both
+   `losingPlayerId` and `shotType` (see-the-shot-3d.md §5). Then the color line names the
+   shot type, and the 2D goal line carries its distance. Needs a full re-derive; there is
+   no player page yet (the preview's
    player block is the only player surface). Proposed on the list, unbuilt: goalie
    W–L, team face-offs, shots on goal count, pace by time of game.
 2. **"Before the game / tonight"** on a played preview.
