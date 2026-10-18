@@ -238,6 +238,7 @@ export function measureGame(g) {
       whistle: stops.counted.length,
       zonestart: draws.counted.length,
       shooters: dshots.counted.length,
+      faceoffs: fos.counted.length,
     },
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.

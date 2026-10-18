@@ -158,7 +158,7 @@ const DERIVATION = {
        + 'the reason a team carrying the puck up the ice sometimes slows down at a '
        + 'blue line for no visible reason.',
     caveat: 'The league\u2019s feed does not label a stoppage "offside". We work it '
-          + 'out from where the restart faceoff was placed, plus the rule. That is '
+          + 'out from where the restart face-off was placed, plus the rule. That is '
           + 'a dependable reading, but it is a reading.' },
   icing: {
     unit: 'icings, per team per game',
@@ -172,9 +172,9 @@ const DERIVATION = {
        refusing. The RULE is the consequence, and the rule is checkable. */
     why: 'The other stoppage a newcomer cannot read, and the one whose '
        + 'consequence you can watch: the team that iced the puck may not change '
-       + 'its line before the faceoff, and the faceoff is all the way back in '
+       + 'its line before the face-off, and the face-off is all the way back in '
        + 'its own end.',
-    caveat: 'Read the same way as offside, from the restart faceoff and the rule, '
+    caveat: 'Read the same way as offside, from the restart face-off and the rule, '
           + 'and it carries the same risk. Where our reading disagrees with the '
           + 'rulebook, that is evidence about our reading first.' },
   attempts: {

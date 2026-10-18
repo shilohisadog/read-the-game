@@ -74,7 +74,8 @@ const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import
 
 /** The page as a reader meets it: a real game, and the rates the shell fetches. */
 const page = () => boot(rich, MEASURES);
-const LAYERWORK_LENSES = { corsi: 1, slot: 1, blocked: 1, goaltending: 1, whistle: 1, zonestart: 1, shooters: 1 };
+// Every layer a viewer can switch on, read from the document node wrote from the real layers.
+const LAYERWORK_LENSES = Object.fromEntries(JSON.parse(readFileSync(new URL('../data/layer-rules.json', import.meta.url), 'utf8')).layers.map(l => [l.id, 1]));
 
 test('⛔⛔⛔ EVERY LAYER DOOR IS ANSWERED BY ONE OF THE TWO TABLES', () => {
   /* ⚠️ NOT CIRCULAR, AND THAT IS THE WHOLE VALUE OF IT. The left-hand side is
@@ -1051,7 +1052,7 @@ test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club 
        with no class of its own to be placed against. */
     // Goaltending and Zone starts are a team's own figure (ruling 3): with no class
     // they print each team's figure and draw no scale, never the game's total.
-    const teamOnly = /^<b>(Goaltending|Zone starts|Who shoots)<\/b>/.test(text);
+    const teamOnly = /^<b>(Goaltending|Zone starts|Who shoots|Face-offs)<\/b>/.test(text);
     if (teamOnly) { assert.ok(!railIn(li), `${text} drew a scale with no class for it`); continue; }
     assert.ok(!/class="stm s[ah]"/.test(text),
       `a row still names the clubs with no per-team class published: ${text}`);

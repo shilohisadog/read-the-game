@@ -810,7 +810,7 @@ BODY = r"""<div class="wrap front">
      get the game page's four-word legend entry if they open a game, and nothing
      before that. -->
 <p class="pucknote" id="pucknote"><b>The puck only appears where something happened</b>
-&mdash; a shot, a hit, a faceoff. The feed we read records those moments and
+&mdash; a shot, a hit, a face-off. The feed we read records those moments and
 nothing in between, so that is all we draw.</p>
 </div>
 
@@ -2452,7 +2452,7 @@ def _learn():
 # this builder already refuses with a SystemExit.
 FRONT_RULES = [
     ("offside", "You cannot enter the attacking zone ahead of the puck."),
-    ("icing", "Shoot it the length of the ice and the faceoff comes all the way back."),
+    ("icing", "Shoot it the length of the ice and the face-off comes all the way back."),
     ("penalties", "Break a rule and your team plays a skater short."),
 ]
 
@@ -2571,7 +2571,7 @@ FIGURE_CLAUSE = {
     "zones": ("after a face-off in one team&rsquo;s end, the team attacking "
               "that end takes __ZONE_ATK__ shot attempts before the next "
               "whistle, against __ZONE_DEF__ for the team defending it "
-              "&mdash; across __ZONE_DRAWS__ draws"),
+              "&mdash; across __ZONE_DRAWS__ face-offs"),
 }
 
 
@@ -2833,7 +2833,7 @@ def _front_rules():
 LEARN_CARDS = [
     ("rules", "icing", "Icing",
      "The puck is sent the length of the ice and play comes straight back. "
-     "Watch where the faceoff goes &mdash; that dot is the whole punishment."),
+     "Watch where the face-off goes &mdash; that dot is the whole punishment."),
     # NAMED "Faceoffs", not "the faceoff it forces". A card title is also the
     # word a visitor scans for, and the concept has to survive the copy -- the
     # page exists to name what the site teaches. The pairing lives in the blurb,
@@ -2846,8 +2846,9 @@ LEARN_CARDS = [
     # fact. So the pairing is named instead of pointed at, and "This is" goes
     # with it -- on the rule page "this" would have meant the diagram, which is
     # nine spots and not an icing restart. The same error, one notch quieter.
-    ("rules", "faceoffs", "Faceoffs",
-     "Nine spots on the ice and the rule picks one. An icing brings the draw all "
+    ("rules", "faceoffs", "Face-offs",
+     "Nine spots on the ice and the rule picks one &mdash; a face-off, often just "
+     "called the draw. An icing brings the face-off all "
      "the way back &mdash; same second as the whistle, and deep in the offending "
      "team&rsquo;s own end."),
     # "WHY A GOAL GETS WAVED OFF" WAS SHIPPED AND IS NOT SHOWABLE ANYWHERE.
@@ -4670,7 +4671,7 @@ __HELPERS__
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
       t.appendChild(el('p', 'pvtlab', measure('icing').tile));
-      t.appendChild(el('p', 'pvwatch', 'The faceoff comes all the way back, and '
+      t.appendChild(el('p', 'pvwatch', 'The face-off comes all the way back, and '
         + 'the team that iced it may not change its line. Watch who is stuck out '
         + 'there and how tired they are.'));
       learn = learnLink('icing', 'What icing is');
@@ -5283,7 +5284,7 @@ broadcast leads with before it is demanding of anyone else&rsquo;s.</p>
 <section class="hmsec" id="limits">
 <p class="hmkick">What we cannot measure, and will not pretend to</p>
 <p><b>Zone entries and exits, controlled-entry rate.</b> Not in the public feed at
-any level. Everything the league records for a game is: faceoff, stoppage, hit,
+any level. Everything the league records for a game is: face-off, stoppage, hit,
 giveaway, shot on goal, takeaway, missed shot, blocked shot, goal, penalty,
 delayed penalty, and the markers for a period starting and ending. A number built
 on zone entries would be a number built on something we simply do not have.</p>

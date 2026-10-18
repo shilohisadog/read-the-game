@@ -71,7 +71,7 @@ export const PEN = {
   'interference-goalkeeper': 'Goaltender interference',
   'delaying-game': 'Delay of game',
   'delaying-game-puck-over-glass': 'Delay of game — puck over the glass',
-  'delaying-game-face-off-violation': 'Delay of game — faceoff violation',
+  'delaying-game-face-off-violation': 'Delay of game — face-off violation',
   'delaying-game-illegal-play-by-goalie': 'Delay of game — illegal play by the goaltender',
   'delaying-game-unsuccessful-challenge': 'Delay of game — unsuccessful challenge',
   'closing-hand-on-puck': 'Closing his hand on the puck',
@@ -186,7 +186,7 @@ export const PEN = {
   /* THE BENCH SUFFIX, fourth and fifth applications of the pattern
      `unsportsmanlike-conduct-bench` set. */
   'delaying-game-bench': 'Delay of game — bench',
-  'delaying-game-bench-face-off-violation': 'Delay of game — bench faceoff violation',
+  'delaying-game-bench-face-off-violation': 'Delay of game — bench face-off violation',
   'delaying-game-smothering-puck': 'Delay of game — smothering the puck',
   'game-misconduct-head-coach': 'Game misconduct — head coach',
   bench: 'Bench penalty',

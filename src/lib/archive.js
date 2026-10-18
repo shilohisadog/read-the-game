@@ -234,6 +234,8 @@ export function perGame(records) {
     zonestart: ['face-offs in one game, both teams, at all strengths', 'face-offs'],
     shooters: ['shot attempts by defencemen, both teams, in one game, at all strengths',
                'attempts by defencemen'],
+    // The same face-offs Zone starts counts: two chips, one count, each with its own scale.
+    faceoffs: ['face-offs in one game, both teams, at all strengths', 'face-offs'],
   };
   const bySeason = {};
   for (const g of records) (bySeason[season(g.id)] ||= []).push(g);

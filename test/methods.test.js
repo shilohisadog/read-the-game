@@ -23,7 +23,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { methods, keysOf, anchorOf, anchorFor, explains, EXPLAINED, EXPLAINED_ROWS,
          printed, PRINTED_KEYS, PRINTED, DERIVATION } from '../src/lib/methods.js';
 import { CLUB_ROWS, leagueRows } from '../src/lib/preview.js';
@@ -55,6 +55,7 @@ const MEASURES = {
       what: 'of the unblocked shot attempts whose location the feed records, this '
           + 'many were taken from inside the slot' } },
   census: { games: 4192,
+    faceoffRun: {"first": {"n": 194092, "w": 119392, "winnerShare": 0.615}, "later": {"n": 122653, "w": 63571, "winnerShare": 0.518}, "loserShot": 114332, "runs": 245260, "second": {"n": 122634, "w": 66733, "winnerShare": 0.544}, "third": {"n": 76504, "w": 40285, "winnerShare": 0.527}, "what": "the shot attempts in the run of play a face-off opens, until the next whistle: for the 1st, 2nd, 3rd and later attempt, how many the team that won the face-off took (w) out of all (n); and how many runs saw a shot attempt at all, by the winner, and by the loser (n counts FACE-OFFS)", "winnerShot": 143666, "withShot": 194092},
     pace: { what: 'shot attempts taken in one situation, out of the minutes played '
               + 'in that situation, scaled to sixty',
       even: { attempts: 406964, minutes: 416349.7, per60: 58.647 },
@@ -1156,11 +1157,15 @@ test('⛔⛔⛔ every layer a viewer can switch on has a door to the work behind
      a viewer can switch on — `＋` in the label is what makes a layer a chip.
      MUTATION: add a layer with a `＋` label and no `work`, and the build refuses
      it; drop one from `layer-rules.mjs`'s list and this names it. */
-  const mods = await Promise.all(['blocked', 'corsi', 'danger', 'goaltending',
-    'whistle', 'zonestart', 'tied', 'shooters'].map(n => import(`../src/lib/layers/${n}.js`)));
+  // Every module in the layers directory, so a new layer cannot be missed by a typed list.
+  const dir = new URL('../src/lib/layers/', import.meta.url);
+  const mods = await Promise.all(readdirSync(dir).filter(f => f.endsWith('.js')).map(f => import(new URL(f, dir))));
   const every = mods.flatMap(m => Object.values(m)).filter(v => v && v.label);
   const chips = every.filter(l => l.label.startsWith('＋'));
-  assert.equal(chips.length, 7, `${chips.length} layers carry a chip label`);
+  // As many as the built page offers (its layer buttons, less Just events).
+  const gamePage = readFileSync(new URL("../src/game.html", import.meta.url), "utf8");
+  const offered = [...gamePage.matchAll(/class="pk" id="\w+" data-l="(\w+)"/g)].map(m => m[1]).filter(l => l !== 'none');
+  assert.equal(chips.length, offered.length, `${chips.length} layers carry a chip label; the page offers ${offered.length}`);
   assert.equal(every.length - chips.length, 1,
     'tiedControl is the one descriptor that is not a chip; something else grew a label');
 

@@ -8,12 +8,14 @@
 import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 import { NOT_A_DRAW } from './zonestart.js';
+import { measure } from '../registry.js';
 
 export const faceoffs = {
-  work: [],
+  work: ['faceoffRun'],
   counts: 'every face-off, credited to the team whose player won it',
   credits: 'Each face-off is credited to the team that won it; both players who took it are named.',
   id: 'faceoffs',
+  label: measure('faceoffWins').layer,
 
   reduce(events, ctx) {
     const { homeId, awayId } = ctx;

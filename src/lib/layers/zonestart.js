@@ -70,15 +70,15 @@ import { measure } from '../registry.js';
 
 /** What a non-faceoff event is, said in the layer's own vocabulary. */
 export const NOT_A_DRAW = {
-  'shot-on-goal': 'a shot, not a faceoff',
-  'blocked-shot': 'a shot, not a faceoff',
-  'missed-shot': 'a shot, not a faceoff',
-  goal: 'a goal, not a faceoff',
-  hit: 'a hit, not a faceoff',
-  giveaway: 'a giveaway, not a faceoff',
-  takeaway: 'a takeaway, not a faceoff',
-  penalty: 'a penalty, not a faceoff',
-  stoppage: 'the whistle that caused a draw, not the draw itself',
+  'shot-on-goal': 'a shot, not a face-off',
+  'blocked-shot': 'a shot, not a face-off',
+  'missed-shot': 'a shot, not a face-off',
+  goal: 'a goal, not a face-off',
+  hit: 'a hit, not a face-off',
+  giveaway: 'a giveaway, not a face-off',
+  takeaway: 'a takeaway, not a face-off',
+  penalty: 'a penalty, not a face-off',
+  stoppage: 'the whistle that caused a face-off, not the face-off itself',
 };
 
 export const zonestart = {
@@ -117,8 +117,8 @@ export const zonestart = {
      followed the wrong one into `docs/status.md`. A file is not a single voice:
      when a note plans work, check it against the rules stated ABOVE it. */
   work: ['zoneStarts'],
-  counts: 'every faceoff, and for the team that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
-  credits: 'Each draw is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one team and never two.',
+  counts: 'every face-off, and for the team that won it, whether that face-off was in its offensive zone, the neutral zone, or its defensive zone',
+  credits: 'Each face-off is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other.',
   id: 'zonestart',
   label: measure('zoneStarts').layer,
 
@@ -148,7 +148,7 @@ export const zonestart = {
       const notPlay = inShootout(e);
       const notDraw = e.type === 'faceoff'
         ? null
-        : (NOT_A_DRAW[e.type] || NOT_A_PLAY[e.type] || `not a faceoff (${e.type})`);
+        : (NOT_A_DRAW[e.type] || NOT_A_PLAY[e.type] || `not a face-off (${e.type})`);
       /* ⚠️ THE STRENGTH FILTER IS NOT DECORATION HERE. A reader who turns Even
          strength on is asking exactly the right question and must get an honest
          answer rather than a total that quietly mixes even play with the power
@@ -205,9 +205,9 @@ export const zonestart = {
         surprising.push({
           id,
           why: e.own == null || t[e.own] === undefined
-            ? 'the feed did not record which team won this draw, so it is counted '
+            ? 'the feed did not record which team won this face-off, so it is counted '
             + 'and credited to neither'
-            : 'the feed recorded no coordinate for this draw, so it is counted '
+            : 'the feed recorded no coordinate for this face-off, so it is counted '
             + 'and placed in no zone',
           derivedFrom: `event.own=${e.own}, event.x=${e.x}`,
         });

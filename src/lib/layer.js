@@ -113,7 +113,7 @@ export function shootoutWinner(events, homeId, awayId) {
  */
 export const NOT_AN_ATTEMPT = {
   hit: 'a hit — physical play, but not a shot attempt',
-  faceoff: 'a faceoff — possession changes, no attempt on goal',
+  faceoff: 'a face-off — possession changes, no attempt on goal',
   giveaway: 'a giveaway — losing the puck is not a shot',
   takeaway: 'a takeaway — winning the puck is not a shot',
   penalty: 'a penalty — changes the game, but is not an attempt',

@@ -42,13 +42,14 @@ import { whistle } from './layers/whistle.js';
 import { blocked } from './layers/blocked.js';
 import { zonestart } from './layers/zonestart.js';
 import { shooters } from './layers/shooters.js';
+import { faceoffs } from './layers/faceoffs.js';
 
 /**
  * The URL's vocabulary of layers IS the layers, derived and never restated.
  * A layer added without a token would be unreachable by link, and a token
  * naming no layer would be a dead string nobody could see was dead.
  */
-export const LAYER_TOKENS = [corsi, goaltending, danger, whistle, blocked, zonestart, shooters].map(l => l.id);
+export const LAYER_TOKENS = [corsi, goaltending, danger, whistle, blocked, zonestart, shooters, faceoffs].map(l => l.id);
 
 /** The page counts every attempt unless a link says otherwise. */
 const DEFAULT_STRENGTH = 'all';
@@ -91,11 +92,11 @@ export const DEFAULT_ENDS = 'as-played';
  */
 export const LINK_NOTES = {
   outOfGame: {
-    text: 'That moment isn’t in this game — starting from the opening faceoff.',
+    text: 'That moment isn’t in this game — starting from the opening face-off.',
     from: 'display: the link named a period or a clock this game never reached',
   },
   unreadable: {
-    text: 'That link named a moment we couldn’t read — starting from the opening faceoff.',
+    text: 'That link named a moment we couldn’t read — starting from the opening face-off.',
     from: 'display: the link’s `at` did not parse as a period and a clock',
   },
 };

@@ -348,7 +348,7 @@ test('⭐ Stoppages links to all four of its cards, and each carries its own anc
   for (const h of hrefs)
     assert.match(h, /#[a-z-]+$/, `${h} lands on the page, not on a card`);
   const text = textIn(rowOf(a.$('workBody').innerHTML, 'wlearn'));
-  assert.deepEqual(text.slice().sort(), ['Faceoffs', 'Icing', 'Offside', 'Penalties'],
+  assert.deepEqual(text.slice().sort(), ['Face-offs', 'Icing', 'Offside', 'Penalties'],
     'the row prints card keys rather than the titles the learn page shows');
 });
 

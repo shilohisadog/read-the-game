@@ -22,7 +22,7 @@
  *  promised a whole-game chart and as-played cannot deliver one. */
 export function trailsNote(trails, ASPLAYED) {
  return trails!=='all'
-   ?'This play keeps the marks since the last faceoff, numbered in order, and clears them when the next play begins. Keep every mark leaves the attempts on the ice as they happen.'
+   ?'This play keeps the marks since the last face-off, numbered in order, and clears them when the next play begins. Keep every mark leaves the attempts on the ice as they happen.'
    :ASPLAYED
    ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
    :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';

@@ -1633,7 +1633,7 @@ const learn = readFileSync(new URL('../src/what-you-can-see.html', import.meta.u
 test('every concept the site teaches is NAMED, on the page that exists to name them', () => {
   // The list is the layers and the whistle rules that actually exist. If one is
   // added or removed, this is where the page and the product fall out of step.
-  for (const word of ['Icing', 'Offside', 'Faceoffs', 'Penalties', 'empty net',
+  for (const word of ['Icing', 'Offside', 'Face-offs', 'Penalties', 'empty net',
                       'Control', 'Shots from the slot', 'Goaltending'])
     assert.ok(learn.includes(word), `the concepts page never mentions ${word}`);
 });

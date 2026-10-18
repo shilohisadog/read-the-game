@@ -286,7 +286,7 @@ test('⛔⛔ with no archive, the caption drops the figures and keeps the lesson
   /* ⭐ AND IT IS NOT MERELY SHORTER. Deleting the clause would satisfy every
      assertion above; the layer would then have no stated reason to exist on the
      one page a link most often points at. */
-  assert.match(say, /number inside it is how many draws/,
+  assert.match(say, /number inside it is how many face-offs/,
     'the offline caption lost the part that explains the ice');
   assert.match(say, /arrives either way/,
     'the offline caption dropped the finding as well as the figures, which is the '

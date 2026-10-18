@@ -48,7 +48,7 @@ const NOT_BLOCKED = {
   'shot-on-goal': 'reached the goalie — nothing stopped it on the way',
   'missed-shot': 'missed the net on its own — wide or high, not blocked',
   hit: 'a hit — physical play, but nothing was shot',
-  faceoff: 'a faceoff — possession changes, nothing was shot',
+  faceoff: 'a face-off — possession changes, nothing was shot',
   giveaway: 'a giveaway — losing the puck is not a shot',
   takeaway: 'a takeaway — winning the puck is not a shot',
   penalty: 'a penalty — changes the game, but nothing was shot',

@@ -56,7 +56,7 @@ test('after an icing: who may not change, how long they have been out, and the f
     ev('stoppage', 30, null, { rsn: 'icing' }),
     ev('faceoff', 30, 69, { own: HOME, actor: 10 })],             // back in the AWY end: AWY iced it
     [...shiftsFor([20, 21, 22, 23, 24], AWAY, 2, 60), ...shiftsFor([10, 11, 12], HOME, 30, 70)]);
-  assert.deepEqual(notesOf(g), [[2, 'AWY may not change players for this faceoff: its 5 skaters stay on, 28 seconds into their shift. HOM sent out 3 fresh skaters.']]);
+  assert.deepEqual(notesOf(g), [[2, 'AWY may not change players for this face-off: its 5 skaters stay on, 28 seconds into their shift. HOM sent out 3 fresh skaters.']]);
 });
 
 test('another reason play stopped is explained the first time only; the pill covers offside', () => {
@@ -116,5 +116,5 @@ test('after an icing, a skater who came on as the puck was iced leaves the secon
   const g = game([ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
     ev('stoppage', 30, null, { rsn: 'icing' }), ev('faceoff', 30, 69, { own: HOME, actor: 10 })],
     [...shiftsFor([20, 21, 22, 23], AWAY, 2, 60), ...shiftsFor([24], AWAY, 30, 60)]);
-  assert.deepEqual(notesOf(g), [[2, 'AWY may not change players for this faceoff.']]);
+  assert.deepEqual(notesOf(g), [[2, 'AWY may not change players for this face-off.']]);
 });

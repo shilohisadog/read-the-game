@@ -97,7 +97,7 @@ test('⭐ the caption names the end the FEED puts the draw in, on every icing', 
     assert.match(h, new RegExp(`<span class="tag [ah]">${w.ab}</span>`),
       `frame ${w.frame}: the feed puts the draw in ${w.ab}'s end, so ${w.ab} iced it — `
       + `and the caption says "${h}"`);
-    assert.match(h, /faceoff back in their end/,
+    assert.match(h, /face-off back in their end/,
       `frame ${w.frame}: the caption stopped saying where the draw went — "${h}"`);
     // AND THE CAUSE HALF IS THERE TOO — Kevin's point, not decoration.
     assert.match(h, /from behind centre, past the far goal line/,
@@ -190,7 +190,7 @@ test('⭐⭐ a centre-ice draw names NOBODY, and the pill says why', () => {
     stepTo(a, k);
     const pill = a.$('caption').innerHTML;
     assert.match(pill, /🔵 Offside/, `the offside at frame ${k} said nothing at all`);
-    assert.match(pill, /centre-ice draw names neither team/,
+    assert.match(pill, /centre-ice face-off names neither team/,
       `the pill is silent about WHY no club is named at frame ${k}: "${pill}"`);
     assert.doesNotMatch(pill, /<span class="tag/,
       `the pill wears a club chip on an offside nobody can be blamed for: "${pill}"`);
@@ -218,7 +218,7 @@ test('⛔ the club on the pill is never the face-off WINNER', () => {
     assert.doesNotMatch(a.$('caption').innerHTML, new RegExp(`<span class="tag [ah]">${won}</span>`),
       `the pill blamed ${won}, who WON the draw, instead of ${r.offender}, who was offside`);
     // …and the ice DOES name the winner, because that is the event the dot is.
-    assert.match(a.$('labels').innerHTML, new RegExp(`${won} · Won the faceoff`),
+    assert.match(a.$('labels').innerHTML, new RegExp(`${won} · Won the face-off`),
       `frame ${k}: the ice should narrate the draw ${won} won`);
   }
 });

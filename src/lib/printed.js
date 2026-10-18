@@ -255,6 +255,28 @@ const PRINTED = {
           + 'remains is still a description and not a cause: a team that is '
           + 'behind is also, on average, the weaker team that night, and this '
           + 'measurement cannot take that apart.' },
+  faceoffRun: {
+    label: measure('faceoffRun').heading,
+    where: 'The How we counted door of the Face-offs layer, and its row in What this game was.',
+    reads: [
+      { is: 'The first shot attempt after a face-off', at: ['census', 'faceoffRun', 'first'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'The second', at: ['census', 'faceoffRun', 'second'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'The third', at: ['census', 'faceoffRun', 'third'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'Every one after that', at: ['census', 'faceoffRun', 'later'], said: ['census', 'faceoffRun'],
+        num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
+      { is: 'Games the team that won more face-offs lost', at: ['baseRates', 'moreFaceoffsLost'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'Every whistle ends in a face-off, so a game is dozens of separate stretches of '
+       + 'play, each one starting with a face-off. The team that wins one usually takes '
+       + 'the next shot attempt, but the edge shrinks with every shot after that, and '
+       + 'over a whole game winning more face-offs barely changes who wins.',
+    caveat: 'A run lasts until the next whistle. Only shot attempts are counted, because '
+          + 'the record does not say who had the puck between them: this is the first '
+          + 'shot attempt, not the first touch.' },
   zoneStarts: {
     label: measure('endZoneWorth').heading,
     where: 'The front door, and The attacking zone card on '
@@ -288,11 +310,11 @@ const PRINTED = {
        slot. The sentence says what the QUESTION is; the shape stays where it is
        defined. */
     why: 'It prices the place a face-off is taken. A novice is told that where a '
-       + 'draw happens matters; this says by how much, in the only currency the '
+       + 'face-off happens matters; this says by how much, in the only currency the '
        + 'record holds — shot attempts before the next whistle.',
     caveat: 'It says nothing at all about the contest AT the blue line, which is '
           + 'a different question and one the record cannot answer: holding a '
-          + 'line produces no event, so there is nothing to count. And a draw in '
+          + 'line produces no event, so there is nothing to count. And a face-off in '
           + 'one end is not randomly assigned — the side already pressing is '
           + 'the one that gets them — so part of this gap is the teams and '
           + 'not the place.' },

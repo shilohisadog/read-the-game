@@ -266,7 +266,7 @@ test('the offside sentence claims only what holds for EVERY offside', () => {
 test('the icing sentence MAY say where the faceoff goes, because that one holds', () => {
   // The mirror of the test above, and the reason it is not a blanket ban:
   // 2,019 of 2,019 icings in the same 240 games restart at an end-zone dot.
-  assert.match(WHY.icing.say, /faceoff comes back to the offending\s+end/);
+  assert.match(WHY.icing.say, /face-off comes back to the offending\s+end/);
 });
 
 /* ------------------------------------------------------------------ *

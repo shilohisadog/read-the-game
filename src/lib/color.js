@@ -121,7 +121,7 @@ export function colorNotes(game, ctx, rates) {
         // read as a contradiction of "may not change", so they are left out.
         const secs = mine.length && Math.min(...mine) > 0
           ? `: its ${mine.length} skaters stay on, ${secsSpan(mine).replace(' each', '')} into their shift` : '';
-        if (mine.length) say = `${off} may not change players for this faceoff${secs}.`
+        if (mine.length) say = `${off} may not change players for this face-off${secs}.`
           + `${fresh ? ` ${ab(other(tid))} sent out ${countOf(fresh, 'fresh skater')}.` : ''}`;
       }
     } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn)

@@ -97,6 +97,7 @@ export function eventMarks({ evs, i, cur, moment, from = i, zoneFrom = null },
    let cls=e.type==='goal'?'goal':ATT.has(e.type)?'att':'excl';
    if(e.type==='blocked-shot')cls+=' blkd';   // so the layer can dim what was NOT blocked
    if((ATT.has(e.type)||e.type==='goal')&&(R[e.actor]||{}).pos==='D')cls+=' dsh';   // Who shoots
+   if(e.type==='faceoff')cls+=e.own===HID?' fo fwh':e.own===AID?' fo fwa':' fo';   // Face-offs: who won it
    // AND THE CURRENT PLAY IS NEVER DIMMED BY A LAYER. With trails on
    // "Current moment" -- the default -- the only mark on the ice IS the
    // current one, so a layer that dims everything it does not count leaves

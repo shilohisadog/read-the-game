@@ -211,7 +211,7 @@ test('⭐ the icing and the faceoff it forces are ONE FRAME, deliberately', () =
      frame they share is the face-off that this game's first icing actually
      forced, which is the thing being taught. */
   const ice = parse(query(cards.find(c => /Icing/.test(c.title)).href));
-  const fo = parse(query(cards.find(c => /faceoff/i.test(c.title)).href));
+  const fo = parse(query(cards.find(c => /face-?off/i.test(c.title)).href));
   assert.deepEqual(fo.at, ice.at,
     'the icing and its restart are no longer the same moment — the pairing is the lesson');
 

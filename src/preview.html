@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UeLDzTiuE8lGs63rQZbpp1tmnIPbOf3OYNpU0TuN4/8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/otWnP24s+6LCMXFM9dmEMJtsem/IJBqtXVrE2AQmJo=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -668,21 +668,27 @@ const MEASURES = [
     strength: 'all', score: 'any', scopes: ['season'], typical: null,
     witness: 'boxscore decision (not yet kept — check the field)', keys: {} },
 
-  { id: 'faceoffWins', name: 'face-offs won',
-    says: 'Face-offs a team won, and its share of all the draws.',
+  { id: 'faceoffWins', name: 'face-offs won', chip: 'Face-offs', layer: '＋ Face-offs',
+    heading: 'How many face-offs a team wins',
+    says: 'Of every 100 face-offs in this team\u2019s games, this many it won.',
     counts: 'face-offs won', of: 'face-offs', credit: 'winner', unit: 'share', strength: 'all',
     score: 'any', scopes: ['game', 'season'], typical: 'league figure', witness: 'right rail',
-    holds: false, keys: { perTeam: 'foShare' } },
+    holds: false, keys: { lens: 'faceoffs', perTeam: 'foShare' } },
   { id: 'playerFaceoffs', name: 'face-off win percentage', status: 'proposed',
-    says: 'Of every 100 draws a player took, this many he won.',
-    counts: 'draws won', of: 'draws taken', credit: 'player', unit: 'share', strength: 'all',
+    says: 'Of every 100 face-offs a player took, this many he won.',
+    counts: 'face-offs won', of: 'face-offs taken', credit: 'player', unit: 'share', strength: 'all',
     score: 'any', scopes: ['season'], typical: 'median', witness: 'boxscore faceoffWinningPctg',
     keys: {}, pending: [{ ruling: '7', what: 'needs the losing player, which extract.py drops' }] },
   { id: 'endZoneWorth', name: 'what a face-off in one end is worth', heading: 'What a face-off in one end is worth',
     says: 'Shot attempts that follow a face-off in one end, per face-off.',
-    counts: 'attempts after the draw', of: 'face-offs in that end', credit: 'none', unit: 'rate',
+    counts: 'attempts after the face-off', of: 'face-offs in that end', credit: 'none', unit: 'rate',
     strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
     keys: { printed: 'zoneStarts' } },
+  { id: 'faceoffRun', name: 'who takes the shots after a face-off', heading: 'Who takes the shots after a face-off',
+    says: 'Of the shot attempts in the run of play a face-off opens, the ones the team that won it took: the first, the second, the third, and later.',
+    counts: 'attempts by the face-off\u2019s winner', of: 'attempts in the run', credit: 'winner', unit: 'share',
+    strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
+    keys: { printed: 'faceoffRun' } },
 
   { id: 'penalties', name: 'penalties a team takes', heading: 'How many penalties a team takes', tile: 'penalties a team takes',
     says: 'Penalties called on one team, per game.',
@@ -1462,7 +1468,7 @@ function formatDate(iso) {
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
       t.appendChild(el('p', 'pvtlab', measure('icing').tile));
-      t.appendChild(el('p', 'pvwatch', 'The faceoff comes all the way back, and '
+      t.appendChild(el('p', 'pvwatch', 'The face-off comes all the way back, and '
         + 'the team that iced it may not change its line. Watch who is stuck out '
         + 'there and how tired they are.'));
       learn = learnLink('icing', 'What icing is');

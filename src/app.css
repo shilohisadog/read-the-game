@@ -1903,6 +1903,7 @@
    out of it is that a row's appearance is decided where the row is named.
    ⭐ AND IT SETS ITS OWN SIZE for the same reason. */
 #rg .srows .sdoor{display:block;margin:5px 0 0;font-size:.78rem;line-height:1.45}
+#rg .srows .scav{display:block;margin:5px 0 0;font-size:.8rem;line-height:1.45;color:var(--ink)}
 #rg .srows .sdoor a{color:var(--blue);text-decoration:none;
  border-bottom:1px solid color-mix(in srgb,var(--blue) 35%,transparent)}
 #rg .srows .sdoor a:hover{border-bottom-color:var(--blue)}
@@ -2380,6 +2381,11 @@
    its own rather than being found by its ring. */
 #rg.blocked .att:not(.blkd):not(.cur),#rg.blocked .goal:not(.cur){opacity:.2}
 #rg.shooters .att:not(.dsh):not(.cur),#rg.shooters .goal:not(.dsh):not(.cur){opacity:.2}
+/* Face-offs: each face-off in the colour of the team that won it, everything else dimmed. */
+#rg.faceoffs .ev:not(.fo):not(.cur){opacity:.2}
+#rg.faceoffs .excl.fo{opacity:1;r:1.7px}
+#rg.faceoffs .fo.fwh{fill:var(--home)}
+#rg.faceoffs .fo.fwa{fill:#fff;stroke:var(--away);stroke-width:.7}
 #rg.blocked .ring.blk{stroke-width:1.3;opacity:1}
 #rg .blockpanel{display:none}
 #rg.blocked .blockpanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
