@@ -170,7 +170,7 @@ function openGoalieView(f, e) {
   if (f.playing) document.getElementById('play').click();            // pause the replay
   const bg = document.createElement('div'); bg.className = 'labgvbg';
   const box = document.createElement('div'); box.className = 'labgv';
-  const u = new URLSearchParams({ embed: 1, game: f.G.game.id, per: e.per, rem: e.rem, shooter: e.actor, seat: 'crease' });
+  const u = new URLSearchParams({ embed: 1, game: f.G.game.id, per: e.per, rem: e.rem, shooter: e.actor, seat: 'tv' });
   box.innerHTML = `<iframe title="The shot from the crease" src="/lab/shot.html?${u}"></iframe><button class="x" type="button">Back to the replay</button>`;
   const close = () => { box.remove(); bg.remove(); removeEventListener('keydown', esc); };
   const esc = k => { if (k.key === 'Escape') close(); };
@@ -185,7 +185,7 @@ function goalieButton(f) {
   hasShotFile(f.G).then(ok => {
     if (!ok || last.cur !== e || w.querySelector('.wgv')) return;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'wgv';
-    b.textContent = '\u25B6 Goalie view';
+    b.textContent = '\u25B6 See the shot';
     b.onclick = ev => { ev.stopPropagation(); openGoalieView(last, e); };
     w.appendChild(b);
   });

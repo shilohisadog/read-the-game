@@ -15,10 +15,10 @@ html,body{margin:0;height:100%;background:#0b121a;color:#fff;font:14px/1.35 syst
 .vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(120% 100% at 50% 45%,transparent 55%,rgba(0,0,0,.45) 100%)}
 .vig.goal{animation:lamp 1.1s ease-in-out 3}
 @keyframes lamp{0%,100%{box-shadow:inset 0 0 0 0 rgba(255,20,40,0)}50%{box-shadow:inset 0 0 140px 30px rgba(255,20,40,.55)}}
-.hud{position:fixed;left:12px;top:10px;max-width:min(62vw,520px);text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.hud{position:fixed;left:10px;top:8px;max-width:min(62vw,520px);background:rgba(10,16,24,.62);padding:6px 10px;border-radius:10px}
 .hud .who{font-weight:800;font-size:1.05rem}.hud .who i{font-style:normal;padding:1px 6px;border-radius:5px;margin-left:6px;font-size:.8rem}
 .hud .what{opacity:.9;font-size:.86rem}.hud .tip[hidden]{display:none}.hud .tip{margin-top:4px;font-size:.8rem;background:rgba(15,26,35,.7);padding:3px 7px;border-radius:6px;display:inline-block}
-.side{position:fixed;right:12px;top:10px;text-align:right;font-size:.82rem;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.side{position:fixed;right:10px;top:8px;text-align:right;font-size:.82rem;background:rgba(10,16,24,.62);padding:6px 10px;border-radius:10px}
 .side b{font-size:.95rem}
 .stamp{position:fixed;left:50%;bottom:70px;transform:translate(-50%,0) scale(.6);font:900 clamp(1.4rem,5vw,2.6rem)/1 system-ui;
  letter-spacing:.06em;opacity:0;transition:opacity .18s,transform .25s cubic-bezier(.2,1.4,.4,1);pointer-events:none;
@@ -162,7 +162,11 @@ function target(s) {
   $('near').hidden = !near;
   if (seat === 'crease' && !near) { const pos = new THREE.Vector3(0, 3.9, -2.2); return { pos, look: chest, fov: lens(pos) }; }
   if (seat === 'net' || near) { const pos = new THREE.Vector3(s.w * -0.12, 6.4, 9.5); return { pos, look: chest, fov: lens(pos) }; }
-  return { pos: new THREE.Vector3(-58, 34, -s.d * 0.55 - 4), look: new THREE.Vector3(s.w * 0.5, 0, -s.d * 0.5), fov: S.baseFov() };
+  // Broadcast: high and to the side, framed on the shooter and the net together.
+  const pos = new THREE.Vector3(-58, 34, -s.d * 0.55 - 4), mid = new THREE.Vector3(s.w * 0.5, 1.5, -s.d * 0.5);
+  const half = Math.hypot(s.w, s.d) / 2 + 9, tanH = half / pos.distanceTo(mid);
+  const fov = THREE.MathUtils.radToDeg(2 * Math.atan(tanH / Math.min(camera.aspect, 1.9)));
+  return { pos, look: mid, fov: Math.min(S.baseFov(), Math.max(16, fov)) };
 }
 const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
 function frame(now) {
