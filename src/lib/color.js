@@ -7,6 +7,9 @@
  * One note at most per frame; silence is normal. When several apply, the first in
  * this order wins: goal, penalty, restart, slot shot, shift clock, zone stretch,
  * the score between periods. The order is our editorial choice, declared here.
+ * A shot on goal, a miss or a goal also opens with its type and distance ("A wrist
+ * shot from 34 feet."). A blocked shot never does: the league records neither its
+ * type nor where it was taken, only where it was blocked.
  *
  * What it never says: who had the puck (`own` changes meaning by event type), why
  * anyone did anything, or a judgement such as "tired" — it gives the seconds and
@@ -17,6 +20,25 @@ import { framed, inShootout } from './layer.js';
 import { isHighDangerEvent } from './layers/goaltending.js';
 import { WHY, icingRestarts } from './layers/whistle.js';
 import { liveRun, playAt, plays, zoneRuns } from './stretch.js';
+import { attackDirection, distanceToNet } from './rink.js';
+
+/* The league's `shotType` (SCHEMA 7, `st`), in plain words; an unknown value reads "A shot". */
+export const SHOT_WORDS = {
+  wrist: 'A wrist shot', snap: 'A snap shot', slap: 'A slapshot', backhand: 'A backhand',
+  'tip-in': 'A tipped shot', deflected: 'A deflected shot', 'wrap-around': 'A wraparound',
+  bat: 'A puck batted out of the air', poke: 'A poke at the puck',
+  'between-legs': 'A shot from between his legs', cradle: 'A lacrosse-style "Michigan"',
+};
+const SHOTS_TYPED = new Set(['shot-on-goal', 'missed-shot', 'goal']);
+
+/** "A wrist shot from 34 feet." — feet from the league's coordinates to the net shot at. */
+export function shotLead(e, shooter, homeId) {
+  if (!SHOTS_TYPED.has(e.type) || shooter == null) return null;
+  const what = (e.st && SHOT_WORDS[e.st]) || 'A shot';
+  if (e.x == null || e.y == null) return e.st ? `${what}.` : null;
+  const ft = Math.round(distanceToNet(e.x, e.y, attackDirection(shooter, homeId)));
+  return `${what} from ${ft} ${ft === 1 ? 'foot' : 'feet'}.`;
+}
 
 const PERIOD_DONE = ['', 'After one period', 'After two periods', 'After three periods'];
 const ORD = k => `${k}${k % 100 >= 11 && k % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][k % 10] || 'th'}`;
@@ -156,6 +178,8 @@ export function colorNotes(game, ctx, rates) {
           + `${run.att[atk] ? countOf(run.att[atk], 'shot attempt') : 'no shot attempts'}${run.att[run.end] ? ` and ${name[run.end]} ${run.att[run.end]}` : ''}.`;
       }
     }
+    const lead = shotLead(e, shooter, ctx.homeId);
+    if (lead) say = say ? `${lead} ${say}` : lead;
     if (say) notes.set(n, say);
   });
   return notes;

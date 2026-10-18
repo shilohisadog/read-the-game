@@ -35,7 +35,7 @@ test('a goal says what it does to the score, and how long the puck had stayed in
     ev('goal', 12, 60, { own: HOME, actor: 10 }),               // 29 ft, centred: the slot
   ]);
   const notes = notesOf(g);
-  assert.deepEqual(notes.at(-1), [3, 'That puts HOM ahead, 1–0. The puck had stayed in the AWY end for 4 events in a row before it went in.']);
+  assert.deepEqual(notes.at(-1), [3, 'A shot from 29 feet. That puts HOM ahead, 1–0. The puck had stayed in the AWY end for 4 events in a row before it went in.']);
 });
 
 test('a penalty says "power play" only when the record shows one side a skater short', () => {
@@ -74,8 +74,8 @@ test('the slot: the base rate on a team\'s first shot from there, a count after'
     ev('shot-on-goal', 5, 80, { actor: 10 }), ev('takeaway', 9, -10, { own: AWAY, actor: 20 }),
     ev('shot-on-goal', 15, 80, { actor: 11 })]);
   assert.deepEqual(notesOf(g).map(n => n[1]), [
-    'That shot came from the slot, the area right in front of the net. About 1 shot in 9 from there goes in; from farther out, about 1 in 30.',
-    'Another shot from the slot: HOM\'s 2nd of the game.']);
+    'A shot from 9 feet. That shot came from the slot, the area right in front of the net. About 1 shot in 9 from there goes in; from farther out, about 1 in 30.',
+    'A shot from 9 feet. Another shot from the slot: HOM\'s 2nd of the game.']);
 });
 
 test('the shift clock speaks once per group, when every skater is past the typical shift', () => {
@@ -93,7 +93,9 @@ test('the zone stretch counts events in a row and the attempts in that time, nev
     ev('missed-shot', 4, -40, { actor: 21 }), ev('hit', 8, -50, { own: HOME, actor: 13 }),
     ev('blocked-shot', 12, -45, { actor: 22, blk: 14 })]);
   assert.deepEqual(notesOf(g).map(n => n[1]), [
+    'A shot from 49 feet.',                     // AWY attacks -x: 89 - 40
     'The puck has stayed in the HOM end for 3 events in a row; in that time AWY has 1 shot attempt.',
+    // The blocked shot gets no type or distance: the league records only where it was blocked.
     'The puck has stayed in the HOM end for 4 events in a row; in that time AWY has 2 shot attempts.']);
 });
 
@@ -117,4 +119,23 @@ test('after an icing, a skater who came on as the puck was iced leaves the secon
     ev('stoppage', 30, null, { rsn: 'icing' }), ev('faceoff', 30, 69, { own: HOME, actor: 10 })],
     [...shiftsFor([20, 21, 22, 23], AWAY, 2, 60), ...shiftsFor([24], AWAY, 30, 60)]);
   assert.deepEqual(notesOf(g), [[2, 'AWY may not change players for this face-off.']]);
+});
+
+test('a shot opens with its type and its distance to the net it was shot at', () => {
+  const g = game([ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
+    ev('shot-on-goal', 5, 55, { actor: 10, y: 0, st: 'wrist' }),        // HOM shoots at +89: 34 ft
+    ev('takeaway', 9, 0, { own: AWAY, actor: 20 }),
+    ev('missed-shot', 12, -59, { actor: 21, y: 40, st: 'slap' }),       // AWY shoots at -89: hypot(30, 40) = 50
+    ev('takeaway', 14, 0, { own: HOME, actor: 10 }),
+    ev('shot-on-goal', 20, 88, { actor: 11, y: 0, st: 'tip-in' }),      // 1 ft
+    ev('takeaway', 22, 0, { own: AWAY, actor: 20 }),
+    ev('shot-on-goal', 30, null, { actor: 21, st: 'cradle' }),          // no coordinates: the type alone
+    ev('takeaway', 32, 0, { own: HOME, actor: 10 }),
+    ev('shot-on-goal', 40, 49, { actor: 12, y: 0, st: 'knuckler' })]);  // a type we have no words for
+  const say = Object.fromEntries(notesOf(g, null));
+  assert.equal(say[1], 'A wrist shot from 34 feet.');
+  assert.equal(say[3], 'A slapshot from 50 feet.');
+  assert.equal(say[5], 'A tipped shot from 1 foot.');
+  assert.equal(say[7], 'A lacrosse-style "Michigan".');
+  assert.equal(say[9], 'A shot from 40 feet.');
 });
