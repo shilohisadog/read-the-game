@@ -32,7 +32,31 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-17
+## ⏭ 0.00 PICK UP HERE — 2026-10-18
+
+### ✅ Done 2026-10-17 → 18, each verified on the live site
+
+- **Saved-edition line** says nothing on the newest edition; older ones read "Figures as of
+  <date>. See today's →", and a played game's preview "…, going into the game." (no loop).
+  **Dates everywhere read "October 16, 2026"** (`b0777d5`, `a4810f4`).
+- **The lab** (`lab` branch → lab.read-the-game.pages.dev) and the **3D see-the-shot
+  excursion, STOPPED** — `docs/see-the-shot-3d.md` (`0e1b9ac`).
+- **SCHEMA 7**: the extract keeps the face-off loser (`lose`) and the shot type (`st`),
+  archive re-derived (`b833903`); `tools/feed_fields.py` + `feed-fields.yml` count what the
+  raw feed carries, archive-wide.
+- **The FACE-OFFS chip (8th)** with its summary row, Kevin's caveat, the door "Who takes the
+  shots after a face-off", "#18 Zacha beat #61 Gauthier", and one word ("face-off"; "draw"
+  taught once) — `0edb3ef`, `1dd52e6`, `8279b4f`.
+
+### ⏭ Next (Kevin's order)
+1. Centres' season face-off % in players.json + its Is-that-a-lot (settles in 40 games;
+   centre-season spread p10 44.0% / median 50.3% / p90 56.8%).
+2. Shot type in the color line (never on a blocked shot; 11 types incl. cradle).
+3. Distance on the 2D goal line ("55 ft").
+4. Unexplained: rail face-off witness 385/390 (4 preseason ±1, 2026020132 ±3); the feed's
+   28 vs extract's 27 shots on DiPietro (2026020120).
+
+## ⏭ 0.00 (previous) — 2026-10-17
 
 ### ✅ Done 2026-10-15 → 17, each verified on the live site
 
