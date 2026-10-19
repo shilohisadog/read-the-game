@@ -25,12 +25,15 @@ class Survey(unittest.TestCase):
             {"typeDescKey": "blocked-shot", "details": {}},
             {"typeDescKey": "hit", "details": {}},
         ])
-        put_game(root, "2024030001", [{"typeDescKey": "goal", "details": {"shotType": "tip-in"}}])
+        put_game(root, "2024030001", [{"typeDescKey": "goal", "details": {"shotType": "tip-in"},
+                                       "pptReplayUrl": "https://wsr.nhle.com/sprites/20242025/2024030001/ev1.json"},
+                                      {"typeDescKey": "goal", "details": {}}])
         by, kinds, absent = FF.survey(root)
         reg = by["2025-02"]
         self.assertEqual((reg["games"], reg["faceoffs"], reg["faceoffs_with_loser"]), (1, 2, 1))
         self.assertEqual((reg["shots"], reg["shots_with_type"]), (2, 1))
         self.assertEqual(by["2024-03"]["goal_with_type"], 1)
+        self.assertEqual((by["2024-03"]["goal"], by["2024-03"]["goal_with_replay"]), (2, 1))
         self.assertEqual(dict(kinds), {"wrist": 1, "tip-in": 1})
         self.assertEqual(absent, 0)
 
