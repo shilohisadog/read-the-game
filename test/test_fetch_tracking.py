@@ -32,6 +32,18 @@ class Wanted(unittest.TestCase):
                          [("track/2026020001/ev7.json", URL.format(g="2026020001", e=7))])
 
 
+class Index(unittest.TestCase):
+    def test_names_each_stored_goal_by_period_clock_and_scorer(self):
+        root = tempfile.mkdtemp()
+        put_game(root, "2026020001", [
+            dict(goal("2026020001", 7), periodDescriptor={"number": 2}, timeInPeriod="04:11",
+                 details={"scoringPlayerId": 8470000}),
+            dict(goal("2026020001", 9), periodDescriptor={"number": 3}, timeInPeriod="10:00", details={})])
+        self.assertEqual(T.goals_index(root, "2026", {"track/2026020001/ev7.json"}),
+                         {"2026020001": [{"ev": 7, "per": 2, "clock": "04:11", "scorer": 8470000}]},
+                         "a goal whose file is not stored is not indexed")
+
+
 class Fetch(unittest.TestCase):
     def test_stores_good_files_counts_the_rest_and_backs_off_on_429(self):
         good = json.dumps([{"timeStamp": 1, "onIce": {}}]).encode()

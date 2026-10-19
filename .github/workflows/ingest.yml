@@ -786,6 +786,29 @@ jobs:
           print(f"  it opens: {len(g['events'])} events")
           PY
 
+      # The goal tracking replays for the games just fetched (Kevin, 2026-10-19:
+      # from tonight forward, no earlier seasons). Decoration the replay can do
+      # without, so it can never fail the night: `continue-on-error`.
+      - name: the goal tracking replays for tonight's goals
+        if: steps.fetch.outputs.code == '0'
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        shell: bash
+        run: |
+          set -o pipefail
+          SEASON=$(ls ingest/raw 2>/dev/null | grep -E '^20[0-9]{8}$' | sort | tail -1 | cut -c1-4)
+          [ -n "$SEASON" ] || { echo "no games fetched tonight"; exit 0; }
+          aws s3 ls "s3://${BUCKET}/track/${SEASON}" --recursive \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" | awk '{print $4}' > track-have.txt || : > track-have.txt
+          python3 tools/fetch_tracking.py ingest "$SEASON" --have track-have.txt --delay 0.5 | tee track.txt
+          [ -d ingest/track ] || exit 0
+          aws s3 sync ingest/track/ "s3://${BUCKET}/track/" --cache-control "public, max-age=86400" \
+            --content-type application/json --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          echo "pushed $(find ingest/track -name '*.json' | wc -l) tracking files"
+
       - name: summary
         if: always()
         run: |
