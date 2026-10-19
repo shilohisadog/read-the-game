@@ -24,7 +24,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 const css = document.createElement('style');
 css.textContent = `
-#rg.labtrk #events,#rg.labtrk #lines,#rg.labtrk #puck,#rg.labtrk #labels,#rg.labtrk #cue,#rg.labtrk #draws{opacity:.18;transition:opacity .4s}
+#rg.labtrk #events,#rg.labtrk #netmen,#rg.labtrk #lines,#rg.labtrk #puck,#rg.labtrk #labels,#rg.labtrk #cue,#rg.labtrk #draws{opacity:.18;transition:opacity .4s}
 #labtrack text{pointer-events:none}
 #labtrack .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
 #labtrack .tag{font-size:2.6px;font-weight:800;fill:#0f1a23;paint-order:stroke;stroke:#fff;stroke-width:.9px;text-anchor:middle}
