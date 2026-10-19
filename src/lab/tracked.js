@@ -11,7 +11,7 @@
  * opposite to the play-by-play's); `turn` is our extract's per-period rotation,
  * read off the goal's own sign; the replay's AX/AY then place it on screen.
  */
-import { colourOf, inkOn } from '../lib/teams.js';
+import { colourOf, inkOn, readableInk } from '../lib/teams.js';
 
 const ORIGIN = 'https://data.readthegame.co';
 export const SPEED = 0.5;
@@ -28,7 +28,7 @@ css.textContent = `
 #labtrack text{pointer-events:none}
 #labtrack .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
 #labtrack .tag{font-size:2.6px;font-weight:800;fill:#0f1a23;paint-order:stroke;stroke:#fff;stroke-width:.9px;text-anchor:middle}
-#labtrack .who{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
+#labtrack .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
 #labtrack .trail{fill:none;stroke:#0e1216;stroke-width:.35;opacity:.45;stroke-dasharray:.8 .6}
 #labtrack .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
 #rg .who .wtr{margin-left:8px;font:inherit;font-weight:700;border:0;border-radius:99px;padding:3px 10px;background:#7c3aed;color:#fff;cursor:pointer}`;
@@ -106,7 +106,9 @@ function end() {
 function start(P, f, inWindow, done) {
   end();
   const { G, AX, AY } = f, R = G.roster, per = P.e.per;
-  const col = { [G.teams.home.id]: colourOf(G.teams.home.ab), [G.teams.away.id]: colourOf(G.teams.away.ab) };
+  // The two colours the replay already chose to contrast (set on #rg), not the raw club colours.
+  const cs = getComputedStyle($('rg')), pick = (v, ab) => cs.getPropertyValue(v).trim() || colourOf(ab);
+  const col = { [G.teams.home.id]: pick('--home', G.teams.home.ab), [G.teams.away.id]: pick('--away', G.teams.away.ab) };
   const at = o => { const p = lg(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
   const remGoal = (() => { const [m, s] = String(P.e.rem || '0:0').split(':').map(Number); return m * 60 + s; })();
@@ -127,9 +129,13 @@ function start(P, f, inWindow, done) {
     for (const o of Object.values(F)) {
       if (!o.playerId) continue;
       const s = at(o), r = R[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a', gk = r.pos === 'G', star = stars.has(Number(o.playerId));
-      out.push(`<circle cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${gk ? 1.7 : star ? 1.6 : 1.35}" fill="${c}" stroke="${gk ? '#0f1a23' : '#fff'}" stroke-width="${star ? .55 : .25}"/>`
-        + `<text class="tn" x="${s.x.toFixed(2)}" y="${s.y.toFixed(2)}" fill="${inkOn(c)}">${esc(o.sweaterNumber)}</text>`);
-      if (Number(o.playerId) === Number(P.e.actor)) out.push(`<text class="who" x="${s.x.toFixed(2)}" y="${(s.y - 2.6).toFixed(2)}" fill="${c}">${esc(r.nm || '')}</text>`);
+      // Home in its colour, away in white with a coloured rim: the away team wears white in the NHL,
+      // and two clubs with similar colours (TBL and NYR) stay apart.
+      const away = Number(o.teamId) === Number(G.teams.away.id);
+      const fill = away ? '#fff' : c, rim = away ? c : (gk ? '#0f1a23' : '#fff'), ink = away ? readableInk(c) : inkOn(c);
+      out.push(`<circle cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${gk ? 1.7 : star ? 1.6 : 1.35}" fill="${fill}" stroke="${rim}" stroke-width="${away ? (star ? .7 : .45) : (star ? .55 : .25)}"/>`
+        + `<text class="tn" x="${s.x.toFixed(2)}" y="${s.y.toFixed(2)}" fill="${ink}">${esc(o.sweaterNumber)}</text>`);
+      if (Number(o.playerId) === Number(P.e.actor)) out.push(`<text class="tsc" x="${s.x.toFixed(2)}" y="${(s.y - 2.6).toFixed(2)}" fill="${c}">${esc(r.nm || '')}</text>`);
     }
     const pk = F['1'];
     if (pk) {
@@ -145,7 +151,7 @@ function start(P, f, inWindow, done) {
     const line = $('playline'); if (line && line.textContent !== SAY) line.textContent = SAY;
     const clk = $('clk'); if (clk) { const r = Math.max(0, Math.floor(remGoal + (tGoal - P.frames[j].timeStamp) / 10)); clk.textContent = `${String(Math.floor(r / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`; }
     if (j >= P.k) { const d = run.done; run.raf = null; if (d) d(); return; }
-    if (!document.querySelector('#play') || (f.playing && !/Pause/.test($('play').textContent))) { end(); return; }
+    if (hold && !/Pause/.test($('play').textContent)) { end(); hold = null; return; }
     run.raf = requestAnimationFrame(tick);
   };
   run.raf = requestAnimationFrame(tick);
@@ -167,7 +173,8 @@ export const tracked = {
   next(i) {
     const f = last;
     if (hold && hold.i === i) { const g = hold.g; hold = null; end(); return g; }
-    if (!f || !f.playing || f.REDUCED) return i + 1;
+    // Only `step()` calls this, and only while playing.
+    if (!f || f.REDUCED) return i + 1;
     const g = goalAhead(f);
     if (g < 0) return i + 1;
     const P = ready(f.EV[g]);
