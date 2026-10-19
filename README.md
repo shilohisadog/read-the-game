@@ -168,7 +168,11 @@ output is **byte-identical**. Exit 0 means `src/` is reproducible from source.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+The code is MIT. See [LICENSE](LICENSE).
 
-NHL game data is the NHL's; it's included here in a single-game excerpt for
-demonstration and verification of the methods described above.
+The MIT licence covers our code only. NHL game data, statistics and marks are
+the NHL's and are not licensed by this repository. A small sample is included
+for testing and to let anyone check the methods above: the league's raw
+documents for one game (`data/pbp_2023020204.json`, `data/box_2023020204.json`)
+and per-game extracts derived from a few others (`data/rich*.json`,
+`test/fixtures/extracts/`).

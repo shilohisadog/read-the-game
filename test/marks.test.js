@@ -13,7 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { eventMarks, puckMark, shotLine } from '../src/lib/marks.js';
+import { eventMarks, puckMark, shotLine, SHOT_LABEL_ROOM_FT } from '../src/lib/marks.js';
 import { isHighDanger, attackDirection, NET_X } from '../src/lib/rink.js';
 import { shootingTeam } from '../src/lib/attribution.js';
 
@@ -160,6 +160,33 @@ test('⛔ …and a miss or a block is not, because it never took that path', () 
     assert.equal(shotLine(e, helpers.place(e), HID, AX), '',
                  `a ${type} was drawn a line to the net`);
   }
+});
+
+test('⭐ the line carries its distance, and the number is the length of the line drawn', () => {
+  /* Two paths to one number: the label is feet from the event's coordinates; the
+     line is drawn in rink units, which are feet. A label on the wrong net, or a
+     distance from the wrong coordinates, would not be the line's own length. */
+  // Both ends through one transform, as the page draws them (rinkart's SX/SY, typed here).
+  const at = e => ({ x: 100 - e.x, y: 42.5 - e.y });
+  let seen = 0;
+  for (const e of G.events.filter(x => (x.type === 'shot-on-goal' || x.type === 'goal') && x.x != null)) {
+    const out = shotLine(e, at(e), HID, AX);
+    const [x1, y1, x2] = /x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)"/.exec(out).slice(1, 4).map(Number);
+    const long = Math.hypot(x2 - x1, 42.5 - y1);
+    const label = /class="shotft"[^>]*>(\d+) ft</.exec(out);
+    if (long < SHOT_LABEL_ROOM_FT - 1) { assert.equal(label, null, `a ${Math.round(long)}-ft line was labelled`); continue; }
+    if (!label) { assert.ok(long < SHOT_LABEL_ROOM_FT + 1, `a ${Math.round(long)}-ft line has no label`); continue; }
+    assert.ok(Math.abs(+label[1] - long) <= 1, `labelled ${label[1]} ft on a line ${long.toFixed(1)} ft long`);
+    seen++;
+  }
+  assert.ok(seen > 5, `only ${seen} labelled shots checked`);
+});
+
+test('⛔ a short shot gets the line and no label', () => {
+  const e = { type: 'shot-on-goal', own: HID, x: 80, y: 0, per: 1 };   // 9 ft
+  const out = shotLine(e, { x: AX(80), y: 42.5 }, HID, AX);
+  assert.match(out, /class="shotline"/);
+  assert.doesNotMatch(out, /shotft/);
 });
 
 test('⛔ …and an event with no place is drawn nothing at all', () => {

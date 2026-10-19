@@ -2,9 +2,9 @@
 
     python3 tools/feed_fields.py ingest            # after the raw archive is pulled
 
-Counts, per season and game type, the face-offs that name the losing player and
-the shot events (on goal, missed, blocked, goals) that name a shot type, plus the
-shot types themselves. A question about what the feed CARRIES is answered here,
+Counts, per season and game type, the face-offs that name the losing player, the
+shot events (on goal, missed, blocked, goals) that name a shot type, the shot types
+themselves, and the goals that carry the league's tracking replay (`pptReplayUrl`). A question about what the feed CARRIES is answered here,
 where the archive is, rather than from a sample (see docs/see-the-shot-3d.md §5).
 """
 import collections, json, pathlib, sys
@@ -25,6 +25,8 @@ def count(pbp, tally, kinds):
         elif t in SHOTS:
             tally["shots"] += 1
             tally[f"{t}"] += 1
+            if t == "goal" and p.get("pptReplayUrl"):
+                tally["goal_with_replay"] += 1
             if d.get("shotType"):
                 tally["shots_with_type"] += 1
                 tally[f"{t}_with_type"] += 1
@@ -62,13 +64,14 @@ def pct(n, d):
 def main(argv):
     by, kinds, absent = survey(argv[1] if len(argv) > 1 else "ingest")
     total = collections.Counter()
-    print(f"{'season-type':12} {'games':>6} {'faceoffs':>9} {'loser':>7} {'shots':>8} {'type':>7}")
+    print(f"{'season-type':12} {'games':>6} {'faceoffs':>9} {'loser':>7} {'shots':>8} {'type':>7} {'goals':>6} {'replay':>7}")
     for k in sorted(by):
         c = by[k]; total.update(c)
         print(f"{k:12} {c['games']:6} {c['faceoffs']:9} {pct(c['faceoffs_with_loser'], c['faceoffs'])} "
-              f"{c['shots']:8} {pct(c['shots_with_type'], c['shots'])}")
+              f"{c['shots']:8} {pct(c['shots_with_type'], c['shots'])} {c['goal']:6} {pct(c['goal_with_replay'], c['goal'])}")
     print(f"{'ALL':12} {total['games']:6} {total['faceoffs']:9} {pct(total['faceoffs_with_loser'], total['faceoffs'])} "
-          f"{total['shots']:8} {pct(total['shots_with_type'], total['shots'])}")
+          f"{total['shots']:8} {pct(total['shots_with_type'], total['shots'])} {total['goal']:6} "
+          f"{pct(total['goal_with_replay'], total['goal'])}")
     for t in sorted(SHOTS):
         print(f"  {t:13} {total[t]:8}  with type {pct(total[t + '_with_type'], total[t])}")
     print("  shot types:", ", ".join(f"{k} {v}" for k, v in kinds.most_common()))
