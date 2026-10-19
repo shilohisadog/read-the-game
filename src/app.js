@@ -1153,7 +1153,7 @@ function render(i,how){
     a step. Same trap `drawLBox` names in its own comment. */
  if(workOpen)renderWork(L,cur,i);
  // LAB ONLY: prototypes listen here (src/lab/lab.js). Never on main.
- if(window.LAB)window.LAB.frame({i,how,cur,EV,G,playing,REDUCED});
+ if(window.LAB)window.LAB.frame({i,how,cur,EV,G,playing,REDUCED,AX,AY});
 }
 /* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
    ⚠️ NAMED IN BOTH PLACES A GOAL IS ANNOUNCED, because there are two. A goal the
@@ -2779,8 +2779,8 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
-function dwell(e){return (window.LAB&&window.LAB.extra?window.LAB.extra(e):0)+(captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs);}   // LAB hook: lab branch only
-function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
+function dwell(e){const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return (window.LAB&&window.LAB.extra?window.LAB.extra(e,b):0)+b;}   // LAB hook: lab branch only
+function step(){if(i>=EV.length-1){stop();return;}set(window.LAB&&window.LAB.next?window.LAB.next(i):i+1,'play');timer=setTimeout(step,dwell(EV[i]));}   // LAB hook: lab branch only
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
    the pre-game frame for a full dwell would answer that with 1.8 seconds of empty
    ice. The opening frame is an orientation, not a countdown -- so Play leaves it
