@@ -1,0 +1,81 @@
+# The league's goal tracking replays for one season, fetched once each into the bucket.
+# Manual: `gh workflow run tracking.yml -f season=2026`. Skips what the bucket holds.
+# Shares derive.yml's raw-archive cache, so the pull fetches only what is new.
+name: tracking
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: "the season's first year, e.g. 2026"
+        required: true
+        default: '2026'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tracking
+  cancel-in-progress: false
+
+env:
+  BUCKET: readthegame
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - name: the raw archive as the last run left it
+        uses: actions/cache@v5
+        with:
+          path: ingest/raw
+          key: derive-raw-${{ github.run_id }}
+          restore-keys: derive-raw-
+      - name: pull this season's raw play-by-play, and list what the bucket already holds
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          SEASON: ${{ inputs.season }}
+        run: |
+          case "$SEASON" in 20[0-9][0-9]) ;; *) echo "::error::season must be a year like 2026"; exit 1;; esac
+          mkdir -p ingest
+          aws configure set default.s3.max_concurrent_requests 4
+          ok=
+          for attempt in 1 2 3; do
+            if aws s3 sync "s3://${BUCKET}/raw/" ingest/raw/ --exclude '*' --include "${SEASON}*" \
+                --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress > pulled.log; then ok=1; break; fi
+            echo "::warning::pull attempt $attempt hit a transient R2 error; retrying"
+            sleep $(( attempt * 20 ))
+          done
+          [ -n "$ok" ] || { echo "::error::the raw archive could not be pulled in three attempts"; exit 1; }
+          aws s3 ls "s3://${BUCKET}/track/${SEASON}" --recursive \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" | awk '{print $4}' > have.txt || : > have.txt
+          echo "games: $(find ingest/raw -maxdepth 1 -name "${SEASON}*" | wc -l); stored already: $(wc -l < have.txt)"
+      - name: fetch the replays not yet stored
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/fetch_tracking.py ingest "${{ inputs.season }}" --have have.txt --delay 0.5 | tee fetched.txt
+          { echo '```'; cat fetched.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: push them to the bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          [ -d ingest/track ] || { echo "nothing new to push"; exit 0; }
+          ok=
+          for attempt in 1 2 3; do
+            if aws s3 sync ingest/track/ "s3://${BUCKET}/track/" --cache-control "public, max-age=86400" \
+                 --content-type application/json \
+                 --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress; then ok=1; break; fi
+            echo "::warning::push attempt $attempt hit a transient R2 error; retrying"
+            sleep $(( attempt * 20 ))
+          done
+          [ -n "$ok" ] || { echo "::error::the replays could not be pushed in three attempts"; exit 1; }
+          echo "pushed $(find ingest/track -name '*.json' | wc -l) files"
