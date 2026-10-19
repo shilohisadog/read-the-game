@@ -4,8 +4,10 @@
 
 Reads each game's raw play-by-play under `ingest/raw/`, takes every goal's
 `pptReplayUrl`, and writes the file it names to `ingest/track/<game>/ev<event>.json`
-unchanged. Keys listed in `--have` (already in the bucket) are skipped, so a rerun
-fetches only what is new. Only `https://wsr.nhle.com/sprites/` addresses are fetched.
+unchanged, and per game `ingest/track/<game>/goals.json`: each goal's event number,
+period, clock and scorer, so the replay can find a goal's file (our extracts do not keep
+the league's event numbers). Keys listed in `--have` (already in the bucket) are skipped,
+so a rerun fetches only what is new. Only `https://wsr.nhle.com/sprites/` addresses are fetched.
 The server refuses requests that do not come from nhl.com, so the request says so.
 Kevin asked the NHL for written permission on 2026-10-19 (docs/status.md).
 """
@@ -34,6 +36,26 @@ def wanted(root, season):
             url = p.get("pptReplayUrl")
             if p.get("typeDescKey") == "goal" and url and url.startswith(PREFIX):
                 out.append((f"track/{gid}/ev{p.get('eventId')}.json", url))
+    return out
+
+
+def goals_index(root, season, stored):
+    """{game: [{ev, per, clock, scorer}]} for every goal whose file is in `stored` (a set of keys)."""
+    root = pathlib.Path(root)
+    store = F.FileStore(root)
+    out = {}
+    for latest in sorted(root.glob(f"raw/{season}*/latest.json")):
+        gid = latest.parent.name
+        d = json.loads(latest.read_text())
+        raw = store.get(F.raw_key(gid, d["play-by-play"], "play-by-play")) if "play-by-play" in d else None
+        if raw is None:
+            continue
+        rows = [{"ev": p.get("eventId"), "per": (p.get("periodDescriptor") or {}).get("number"),
+                 "clock": p.get("timeInPeriod"), "scorer": (p.get("details") or {}).get("scoringPlayerId")}
+                for p in json.loads(raw).get("plays", [])
+                if p.get("typeDescKey") == "goal" and f"track/{gid}/ev{p.get('eventId')}.json" in stored]
+        if rows:
+            out[gid] = rows
     return out
 
 
@@ -94,8 +116,14 @@ def main(argv):
     todo = [(k, u) for k, u in want if k not in have]
     print(f"{len(want)} goals with a tracking replay in {a.season}; {len(want) - len(todo)} already stored; "
           f"fetching {len(todo)}")
-    tally = fetch(todo, F.FileStore(a.root), delay=a.delay)
+    store = F.FileStore(a.root)
+    tally = fetch(todo, store, delay=a.delay)
     print(json.dumps(tally))
+    stored = have | {k for k, _ in todo if store.has(k)}
+    index = goals_index(a.root, a.season, stored)
+    for gid, rows in index.items():
+        store.put(f"track/{gid}/goals.json", json.dumps(rows, separators=(",", ":")).encode())
+    print(f"goal indexes written for {len(index)} games")
     # A refusal on most requests means the server changed its rules; say so loudly.
     if todo and tally["refused"] > len(todo) // 2:
         print("::error::most tracking requests were refused", file=sys.stderr)
