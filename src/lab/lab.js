@@ -7,6 +7,7 @@
  */
 import { shotsAgainst, draw, SEATS } from './crease.js';
 import { colourOf } from '../lib/teams.js';
+import { tracked } from './tracked.js';
 
 const q = new URLSearchParams(location.search);
 const on = new Set((q.get('viz') || '').split(/[ ,+]/).filter(Boolean));
@@ -191,6 +192,7 @@ function goalieButton(f) {
   });
 }
 window.LAB = {
-  frame(f) { last = f; apply(); goalieButton(f); },
-  extra: e => (e && e.type === 'goal' ? GOAL_HOLD : 0),
+  frame(f) { last = f; apply(); goalieButton(f); tracked.frame(f); },
+  extra: (e, base) => (e && e.type === 'goal' ? GOAL_HOLD : 0) + tracked.extra(e, base),
+  next: i => tracked.next(i),
 };
