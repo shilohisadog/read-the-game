@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Tracked Goal</title>
+<link rel="stylesheet" href="../app.css">
+<style>
+:root{--lab:#7c3aed}
+body{margin:0;background:#f4f7fa;color:#0f1a23;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:0}
+main{max-width:980px;margin:0 auto;padding:14px 16px 40px}
+.k{color:var(--lab);font-weight:800;letter-spacing:.1em;font-size:.72rem}
+h1{margin:2px 0 4px;font-size:1.25rem}
+.sub{color:#5b6d7a;margin:0 0 10px}
+#rg{background:none;padding:0}
+#rink{width:100%;height:auto;display:block;background:#fff;border-radius:14px;border:1px solid #d5e0e8}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.ctl button{font:inherit;font-weight:650;min-height:44px;padding:0 16px;border-radius:9px;border:1px solid #d5e0e8;background:#fff;cursor:pointer}
+.ctl button.on{background:#0f1a23;color:#fff;border-color:#0f1a23}
+.ctl input[type=range]{flex:1 1 220px;min-width:160px}
+#clock{font-variant-numeric:tabular-nums;min-width:12ch;color:#5b6d7a}
+#say{min-height:2.6em;margin:4px 0 0;text-align:center;font-weight:650}
+.real{margin-top:14px;color:#5b6d7a;font-size:.9rem}
+.real b{color:#0f1a23}
+.pl text{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.puck{fill:#0e1216;stroke:#fff;stroke-width:.3}
+.trail{fill:none;stroke:#0e1216;stroke-width:.35;opacity:.45;stroke-dasharray:.8 .6}
+.goalflash{font-size:7px;font-weight:900;text-anchor:middle;fill:#c8102e;opacity:.9}
+</style>
+</head>
+<body><main>
+<div class="k">LAB · NOT THE LIVE SITE</div>
+<h1 id="title">A goal, from the league's puck and player tracking</h1>
+<p class="sub" id="who"></p>
+<div id="rg"><svg id="rink" viewBox="0 0 200 85" role="img" aria-label="Rink with tracked players and puck"></svg></div>
+<p id="say"></p>
+<div class="ctl">
+  <button id="play" type="button">▶ Play</button>
+  <button id="back" type="button">◀ 1 s</button>
+  <input id="scrub" type="range" min="0" value="0" step="1" aria-label="Frame">
+  <span id="clock"></span>
+</div>
+<div class="ctl" id="speeds"></div>
+<div class="real">
+<p><b>What's real here.</b> Every dot is a position the NHL's puck and player tracking recorded, 10 times a second: each skater, each goaltender and the puck. Between those tenths nothing is drawn, and the puck's dashed trail joins only its own recorded positions. Names and the score come from the league's play-by-play, as on the replay.</p>
+<p><b>What's not.</b> Tracking exists only around goals (about 14 seconds each). The file is the league's (<code>wsr.nhle.com/sprites/…</code>), fetched once and stored here for this demo.</p>
+</div>
+</main>
+<script type="module">
+import { furniture, netGlyph, SX, SY } from '../lib/rinkart.js';
+import { colourOf, inkOn } from '../lib/teams.js';
+
+const GAME = '2025020002', FILE = './data/track-2025020002-ev481.json';
+const DATA = 'https://data.readthegame.co/extract/' + GAME + '.json';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+const [frames, G] = await Promise.all([fetch(FILE).then(r => r.json()), fetch(DATA).then(r => r.json())]);
+const goal = G.events.find(e => e.type === 'goal' && e.clock === '19:28' && e.per === 1);
+const R = G.roster, HID = G.teams.home.id;
+const col = { [G.teams.home.id]: colourOf(G.teams.home.ab), [G.teams.away.id]: colourOf(G.teams.away.ab) };
+
+/* The tracking file is in 1/12 ft from a corner, its y opposite to the play-by-play's:
+   league feet = (x/12 - 100, 42.5 - y/12). Our extracts turn each period so the home
+   team defends -x; `f` is that turn for this period, read off the goal itself. */
+const lg = o => ({ x: o.x / 12 - 100, y: 42.5 - o.y / 12 });
+const puckAt = k => frames[k].onIce['1'];
+let shotK = 0;
+for (let k = 1; k < frames.length; k++) {
+  const a = puckAt(k - 1), b = puckAt(k);
+  // The first frame the puck is past a goal line, between the posts (3 ft either side).
+  if (a && b && Math.abs(lg(b).x) > 89 && Math.abs(lg(a).x) <= 89 && Math.abs(lg(b).y) <= 3) { shotK = k; break; }
+}
+const f = Math.sign(goal.x) === Math.sign(lg(puckAt(shotK)).x) ? 1 : -1;
+const at = o => { const p = lg(o); return { x: SX(f * p.x), y: SY(f * p.y) }; };
+const t0 = frames[0].timeStamp;
+
+const ab = id => (id === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
+const nm = id => (R[id] || {}).nm || '';
+$('who').textContent = `${ab(G.teams.away.id)} at ${ab(HID)} · ${nm(goal.actor)} scores, period 1, ${goal.clock} — `
+  + `a ${goal.st || 'shot'}${goal.a1 ? ', assisted by ' + nm(goal.a1) : ''}${goal.a2 ? ' and ' + nm(goal.a2) : ''}`;
+
+const svg = $('rink');
+const base = furniture('t', true)
+  + netGlyph('t', SX(-89), colourOf(G.teams.home.ab), '') + netGlyph('t', SX(89), colourOf(G.teams.away.ab), '');
+const scrub = $('scrub'); scrub.max = frames.length - 1;
+
+function draw(k) {
+  const F = frames[k].onIce, out = [base];
+  // The puck's own recorded positions over the last second.
+  const pts = [];
+  for (let j = Math.max(0, k - 10); j <= k; j++) { const p = puckAt(j); if (p) { const q = at(p); pts.push(q.x.toFixed(2) + ',' + q.y.toFixed(2)); } }
+  if (pts.length > 1) out.push(`<polyline class="trail" points="${pts.join(' ')}"/>`);
+  for (const o of Object.values(F)) {
+    if (!o.playerId) continue;
+    const p = at(o), r = R[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a';
+    const g = r.pos === 'G';
+    out.push(`<g class="pl"><circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${g ? 1.7 : 1.35}" fill="${c}" stroke="${g ? '#0f1a23' : '#fff'}" stroke-width="${g ? .35 : .25}"/>`
+      + `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" fill="${inkOn(c)}">${esc(o.sweaterNumber)}</text></g>`);
+  }
+  const pk = puckAt(k);
+  if (pk) { const q = at(pk); out.push(`<circle class="puck" cx="${q.x.toFixed(2)}" cy="${q.y.toFixed(2)}" r=".6"/>`); }
+  if (shotK && k >= shotK) out.push(`<text class="goalflash" x="100" y="12">GOAL</text>`);
+  svg.innerHTML = out.join('');
+  const s = (frames[k].timeStamp - t0) / 10, toGo = shotK ? (frames[shotK].timeStamp - frames[k].timeStamp) / 10 : null;
+  $('clock').textContent = `${s.toFixed(1)} s` + (toGo != null ? (toGo > 0 ? ` · goal in ${toGo.toFixed(1)} s` : ' · goal') : '');
+  $('say').textContent = shotK && k >= shotK ? `${nm(goal.actor)} scores — the puck crosses the goal line.`
+    : k < 60 ? 'The puck is on the face-off dot; the players line up.' : '';
+  scrub.value = k;
+}
+
+let k = 0, timer = null, speed = 1;
+const SPEEDS = [[1, 'Real time'], [0.5, '½ speed'], [0.25, '¼ speed']];
+for (const [v, label] of SPEEDS) {
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+  b.onclick = () => { speed = v; [...$('speeds').children].forEach(x => x.classList.toggle('on', x === b)); if (timer) { stop(); go(); } };
+  if (v === 1) b.classList.add('on');
+  $('speeds').appendChild(b);
+}
+function stop() { clearInterval(timer); timer = null; $('play').textContent = '▶ Play'; }
+function go() {
+  if (k >= frames.length - 1) k = 0;
+  $('play').textContent = '❚❚ Pause';
+  timer = setInterval(() => { k++; draw(k); if (k >= frames.length - 1) stop(); }, 100 / speed);
+}
+$('play').onclick = () => (timer ? stop() : go());
+$('back').onclick = () => { stop(); k = Math.max(0, k - 10); draw(k); };
+scrub.oninput = () => { stop(); k = +scrub.value; draw(k); };
+draw(0);
+</script>
+</body>
+</html>
