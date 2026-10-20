@@ -115,7 +115,11 @@ function start(P, f, inWindow, done) {
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
   const tags = inWindow.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10, shown: null }));
   $('rg').classList.add('labtrk');
-  const SAY = 'Tracked: every player and the puck, 10 times a second · ½ speed';
+  // Kevin: own it — name the goal, and say the strength in words, not only on the scoreboard.
+  const sc = R[P.e.actor] || {}, ab = t => (t === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
+  const WHO = `Tracked \u00b7 #${sc.n || ''} ${sc.nm || ''}\u2019s goal`;
+  const SAY = `The last ${Math.round(P.before)} seconds before the goal: every player and the puck, `
+    + `10 times a second, at half speed.${strength(P.e, G, ab)}`;
   const began = performance.now();
   run = { done };
   const tick = now => {
@@ -149,6 +153,7 @@ function start(P, f, inWindow, done) {
     const g = layer(); if (g) g.innerHTML = out.join('');
     $('rg').classList.add('labtrk');
     const line = $('playline'); if (line && line.textContent !== SAY) line.textContent = SAY;
+    const who = $('who'); if (who && who.textContent !== WHO) { who.textContent = WHO; who.className = 'who plain'; }
     const clk = $('clk'); if (clk) { const r = Math.max(0, Math.floor(remGoal + (tGoal - P.frames[j].timeStamp) / 10)); clk.textContent = `${String(Math.floor(r / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`; }
     if (j >= P.k) { const d = run.done; run.raf = null; if (d) d(); return; }
     if (hold && !/Pause/.test($('play').textContent)) { end(); hold = null; return; }
@@ -156,6 +161,18 @@ function start(P, f, inWindow, done) {
   };
   run.raf = requestAnimationFrame(tick);
   return (P.before * 1000) / SPEED;
+}
+
+/** " NYR has a power play: 5 skaters to TBL's 4." from the goal's own situation code, or "". */
+function strength(e, G, ab) {
+  const [ag, as, hs, hg] = String(e.sit || '').split('').map(Number);
+  if (![ag, as, hs, hg].every(Number.isFinite)) return '';
+  const home = e.own === G.teams.home.id, us = home ? G.teams.home.id : G.teams.away.id, them = home ? G.teams.away.id : G.teams.home.id;
+  const mine = home ? hs : as, theirs = home ? as : hs, theirG = home ? ag : hg;
+  if (theirG === 0) return ` ${ab(them)} has pulled its goaltender: the net is empty.`;
+  if (mine > theirs) return ` ${ab(us)} has a power play: ${mine} skaters to ${ab(them)}\u2019s ${theirs}.`;
+  if (mine < theirs) return ` ${ab(us)} is short-handed: ${mine} skaters to ${ab(them)}\u2019s ${theirs}.`;
+  return '';
 }
 
 /* ---------------------------------------------------------------- the hooks */
