@@ -14,7 +14,8 @@
 import { colourOf, inkOn, readableInk } from '../lib/teams.js';
 
 const ORIGIN = 'https://data.readthegame.co';
-export const SPEED = 0.25;
+const SPEEDS = [[0.25, '¼', 'at a quarter of real speed'], [0.5, '½', 'at half speed'], [1, 'Real time', 'in real time']];
+let speed = (() => { const v = Number(new URLSearchParams(location.search).get('speed')); return SPEEDS.some(x => x[0] === v) ? v : 0.25; })();
 const LOOKAHEAD_S = 40;          // start loading a goal's file this far ahead, in game seconds
 const TAG_MS = 1600;
 const WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Missed the net', 'blocked-shot': 'Blocked',
@@ -120,12 +121,12 @@ function start(P, f, inWindow, done) {
   const sc = R[P.e.actor] || {}, ab = t => (t === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
   const WHO = `Tracked \u00b7 #${sc.n || ''} ${sc.nm || ''}\u2019s goal`;
   const SAY = `The last ${Math.round(P.before)} seconds before the goal: every player and the puck, `
-    + `10 times a second, at a quarter of real speed.${strength(P.e, G, ab)}`;
-  const began = performance.now();
+    + `10 times a second, ${SPEEDS.find(x => x[0] === speed)[2]}.${strength(P.e, G, ab)}`;
+  const began = performance.now(), sp = speed;
   run = { done };
   const tick = now => {
     if (!run) return;
-    const tt = t0 + ((now - began) / 1000) * SPEED * 10;          // tracked time, in tenths
+    const tt = t0 + ((now - began) / 1000) * sp * 10;          // tracked time, in tenths
     let j = 0; while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
     const F = P.frames[j].onIce, out = [];
     for (const o of Object.values(F)) {
@@ -158,7 +159,7 @@ function start(P, f, inWindow, done) {
     run.raf = requestAnimationFrame(tick);
   };
   run.raf = requestAnimationFrame(tick);
-  return (P.before * 1000) / SPEED;
+  return (P.before * 1000) / sp;
 }
 
 /** " NYR has a power play: 5 skaters to TBL's 4." from the goal's own situation code, or "". */
@@ -199,7 +200,7 @@ export const tracked = {
     if (!P || !nxt || nxt.s < f.EV[g].s - P.before) return i + 1;
     const inWindow = f.EV.slice(i + 1, g).filter(e => WORDS[e.type]);
     const ms = start(P, f, inWindow, () => {});
-    hold = { i, g, ms };
+    hold = { i, g, P, inWindow, ms };
     return i;
   },
   extra(e, base) {
@@ -250,7 +251,7 @@ const goals = {
     while (j > i && f.EV[j].s >= f.EV[g].s - P.before) j--;
     j = Math.max(j, i);
     const inWindow = f.EV.slice(j + 1, g).filter(e => WORDS[e.type]);
-    hold = { i: j, g, ms: start(P, f, inWindow, () => {}) };
+    hold = { i: j, g, P, inWindow, ms: start(P, f, inWindow, () => {}) };
     return j;
   },
   // The next two goals' files load while this one plays.
@@ -308,9 +309,31 @@ const goals = {
         + '<button type="button" class="spd" data-m="goals">Goals</button>';
       play.insertAdjacentElement('afterend', d);
       d.onclick = ev => { const m = ev.target.dataset && ev.target.dataset.m; if (m) this.set(m === 'goals'); };
-      this.ui = d;
+      const v = document.createElement('div');
+      v.className = 'grp labmode'; v.setAttribute('role', 'group'); v.setAttribute('aria-label', 'Speed of the tracking');
+      v.innerHTML = '<span>Speed</span>' + SPEEDS.map(([x, w]) => `<button type="button" class="spd" data-v="${x}">${w}</button>`).join('');
+      d.insertAdjacentElement('afterend', v);
+      v.onclick = ev => { const x = ev.target.dataset && ev.target.dataset.v; if (x) this.speed(Number(x)); };
+      this.ui = d; this.sp = v;
     }
     for (const b of this.ui.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.m === 'goals') === this.on));
+    for (const b of this.sp.querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === speed));
+    const rg = $('rg'); if (rg) rg.classList.toggle('labgoals', this.on);
+  },
+  // A new speed restarts the goal being tracked at that speed, so the hold matches what plays.
+  speed(v) {
+    if (v === speed) return;
+    speed = v;
+    const u = new URL(location.href);
+    if (v !== 0.25) u.searchParams.set('speed', String(v)); else u.searchParams.delete('speed');
+    history.replaceState(history.state, '', u);
+    this.draw();
+    if (run && hold && !hold.wait && last && /Pause/.test($('play').textContent)) {
+      const h = hold;
+      $('play').click();                                          // pause: the app drops its timer
+      hold = { ...h, ms: start(h.P, last, h.inWindow, () => {}) };
+      $('play').click();                                          // play: the app asks dwell() again
+    }
   },
   set(on) {
     if (on === this.on) return;
@@ -327,4 +350,6 @@ const goals = {
 css.textContent += `
 #rg .labmode{display:inline-flex;align-items:center;gap:0}
 #rg .labmode span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;margin:0 6px 0 4px}
-#rg .labmode button[aria-pressed="true"]{background:#7c3aed;color:#fff;border-color:#7c3aed}`;
+#rg .labmode button,#rg .labmode button[aria-pressed="true"]{color:#0f1a23}
+#rg.labgoals .evn,#rg.labgoals .whn,#rg.labgoals .zsn,#rg.labgoals .shotft{display:none}
+#rg.labgoals.labtrk #events,#rg.labgoals.labtrk #lines,#rg.labgoals.labtrk #puck,#rg.labgoals.labtrk #labels,#rg.labgoals.labtrk #cue,#rg.labgoals.labtrk #draws,#rg.labgoals.labtrk #whistles,#rg.labgoals.labtrk #netmen{display:none}`;
