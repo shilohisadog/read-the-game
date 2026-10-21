@@ -1,7 +1,7 @@
 /**
  * LAB — the tracked goal. While the replay plays, a goal with a league tracking
  * file is shown from it: on the step into the ~9 s before the goal, every
- * tracked player and the puck are laid over the same rink at half speed, the
+ * tracked player and the puck are laid over the same rink at quarter speed, the
  * play's marks dim and their numbers go, the clock counts down with it, and the recorded events in
  * that window are tagged as the clock passes them. At the goal-line crossing it
  * hands back to the replay's goal frame. Stepping or scrubbing onto a goal offers
@@ -14,7 +14,7 @@
 import { colourOf, inkOn, readableInk } from '../lib/teams.js';
 
 const ORIGIN = 'https://data.readthegame.co';
-export const SPEED = 0.5;
+export const SPEED = 0.25;
 const LOOKAHEAD_S = 40;          // start loading a goal's file this far ahead, in game seconds
 const TAG_MS = 1600;
 const WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Missed the net', 'blocked-shot': 'Blocked',
@@ -119,7 +119,7 @@ function start(P, f, inWindow, done) {
   const sc = R[P.e.actor] || {}, ab = t => (t === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
   const WHO = `Tracked \u00b7 #${sc.n || ''} ${sc.nm || ''}\u2019s goal`;
   const SAY = `The last ${Math.round(P.before)} seconds before the goal: every player and the puck, `
-    + `10 times a second, at half speed.${strength(P.e, G, ab)}`;
+    + `10 times a second, at a quarter of real speed.${strength(P.e, G, ab)}`;
   const began = performance.now();
   run = { done };
   const tick = now => {
