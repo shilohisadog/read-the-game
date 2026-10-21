@@ -803,7 +803,9 @@ function drawClip(at){
     only by someone who pressed. A recap that autoplayed at the horn would have
     been the same feature and an entirely different bargain. */
  const recap=G.recap;
- if(at>=EV.length-1&&recap!=null){
+ // While the whole-game summary is open the box is the whole game too, like the board
+ // (`drawBoard`): its recap button opened an empty box on a link that lands at pre-game.
+ if((at>=EV.length-1||sumOpen)&&recap!=null){
   if(b.dataset.id!==String(recap)){shutClip();b.dataset.id=String(recap);}
   b.hidden=false;
   $('clipDur').textContent='NHL.com';
@@ -3076,7 +3078,8 @@ function setOverlay(which){
  if(which&&playing)stop();
  if(archOpen)renderAlot();
  if(sumOpen)renderSum();
- drawBoard(EV[i],lens(i));}
+ drawBoard(EV[i],lens(i));
+ drawClip(i);}
 function setWork(open){setOverlay(open?'work':null);}
 $('work').onclick=()=>{setWork(!workOpen);if(workOpen)render(i,'');};
 $('alot').onclick=()=>setOverlay(archOpen?null:'alot');

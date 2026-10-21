@@ -25,7 +25,7 @@
  *   node builders/health.mjs            rewrite the block
  *   node builders/health.mjs --check    fail if the block is stale (no network)
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join, dirname } from 'node:path';
@@ -47,7 +47,7 @@ const SHUT = '<!-- /health -->';
  * stderr is captured for both. `unittest` writes "Ran N tests" to stderr, and
  * reading only stdout gave a confident `NaN` in the generated line.
  */
-export function suiteCounts() {
+export function suiteCounts(jsFrom = null) {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts;
   /* ⛔⛔⛔ A FAILING SUITE IS A COUNT, NOT A CRASH — AND THIS COST A NIGHT.
      `execFileSync` throws on a non-zero exit, so the first test failure killed
@@ -73,7 +73,10 @@ export function suiteCounts() {
       return typeof e.stdout === 'string' ? e.stdout : '';
     }
   };
-  const js = run(pkg.test);
+  /* `--js-from <file>`: the JS suite's output from a run the gates already made (the clock
+     sweep's first pass), read once and deleted, so the suite is not run a fourth time. */
+  let js;
+  if (jsFrom) { js = readFileSync(jsFrom, 'utf8'); rmSync(jsFrom); } else js = run(pkg.test);
   const py = run(pkg['test:py']);
   const num = (out, re) => { const m = out.match(re); return m ? Number(m[1]) : null; };
   return {
@@ -213,7 +216,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) main();
 async function main() {
 const check = process.argv.includes('--check');
 const doc = readFileSync(DOC, 'utf8');
-const counts = suiteCounts();
+const at = process.argv.indexOf('--js-from');
+const counts = suiteCounts(at > 0 ? process.argv[at + 1] : null);
 
 if (check) {
   // OFFLINE ON PURPOSE. This runs inside `npm run gates`, and a gate that needs

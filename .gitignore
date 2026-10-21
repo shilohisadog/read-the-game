@@ -46,3 +46,4 @@ ingest/
 
 # per-page documents written by builders/page-docs.mjs in the pipeline
 /pages/
+.suite-out.tap

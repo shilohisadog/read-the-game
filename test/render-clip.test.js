@@ -497,6 +497,20 @@ test('⛔ one frame back, the goal clip is the offer again', () => {
     'the whole-game recap is still on offer before the game has ended');
 });
 
+test('the summary opened before the horn offers the recap, and Hide takes it back', () => {
+  /* Kevin, 2026-10-21, from his own X post: a summary link lands at pre-game, and the
+     summary's "Watch the league's recap" opened an empty box. MUTATION: drop `||sumOpen`
+     in `drawClip` and this fires. */
+  const a = boot(withRecap(RECAP));
+  seek(a, 0);
+  a.$('sum').click();
+  assert.equal(String(a.$('clipbox').dataset.id), String(RECAP), 'the summary is open and the box is not the recap');
+  assert.equal(a.$('clipbox').hidden, false);
+  assert.match(a.$('clipSay').textContent, /whole game/i);
+  a.$('sum').click();
+  assert.notEqual(String(a.$('clipbox').dataset.id), String(RECAP), 'Hide left the recap on a frame before the horn');
+});
+
 test('⛔⛔ a game with no recap is exactly as it was — which is every game today', () => {
   /* MUTATION: drop the `recap != null` test in `drawClip` and this fires, because
      the box would point at `undefined` on every archived game at the horn. */
