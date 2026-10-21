@@ -17,9 +17,10 @@ const ORIGIN = 'https://data.readthegame.co';
 const SPEEDS = [[0.25, '¼', 'at a quarter of real speed'], [0.5, '½', 'at half speed'], [1, 'Real time', 'in real time']];
 let speed = (() => { const v = Number(new URLSearchParams(location.search).get('speed')); return SPEEDS.some(x => x[0] === v) ? v : 0.25; })();
 const LOOKAHEAD_S = 40;          // start loading a goal's file this far ahead, in game seconds
-const TAG_MS = 1600;
 const WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Missed the net', 'blocked-shot': 'Blocked',
-  hit: 'Hit', giveaway: 'Giveaway', takeaway: 'Takeaway', faceoff: 'Face-off' };
+  hit: 'Hit', giveaway: 'Gave the puck away', takeaway: 'Took the puck away', faceoff: 'Face-off' };
+// An event's label stays up for this much GAME time, so it is readable at every speed.
+const TAG_TENTHS = 15;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -105,7 +106,49 @@ function end() {
 }
 
 /** Lay the plan over the rink from the file's first frame to the goal line, then call `done`. */
-function start(P, f, inWindow, done) {
+/** The league's recorded events in the tracked seconds before the goal, oldest first. */
+function windowOf(P, EV) {
+  const gi = EV.indexOf(P.e);
+  return EV.slice(0, gi < 0 ? 0 : gi).filter(e => e.per === P.e.per && e.s >= P.e.s - P.before && WORDS[e.type]);
+}
+
+/* Where an event happened, in words: behind a net, in a team's end, or the middle of the ice.
+   Our extract has the home team defending -x in every period; the goal line is 89 ft out,
+   the blue lines 25 ft. */
+function placeOf(e, G) {
+  if (e.x == null) return '';
+  const end = e.x < 0 ? G.teams.home.ab : G.teams.away.ab;
+  if (Math.abs(e.x) > 89) return ` behind the ${end} net`;
+  if (Math.abs(e.x) > 25) return ` in the ${end} end`;
+  return ' in the middle of the ice';
+}
+
+/** "Recorded by the league in these 9 seconds: a hit by #14 Laferriere (LAK) behind the WSH net." */
+function recorded(P, G, win) {
+  const R = G.roster, who = id => { const p = R[id]; if (!p) return null;
+    const ab = p.tid === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab;
+    return `#${p.n} ${p.nm} (${ab})`; };
+  const said = win.map(e => {
+    const a = who(e.actor), at = placeOf(e, G);
+    if (!a) return null;
+    switch (e.type) {
+      case 'hit': return `a hit by ${a}${at}`;
+      case 'giveaway': return `${a} gave the puck away${at}`;
+      case 'takeaway': return `${a} took the puck away${at}`;
+      case 'shot-on-goal': return `a shot by ${a} that the goaltender stopped`;
+      case 'missed-shot': return `a shot by ${a} that missed the net`;
+      case 'blocked-shot': { const b = who(e.blk); return b ? `a shot by ${a}, blocked by ${b}` : `a shot by ${a} that was blocked`; }
+      case 'faceoff': return `a face-off${at}, won by ${a}`;
+      default: return null;
+    }
+  }).filter(Boolean);
+  const secs = Math.round(P.before);
+  if (!said.length) return ` The league recorded nothing else in these ${secs} seconds: watch the puck.`;
+  return ` Recorded by the league in these ${secs} seconds: ${said.join('; then ')}.`;
+}
+
+function start(P, f, _inWindow, done) {
+  const inWindow = windowOf(P, f.EV);
   end();
   const { G, AX, AY } = f, R = G.roster, per = P.e.per;
   // The two colours the replay already chose to contrast (set on #rg), not the raw club colours.
@@ -115,13 +158,13 @@ function start(P, f, inWindow, done) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
   const remGoal = (() => { const [m, s] = String(P.e.rem || '0:0').split(':').map(Number); return m * 60 + s; })();
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
-  const tags = inWindow.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10, shown: null }));
+  const tags = inWindow.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10 }));
   $('rg').classList.add('labtrk');
   // Kevin: own it — name the goal, and say the strength in words, not only on the scoreboard.
   const sc = R[P.e.actor] || {}, ab = t => (t === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
   const WHO = `Tracked \u00b7 #${sc.n || ''} ${sc.nm || ''}\u2019s goal`;
   const SAY = `The last ${Math.round(P.before)} seconds before the goal: every player and the puck, `
-    + `10 times a second, ${SPEEDS.find(x => x[0] === speed)[2]}.${strength(P.e, G, ab)}`;
+    + `10 times a second, ${SPEEDS.find(x => x[0] === speed)[2]}.${strength(P.e, G, ab)}${recorded(P, G, inWindow)}`;
   const began = performance.now(), sp = speed;
   run = { done };
   const tick = now => {
@@ -145,8 +188,7 @@ function start(P, f, inWindow, done) {
       const s = at(pk);
       out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r=".6"/>`);
       for (const t of tags) {
-        if (t.shown == null && tt >= t.at) t.shown = now;
-        if (t.shown != null && now - t.shown < TAG_MS) out.push(`<text class="tag" x="${s.x.toFixed(2)}" y="${(s.y + 4).toFixed(2)}">${esc(WORDS[t.e.type] || '')}</text>`);
+        if (tt >= t.at && tt < t.at + TAG_TENTHS) out.push(`<text class="tag" x="${s.x.toFixed(2)}" y="${(s.y + 4).toFixed(2)}">${esc(WORDS[t.e.type] || '')}</text>`);
       }
     }
     const g = layer(); if (g) g.innerHTML = out.join('');
