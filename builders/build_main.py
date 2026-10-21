@@ -761,7 +761,9 @@ LIB = ["rink.js", "registry.js", "attribution.js", "layer.js", "strength.js", "b
        "announce.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js", "layers/zonestart.js", "layers/shooters.js", "layers/faceoffs.js",
-       # The color line. AFTER stretch.js and the whistle and goaltending layers it reads.
+       # How a review of a goal ended. AFTER layer.js, which it imports.
+       "challenge.js",
+       # The color line. AFTER stretch.js, challenge.js and the whistle and goaltending layers it reads.
        "color.js",
        # BEFORE sentence.js, which asks it which competition a game is.
        "competitions.js",

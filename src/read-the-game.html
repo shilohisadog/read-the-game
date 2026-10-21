@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DqCsU+5GGX1wBP3JqQYVLEvz9MOz8aBLQKrBMz4oS+w=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-c8AqNTr5usCgN21V6gMXqaEHRthEb9l1eZUEYur532o='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-siyHIoAJMOS0VQPaueT0SUzZPSchzyG4Rl7w40FEqMI=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-c8AqNTr5usCgN21V6gMXqaEHRthEb9l1eZUEYur532o='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3110,6 +3110,80 @@ const faceoffs = {
 
 
 
+const KIND = /^chlg-(hm|vis|league)-(off-side|goal-interference|missed-stoppage)$/;
+const LOST = 'delaying-game-unsuccessful-challenge';
+const RULING_WORDS = { 'high-stick': 'a high stick on the puck', 'hand-pass': 'a hand pass',
+  'puck-in-benches': 'the puck went into a bench' };
+const NOT_A_TARGET = new Set(['goal', 'game-end']);
+
+function challenges(ev, ctx) {
+  const out = [];
+  ev.forEach((e, n) => {
+    if (e.type !== 'stoppage') return;
+    const m = [e.rsn, e.rsn2].map(r => KIND.exec(r || '')).find(Boolean);
+    if (!m) return;
+    const [, who, kind] = m;
+    const challenger = who === 'hm' ? ctx.homeId : who === 'vis' ? ctx.awayId : null;
+    let from = n - 1;
+    while (from >= 0 && ev[from].type !== 'faceoff' && ev[from].type !== 'period-start') from--;
+    const same = [];
+    for (let k = n + 1; k < ev.length && ev[k].per === e.per && ev[k].s === e.s; k++) same.push(k);
+    const goal = [...ev.slice(from + 1, n).map((x, j) => x.type === 'goal' ? from + 1 + j : -1), ...same.filter(k => ev[k].type === 'goal')]
+      .filter(k => k >= 0).pop();
+    const penalty = same.find(k => ev[k].type === 'penalty' && ev[k].pen === LOST);
+    const ruling = same.map(k => ev[k]).find(x => x.type === 'stoppage' && !KIND.test(x.rsn || '') && x.rsn !== 'tv-timeout');
+    const g = goal != null ? ev[goal] : null;
+    let outcome, scorer;
+    if (challenger == null) { outcome = g ? 'stood' : 'off'; scorer = g ? g.own : null; }
+    else if (g && g.own === challenger) { outcome = 'awarded'; scorer = challenger; }
+    else if (g) { outcome = 'stood'; scorer = g.own; }
+    else if (penalty != null) { outcome = 'stayed-off'; scorer = challenger; }
+    else { outcome = 'off'; scorer = challenger === ctx.homeId ? ctx.awayId : ctx.homeId; }
+    let target = null;
+    for (let k = n + 1; k < ev.length && ev[k].per === e.per; k++)
+      if (framed(ev[k]) && !NOT_A_TARGET.has(ev[k].type)) { target = k; break; }
+    const onGoal = target == null && goal != null;
+    out.push({ at: n, kind, who, challenger, scorer, outcome, ruling: ruling ? ruling.rsn : null,
+      goal: goal ?? null, penalty: penalty ?? null, target: onGoal ? goal : target, onGoal });
+  });
+  return out;
+}
+
+const CLAIM = {
+  'off-side': () => 'the play was offside before the goal',
+  'goal-interference': s => `a ${s} player interfered with the goaltender`,
+  'missed-stoppage': () => 'play should already have been stopped before the goal',
+};
+const FOUND = {
+  'off-side': () => 'the play was offside',
+  'goal-interference': s => `a ${s ? s + ' ' : ''}player interfered with the goaltender`,
+  'missed-stoppage': (s, r) => `play should have been stopped${RULING_WORDS[r] ? ` (${RULING_WORDS[r]})` : ''}`,
+};
+const ABOUT = { 'off-side': 'offside', 'goal-interference': 'interference with the goaltender',
+  'missed-stoppage': 'a missed stoppage' };
+
+function challengeSay(r, ab, score, ctx) {
+  const S = r.scorer != null ? ab(r.scorer) : '', C = r.challenger != null ? ab(r.challenger) : '';
+  const lost = ` and ${C} takes a two-minute penalty for losing the challenge.`;
+  const h = score[ctx.homeId], a = score[ctx.awayId];
+  const tally = h === a ? `The score stays tied, ${h}–${a}.`
+    : `${h > a ? ctx.homeAb : ctx.awayAb} still leads ${Math.max(h, a)}–${Math.min(h, a)}.`;
+  const cameOff = `The review determined ${FOUND[r.kind](S, r.ruling)}, so the goal came off. ${tally}`;
+  if (r.who === 'league')
+    return r.outcome === 'off' ? `The league reviewed a goal for ${ABOUT[r.kind]}. ${cameOff}`
+      : `The league reviewed ${S}'s goal for ${ABOUT[r.kind]}. The review concluded the goal stands.`;
+  if (r.outcome === 'off') return `${S} scored, but ${C} challenged that ${CLAIM[r.kind](S)}. ${cameOff}`;
+  if (r.outcome === 'stood')
+    return `${S} scored, and ${C} challenged that ${CLAIM[r.kind](S)}. The review concluded the goal stands`
+      + (r.penalty != null ? `,${lost}` : '.');
+  const own = `${C} challenged to have its goal count; the question was ${ABOUT[r.kind]}.`;
+  return r.outcome === 'awarded' ? `${own} The review concluded the goal counts.`
+    : `${own} The review concluded the goal does not count,${lost}`;
+}
+
+
+
+
 
 
 
@@ -3168,6 +3242,16 @@ function colorNotes(game, ctx, rates) {
     ? { events: census.runLength.events.p75, secs: census.runLength.secs.p90 } : null;
   const icing = new Map(icingRestarts(ev, ctx).map(r => [r.event, r]));
   const PLAYS = plays(ev);
+  const REVIEWS = challenges(ev, ctx), REVIEWED = new Set(REVIEWS.map(r => ev[r.at]));
+  const reviewAt = new Map(REVIEWS.filter(r => r.target != null).map(r => [r.target, r]));
+  const strengthAfter = (n, until) => {
+    const next = ev.slice(n + 1).find(x => x.sit && x.type !== 'penalty');
+    const sit = next && next.sit;
+    const short = sit && sit[1] !== sit[2] ? (+sit[1] < +sit[2] ? ctx.awayId : ctx.homeId) : null;
+    if (short != null) return ` ${ab(short)} plays with fewer skaters ${until}: a "power play" for ${ab(other(short))}.`
+      + (pp ? ` Over the last three seasons, about 1 power play in ${pp} ended in a goal.` : '');
+    return sit ? ' Both teams keep the same number of skaters.' : '';
+  };
 
   const notes = new Map();
   const score = { [ctx.homeId]: 0, [ctx.awayId]: 0 };
@@ -3197,6 +3281,11 @@ function colorNotes(game, ctx, rates) {
         + `all shot attempts ${A} ${tally.att[aid]}, ${H} ${tally.att[hid]}; shots from the slot ${A} ${tally.slot[aid]}, ${H} ${tally.slot[hid]}.`;
       endedPeriod = 0;
     }
+    const review = reviewAt.get(n);
+    if (!say && review && !review.onGoal) {
+      say = challengeSay(review, ab, score, ctx);
+      if (review.penalty === n) say += strengthAfter(n, 'for those two minutes');
+    }
     if (!say && e.type === 'goal' && shooter) {
       score[shooter]++;
       const s = score[shooter], o = score[other(shooter)], t = ab(shooter);
@@ -3204,17 +3293,12 @@ function colorNotes(game, ctx, rates) {
         : s > o ? `${t} now leads ${s}–${o}.` : `${t} pulls within ${o - s}, ${s}–${o}.`;
       if (run && run.end === (shooter === aid ? 'h' : 'a'))
         say += ` The puck had stayed in the ${ab(other(shooter))} end for ${run.marks} events in a row before it went in.`;
+      if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     if (!say && e.type === 'penalty' && e.own != null) {
-      const next = ev.slice(n + 1).find(x => x.sit && x.type !== 'penalty');
-      const sit = next && next.sit;
-      const short = sit && sit[1] !== sit[2] ? (+sit[1] < +sit[2] ? aid : hid) : null;
       const who = (ctx.roster[e.actor] || {}).nm;
-      say = `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${countOf(e.min || 2, 'minute')}.`;
-      if (short != null) {
-        say += ` ${ab(short)} plays with fewer skaters until then: a "power play" for ${ab(other(short))}.`;
-        if (pp) say += ` Over the last three seasons, about 1 power play in ${pp} ended in a goal.`;
-      } else if (sit) say += ' Both teams keep the same number of skaters.';
+      say = `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${countOf(e.min || 2, 'minute')}.`
+        + strengthAfter(n, 'until then');
     }
     if (!say && e.type === 'faceoff' && icing.has(e)) {
       const off = icing.get(e).offender, tid = off === A ? aid : off === H ? hid : null;
@@ -3226,7 +3310,7 @@ function colorNotes(game, ctx, rates) {
         if (mine.length) say = `${off} may not change players for this face-off${secs}.`
           + `${fresh ? ` ${ab(other(tid))} sent out ${countOf(fresh, 'fresh skater')}.` : ''}`;
       }
-    } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn)
+    } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn) && !REVIEWED.has(lastStop)
                && !toldWhy.has(lastStop.rsn) && WHY[lastStop.rsn] && WHY[lastStop.rsn].say
                && lastStop.per === e.per && lastStop.s === e.s) {
       toldWhy.add(lastStop.rsn);

@@ -5,7 +5,7 @@
  * play by play guy"). Drafted and read as `docs/color-script.md` first.
  *
  * One note at most per frame; silence is normal. When several apply, the first in
- * this order wins: goal, penalty, restart, slot shot, long run, shift clock, zone
+ * this order wins: how a review of a goal ended, goal, penalty, restart, slot shot, long run, shift clock, zone
  * stretch, the score between periods. A long run waits for the first free frame. The order is our editorial choice, declared here.
  * A shot on goal, a miss or a goal also opens with its type and distance ("A wrist
  * shot from 34 feet."). A blocked shot never does: the league records neither its
@@ -16,6 +16,7 @@
  * the typical shift and lets the viewer see it.
  */
 import { corsiTeam } from './attribution.js';
+import { challenges, challengeSay } from './challenge.js';
 import { framed, inShootout } from './layer.js';
 import { isHighDangerEvent } from './layers/goaltending.js';
 import { WHY, icingRestarts } from './layers/whistle.js';
@@ -86,6 +87,17 @@ export function colorNotes(game, ctx, rates) {
     ? { events: census.runLength.events.p75, secs: census.runLength.secs.p90 } : null;
   const icing = new Map(icingRestarts(ev, ctx).map(r => [r.event, r]));
   const PLAYS = plays(ev);
+  const REVIEWS = challenges(ev, ctx), REVIEWED = new Set(REVIEWS.map(r => ev[r.at]));
+  const reviewAt = new Map(REVIEWS.filter(r => r.target != null).map(r => [r.target, r]));
+  // What a penalty leaves on the ice, from the next situation code the record carries.
+  const strengthAfter = (n, until) => {
+    const next = ev.slice(n + 1).find(x => x.sit && x.type !== 'penalty');
+    const sit = next && next.sit;
+    const short = sit && sit[1] !== sit[2] ? (+sit[1] < +sit[2] ? ctx.awayId : ctx.homeId) : null;
+    if (short != null) return ` ${ab(short)} plays with fewer skaters ${until}: a "power play" for ${ab(other(short))}.`
+      + (pp ? ` Over the last three seasons, about 1 power play in ${pp} ended in a goal.` : '');
+    return sit ? ' Both teams keep the same number of skaters.' : '';
+  };
 
   const notes = new Map();
   const score = { [ctx.homeId]: 0, [ctx.awayId]: 0 };
@@ -116,6 +128,12 @@ export function colorNotes(game, ctx, rates) {
         + `all shot attempts ${A} ${tally.att[aid]}, ${H} ${tally.att[hid]}; shots from the slot ${A} ${tally.slot[aid]}, ${H} ${tally.slot[hid]}.`;
       endedPeriod = 0;
     }
+    // 0. How a review of a goal ended, on the first frame of play after it.
+    const review = reviewAt.get(n);
+    if (!say && review && !review.onGoal) {
+      say = challengeSay(review, ab, score, ctx);
+      if (review.penalty === n) say += strengthAfter(n, 'for those two minutes');
+    }
     // 1. A goal: what it does to the score, and how long the puck had stayed in that end.
     if (!say && e.type === 'goal' && shooter) {
       score[shooter]++;
@@ -124,18 +142,13 @@ export function colorNotes(game, ctx, rates) {
         : s > o ? `${t} now leads ${s}–${o}.` : `${t} pulls within ${o - s}, ${s}–${o}.`;
       if (run && run.end === (shooter === aid ? 'h' : 'a'))
         say += ` The puck had stayed in the ${ab(other(shooter))} end for ${run.marks} events in a row before it went in.`;
+      if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     // 2. A penalty: what follows, said only as far as the record shows it.
     if (!say && e.type === 'penalty' && e.own != null) {
-      const next = ev.slice(n + 1).find(x => x.sit && x.type !== 'penalty');
-      const sit = next && next.sit;
-      const short = sit && sit[1] !== sit[2] ? (+sit[1] < +sit[2] ? aid : hid) : null;
       const who = (ctx.roster[e.actor] || {}).nm;
-      say = `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${countOf(e.min || 2, 'minute')}.`;
-      if (short != null) {
-        say += ` ${ab(short)} plays with fewer skaters until then: a "power play" for ${ab(other(short))}.`;
-        if (pp) say += ` Over the last three seasons, about 1 power play in ${pp} ended in a goal.`;
-      } else if (sit) say += ' Both teams keep the same number of skaters.';
+      say = `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${countOf(e.min || 2, 'minute')}.`
+        + strengthAfter(n, 'until then');
     }
     // 3. A restart: what the pill does not already say.
     if (!say && e.type === 'faceoff' && icing.has(e)) {
@@ -150,7 +163,7 @@ export function colorNotes(game, ctx, rates) {
         if (mine.length) say = `${off} may not change players for this face-off${secs}.`
           + `${fresh ? ` ${ab(other(tid))} sent out ${countOf(fresh, 'fresh skater')}.` : ''}`;
       }
-    } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn)
+    } else if (!say && e.type === 'faceoff' && lastStop && lastStop.rsn && !PILL_SAYS.has(lastStop.rsn) && !REVIEWED.has(lastStop)
                && !toldWhy.has(lastStop.rsn) && WHY[lastStop.rsn] && WHY[lastStop.rsn].say
                && lastStop.per === e.per && lastStop.s === e.s) {
       toldWhy.add(lastStop.rsn);
