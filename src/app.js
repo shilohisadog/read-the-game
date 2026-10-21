@@ -2853,11 +2853,11 @@ $('play').onclick=()=>playing?stop():play();
    Pause freezes the tracking and Play resumes it. A goal with no file is its goal frame.
    ⚠️ THE ANIMATION LOOP STOPS WHEN TIME DOES NOT MOVE, so a paused replay costs nothing
    and `play()` restarts it (`trkKick`). */
-function trkFetch(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>null);}
-function trkRows(){return TRK.rows||(TRK.rows=trkFetch('track/'+G.game.id+'/goals.json').then(r=>Array.isArray(r)?r:[]));}
+function trkGet(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>null);}
+function trkRows(){return TRK.rows||(TRK.rows=trkGet('track/'+G.game.id+'/goals.json').then(r=>Array.isArray(r)?r:[]));}
 function trkPlan(e){
  if(TRK.plans.has(e))return TRK.plans.get(e);
- const p=trkRows().then(rows=>{const row=trackRow(rows,e);return row?trkFetch('track/'+G.game.id+'/ev'+row.ev+'.json'):null;})
+ const p=trkRows().then(rows=>{const row=trackRow(rows,e);return row?trkGet('track/'+G.game.id+'/ev'+row.ev+'.json'):null;})
   .then(frames=>trackPlan(frames,e));
  p.then(v=>{p.value=v;p.done=true;});
  TRK.plans.set(e,p);return p;}
