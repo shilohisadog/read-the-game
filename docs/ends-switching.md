@@ -23,6 +23,17 @@ The short answer is that you cannot, and §5 is about what to give up instead.
 
 ---
 
+> **⛔ Correction, 2026-10-21.** Until this date the replay drew every game as a
+> left-right **mirror** of the league's coordinates: `SX(x)=100−x` was applied to the
+> league's x, so the league's "right" landed on the screen's left. Kevin compared TBL at
+> NYR (2026020010, period 1) with the NHL's own goal visualizer and the broadcast: TBL's
+> end was on the other side, and the goal came from the lower-left as the league draws
+> it. The replay now negates x before `SX` (`app.js::AX`), so the league's +x is the
+> screen's right and +y is up — the league's picture, and the broadcast's. The claim
+> below that as-played "is what a viewer watching the broadcast sees" was a convention
+> nobody had checked against video until then. Counts were never affected; the rule
+> diagrams, which draw no game, keep their own layout.
+
 ## 1. What the feed actually carries
 
 Every play in the NHL feed carries `homeTeamDefendingSide`, `"left"` or

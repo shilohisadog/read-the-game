@@ -268,9 +268,14 @@ test('a goaltender stands in each crease, and the sides agree with the scoreboar
   const gks = netmen(opening);
   assert.equal(gks.length, 2, 'both nets are defended at the opening faceoff');
 
-  // The host is on the RIGHT, and so is the host's badge on the scoreboard. The
-  // agreement is the point: the same club on the same side of one screen.
-  const [visitor, host] = gks;
+  /* EACH GOALTENDER AT THE END THE LEAGUE SAYS HIS CLUB DEFENDED THAT PERIOD, the
+     league's +x being the screen's right (`homeTeamDefendingSide`, kept as `sides`).
+     This said "host right, visitor left, like the scoreboard" until 2026-10-21; that
+     held only because the replay drew a left-right MIRROR of the league's picture,
+     which Kevin caught against the NHL's own goal visualizer. */
+  const hostRight = (rich.sides || {})[1] === 'right';
+  const [left, right] = gks;
+  const [visitor, host] = hostRight ? [left, right] : [right, left];
   /* ⭐⭐ BOTH GOALTENDERS NOW WEAR THEIR OWN CLUB'S COLOUR, and that is a change.
      The glyph gave the visitor a WHITE body with a club-coloured outline, after
      the real sweater convention. The figure that replaced it on 2026-10-04 is the
@@ -286,7 +291,8 @@ test('a goaltender stands in each crease, and the sides agree with the scoreboar
     "the visitor's goaltender does not wear the visitor's colour");
   assert.notDeepEqual(host.fills, visitor.fills,
     'both goaltenders are painted identically, so the colour identifies nobody');
-  assert.ok(host.x > 100 && visitor.x < 100, 'host right, visitor left');
+  assert.ok(hostRight ? host.x > 100 && visitor.x < 100 : host.x < 100 && visitor.x > 100,
+    `the host's goaltender is not at the ${hostRight ? 'right' : 'left'} end the league records for period 1`);
 
   /* ⭐⭐ THE VERTICAL TAG IS BACK, AND THIS ASSERTION USED TO FORBID IT.
      It read `doesNotMatch(/class="netlab"/, 'the vertical tag is gone')`, pinning
@@ -321,8 +327,11 @@ test('a goaltender stands in each crease, and the sides agree with the scoreboar
     /<text class="netlab" x="([-\d.]+)"[^>]*>([^<]+)</g)]
     .map(m => ({ x: +m[1], ab: m[2] })).sort((p, q) => p.x - q.x);
   assert.equal(tags.length, 2, 'one tag per net');
-  assert.equal(tags[1].ab, a.$('hAb').textContent, 'the host is named at the host end');
-  assert.equal(tags[0].ab, a.$('aAb').textContent, 'the visitor at the visitor end');
+  // Named at the ends the league records for the period on screen now (the last frame).
+  const nowRight = (rich.sides || {})[a.now().ev.per] === 'right';
+  const [hostTag, visitorTag] = nowRight ? [tags[1], tags[0]] : [tags[0], tags[1]];
+  assert.equal(hostTag.ab, a.$('hAb').textContent, 'the host is named at the host end');
+  assert.equal(visitorTag.ab, a.$('aAb').textContent, 'the visitor at the visitor end');
 
   // BEHIND THE NET AND INSIDE THE BOARDS, derived from the same geometry the net
   // is — not from 196 and 4 typed here, which would be this test agreeing with a
