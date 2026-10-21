@@ -247,6 +247,7 @@ export const tracked = {
     const P = g >= 0 ? ready(f.EV[g]) : null, nxt = f.EV[f.i + 1];
     const rg = $('rg');
     if (rg) rg.classList.toggle('labnocue', !!(P && nxt && f.playing && !f.REDUCED && nxt.s >= f.EV[g].s - P.before));
+    if (rg) rg.dataset.labcue = JSON.stringify({ i: f.i, g, P: !!P, nxt: nxt && nxt.s, gs: g >= 0 && f.EV[g].s, before: P && P.before, playing: f.playing, how: f.how });
   },
   next(i) {
     const f = last;
