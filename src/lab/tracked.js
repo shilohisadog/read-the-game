@@ -2,7 +2,7 @@
  * LAB — the tracked goal. While the replay plays, a goal with a league tracking
  * file is shown from it: on the step into the ~9 s before the goal, every
  * tracked player and the puck are laid over the same rink at half speed, the
- * play's marks dim, the clock counts down with it, and the recorded events in
+ * play's marks dim and their numbers go, the clock counts down with it, and the recorded events in
  * that window are tagged as the clock passes them. At the goal-line crossing it
  * hands back to the replay's goal frame. Stepping or scrubbing onto a goal offers
  * "See it tracked" instead; so does reduced motion.
@@ -24,7 +24,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 const css = document.createElement('style');
 css.textContent = `
-#rg.labtrk #events,#rg.labtrk #netmen,#rg.labtrk #lines,#rg.labtrk #puck,#rg.labtrk #labels,#rg.labtrk #cue,#rg.labtrk #draws{opacity:.18;transition:opacity .4s}
+#rg.labtrk #events,#rg.labtrk #netmen,#rg.labtrk #lines,#rg.labtrk #puck,#rg.labtrk #labels,#rg.labtrk #cue,#rg.labtrk #draws,#rg.labtrk #whistles{opacity:.18;transition:opacity .4s}
+#rg.labtrk .evn,#rg.labtrk .whn,#rg.labtrk .zsn,#rg.labtrk .shotft{display:none}
 #labtrack text{pointer-events:none}
 #labtrack .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
 #labtrack .tag{font-size:2.6px;font-weight:800;fill:#0f1a23;paint-order:stroke;stroke:#fff;stroke-width:.9px;text-anchor:middle}
