@@ -173,7 +173,7 @@ export function eventMarks({ evs, i, cur, moment, from = i, zoneFrom = null },
      const pen=new SvgPen('cur');
      FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,ft==='a'?AWAYCOL:HOMECOL,
                    e.type==='goal'?'goal':'save',
-                   {t:T,motion:!REDUCED,glow:false,px:(e.type==='goal'?FIG_BIG:FIG_SZ)*UNIT_PX});
+                   {t:T,motion:!REDUCED,glow:false,road:ft==='a',px:(e.type==='goal'?FIG_BIG:FIG_SZ)*UNIT_PX});
      parts.push(pen.toSvg(`class="ev fig ${cls} ${ft}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
    } else {
      parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);

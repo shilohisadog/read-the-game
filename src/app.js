@@ -504,14 +504,14 @@ function drawNetmen(e){
     -1 for the away side, which is correct in period 1 and has both men facing the
     boards in period 2. `AX` has already applied the switch, so the x it returns
     is the only thing that knows the answer. */
- const man=(x,col)=>{
+ const man=(x,col,road)=>{
   const dir=x<100?1:-1;
   const pen=new SvgPen(dir>0?'gkl':'gkr');
   FIG.goalie(pen,x+dir*GK_SZ*GK_STANDOFF,42.5+GK_SZ*GK_MID,GK_SZ,col,'',
-             {t:T,motion:!REDUCED,glow:false,dir,px:GK_SZ*GK_PX});
+             {t:T,motion:!REDUCED,glow:false,dir,road,px:GK_SZ*GK_PX});
   return pen.toSvg('class="gk"');};
  if(!sit||sit[3]!=='0')out.push(man(AX(-NET_X,gper),HOMECOL));
- if(!sit||sit[0]!=='0')out.push(man(AX(NET_X,gper),AWAYCOL));
+ if(!sit||sit[0]!=='0')out.push(man(AX(NET_X,gper),AWAYCOL,true));
  // ONLY ON CHANGE -- see `put`, which is this memo generalised. Rewriting this
  // every frame would rebuild both figures on every event, restarting their
  // entrance animation each time -- a goaltender flickering three hundred times a
