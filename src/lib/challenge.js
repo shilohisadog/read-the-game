@@ -65,17 +65,36 @@ export function challenges(ev, ctx) {
 }
 
 const CLAIM = {
-  'off-side': () => 'the play was offside before the goal',
+  'off-side': s => `${s} was offside prior to the goal`,
   'goal-interference': s => `a ${s} player interfered with the goaltender`,
-  'missed-stoppage': () => 'play should already have been stopped before the goal',
+  'missed-stoppage': () => 'play should already have been stopped prior to the goal',
 };
 const FOUND = {
-  'off-side': () => 'the play was offside',
+  'off-side': s => (s ? `${s} was offside` : 'the play was offside'),
   'goal-interference': s => `a ${s ? s + ' ' : ''}player interfered with the goaltender`,
   'missed-stoppage': (s, r) => `play should have been stopped${RULING_WORDS[r] ? ` (${RULING_WORDS[r]})` : ''}`,
 };
 const ABOUT = { 'off-side': 'offside', 'goal-interference': 'interference with the goaltender',
   'missed-stoppage': 'a missed stoppage' };
+
+/*
+ * What the stoppage itself was: play stopped for the goal, and the challenge came
+ * after the whistle. The league files that whistle under the challenge's code, so
+ * these replace the reason's fixed name and sentence on the stoppage card.
+ */
+export function reviewName(r, ab) {
+  const S = r.scorer != null ? ab(r.scorer) : '', C = r.challenger != null ? ab(r.challenger) : '';
+  if (r.who === 'league') return `Goal, the league reviewed it for ${ABOUT[r.kind]}`;
+  if (r.outcome === 'awarded' || r.outcome === 'stayed-off') return `Goal, ${C} challenged to have it count`;
+  return `Goal, ${C} challenged that ${CLAIM[r.kind](S)}`;
+}
+export function reviewSay(r, ab) {
+  const S = r.scorer != null ? ab(r.scorer) : '', C = r.challenger != null ? ab(r.challenger) : '';
+  if (r.who === 'league') return `Play stopped for a goal, and the league reviewed it for ${ABOUT[r.kind]}.`;
+  if (r.outcome === 'awarded' || r.outcome === 'stayed-off')
+    return `Play stopped, and ${C} challenged to have its goal count; the question was ${ABOUT[r.kind]}.`;
+  return `Play stopped for a goal, and ${C} challenged that ${CLAIM[r.kind](S)}.`;
+}
 
 /**
  * The sentence for review `r`. `ab(id)` gives a team's abbreviation; `score` is

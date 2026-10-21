@@ -6,7 +6,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { challenges } from '../src/lib/challenge.js';
+import { challenges, reviewName, reviewSay } from '../src/lib/challenge.js';
 import { colorNotes } from '../src/lib/color.js';
 
 const HOME = 1, AWAY = 2;
@@ -32,8 +32,8 @@ test('⭐ a goal that came off for offside: no goal event, the ruling at the sam
   assert.equal(r.outcome, 'off');
   assert.equal(r.scorer, HOME, 'the goal was the bench that did not challenge');
   assert.equal(centre(E, r), false);
-  assert.equal(noteAt(E, 4), 'HOM scored, but AWY challenged that the play was offside before the goal. '
-    + 'The review determined the play was offside, so the goal came off. The score stays tied, 0–0.');
+  assert.equal(noteAt(E, 4), 'HOM scored, but AWY challenged that HOM was offside prior to the goal. '
+    + 'The review determined HOM was offside, so the goal came off. The score stays tied, 0–0.');
 });
 
 test('a goal that came off for goaltender interference names no ruling, and the score line names the leader', () => {
@@ -46,7 +46,7 @@ test('a goal that came off for goaltender interference names no ruling, and the 
 test('a missed stoppage names the ruling only where the league recorded one', () => {
   const named = [fo(0, 0), stop(20, 'chlg-hm-missed-stoppage'), stop(20, 'high-stick'), fo(20, 20, { y: 22 })];
   assert.equal(challenges(named, ctx)[0].ruling, 'high-stick');
-  assert.equal(noteAt(named, 3), 'AWY scored, but HOM challenged that play should already have been stopped before the goal. '
+  assert.equal(noteAt(named, 3), 'AWY scored, but HOM challenged that play should already have been stopped prior to the goal. '
     + 'The review determined play should have been stopped (a high stick on the puck), so the goal came off. The score stays tied, 0–0.');
   const bare = [fo(0, 0), stop(20, 'chlg-hm-missed-stoppage'), fo(20, 20, { y: 22 })];
   assert.match(noteAt(bare, 2), /determined play should have been stopped, so the goal came off/);
@@ -106,4 +106,19 @@ test('a challenge behind another whistle (the secondary reason) is read too; a p
   assert.equal(rs.length, 1);
   assert.equal(rs[0].outcome, 'off');
   assert.match(noteAt(E, 3), /^HOM scored, but AWY challenged/);
+});
+
+test('⭐ the stoppage card names the goal as what stopped play, and the teams instead of "home" and "visiting"', () => {
+  const ab = id => (id === HOME ? 'HOM' : 'AWY');
+  const off = challenges([fo(0, 0), stop(30, 'chlg-vis-off-side'), stop(30, 'offside'), fo(30, -20, { y: 22 })], ctx)[0];
+  assert.equal(reviewName(off, ab), 'Goal, AWY challenged that HOM was offside prior to the goal');
+  assert.equal(reviewSay(off, ab), 'Play stopped for a goal, and AWY challenged that HOM was offside prior to the goal.');
+  const gi = challenges([fo(0, 0), goal(12, HOME, 10), stop(12, 'chlg-vis-goal-interference'), lost(12, AWAY), fo(12, 0)], ctx)[0];
+  assert.equal(reviewName(gi, ab), 'Goal, AWY challenged that a HOM player interfered with the goaltender');
+  const own = challenges([fo(0, 0), stop(30, 'chlg-hm-goal-interference'), goal(30, HOME, 10), fo(30, 0)], ctx)[0];
+  assert.equal(reviewName(own, ab), 'Goal, HOM challenged to have it count');
+  assert.equal(reviewSay(own, ab), 'Play stopped, and HOM challenged to have its goal count; the question was interference with the goaltender.');
+  const lg = challenges([fo(0, 0), stop(30, 'chlg-league-missed-stoppage'), fo(30, 20, { y: 22 })], ctx)[0];
+  assert.equal(reviewName(lg, ab), 'Goal, the league reviewed it for a missed stoppage');
+  for (const r of [off, gi, own, lg]) assert.doesNotMatch(reviewName(r, ab) + reviewSay(r, ab), /home|visiting/i);
 });

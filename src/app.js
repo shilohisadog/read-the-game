@@ -32,6 +32,7 @@ import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
 import { colorNotes } from './lib/color.js';
+import { challenges, reviewName, reviewSay } from './lib/challenge.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
 import { goalTicks, tickLeft } from './lib/scrub.js';
@@ -268,6 +269,10 @@ let trails='play';
 // screen with no way for a viewer to reconcile them.
 const CTX={roster:R,homeId:HID,awayId:AID,homeAb:HAB,awayAb:AAB,
            get evenOnly(){return evenOnly;}};
+// Reviews of a goal, by the index of their stoppage in G.events (a whistle's `id`).
+const REVIEW=new Map(challenges(G.events,CTX).map(r=>[r.at,r]));
+const TEAMAB=id=>id===HID?HAB:id===AID?AAB:'';
+const wName=w=>REVIEW.has(w.id)?reviewName(REVIEW.get(w.id),TEAMAB):RSN(w.rsn);
 /* The work overlay's name for the rung it is reporting. Three states now, and
    the third is not "even strength" with extra steps — it is a different
    population and has to say so, or the overlay narrates a count it is not. */
@@ -4201,7 +4206,7 @@ function drawWhistles(W){
  if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
  // An unfamiliar reason is carried verbatim and named as unexplained. The draft
  // dropped it; a guessed sentence would be worse than dropping it.
- const say=w.say?ESC(w.say)
+ const say=REVIEW.has(w.id)?ESC(reviewSay(REVIEW.get(w.id),TEAMAB)):w.say?ESC(w.say)
    :`<span class="none">The feed recorded this stoppage as “${ESC(w.rsn||'no reason given')}”, which is one we have no sentence for. We are not guessing at one.</span>`;
  // THE ZONE, AND THIS IS A COMPOSITION worth naming. The layer was built saying
  // it must not supply a team, because a stoppage carries none -- and that was
@@ -4234,7 +4239,7 @@ function drawWhistles(W){
      creating a bit of a disconnect"). Same period only: across a period break
      the difference in `s` is not an elapsed time, and saying so is cheaper than
      computing one. */
-  +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">${sinceLine(w)}</span><br>${say}</p>`
+  +`<span class="rsn">${ESC(wName(w))}</span> <span class="at">${sinceLine(w)}</span><br>${say}</p>`
   /* TRIMMED TO THE RESTART AND ITS SOURCE. Kevin, looking at the live offside
      card: "remove all text after 'Play restarted at the ringed face-off dot.' We
      don't need 'TV timeout' or the 'Goalie covered the puck....' line."
@@ -4938,7 +4943,7 @@ function lboxFor(id,at,L){
    n:(fa||fh)?'':'No shot has reached a goaltender yet.'};}
  if(id==='whistle'){
   const W=whistle.reduce(sl,CTX), n=W.whistles.length, w=latest(W);
-  const nm=w?(WHY[w.rsn]&&WHY[w.rsn].name)||w.rsn:null;
+  const nm=w?(REVIEW.has(w.id)?wName(w):(WHY[w.rsn]&&WHY[w.rsn].name)||w.rsn):null;
   return {a:'',k:`${n} STOPPAGE${n===1?'':'S'}`,h:'',
    /* ⭐ THE VARIABLE STATE ONLY — the third time this rule has been paid for.
       The clause about a stoppage having no club is a CONSTANT and belongs to the
