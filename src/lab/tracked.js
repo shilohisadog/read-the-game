@@ -148,7 +148,11 @@ function recorded(P, G, win) {
   return ` Recorded by the league in these ${secs} seconds: ${said.join('; then ')}.`;
 }
 
-function start(P, f, _inWindow, done) {
+/* Goals mode opens each goal on its first tracked frame, held still this long, so the
+   viewer finds the puck and the players before anything moves. */
+const STILL_MS = 1500;
+
+function start(P, f, _inWindow, done, still = 0) {
   const inWindow = windowOf(P, f.EV);
   end();
   const { G, AX, AY } = f, R = G.roster, per = P.e.per;
@@ -166,11 +170,12 @@ function start(P, f, _inWindow, done) {
   const WHO = `Tracked \u00b7 #${sc.n || ''} ${sc.nm || ''}\u2019s goal`;
   const SAY = `The last ${Math.round(P.before)} seconds before the goal: every player and the puck, `
     + `10 times a second, ${SPEEDS.find(x => x[0] === speed)[2]}.${strength(P.e, G, ab)}${recorded(P, G, inWindow)}`;
-  const began = performance.now(), sp = speed;
+  const began = performance.now() + still, sp = speed;
+  const FIRST = `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
   run = { done };
   const tick = now => {
     if (!run) return;
-    const tt = t0 + ((now - began) / 1000) * sp * 10;          // tracked time, in tenths
+    const tt = t0 + (Math.max(0, now - began) / 1000) * sp * 10;          // tracked time, in tenths
     let j = 0; while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
     const F = P.frames[j].onIce, out = [];
     for (const o of Object.values(F)) {
@@ -201,7 +206,8 @@ function start(P, f, _inWindow, done) {
     }
     const g = layer(); if (g) g.innerHTML = out.join('');
     $('rg').classList.add('labtrk');
-    const line = $('playline'); if (line && line.textContent !== SAY) line.textContent = SAY;
+    const say = now < began ? FIRST : SAY;
+    const line = $('playline'); if (line && line.textContent !== say) line.textContent = say;
     const who = $('who'); if (who && who.textContent !== WHO) { who.textContent = WHO; who.className = 'who plain'; }
     const clk = $('clk'); if (clk) { const r = Math.max(0, Math.floor(remGoal + (tGoal - P.frames[j].timeStamp) / 10)); clk.textContent = `${String(Math.floor(r / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`; }
     if (j >= P.k) { const d = run.done; run.raf = null; if (d) d(); return; }
@@ -209,7 +215,7 @@ function start(P, f, _inWindow, done) {
     run.raf = requestAnimationFrame(tick);
   };
   run.raf = requestAnimationFrame(tick);
-  return (P.before * 1000) / sp;
+  return still + (P.before * 1000) / sp;
 }
 
 /** " NYR has a power play: 5 skaters to TBL's 4." from the goal's own situation code, or "". */
@@ -236,6 +242,11 @@ export const tracked = {
     const g = goalAhead(f);
     if (g >= 0) plan(f.G, f.EV[g]);
     if (f.cur && f.cur.type === 'goal') { plan(f.G, f.cur); offer(f); }
+    // The next-play cue points at the next RECORDED event; on the frame the tracking takes
+    // over from, that is not where the tracking starts, so it is not drawn.
+    const P = g >= 0 ? ready(f.EV[g]) : null, nxt = f.EV[f.i + 1];
+    const rg = $('rg');
+    if (rg) rg.classList.toggle('labnocue', !!(P && nxt && f.playing && !f.REDUCED && nxt.s >= f.EV[g].s - P.before));
   },
   next(i) {
     const f = last;
@@ -301,7 +312,7 @@ const goals = {
     while (j > i && f.EV[j].s >= f.EV[g].s - P.before) j--;
     j = Math.max(j, i);
     const inWindow = f.EV.slice(j + 1, g).filter(e => WORDS[e.type]);
-    hold = { i: j, g, P, inWindow, ms: start(P, f, inWindow, () => {}) };
+    hold = { i: j, g, P, inWindow, ms: start(P, f, inWindow, () => {}, STILL_MS) };
     return j;
   },
   // The next two goals' files load while this one plays.
@@ -381,7 +392,7 @@ const goals = {
     if (run && hold && !hold.wait && last && /Pause/.test($('play').textContent)) {
       const h = hold;
       $('play').click();                                          // pause: the app drops its timer
-      hold = { ...h, ms: start(h.P, last, h.inWindow, () => {}) };
+      hold = { ...h, ms: start(h.P, last, h.inWindow, () => {}, goals.on ? STILL_MS : 0) };
       $('play').click();                                          // play: the app asks dwell() again
     }
   },
@@ -401,5 +412,6 @@ css.textContent += `
 #rg .labmode{display:inline-flex;align-items:center;gap:0}
 #rg .labmode span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;margin:0 6px 0 4px}
 #rg .labmode button{color:#0f1a23!important}#rg .labmode button[aria-pressed="true"]{color:#7c3aed!important}
+#rg.labgoals #cue,#rg.labnocue #cue,#rg.labtrk #cue,#rg.labgoals.labtrk #caption{display:none}
 #rg.labgoals .evn,#rg.labgoals .whn,#rg.labgoals .zsn,#rg.labgoals .shotft{display:none}
 #rg.labgoals.labtrk #events,#rg.labgoals.labtrk #lines,#rg.labgoals.labtrk #puck,#rg.labgoals.labtrk #labels,#rg.labgoals.labtrk #cue,#rg.labgoals.labtrk #draws,#rg.labgoals.labtrk #whistles,#rg.labgoals.labtrk #netmen{display:none}`;
