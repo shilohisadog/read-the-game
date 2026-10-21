@@ -17,7 +17,7 @@ const ORIGIN = 'https://data.readthegame.co';
 const SPEEDS = [[0.25, '¼', 'at a quarter of real speed'], [0.5, '½', 'at half speed'], [1, 'Real time', 'in real time']];
 let speed = (() => { const v = Number(new URLSearchParams(location.search).get('speed')); return SPEEDS.some(x => x[0] === v) ? v : 0.25; })();
 const LOOKAHEAD_S = 40;          // start loading a goal's file this far ahead, in game seconds
-const WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Missed the net', 'blocked-shot': 'Blocked',
+const WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Shot missed the net', 'blocked-shot': 'Shot blocked',
   hit: 'Hit', giveaway: 'Gave the puck away', takeaway: 'Took the puck away', faceoff: 'Face-off' };
 // An event's label stays up for this much GAME time, so it is readable at every speed.
 const TAG_TENTHS = 8;           // Kevin: about half of 1.5 s, since the play moves on
