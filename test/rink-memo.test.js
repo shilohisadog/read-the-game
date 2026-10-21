@@ -100,7 +100,8 @@ test('⭐ …and the memo redraws the rink when the period turns over, and never
      count of assignments to `innerHTML`, so this reads the mechanism rather than
      a proxy for it. */
   const a = boot(null, null, '');
-  const rows = a.every(d => ({ per: d.$('per').textContent,
+  // The EVENT's period, not the board's label: at the horn the summary's board reads "Final".
+  const rows = a.every((d, f) => ({ per: f.ev ? f.ev.per : 0,
                                writes: d.$('rink').writes,
                                html: d.$('rink').innerHTML }));
   assert.ok(rows.length > 200, `walked only ${rows.length} frames`);

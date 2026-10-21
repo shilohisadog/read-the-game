@@ -157,6 +157,8 @@
     is the defect class this project has named four times. One container now. */
 }
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
+/* The summary's board is the final: no clock, no boxes, no pills (app.js::drawBoard). */
+#rg.atfinal .gs .clsep,#rg.atfinal .gs .cl,#rg.atfinal .gs .clw,#rg.atfinal .gs .ppill,#rg.atfinal .gs .endpill,#rg.atfinal .pens{display:none}
 /* ⭐ THE STANDING CONDITION — a power play or a pulled goalie, sitting still.
    It is INLINE CONTENT OF THE CLOCK LINE, not a positioned badge, because the
    free space in this board inverts between the two widths (the reasoning and

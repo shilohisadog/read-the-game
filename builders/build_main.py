@@ -120,7 +120,7 @@ __CSS__</style>
        ⭐ AND IT IS `data-ab` + `::before`, WHICH IS THE PENALTY BOX'S OWN PATTERN
        (`#rg .pb::before{content:attr(data-ab)}`) -- a second way to draw a team
        chip is a second thing to keep in step with the club colours. -->
-  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i> <span class="ppill" id="ppill" hidden></span><span class="endpill" id="endpill" hidden>&#8646; Ends changed</span></div>
+  <div class="mid"><div class="gs"><span id="per">Pre-game</span><span class="clsep"> · </span><span class="cl" id="clk">20:00</span> <i class="clw">left</i> <span class="ppill" id="ppill" hidden></span><span class="endpill" id="endpill" hidden>&#8646; Ends changed</span></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
 </div>
