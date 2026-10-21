@@ -79,6 +79,7 @@ let last = null, run = null;
 const sameStretch = (EV, a, b) => { for (let j = a + 1; j < b; j++) if (EV[j].type === 'faceoff' || EV[j].type === 'stoppage') return false; return EV[a].per === EV[b].per; };
 function goalAhead(f) {
   const { EV, i } = f;
+  if (i < 0) return -1;                                   // pre-game: no stretch to be inside of
   for (let g = i + 1; g < EV.length; g++) {
     if (EV[g].per !== EV[i].per || EV[g].s - EV[i].s > LOOKAHEAD_S) return -1;
     if (EV[g].type === 'goal') return sameStretch(EV, i, g) ? g : -1;
