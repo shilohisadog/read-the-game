@@ -152,7 +152,7 @@ function recorded(P, G, win) {
    viewer finds the puck and the players before anything moves. */
 const STILL_MS = 1500;
 
-function start(P, f, _inWindow, done, still = 0) {
+function start(P, f, _inWindow, done, still = 0, free = false) {
   const inWindow = windowOf(P, f.EV);
   end();
   const { G, AX, AY } = f, R = G.roster, per = P.e.per;
@@ -167,15 +167,20 @@ function start(P, f, _inWindow, done, still = 0) {
   $('rg').classList.add('labtrk');
   // Kevin: own it — name the goal, and say the strength in words, not only on the scoreboard.
   const sc = R[P.e.actor] || {}, ab = t => (t === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
-  const WHO = `Tracked \u00b7 #${sc.n || ''} ${sc.nm || ''}\u2019s goal`;
+  const WHO = `Tracked \u00b7 goal by #${sc.n || ''} ${sc.nm || ''} (${ab(P.e.own)})`;
   const SAY = `The last ${Math.round(P.before)} seconds before the goal: every player and the puck, `
     + `10 times a second, ${SPEEDS.find(x => x[0] === speed)[2]}.${strength(P.e, G, ab)}${recorded(P, G, inWindow)}`;
-  const began = performance.now() + still, sp = speed;
+  // Time runs only while the replay plays: Pause freezes the frame and Play resumes it.
+  // `free` ("See it tracked", pressed while paused) plays regardless.
+  let played = -still, prev = performance.now();
+  const sp = speed, going = () => free || /Pause/.test($('play').textContent);
   const FIRST = `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
-  run = { done };
+  run = { done, left: () => Math.max(0, -played) + Math.max(0, (tGoal - (t0 + Math.max(0, played) / 1000 * sp * 10)) / 10) * 1000 / sp };
   const tick = now => {
     if (!run) return;
-    const tt = t0 + (Math.max(0, now - began) / 1000) * sp * 10;          // tracked time, in tenths
+    if (going()) played += now - prev;
+    prev = now;
+    const tt = t0 + (Math.max(0, played) / 1000) * sp * 10;          // tracked time, in tenths
     let j = 0; while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
     const F = P.frames[j].onIce, out = [];
     for (const o of Object.values(F)) {
@@ -206,12 +211,11 @@ function start(P, f, _inWindow, done, still = 0) {
     }
     const g = layer(); if (g) g.innerHTML = out.join('');
     $('rg').classList.add('labtrk');
-    const say = now < began ? FIRST : SAY;
+    const say = played < 0 ? FIRST : SAY;
     const line = $('playline'); if (line && line.textContent !== say) line.textContent = say;
     const who = $('who'); if (who && who.textContent !== WHO) { who.textContent = WHO; who.className = 'who plain'; }
     const clk = $('clk'); if (clk) { const r = Math.max(0, Math.floor(remGoal + (tGoal - P.frames[j].timeStamp) / 10)); clk.textContent = `${String(Math.floor(r / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`; }
     if (j >= P.k) { const d = run.done; run.raf = null; if (d) d(); return; }
-    if (hold && !/Pause/.test($('play').textContent)) { end(); hold = null; return; }
     run.raf = requestAnimationFrame(tick);
   };
   run.raf = requestAnimationFrame(tick);
@@ -272,7 +276,8 @@ export const tracked = {
     return i;
   },
   extra(e, base) {
-    if (hold && last && last.EV[hold.i] === e) return Math.max(0, hold.ms - (base || 0));
+    // What is LEFT of the tracking, so a resume after Pause waits for the rest of it.
+    if (hold && last && last.EV[hold.i] === e) return Math.max(0, (run && run.left ? run.left() : hold.ms) - (base || 0));
     return 0;
   },
 };
@@ -285,7 +290,7 @@ function offer(f) {
     if (!P || !last || last.cur !== e || w.querySelector('.wtr')) return;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'wtr';
     b.textContent = '▶ See it tracked';
-    b.onclick = ev => { ev.stopPropagation(); start(P, last, [], () => setTimeout(end, 1500)); };
+    b.onclick = ev => { ev.stopPropagation(); start(P, last, [], () => setTimeout(end, 1500), 0, true); };
     w.appendChild(b);
   });
 }
