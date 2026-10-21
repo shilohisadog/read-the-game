@@ -350,6 +350,6 @@ const goals = {
 css.textContent += `
 #rg .labmode{display:inline-flex;align-items:center;gap:0}
 #rg .labmode span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;margin:0 6px 0 4px}
-#rg .labmode button,#rg .labmode button[aria-pressed="true"]{color:#0f1a23}
+#rg .labmode button{color:#0f1a23!important}#rg .labmode button[aria-pressed="true"]{color:#7c3aed!important}
 #rg.labgoals .evn,#rg.labgoals .whn,#rg.labgoals .zsn,#rg.labgoals .shotft{display:none}
 #rg.labgoals.labtrk #events,#rg.labgoals.labtrk #lines,#rg.labgoals.labtrk #puck,#rg.labgoals.labtrk #labels,#rg.labgoals.labtrk #cue,#rg.labgoals.labtrk #draws,#rg.labgoals.labtrk #whistles,#rg.labgoals.labtrk #netmen{display:none}`;
