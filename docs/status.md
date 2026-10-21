@@ -50,6 +50,10 @@ state.
   (`app.js::drawBoard`). Kevin: a summary link opened over a 0-0 pre-game board.
 - ✅ The summary's "Watch the league's recap" opens the recap wherever the playhead is (it opened an empty
   box on a summary link — Kevin, from his own X post); the clip box follows the summary like the board.
+- ✅ `deploy.yml` is four jobs (Kevin, 2026-10-21): `site` (stop if src/ and functions/ are unchanged) →
+  `verify` ‖ `browser` → `ship`. Only checks on what is published run there; the clock sweep, Python suite,
+  refcheck, corpus, health and tiers run in gates.yml and no longer block a deploy. `health --check` reads
+  the clock sweep's run (`--js-from`) instead of running the suite a fourth time.
 - Lab: the tracked goal plays at ¼ speed; the play's numbers are hidden while it plays.
 - Lab: **Goals mode** — `Replay: All events | Goals` beside Play (`?replay=goals`, `src/lab/tracked.js`
   `goals`): Play goes goal to goal through the tracking, holding the board at the score going in; an

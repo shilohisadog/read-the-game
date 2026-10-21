@@ -8,10 +8,18 @@
 # published. Nothing untracked or gitignored can reach the public site by
 # accident, which has happened once already (builders/build_rules.py, f4a2c67).
 #
-# THE GATES RUN BEFORE THE DEPLOY, IN THIS JOB. gates.yml proves the commit is
-# sound, but a separate workflow is a separate run: relying on it would mean
-# publishing on the assumption that the other job passed. The check that guards
-# a deploy has to be the deploy's own.
+# FOUR JOBS, AND ONLY WHAT GUARDS THE PUBLISHED FILES (Kevin, 2026-10-21: a deploy
+# took ~5.5 min and ran every gate before asking whether the site had changed).
+#   site    — did src/ or functions/ change since the last good deploy? If not, stop.
+#   verify  — the build reproduces the committed pages, the JS suite, the page
+#             network policy, and the pages agree with the published archive.
+#   browser — the browser checks on the built pages (in parallel with verify).
+#   ship    — preview, the checks on it, production, the checks on production, seal.
+# The checks that guard the CODE rather than what is published (the clock sweep,
+# the Python suite, refcheck, the defect corpus, the health and tier blocks) run
+# in gates.yml on every push, on node 20 and 22; a red one there does not block
+# this deploy. The nightly pushes with the GITHUB_TOKEN, which triggers no
+# gates.yml, so it runs `npm run gates` itself before it pushes.
 name: deploy
 
 on:
@@ -44,45 +52,93 @@ env:
   PUBLIC_HOSTS: readthegame.co www.readthegame.co read-the-game.pages.dev
 
 jobs:
-  deploy:
+  site:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.site.outputs.changed }}
     steps:
-      # ⭐ FULL HISTORY, BECAUSE refcheck READS IT. `tools/refcheck.py` verifies
-      # revision-pinned citations with `git show <rev>:<path>` — the form that
-      # lets a dated design doc stay checkable after the code it describes has
-      # moved. The default checkout is SHALLOW, so those revisions are not in the
-      # clone and every historical citation failed with "no builders/build_main.py
-      # at revision 29f4c30" on the first CI run after it shipped. Green locally,
-      # red here, because full history is the thing a laptop has and a runner
-      # does not.
+      # Full history: the comparison is against the last successful deploy's commit.
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      # ⭐ THE RELEASE GATE, RULED BY KEVIN 2026-09-17 (docs/test-program.md §5.1).
+      #
+      # Until this change every browser check that needed the DEPLOYED page ran
+      # after production had already been replaced -- 6 of the 9 browser steps in
+      # this file tested the release instead of gating it. Now a push that
+      # changes src/ deploys FIRST as a preview (step 4 of the test
+      # re-architecture proved a preview reads production data), every browser
+      # check runs against that preview, and only if they pass does the SAME
+      # commit deploy to production. After production, only what production
+      # alone can answer: the custom domains serve these bytes, a visitor on the
+      # real origin can read the data, and the zone's edge rewrites trip no
+      # policy. Byte identity (the diff step) is what lets a check on the preview
+      # stand for production.
+      #
+      # No human waits here before beta; Kevin reviews what shipped in batches.
+      # AT BETA he becomes the required reviewer on the production deploy -- one
+      # `environment:` line on that step, and the fallback becomes hold.
+      #
+      # AND A PUSH THAT CHANGES NOTHING A VISITOR RECEIVES SHIPS NOTHING. Docs,
+      # tests and tooling are compared against the last SUCCESSFUL deploy run;
+      # anything uncertain (no earlier run, a commit not in this clone, a run by
+      # hand) deploys, because the safe error here is an unnecessary deploy.
+      - name: did this push change the site
+        id: site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            echo "  run by hand: deploying regardless"
+            echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          last=$(gh run list --workflow deploy.yml --branch main --status success \
+                   --limit 1 --json headSha -q '.[0].headSha' 2>/dev/null || true)
+          if [ -z "$last" ] || ! git cat-file -e "${last}^{commit}" 2>/dev/null; then
+            echo "  no earlier successful deploy to compare with ('$last') -- deploying"
+            changed=true
+          # ⛔ `functions/` IS PART OF THE SITE, AND FORGETTING THAT WOULD HAVE
+          # SHIPPED NOTHING. This compared `src/` alone, which was right while
+          # every byte a visitor received came from there. `functions/_middleware.js`
+          # runs at the edge on the way out, so a change to it changes what readers
+          # get while `src/` is untouched — and this step would have answered "nothing
+          # to ship", skipping the deploy AND the gate written to prove the
+          # middleware works. A deploy trigger that cannot see half the deployable
+          # surface is the quietest possible failure.
+          elif git diff --quiet "$last" HEAD -- src/ functions/; then
+            echo "  src/ and functions/ are unchanged since $last, the last successful deploy -- nothing to ship"
+            changed=false
+          else
+            echo "  the site changed since $last, the last successful deploy:"
+            git --no-pager diff --stat "$last" HEAD -- src/ functions/ | tail -8
+            changed=true
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
 
+  verify:
+    needs: site
+    if: needs.site.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-
       - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
-
-      # ⭐ PILLOW, FOR TWO TESTS AND ONE BUILDER. `builders/mugs.py` resizes the
-      # headshots and `test/test_mugs.py` checks that the result is a 112px WebP
-      # with its alpha intact. ⛔ WITHOUT THIS THOSE TWO ANNOUNCE A SKIP AND THE
-      # GATE IS GREEN ON A CLAIM NOBODY CHECKED — Shape 10, a check that cannot
-      # fail in the conditions you run it under. The other ten tests in that file
-      # need no image library at all, deliberately, so a laptop without Pillow
-      # still runs everything the TRAP is about.
-      - name: pillow, so the headshot tests are not skipped
-        run: python3 -m pip install --quiet --disable-pip-version-check 'pillow>=10,<13'
-      - name: gates
-        run: npm run gates
+      - name: build
+        run: npm run build
       # A generated file that differs from what its builder produces means the
       # HTML was hand-edited. Shipping that publishes something no builder can
       # reproduce, and the next build silently reverts it.
       - name: the working tree must be unchanged by a build
         run: git diff --exit-code
+      - name: the JS suite
+        run: npm test
+      # The share card and the quoted-figure snapshots are published, so they are checked here.
+      - name: the share card and the snapshots are current
+        run: npm run card -- --check && npm run snapshots -- --check
       # The pages that inline their whole game must still call nobody. This grep
       # is a blacklist over an open vocabulary and cannot close -- it is blind to
       # import(), EventSource, sendBeacon and window["fetch"] -- so it is a
@@ -134,6 +190,77 @@ jobs:
           [ "$both" -gt 0 ] && [ "$neither" -gt 0 ] || {
             echo "::error::every page landed in one bucket -- this gate stopped separating anything"; fail=1; }
           exit $fail
+      # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
+      # is a production dependency of nine links on a page a stranger reads.
+      #
+      # Nothing offline can check it. The builder proves each moment exists in
+      # data/rich.json, and the tests prove every href parses -- but "the archive
+      # still publishes this game" is a fact about the live bucket, and a
+      # re-judge that refused it would break all nine at once with every test
+      # green. build_B.py and build_rules.py carried this exposure before they
+      # were removed (B8, 2026-09-03); the
+      # learn page is the first to put it in front of a visitor.
+      #
+      # AND STATUS TELLS YOU NOTHING HERE. Unknown paths on this deployment
+      # answer 200 with the home page, so fetching a door and seeing 200 is not
+      # evidence -- the check has to be that the id is in the catalog with a
+      # publishable verdict, and that its extract parses as the game we named.
+      # ⛔⛔⛔ THE LOAD-BEARING HALF OF THE 2026-10-07 DRIFT, AND THE REASON IT
+      # IS HERE RATHER THAN IN `npm run gates`. The pages in `src/` BAKE archive
+      # figures at build time, because a learn page carries no scripts and
+      # `connect-src 'self'` forbids it fetching them. The front door FETCHES the
+      # same measurement at runtime. So a repo one publish behind the origin
+      # deploys pages that contradict the document the front door reads — and on
+      # 2026-10-07 it did: 171,027 baked against 171,026 published, with gates
+      # green, because nothing in `gates` reads the origin and nothing should
+      # (`tools/box-witness.mjs` states that policy).
+      #
+      # ⭐ A DEPLOY ALREADY NEEDS THE NETWORK, so the check that needs the network
+      # belongs in the deploy. A failed FETCH exits 2 with its own sentence and is
+      # never reported as a pass — the distinction Shape 10 is about.
+      - name: no page may bake a figure the published archive contradicts
+        run: python3 tools/measures_fresh.py
+
+      - name: the game the learn page opens is still published
+        run: |
+          id=$(python3 -c "import json;print(json.load(open('data/learn-doors.json'))['game']['id'])")
+          echo "  the doors name game $id"
+          curl -sS --fail "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" -o cat.json
+          curl -sS --fail "https://data.readthegame.co/extract/$id.json?cb=${GITHUB_RUN_ID}" -o ex.json
+          python3 - "$id" <<'PYCHECK'
+          import json, sys
+          gid = int(sys.argv[1])
+          row = {r["id"]: r for r in json.load(open("cat.json"))["games"]}.get(gid)
+          if not row:
+              sys.exit(f"::error::game {gid} is not in the published catalog — "
+                       "every door on the learn page is broken")
+          if row.get("v") != 1:
+              sys.exit(f"::error::game {gid} is in the catalog but refused "
+                       f"(r={row.get('r')}) — the learn page opens onto nothing")
+          g = json.load(open("ex.json"))
+          if g["game"]["id"] != gid:
+              sys.exit(f"::error::extract/{gid}.json describes game {g['game']['id']}")
+          print(f"  published: {row['a']} at {row['h']}, {row['d']}, "
+                f"{len(g['events'])} events — the doors have somewhere to open")
+          PYCHECK
+          # THE CHECK MUST BE ABLE TO FAIL. A catalog lookup that silently found
+          # nothing would pass this step by printing nothing at all.
+          python3 - <<'PYCANARY'
+          import json
+          rows = {r["id"]: r for r in json.load(open("cat.json"))["games"]}
+          assert 1 not in rows, "game id 1 exists — pick another impossible id"
+          print("  canary: an absent id is absent, so the lookup can miss")
+          PYCANARY
+
+  browser:
+    needs: site
+    if: needs.site.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
       # `tools/browser/pages-csp.mjs` — a hash-pinned policy with a stale hash is a
       # blank page that passes every grep we could write, so a real browser walks
       # the built pages. Its canary (one page with a comment inserted into its
@@ -228,124 +355,17 @@ jobs:
       - name: a work door lands on its own section
         run: node tools/browser/run.mjs methods-deeplink
 
-      # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
-      # is a production dependency of nine links on a page a stranger reads.
-      #
-      # Nothing offline can check it. The builder proves each moment exists in
-      # data/rich.json, and the tests prove every href parses -- but "the archive
-      # still publishes this game" is a fact about the live bucket, and a
-      # re-judge that refused it would break all nine at once with every test
-      # green. build_B.py and build_rules.py carried this exposure before they
-      # were removed (B8, 2026-09-03); the
-      # learn page is the first to put it in front of a visitor.
-      #
-      # AND STATUS TELLS YOU NOTHING HERE. Unknown paths on this deployment
-      # answer 200 with the home page, so fetching a door and seeing 200 is not
-      # evidence -- the check has to be that the id is in the catalog with a
-      # publishable verdict, and that its extract parses as the game we named.
-      # ⛔⛔⛔ THE LOAD-BEARING HALF OF THE 2026-10-07 DRIFT, AND THE REASON IT
-      # IS HERE RATHER THAN IN `npm run gates`. The pages in `src/` BAKE archive
-      # figures at build time, because a learn page carries no scripts and
-      # `connect-src 'self'` forbids it fetching them. The front door FETCHES the
-      # same measurement at runtime. So a repo one publish behind the origin
-      # deploys pages that contradict the document the front door reads — and on
-      # 2026-10-07 it did: 171,027 baked against 171,026 published, with gates
-      # green, because nothing in `gates` reads the origin and nothing should
-      # (`tools/box-witness.mjs` states that policy).
-      #
-      # ⭐ A DEPLOY ALREADY NEEDS THE NETWORK, so the check that needs the network
-      # belongs in the deploy. A failed FETCH exits 2 with its own sentence and is
-      # never reported as a pass — the distinction Shape 10 is about.
-      - name: no page may bake a figure the published archive contradicts
-        run: python3 tools/measures_fresh.py
-
-      - name: the game the learn page opens is still published
-        run: |
-          id=$(python3 -c "import json;print(json.load(open('data/learn-doors.json'))['game']['id'])")
-          echo "  the doors name game $id"
-          curl -sS --fail "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" -o cat.json
-          curl -sS --fail "https://data.readthegame.co/extract/$id.json?cb=${GITHUB_RUN_ID}" -o ex.json
-          python3 - "$id" <<'PYCHECK'
-          import json, sys
-          gid = int(sys.argv[1])
-          row = {r["id"]: r for r in json.load(open("cat.json"))["games"]}.get(gid)
-          if not row:
-              sys.exit(f"::error::game {gid} is not in the published catalog — "
-                       "every door on the learn page is broken")
-          if row.get("v") != 1:
-              sys.exit(f"::error::game {gid} is in the catalog but refused "
-                       f"(r={row.get('r')}) — the learn page opens onto nothing")
-          g = json.load(open("ex.json"))
-          if g["game"]["id"] != gid:
-              sys.exit(f"::error::extract/{gid}.json describes game {g['game']['id']}")
-          print(f"  published: {row['a']} at {row['h']}, {row['d']}, "
-                f"{len(g['events'])} events — the doors have somewhere to open")
-          PYCHECK
-          # THE CHECK MUST BE ABLE TO FAIL. A catalog lookup that silently found
-          # nothing would pass this step by printing nothing at all.
-          python3 - <<'PYCANARY'
-          import json
-          rows = {r["id"]: r for r in json.load(open("cat.json"))["games"]}
-          assert 1 not in rows, "game id 1 exists — pick another impossible id"
-          print("  canary: an absent id is absent, so the lookup can miss")
-          PYCANARY
-
-      # ⭐ THE RELEASE GATE, RULED BY KEVIN 2026-09-17 (docs/test-program.md §5.1).
-      #
-      # Until this change every browser check that needed the DEPLOYED page ran
-      # after production had already been replaced -- 6 of the 9 browser steps in
-      # this file tested the release instead of gating it. Now a push that
-      # changes src/ deploys FIRST as a preview (step 4 of the test
-      # re-architecture proved a preview reads production data), every browser
-      # check runs against that preview, and only if they pass does the SAME
-      # commit deploy to production. After production, only what production
-      # alone can answer: the custom domains serve these bytes, a visitor on the
-      # real origin can read the data, and the zone's edge rewrites trip no
-      # policy. Byte identity (the diff step) is what lets a check on the preview
-      # stand for production.
-      #
-      # No human waits here before beta; Kevin reviews what shipped in batches.
-      # AT BETA he becomes the required reviewer on the production deploy -- one
-      # `environment:` line on that step, and the fallback becomes hold.
-      #
-      # AND A PUSH THAT CHANGES NOTHING A VISITOR RECEIVES SHIPS NOTHING. Docs,
-      # tests and tooling are compared against the last SUCCESSFUL deploy run;
-      # anything uncertain (no earlier run, a commit not in this clone, a run by
-      # hand) deploys, because the safe error here is an unnecessary deploy.
-      - name: did this push change the site
-        id: site
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
-            echo "  run by hand: deploying regardless"
-            echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0
-          fi
-          last=$(gh run list --workflow deploy.yml --branch main --status success \
-                   --limit 1 --json headSha -q '.[0].headSha' 2>/dev/null || true)
-          if [ -z "$last" ] || ! git cat-file -e "${last}^{commit}" 2>/dev/null; then
-            echo "  no earlier successful deploy to compare with ('$last') -- deploying"
-            changed=true
-          # ⛔ `functions/` IS PART OF THE SITE, AND FORGETTING THAT WOULD HAVE
-          # SHIPPED NOTHING. This compared `src/` alone, which was right while
-          # every byte a visitor received came from there. `functions/_middleware.js`
-          # runs at the edge on the way out, so a change to it changes what readers
-          # get while `src/` is untouched — and this step would have answered "nothing
-          # to ship", skipping the deploy AND the gate written to prove the
-          # middleware works. A deploy trigger that cannot see half the deployable
-          # surface is the quietest possible failure.
-          elif git diff --quiet "$last" HEAD -- src/ functions/; then
-            echo "  src/ and functions/ are unchanged since $last, the last successful deploy -- nothing to ship"
-            changed=false
-          else
-            echo "  the site changed since $last, the last successful deploy:"
-            git --no-pager diff --stat "$last" HEAD -- src/ functions/ | tail -8
-            changed=true
-          fi
-          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+  ship:
+    needs: [site, verify, browser]
+    if: needs.site.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
 
       - name: ensure the Pages project exists
-        if: steps.site.outputs.changed == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -375,7 +395,6 @@ jobs:
       - name: deploy this commit as a preview
         id: preview
         shell: bash
-        if: steps.site.outputs.changed == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -437,7 +456,6 @@ jobs:
       # id rots the moment that game leaves the window, and a gate that fails for
       # a reason unrelated to the change is a gate people learn to ignore.
       - name: a shared link names its own game — on the preview
-        if: steps.site.outputs.changed == 'true'
         env:
           URL: ${{ steps.preview.outputs.url }}
         run: |
@@ -503,7 +521,6 @@ jobs:
       # ⛔⛔ AND THE PAIRED HALF AGAIN, for the same reason and against a different
       # file: the byte-diff gate fetches `/game.html` with no query string too.
       - name: a shared link names its own game — on the replay
-        if: steps.site.outputs.changed == 'true'
         env:
           URL: ${{ steps.preview.outputs.url }}
         run: |
@@ -581,7 +598,6 @@ jobs:
       # What it asserts is unchanged, and the reason is in the module: curl cannot
       # see a CORS failure, so a real browser has to say the data arrived.
       - name: a visitor can actually read the data — on the preview
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs data-readable --site "${{ steps.preview.outputs.url }}"
 
       # ⭐ THE CHECK LIVES IN `tools/browser/phone-fit.mjs`, with its two canaries
@@ -590,7 +606,6 @@ jobs:
       # headless Chrome enforces a minimum window width and this gate once graded
       # a screen 40% wider than the one it named. Its judgement is unit-tested.
       - name: the pages fit a phone
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs phone-fit --site "${{ steps.preview.outputs.url }}"
 
       # `tools/browser/preview-fits.mjs` — the hero is a page inside a page, and
@@ -598,7 +613,6 @@ jobs:
       # shipped broken past a green suite; the scoreboard may not eat a third of
       # the frame, and the preview must be proved BOOTED before any geometry.
       - name: the front door's preview fits its frame
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs preview-fits --site "${{ steps.preview.outputs.url }}"
 
       # `tools/browser/verdict-dot.mjs` — the unit test reconciling the sentence
@@ -606,7 +620,6 @@ jobs:
       # of its track: the markup was right and the pixels were wrong. This measures
       # boxes, and its canary is the defect itself (an inline `.vtrack`).
       - name: the verdict dot lands where the sentence says
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs verdict-dot --site "${{ steps.preview.outputs.url }}"
 
       # `tools/browser/watch-a-game.mjs` — the page a link points at, and the only
@@ -616,7 +629,6 @@ jobs:
       # ⚠️ The preview URL is deployment-specific, so it can only serve THIS build;
       # on production the byte-diff step above has already waited for it.
       - name: a visitor can actually watch a game
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs watch-a-game --site "${{ steps.preview.outputs.url }}"
 
       # `tools/browser/csp-refusal.mjs` — every other browser check strips the CSP
@@ -624,7 +636,6 @@ jobs:
       # live. This asks the browser whether the real page under its real policy was
       # refused anything, and a canary proves the console is being captured at all.
       - name: the game raises no policy refusal — on the preview
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs csp-refusal --site "${{ steps.preview.outputs.url }}"
 
       # ⛔ `shell: bash` FOR `-o pipefail`, same as the preview deploy above and
@@ -632,7 +643,6 @@ jobs:
       # catching a failed deploy; honouring the exit code means the step that
       # failed is the step that reports it.
       - name: deploy to production — the same commit the preview passed
-        if: steps.site.outputs.changed == 'true'
         id: deploy
         shell: bash
         env:
@@ -667,7 +677,6 @@ jobs:
       # Cloudflare's cache invalidation, which is not our invariant. Production
       # is checked separately, for reachability, with the cache defeated.
       - name: fetch the live site back and diff it against the repo
-        if: steps.site.outputs.changed == 'true'
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
@@ -829,17 +838,14 @@ jobs:
       # The same check again, on the real origin: CORS names readthegame.co
       # separately from the preview hostnames, and only production proves it.
       - name: a visitor can actually read the data — on production
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs data-readable --site https://readthegame.co
 
       # The same check again, on the custom domain: the ZONE can inject into
       # production (it has, twice -- see the diff step) and never into *.pages.dev.
       - name: the live game raises no policy refusal — on production
-        if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs csp-refusal --site https://readthegame.co
 
       - name: summary
-        if: steps.site.outputs.changed == 'true'
         run: |
           {
             echo "### Deployed"
