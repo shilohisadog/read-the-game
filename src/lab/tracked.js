@@ -392,7 +392,9 @@ const goals = {
   },
   // Show goal `g`'s tracking, paused, at its first frame or at the goal line.
   open(g, where, to, oc) {
-    const f = last, P = ready(f.EV[g]);
+    const f = last, p = plan(f.G, f.EV[g]);
+    if (!p.done) { p.then(() => { if (last === f) this.open(g, where, to, oc); }); return; }   // not loaded yet
+    const P = p.value;
     if (!P) { to(g); return; }                                    // no tracking: the goal frame
     let j = g - 1;
     while (j > 0 && f.EV[j].s >= f.EV[g].s - P.before) j--;
