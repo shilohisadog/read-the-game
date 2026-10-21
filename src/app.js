@@ -2964,17 +2964,20 @@ function trkGoalsNext(k){
  TRK.hold={i:j,g,P,ms:trkStart(P,TRACK_STILL_MS,false)};
  return j;}
 /* Prev/Next in Goals. While a goal's tracking is on screen they move between its stops
-   and pause there; past either end, to the next goal's first frame or the previous
-   goal's goal line. On a goal's own frame, Prev goes back into its tracking. */
+   and pause there; past the goal line, to the goal's own frame; from there, to the next
+   goal's first frame. Prev retraces it: a first frame goes back to the previous goal's
+   frame, and a goal's frame goes back into its tracking. */
 function trkStep(dir){
  if(playing)stop();
  const r=TRK.run;
  if(r){const now=r.at(),k=dir>0?r.stops.find(v=>v>now+0.5):[...r.stops].reverse().find(v=>v<now-0.5);
-  if(k!=null){r.seek(k);return;}}
+  if(k!=null){r.seek(k);return;}
+  if(dir>0&&r.g>=0){const g=r.g;TRK.hold=null;trkEnd();set(g,'jump');return;}}
  const gs=trackGoals(EV),here=r&&r.g>=0?r.g:i;
- const g=dir>0?gs.find(n=>n>here)
-  :(!r&&EV[i]&&EV[i].type==='goal'&&gs.includes(i))?i:[...gs].reverse().find(n=>n<here);
- if(g!=null)trkOpen(g,dir>0?'first':'goal');}
+ if(dir>0){const g=gs.find(n=>n>here);if(g!=null)trkOpen(g,'first');return;}
+ if(!r&&EV[i]&&EV[i].type==='goal'&&gs.includes(i)){trkOpen(i,'goal');return;}
+ const g=[...gs].reverse().find(n=>n<here);
+ if(g!=null){TRK.hold=null;trkEnd();set(g,'jump');}}
 function trkOpen(g,where){
  const p=trkPlan(EV[g]);
  if(!p.done){const at=i;p.then(()=>{if(i===at)trkOpen(g,where);});return;}

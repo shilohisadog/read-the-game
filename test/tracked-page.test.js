@@ -85,11 +85,35 @@ test('Goals: Prev and Next step through a goal\'s stops, then to the next goal',
   const clocks = [a.$('clk').textContent];
   for (let n = 0; n < 3; n++) { a.$('fwd').click(); await settle(); clocks.push(a.$('clk').textContent); }
   // First frame -> the file's goal line (no recorded events of this game fall in its window)
-  // -> the next goal's first frame.
+  // -> the goal's own frame.
   assert.notEqual(clocks[0], clocks[1], 'Next did not move within the goal');
   a.$('back').click(); await settle();
   assert.ok(a.$('rg').classList.contains('trk'), 'Prev left the tracking');
   assert.equal(a.$('play').textContent.includes('Pause'), false, 'stepping did not pause');
+});
+
+test('⭐ Goals: Next lands on the goal itself after its goal line, and Prev comes back the same way', async () => {
+  const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
+  await settle(); await settle();
+  a.at(0, () => {});                         // Goals snaps the scrubber to the first goal
+  const [g0, g1, g2] = GOALS;
+  const trk = () => a.$('rg').classList.contains('trk'), at = () => +a.$('scrub').value;
+  const next = async () => { a.$('fwd').click(); await settle(); await settle(); };
+  const prev = async () => { a.$('back').click(); await settle(); await settle(); };
+  assert.equal(at(), g0.k);
+  await next();
+  assert.ok(trk(), 'Next did not open the second goal\'s tracking');
+  for (let n = 0; n < 8 && trk(); n++) await next();
+  assert.equal(at(), g1.k, 'past the goal line, Next skipped the goal frame');
+  assert.equal(a.$('track').innerHTML, '', 'the tracking is still drawn over the goal frame');
+  await next();
+  assert.ok(trk(), 'from the goal frame, Next did not open the next goal');
+  await prev();
+  assert.equal(trk(), false, 'Prev from the first tracked frame stayed in the tracking');
+  assert.equal(at(), g1.k, 'Prev from the next goal\'s first frame did not land on the previous goal');
+  await prev();
+  assert.ok(trk(), 'Prev from the goal frame did not go back into its tracking');
+  assert.ok(g2, 'the reference game needs three goals for this walk');
 });
 
 test('All events: a tracked goal holds the frame before it while its tracking plays', async () => {
