@@ -20,7 +20,7 @@ const LOOKAHEAD_S = 40;          // start loading a goal's file this far ahead, 
 const WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Missed the net', 'blocked-shot': 'Blocked',
   hit: 'Hit', giveaway: 'Gave the puck away', takeaway: 'Took the puck away', faceoff: 'Face-off' };
 // An event's label stays up for this much GAME time, so it is readable at every speed.
-const TAG_TENTHS = 15;
+const TAG_TENTHS = 8;           // Kevin: about half of 1.5 s, since the play moves on
 const TAG_EDGE = 16;          // half the longest label's width, in rink feet
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
