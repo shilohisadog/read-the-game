@@ -29,7 +29,6 @@ css.textContent = `
 #labtrack .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
 #labtrack .tag{font-size:2.6px;font-weight:800;fill:#0f1a23;paint-order:stroke;stroke:#fff;stroke-width:.9px;text-anchor:middle}
 #labtrack .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
-#labtrack .trail{fill:none;stroke:#0e1216;stroke-width:.35;opacity:.45;stroke-dasharray:.8 .6}
 #labtrack .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
 #rg .who .wtr{margin-left:8px;font:inherit;font-weight:700;border:0;border-radius:99px;padding:3px 10px;background:#7c3aed;color:#fff;cursor:pointer}`;
 document.head.appendChild(css);
@@ -127,9 +126,6 @@ function start(P, f, inWindow, done) {
     const tt = t0 + ((now - began) / 1000) * SPEED * 10;          // tracked time, in tenths
     let j = 0; while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
     const F = P.frames[j].onIce, out = [];
-    const pts = [];
-    for (let q = Math.max(0, j - 10); q <= j; q++) { const pk = P.frames[q].onIce['1']; if (pk) { const s = at(pk); pts.push(s.x.toFixed(2) + ',' + s.y.toFixed(2)); } }
-    if (pts.length > 1) out.push(`<polyline class="trail" points="${pts.join(' ')}"/>`);
     for (const o of Object.values(F)) {
       if (!o.playerId) continue;
       const s = at(o), r = R[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a', gk = r.pos === 'G', star = stars.has(Number(o.playerId));

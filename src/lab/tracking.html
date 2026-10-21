@@ -25,7 +25,6 @@ h1{margin:2px 0 4px;font-size:1.25rem}
 .real b{color:#0f1a23}
 .pl text{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .puck{fill:#0e1216;stroke:#fff;stroke-width:.3}
-.trail{fill:none;stroke:#0e1216;stroke-width:.35;opacity:.45;stroke-dasharray:.8 .6}
 .goalflash{font-size:7px;font-weight:900;text-anchor:middle;fill:#c8102e;opacity:.9}
 @media (max-height:520px){.k,h1{display:none}main{padding-top:6px}.sub{font-size:.8rem;margin:0 0 2px}#rink{max-height:calc(100vh - 92px)}#say{min-height:0;margin:0}.ctl{margin:4px 0}.ctl button{min-height:40px;padding:0 12px}#speeds{display:none}}
 </style>
@@ -44,7 +43,7 @@ h1{margin:2px 0 4px;font-size:1.25rem}
 </div>
 <div class="ctl" id="speeds"></div>
 <div class="real">
-<p><b>What's real here.</b> Every dot is a position the NHL's puck and player tracking recorded, 10 times a second: each skater, each goaltender and the puck. Between those tenths nothing is drawn, and the puck's dashed trail joins only its own recorded positions. Names and the score come from the league's play-by-play, as on the replay.</p>
+<p><b>What's real here.</b> Every dot is a position the NHL's puck and player tracking recorded, 10 times a second: each skater, each goaltender and the puck. Between those tenths nothing is drawn, and the puck is drawn only where it was recorded. Names and the score come from the league's play-by-play, as on the replay.</p>
 <p><b>What's not.</b> Tracking exists only around goals (about 14 seconds each). The file is the league's (<code>wsr.nhle.com/sprites/…</code>), fetched once and stored here for this demo.</p>
 </div>
 </main>
@@ -74,7 +73,7 @@ for (let k = 1; k < frames.length; k++) {
   if (a && b && Math.abs(lg(b).x) > 89 && Math.abs(lg(a).x) <= 89 && Math.abs(lg(b).y) <= 3) { shotK = k; break; }
 }
 const f = Math.sign(goal.x) === Math.sign(lg(puckAt(shotK)).x) ? 1 : -1;
-const at = o => { const p = lg(o); return { x: SX(f * p.x), y: SY(f * p.y) }; };
+const at = o => { const p = lg(o); return { x: SX(-f * p.x), y: SY(f * p.y) }; };   // league +x is screen-right (as app.js::AX)
 const t0 = frames[0].timeStamp;
 
 const ab = id => (id === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
@@ -84,15 +83,11 @@ $('who').textContent = `${ab(G.teams.away.id)} at ${ab(HID)} · ${nm(goal.actor)
 
 const svg = $('rink');
 const base = furniture('t', true)
-  + netGlyph('t', SX(-89), colourOf(G.teams.home.ab), '') + netGlyph('t', SX(89), colourOf(G.teams.away.ab), '');
+  + netGlyph('t', SX(89), colourOf(G.teams.home.ab), '') + netGlyph('t', SX(-89), colourOf(G.teams.away.ab), '');
 const scrub = $('scrub'); scrub.max = frames.length - 1;
 
 function draw(k) {
   const F = frames[k].onIce, out = [base];
-  // The puck's own recorded positions over the last second.
-  const pts = [];
-  for (let j = Math.max(0, k - 10); j <= k; j++) { const p = puckAt(j); if (p) { const q = at(p); pts.push(q.x.toFixed(2) + ',' + q.y.toFixed(2)); } }
-  if (pts.length > 1) out.push(`<polyline class="trail" points="${pts.join(' ')}"/>`);
   for (const o of Object.values(F)) {
     if (!o.playerId) continue;
     const p = at(o), r = R[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a';

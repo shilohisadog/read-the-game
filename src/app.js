@@ -160,7 +160,13 @@ const SIDES=G.sides||{};
 const ASPLAYED=LINK.ends!=='fixed';
 const ENDSMODE=ASPLAYED?'as-played':'fixed';
 const DIR=per=>(ASPLAYED&&SIDES[per]==='right')?-1:1;
-const AX=(x,per)=>SX(x*DIR(per)), AY=(y,per)=>SY(y*DIR(per));
+/* ⛔ THE LEAGUE'S +x IS THE SCREEN'S RIGHT, so a game's x is negated before `SX`
+   (whose 100-x the rule diagrams keep for their own layout). Until 2026-10-21 the
+   replay drew every game as a left-right MIRROR of the league's picture and the
+   broadcast: Kevin compared TBL at NYR (2026020010) with the NHL's own goal
+   visualizer, and TBL's end was on the other side. A mirror is a view no camera
+   has; every count was unaffected, the picture was not. */
+const AX=(x,per)=>SX(-x*DIR(per)), AY=(y,per)=>SY(y*DIR(per));
 /* ⭐⭐ EVERY PERSON ON THIS ICE IS THE SAME HEIGHT, AND IT IS A REAL ONE. The rink
    is 200 units for 200 feet, so a figure's size IS its height in feet — and until
    2026-10-05 a skater was 9 of them and a goaltender 4, which nothing had ever
@@ -3959,7 +3965,7 @@ function drawZoneStarts(Z,slice){
 }
 function drawWhistles(W){
  const g=[];
- for(const m of marks(W,{trails:trails,dir:DIR})){const cx=SX(m.x),cy=SY(m.y);
+ for(const m of marks(W,{trails:trails,dir:DIR})){const cx=SX(-m.x),cy=SY(m.y);   // the arena frame, as AX
   g.push(`<circle class="wh${m.now?' now':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.4"><title>play restarted here — ${ESC(m.reasons.map(RSN).join(', '))}</title></circle>`);
   /* A COUNT, BECAUSE THE MARKS STACK. Nine faceoff dots hold every restart in the
      game, so eight icings at one dot draw as one circle and the ice would be
