@@ -925,6 +925,23 @@ function drawCue(i){
  const el=$('cue');if(!el)return;
  const pos=cueOn?place(EV[i+1]):null;
  put(el,pos?`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`:'');}
+/* THE SCOREBOARD. While the whole-game summary is open it reads the FINAL, whatever
+   the playhead: the panel counts the whole game, and a 0-0 pre-game board above it
+   contradicted it (Kevin, 2026-10-21). The final is the board's own count at the
+   horn, not a second tally. Closing the summary hands the board back to the playhead. */
+let FINAL_BOARD;
+function finalBoard(){
+ if(FINAL_BOARD!==undefined)return FINAL_BOARD;
+ const end=EV[EV.length-1];
+ if(!end||end.type!=='game-end')return FINAL_BOARD=null;
+ const L=lens(EV.length-1), last=[...EV].reverse().find(e=>e.type!=='game-end')||end;
+ const how=last.pt==='SO'?' · Shootout':last.pt==='OT'?(last.per-3>1?` · ${last.per-3}OT`:' · Overtime'):'';
+ return FINAL_BOARD={as:L.as,hs:L.hs,label:'Final'+how};}
+function drawBoard(cur,L){
+ const f=sumOpen?finalBoard():null;
+ document.getElementById('rg').classList.toggle('atfinal',!!f);
+ $('aSc').textContent=f?f.as:L.as;$('hSc').textContent=f?f.hs:L.hs;
+ $('per').textContent=f?f.label:periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';}
 function render(i,how){
  /* ⭐⭐ A MOMENT IS A PLAY OR A JUMP — AND THE COUNTER FLASH BELOW IS DELIBERATELY
     NOT. The two conditions differ by one word and the difference is a claim about
@@ -1075,7 +1092,7 @@ function render(i,how){
  drawLabel(cur);
  drawNetmen(cur);
  drawPill(cur);
- $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
+ drawBoard(cur,L);
  drawLBox(i,L);
  if(moment){
    /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
@@ -1151,7 +1168,6 @@ function render(i,how){
  // AT REST ONLY -- `render` runs on every frame including during playback, and
  // `sayOnIce` reads `playing` itself rather than being called from two places.
  sayOnIce(cur);
- $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
  if(goalieOn)$('goaliePanel').innerHTML=goalieCards(G.goalies,R,goalieStats(i),{AID,AAB,HAB,mode:MODE()});
  /* THE FRAME BEING DRAWN IS PASSED, NOT READ. `render`'s parameter shadows the
     module-level playhead, so a bare `i` inside `renderWork` would be whichever
@@ -3059,7 +3075,8 @@ function setOverlay(which){
  $('sum').textContent=sumOpen?'Hide':SUM_DOOR;
  if(which&&playing)stop();
  if(archOpen)renderAlot();
- if(sumOpen)renderSum();}
+ if(sumOpen)renderSum();
+ drawBoard(EV[i],lens(i));}
 function setWork(open){setOverlay(open?'work':null);}
 $('work').onclick=()=>{setWork(!workOpen);if(workOpen)render(i,'');};
 $('alot').onclick=()=>setOverlay(archOpen?null:'alot');
