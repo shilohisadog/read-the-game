@@ -32,7 +32,20 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-18
+## ⏭ 0.00 PICK UP HERE — 2026-10-21
+
+- ⛔ **Fixed: the replay was a left-right mirror of the league's picture and the broadcast** (`673f159`,
+  verified live on 2026020010: the goal draws at the left end, lower half, TBL's net on the left).
+  `app.js::AX` now negates x before `SX`. Counts unaffected; rule diagrams unchanged.
+- **The tracked goal** is on the lab (`src/lab/tracked.js`): while playing, the ~9 s before a goal are
+  shown from the league's tracking over the same rink at ½ speed; the text owns the goal and says the
+  strength; no puck trail. Kevin is watching varied goals (lab index: "tracked goals to watch") before
+  we choose teaching moments. Then: trimmed tracking files, the hero game, production.
+- Tracking data: 2026-27 pulled; nightly from 2026-10-19 on; no past seasons. NHL permission request
+  sent 2026-10-19, awaiting a reply.
+- Open: the replay's same-colour clash (two blue clubs); rail witness 385/390; 28 vs 27 shots.
+
+## ⏭ 0.00 (previous) — 2026-10-18
 
 ### ✅ Done 2026-10-17 → 18, each verified on the live site
 
