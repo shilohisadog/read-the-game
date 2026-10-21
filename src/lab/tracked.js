@@ -189,9 +189,14 @@ function start(P, f, _inWindow, done) {
       const s = at(pk);
       out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r=".6"/>`);
       for (const t of tags) {
-        // Kept inside the boards: a label at the puck behind a net was cut in half.
-        const lx = Math.min(200 - TAG_EDGE, Math.max(TAG_EDGE, s.x)), ly = Math.min(81, Math.max(6, s.y + 4));
-        if (tt >= t.at && tt < t.at + TAG_TENTHS) out.push(`<text class="tag" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}">${esc(WORDS[t.e.type] || '')}</text>`);
+        if (!(tt >= t.at && tt < t.at + TAG_TENTHS)) continue;
+        // At the spot the league recorded the event (the puck when it recorded none), and
+        // anchored so the words run away from the nearest boards rather than through them.
+        const e = t.e, q = e.x != null ? { x: AX(e.x, per), y: AY(e.y, per) } : s;
+        const anc = q.x > 200 - TAG_EDGE ? 'end' : q.x < TAG_EDGE ? 'start' : 'middle';
+        const lx = q.x + (anc === 'end' ? -2.2 : anc === 'start' ? 2.2 : 0);
+        const ly = anc !== 'middle' ? q.y + 0.9 : q.y > 78 ? q.y - 2.6 : q.y + 4;
+        out.push(`<text class="tag" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" style="text-anchor:${anc}">${esc(WORDS[e.type] || '')}</text>`);
       }
     }
     const g = layer(); if (g) g.innerHTML = out.join('');
