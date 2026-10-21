@@ -49,6 +49,8 @@ for want in 23 0; do
   printf '  clock sweep: TZ=%-12s local %s  ' "$z" "$(TZ="$z" date +%H:%M)"
   if TZ="$z" npm test >/tmp/clock-sweep.$$ 2>&1; then
     echo "ok"
+    # The first pass's output, for `health.mjs --check --js-from` (one suite run fewer).
+    if [ -n "${SUITE_OUT:-}" ] && [ "$want" = 23 ]; then cp /tmp/clock-sweep.$$ "$SUITE_OUT"; fi
   else
     echo "FAILED"
     grep -E '^not ok|error:' /tmp/clock-sweep.$$ | head -20
