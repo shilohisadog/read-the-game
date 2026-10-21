@@ -48,7 +48,14 @@ state.
 - ✅ While the whole-game summary is open the scoreboard reads the FINAL ("Final", "Final · Overtime",
   "Final · Shootout"; no clock, boxes or pills), whatever the playhead; Hide gives the board back
   (`app.js::drawBoard`). Kevin: a summary link opened over a 0-0 pre-game board.
+- ✅ The summary's "Watch the league's recap" opens the recap wherever the playhead is (it opened an empty
+  box on a summary link — Kevin, from his own X post); the clip box follows the summary like the board.
 - Lab: the tracked goal plays at ¼ speed; the play's numbers are hidden while it plays.
+- Lab: **Goals mode** — `Replay: All events | Goals` beside Play (`?replay=goals`, `src/lab/tracked.js`
+  `goals`): Play goes goal to goal through the tracking, holding the board at the score going in; an
+  untracked goal says "No tracking for this goal."; scrubber and Prev/Next stop on goals; next two files
+  preload; offered only when the game has tracked goals. Kevin to watch LAK at WSH (2026020144) before
+  we decide the default and production.
 - Open: rail witness 385/390; 28 vs 27 shots.
 
 ## ⏭ 0.00 (previous) — 2026-10-18
