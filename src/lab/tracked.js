@@ -21,6 +21,7 @@ const WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Missed the net',
   hit: 'Hit', giveaway: 'Gave the puck away', takeaway: 'Took the puck away', faceoff: 'Face-off' };
 // An event's label stays up for this much GAME time, so it is readable at every speed.
 const TAG_TENTHS = 15;
+const TAG_EDGE = 16;          // half the longest label's width, in rink feet
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -188,7 +189,9 @@ function start(P, f, _inWindow, done) {
       const s = at(pk);
       out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r=".6"/>`);
       for (const t of tags) {
-        if (tt >= t.at && tt < t.at + TAG_TENTHS) out.push(`<text class="tag" x="${s.x.toFixed(2)}" y="${(s.y + 4).toFixed(2)}">${esc(WORDS[t.e.type] || '')}</text>`);
+        // Kept inside the boards: a label at the puck behind a net was cut in half.
+        const lx = Math.min(200 - TAG_EDGE, Math.max(TAG_EDGE, s.x)), ly = Math.min(81, Math.max(6, s.y + 4));
+        if (tt >= t.at && tt < t.at + TAG_TENTHS) out.push(`<text class="tag" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}">${esc(WORDS[t.e.type] || '')}</text>`);
       }
     }
     const g = layer(); if (g) g.innerHTML = out.join('');
