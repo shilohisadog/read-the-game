@@ -56,8 +56,14 @@ must be recorded or measured, never inferred (⛔ "X has the puck" was ruled out
 - **`deploy.yml` is four jobs**: `site` → `verify` ‖ `browser` → `ship` (13 s when the site did not
   change, ~3 min when it did). Code-only checks run in `gates.yml`. `health --check --js-from`.
 
+- **Challenges say how they ended** (`ab8be92`): `src/lib/challenge.js` + the color line. A goal taken off on
+  review is deleted from the league's record; the outcome is read from what is left and said on the first frame
+  after the review. Archive: 793 reviews; the centre-ice restart agrees on 771 of 778.
+- **Goals mode: Next lands on the goal frame** after the goal line (`66677a9`).
+
 ### Open
-1. Teaching moments for the tracked goal (above). Candidates: the power play (in prose already), traffic
+1. Teaching moments for the tracked goal (above). Challenges next: Goals mode is silent on a challenge; the
+   coaches' success rate (499 of 739 won) as an "Is that a lot?" needs a published measure. Candidates: the power play (in prose already), traffic
    in front of the net, how far the goaltender moved, the shooter's space, rebounds, odd-man rushes.
 2. The tracked goal on the front door's hero; the share link carrying `replay`/`speed`; smaller tracking
    files (~220 KB each, raw).
