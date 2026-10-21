@@ -68,7 +68,7 @@ function plan(G, e) {
     const turn = Math.sign(e.x) === Math.sign(lg(frames[k].onIce['1']).x) ? 1 : -1;
     return { e, frames, k, before: (frames[k].timeStamp - frames[0].timeStamp) / 10, turn, ready: true };
   });
-  p.then(v => { p.value = v; });
+  p.then(v => { p.value = v; p.done = true; });
   plans.set(e, p);
   return p;
 }
@@ -177,6 +177,7 @@ let hold = null;   // { i, g, ms, finished }
 export const tracked = {
   frame(f) {
     last = f;
+    goals.frame(f);
     // Anything but the overlay's own hold ends it: a scrub, a step, the goal frame.
     if (run && !(hold && f.i === hold.i && f.how === 'play')) end();
     if (hold && f.i !== hold.i) hold = null;
@@ -186,6 +187,7 @@ export const tracked = {
   },
   next(i) {
     const f = last;
+    if (goals.on && f) return goals.next(i, f);
     if (hold && hold.i === i) { const g = hold.g; hold = null; end(); return g; }
     // Only `step()` calls this, and only while playing.
     if (!f || f.REDUCED) return i + 1;
@@ -217,3 +219,111 @@ function offer(f) {
     w.appendChild(b);
   });
 }
+
+
+/* ---------------------------------------------------------------- goals mode
+   Kevin, 2026-10-21: "Replay: All events | Goals". In Goals, Play goes goal to goal:
+   it holds on the last event before a goal's tracked stretch, plays the tracking,
+   lands on the goal frame, and moves on; after the last goal, the horn (and the
+   summary). A goal with no tracking is shown as its goal frame and says so. The
+   scrubber and Prev/Next stop only on goals. Offered only on games with tracked goals. */
+const WAIT_MS = 400;              // a goal's file not in yet: wait this long and ask again
+const goalList = EV => EV.reduce((a, e, k) => (e.type === 'goal' && e.pt !== 'SO' ? (a.push(k), a) : a), []);
+const goals = {
+  on: new URLSearchParams(location.search).get('replay') === 'goals',
+  ui: null, wired: false, offered: null,
+  next(i, f) {
+    if (hold && hold.i === i) {
+      const h = hold; hold = null;
+      if (!h.wait) { end(); return h.g; }                       // the tracking has run: the goal frame
+    }
+    const gs = goalList(f.EV), g = gs.find(k => k > i);
+    if (g == null) return f.EV.length - 1;                       // no goals left: the horn
+    const p = plan(f.G, f.EV[g]);
+    this.ahead(f, g);
+    if (!p.done && !f.REDUCED) { hold = { i, g, ms: WAIT_MS, wait: true }; return i; }
+    const P = p.value;
+    if (!P || f.REDUCED) return g;
+    // Hold on the last event before the tracked stretch, so the board reads the score going in.
+    let j = g - 1;
+    while (j > i && f.EV[j].s >= f.EV[g].s - P.before) j--;
+    j = Math.max(j, i);
+    const inWindow = f.EV.slice(j + 1, g).filter(e => WORDS[e.type]);
+    hold = { i: j, g, ms: start(P, f, inWindow, () => {}) };
+    return j;
+  },
+  // The next two goals' files load while this one plays.
+  ahead(f, from) { goalList(f.EV).filter(k => k > from).slice(0, 2).forEach(k => plan(f.G, f.EV[k])); },
+  frame(f) {
+    this.control(f);
+    if (!this.on) return;
+    this.wire(f);
+    const gs = goalList(f.EV), g = gs.find(k => k >= f.i);
+    if (g != null) { plan(f.G, f.EV[g]); this.ahead(f, g); }
+    // A goal with no tracking says so, under the replay's own line.
+    if (f.cur && f.cur.type === 'goal') {
+      const p = plans.get(f.cur), e = f.cur;
+      const say = () => {
+        if (!last || last.cur !== e || !p.done || p.value) return;
+        const line = $('playline'); if (line && !/No tracking/.test(line.textContent))
+          line.textContent = (line.textContent ? line.textContent + ' ' : '') + 'No tracking for this goal.';
+      };
+      if (p) { if (p.done) say(); else p.then(say); }
+    }
+  },
+  // Prev/Next and the scrubber stop only on goals while this mode is on.
+  wire(f) {
+    if (this.wired) return; this.wired = true;
+    const to = k => { const t = document.querySelector(`#gticks .gtick[data-k="${k}"]`); if (t) t.click(); };
+    const grp = $('fwd') && $('fwd').parentNode;
+    if (grp) grp.addEventListener('click', ev => {
+      if (!this.on || !last) return;
+      const b = ev.target.closest && ev.target.closest('button'); if (!b || (b.id !== 'fwd' && b.id !== 'back')) return;
+      ev.stopPropagation(); ev.preventDefault();
+      const gs = goalList(last.EV), i = last.i;
+      const k = b.id === 'fwd' ? gs.find(x => x > i) : [...gs].reverse().find(x => x < i);
+      if (k != null) to(k);
+    }, true);
+    const sc = $('scrub'), oi = sc.oninput, oc = sc.onchange;
+    const snap = v => { const gs = goalList(last ? last.EV : []); if (!this.on || !gs.length) return v;
+      return gs.reduce((b, k) => (Math.abs(k - v) < Math.abs(b - v) ? k : b), gs[0]); };
+    sc.oninput = e => oi && oi({ target: { value: String(snap(+e.target.value)) } });
+    sc.onchange = e => oc && oc({ target: { value: String(snap(+e.target.value)) } });
+  },
+  // "Replay: All events | Goals", beside Play, once the game is known to have tracked goals.
+  control(f) {
+    if (this.offered === null) {
+      this.offered = false;
+      goalsOf(gidOf(f.G)).then(rows => { if (rows.length) { this.offered = true; this.draw(); } });
+    }
+    if (this.offered) this.draw();
+  },
+  draw() {
+    if (!this.ui) {
+      const play = $('play'); if (!play) return;
+      const d = document.createElement('div');
+      d.className = 'grp labmode'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'What the replay plays');
+      d.innerHTML = '<span>Replay</span><button type="button" class="spd" data-m="all">All events</button>'
+        + '<button type="button" class="spd" data-m="goals">Goals</button>';
+      play.insertAdjacentElement('afterend', d);
+      d.onclick = ev => { const m = ev.target.dataset && ev.target.dataset.m; if (m) this.set(m === 'goals'); };
+      this.ui = d;
+    }
+    for (const b of this.ui.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.m === 'goals') === this.on));
+  },
+  set(on) {
+    if (on === this.on) return;
+    if (/Pause/.test($('play').textContent)) $('play').click();          // stop, then switch
+    hold = null; end();
+    this.on = on;
+    const u = new URL(location.href);
+    if (on) u.searchParams.set('replay', 'goals'); else u.searchParams.delete('replay');
+    history.replaceState(history.state, '', u);
+    if (last) this.frame(last);
+    this.draw();
+  },
+};
+css.textContent += `
+#rg .labmode{display:inline-flex;align-items:center;gap:0}
+#rg .labmode span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;margin:0 6px 0 4px}
+#rg .labmode button[aria-pressed="true"]{background:#7c3aed;color:#fff;border-color:#7c3aed}`;
