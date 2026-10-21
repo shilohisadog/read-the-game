@@ -32,43 +32,43 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-21
+## ⏭ 0.00 PICK UP HERE — 2026-10-21 (end of day)
 
-- ⛔ **Fixed: the replay was a left-right mirror of the league's picture and the broadcast** (`673f159`,
-  verified live on 2026020010: the goal draws at the left end, lower half, TBL's net on the left).
-  `app.js::AX` now negates x before `SX`. Counts unaffected; rule diagrams unchanged.
-- **The tracked goal** is on the lab (`src/lab/tracked.js`): while playing, the ~9 s before a goal are
-  shown from the league's tracking over the same rink at ½ speed; the text owns the goal and says the
-  strength; no puck trail. Kevin is watching varied goals (lab index: "tracked goals to watch") before
-  we choose teaching moments. Then: trimmed tracking files, the hero game, production.
-- Tracking data: 2026-27 pulled; nightly from 2026-10-19 on; no past seasons. NHL permission request
-  sent 2026-10-19, awaiting a reply.
-- ✅ The same-colour clash: every visiting figure (shooter, goaltender) wears WHITE trimmed in its club's
-  colour, as road teams do (`figures.js` `road`) — matches the ice marks and the legend. Goal ticks unchanged.
-- ✅ While the whole-game summary is open the scoreboard reads the FINAL ("Final", "Final · Overtime",
-  "Final · Shootout"; no clock, boxes or pills), whatever the playhead; Hide gives the board back
-  (`app.js::drawBoard`). Kevin: a summary link opened over a 0-0 pre-game board.
-- ✅ The summary's "Watch the league's recap" opens the recap wherever the playhead is (it opened an empty
-  box on a summary link — Kevin, from his own X post); the clip box follows the summary like the board.
-- ✅ `deploy.yml` is four jobs (Kevin, 2026-10-21): `site` (stop if src/ and functions/ are unchanged) →
-  `verify` ‖ `browser` → `ship`. Only checks on what is published run there; the clock sweep, Python suite,
-  refcheck, corpus, health and tiers run in gates.yml and no longer block a deploy. `health --check` reads
-  the clock sweep's run (`--js-from`) instead of running the suite a fourth time.
-- ✅ **THE TRACKED GOAL IS IN PRODUCTION** (Kevin, 2026-10-21, after the lab): `src/lib/tracked.js` (arithmetic +
-  plain-English words, `test/tracked.test.js` on a real goal, Panarin 2026020144 ev202) and `app.js` `trk*`
-  (`test/tracked-page.test.js`). All events: a tracked goal's ~10 s play over the rink and hand back to the goal
-  frame. `Replay: All events | Goals` + `Speed: ¼ | ½ | Real time` beside Play, only on games with tracked goals;
-  Goals goes goal to goal, first frame held 1.5 s, Prev/Next step a goal's stops (first frame, each recorded
-  event, the goal line), Pause freezes, "▶ See it tracked" under reduced motion or when stepped onto a goal.
-  The line names the league's recorded events in those seconds and says when there were none. Not on the
-  front-door hero yet. ⛔ No possession tags (nearest ≠ possession; Kevin agreed).
-- Lab: the tracked goal plays at ¼ speed; the play's numbers are hidden while it plays.
-- Lab: **Goals mode** — `Replay: All events | Goals` beside Play (`?replay=goals`, `src/lab/tracked.js`
-  `goals`): Play goes goal to goal through the tracking, holding the board at the score going in; an
-  untracked goal says "No tracking for this goal."; scrubber and Prev/Next stop on goals; next two files
-  preload; offered only when the game has tracked goals. Kevin to watch LAK at WSH (2026020144) before
-  we decide the default and production.
-- Open: rail witness 385/390; 28 vs 27 shots.
+**Next (Kevin):** debug the tracked goal and add TEACHING MOMENTS to it — in a new thread. Teaching moments
+must be recorded or measured, never inferred (⛔ "X has the puck" was ruled out: nearest is not possession).
+
+### Live today, each checked in a real browser on readthegame.co
+- **The tracked goal + Goals mode** (`72bda64`, `e2ac5b4`). `src/lib/tracked.js` (pure) + `app.js` `trk*`;
+  controls `#trkMode`/`#trkSpeed` and `<g id="track">` in `builders/build_main.py`; CSS at the end of
+  `src/app.css`. Tests `test/tracked.test.js` (real goal: Panarin, 2026020144 ev202; orientation proved
+  against the league's recorded hit) and `test/tracked-page.test.js`.
+  - All events: a tracked goal's ~10 s play over the rink, then the goal frame.
+  - `Replay: All events | Goals`, `Speed: ¼ | ½ | Real time` beside Play, only where the game has tracked
+    goals (`?replay=goals&speed=`). Goals: goal to goal, first frame held 1.5 s, Prev/Next through a goal's
+    stops (first frame, each recorded event, goal line), Pause freezes, scrubber snaps to goals,
+    "▶ See it tracked" under reduced motion.
+  - Words in plain English: "Tracked · goal by #9 Kempe (LAK)"; the league's recorded events in those
+    seconds, or "The league recorded nothing else in these N seconds: watch the puck."; strength in prose.
+- **The rink was a left-right mirror of the league's picture** — fixed (`673f159`).
+- **The visiting side wears white**, trimmed in its colour (`figures.js` `road`).
+- **The whole-game summary** shows the FINAL on the scoreboard (`drawBoard`), and its recap button works
+  on a summary link (`drawClip`).
+- **`deploy.yml` is four jobs**: `site` → `verify` ‖ `browser` → `ship` (13 s when the site did not
+  change, ~3 min when it did). Code-only checks run in `gates.yml`. `health --check --js-from`.
+
+### Open
+1. Teaching moments for the tracked goal (above). Candidates: the power play (in prose already), traffic
+   in front of the net, how far the goaltender moved, the shooter's space, rebounds, odd-man rushes.
+2. The tracked goal on the front door's hero; the share link carrying `replay`/`speed`; smaller tracking
+   files (~220 KB each, raw).
+3. ⚠️ The `lab` branch still carries its own older copy of the tracked goal (`src/lab/tracked.js` + hooks
+   in its `app.js`). Strip it before merging `main` into `lab`, or two overlays run.
+4. Move the deploy's no-network-page grep into `npm run gates` (it caught a helper *named* `trkFetch(`
+   only at deploy time).
+5. Unexplained: rail witness 385/390; the feed's 28 vs our 27 shots on DiPietro (2026020120).
+6. Waiting on Kevin: data-model item 6, item 12 (reduced motion), the lesson strip on a landscape phone.
+7. The NHL's reply to the 2026-10-19 permission request (Kevin OK'd use meanwhile). Tracking: this season
+   only, nightly from 2026-10-19; no past seasons, ever.
 
 ## ⏭ 0.00 (previous) — 2026-10-18
 
