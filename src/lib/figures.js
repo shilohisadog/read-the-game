@@ -26,10 +26,13 @@
  * else; it does not claim the figure was shooting. Neither asserts anything
  * about how a player stood, moved or skated.
  *
- *   FIG.mascot(pen, px, py, size, jersey, out, { t, motion, glow, light })
+ *   FIG.mascot(pen, px, py, size, jersey, out, { t, motion, glow, light, road })
  *
- * px,py is the figure's FEET. size is its height.
+ * px,py is the figure's FEET. size is its height. `road`: the visiting side wears
+ * white trimmed in `jersey`, as road teams do, so two clubs of one colour still
+ * read as two teams (TBL-NYR are both blue; five pairs share a hex exactly).
  */
+const ROAD = '#ffffff';
 /* A stick blade, taped. The blade used to be drawn in near-black on near-black
    ice, which made it vanish — you couldn't tell the sticks had blades at all.
    White tape is what a real blade actually wears, so it reads as hockey rather
@@ -56,6 +59,7 @@ export function _rr(g,x,y,w,h,r){
 
 export function figMascot(g,px,py,size,jersey,out,o){
  o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ const road=!!o.road, club=jersey, body=road?ROAD:jersey;
  // How large the figure will actually APPEAR, which is not `size` when drawing
  // into a scaled SVG viewBox. Detail is dropped by apparent size, so a 9-unit
  // figure on a rink that renders 4.3px per unit keeps its face.
@@ -73,22 +77,25 @@ export function figMascot(g,px,py,size,jersey,out,o){
  g.strokeStyle='#cfe0ee'; g.lineWidth=u*0.40;
  g.beginPath(); g.moveTo(-u*2.1,0); g.lineTo(-u*0.5,0); g.moveTo(u*0.5,0); g.lineTo(u*2.3,0); g.stroke();
  if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*5.0:u*2.4;}
- g.fillStyle=jersey; _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.fill();
+ g.fillStyle=body; _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.fill();
  g.shadowBlur=0;
- g.fillStyle='rgba(255,255,255,.80)'; _rr(g,-u*2.1,-u*3.05,u*4.2,u*0.5,u*0.22); g.fill();
- g.strokeStyle=jersey; g.lineWidth=u*1.25;
+ if(road){g.strokeStyle=club; g.lineWidth=u*0.55; _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.stroke();}
+ g.fillStyle=road?club:'rgba(255,255,255,.80)'; _rr(g,-u*2.1,-u*3.05,u*4.2,u*0.5,u*0.22); g.fill();
+ // A road sleeve is white over a club-coloured edge: the same stroke drawn twice.
+ const arms=paths=>{for(const[c,w]of road?[[club,1.25+0.55],[body,1.25-0.1]]:[[body,1.25]]){
+   g.strokeStyle=c; g.lineWidth=u*w; paths(); g.stroke();}};
  if(!goal){
-  g.beginPath(); g.moveTo(-u*1.5,-u*5.0); g.lineTo(u*1.5,-u*4.3); g.lineTo(u*3.2,-u*3.5); g.stroke();
-  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  arms(()=>{g.beginPath(); g.moveTo(-u*1.5,-u*5.0); g.lineTo(u*1.5,-u*4.3); g.lineTo(u*3.2,-u*3.5);});
+  g.fillStyle=club; g.strokeStyle=ink; g.lineWidth=u*0.26;
   g.beginPath(); g.arc(u*3.3,-u*3.4,u*0.92,0,7); g.fill(); g.stroke();
   g.strokeStyle='#8a5c33'; g.lineWidth=u*0.46;
   g.beginPath(); g.moveTo(u*2.5,-u*4.3); g.lineTo(u*5.45,-u*0.48); g.stroke();
   _blade(g,u*5.20,-u*0.46,u*7.30,-u*0.08,u,0.80);
   g.fillStyle='#0b0f13'; g.beginPath(); g.ellipse(u*8.15,-u*0.08,u*0.52,u*0.26,0,0,7); g.fill();
  }else{
-  g.beginPath(); g.moveTo(-u*1.7,-u*5.2); g.lineTo(-u*3.5,-u*8.7);
-  g.moveTo(u*1.7,-u*5.2); g.lineTo(u*3.5,-u*8.7); g.stroke();
-  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  arms(()=>{g.beginPath(); g.moveTo(-u*1.7,-u*5.2); g.lineTo(-u*3.5,-u*8.7);
+   g.moveTo(u*1.7,-u*5.2); g.lineTo(u*3.5,-u*8.7);});
+  g.fillStyle=club; g.strokeStyle=ink; g.lineWidth=u*0.26;
   g.beginPath(); g.arc(-u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
   g.beginPath(); g.arc(u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
   g.strokeStyle='#8a5c33'; g.lineWidth=u*0.42;
@@ -163,7 +170,8 @@ export function figGoalie(g,px,py,size,jersey,out,o){
     ⭐ SO THE PADS WEAR THE CLUB'S COLOUR and the trim is white. It is what the
     equipment really looks like, it makes him legible at every size, and it tells
     a novice whose end this is — which the white version could not. */
- const u=size/10, ink='#0d141b', skin='#f7dcb4', trim='#f4f8fb';
+ const road=!!o.road, club=jersey, body=road?ROAD:jersey;
+ const u=size/10, ink='#0d141b', skin='#f7dcb4', trim=road?club:'#f4f8fb', edge=road?club:ink;
  const X=v=>v*d;                       // the only asymmetric parts are his hands
  g.save(); g.lineCap='round'; g.lineJoin='round';
  /* WIDER THAN A SKATER'S, because the pads are. A shadow that matched the
@@ -185,7 +193,9 @@ export function figGoalie(g,px,py,size,jersey,out,o){
     against the body and the part count is as low as the idea allows.
     ⚠️ Neither was reachable by reading. Both were found by rendering the figure
     and looking at it -- `docs/reviews/figures-2026-10-04/`. */
- g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+ /* ON THE ROAD THE PADS ARE WHITE, and white alone vanished on the ice (above):
+    so the outline and the knee rolls take the club's colour, as real road pads do. */
+ g.fillStyle=body; g.strokeStyle=edge; g.lineWidth=u*(road?0.5:0.26);
  _rr(g,-u*2.65,-u*3.95,u*2.5,u*3.95,u*0.62); g.fill(); g.stroke();
  _rr(g,u*0.15,-u*3.95,u*2.5,u*3.95,u*0.62); g.fill(); g.stroke();
  /* THE KNEE ROLL, one line per pad. Without it they are two blank slabs; with
@@ -196,7 +206,8 @@ export function figGoalie(g,px,py,size,jersey,out,o){
  g.strokeStyle='#cfe0ee'; g.lineWidth=u*0.40;
  g.beginPath(); g.moveTo(-u*2.5,0); g.lineTo(-u*0.8,0); g.moveTo(u*0.8,0); g.lineTo(u*2.5,0); g.stroke();
  /* THE CHEST sits ON the pads with no gap, so the two read as one body. */
- g.fillStyle=jersey; _rr(g,-u*3.0,-u*7.1,u*6.0,u*3.35,u*1.1); g.fill();
+ g.fillStyle=body; _rr(g,-u*3.0,-u*7.1,u*6.0,u*3.35,u*1.1); g.fill();
+ if(road){g.strokeStyle=club; g.lineWidth=u*0.5; _rr(g,-u*3.0,-u*7.1,u*6.0,u*3.35,u*1.1); g.stroke();}
  g.fillStyle=trim; _rr(g,-u*2.95,-u*4.6,u*5.9,u*0.5,u*0.22); g.fill();
  /* ⚠️ THE HANDS ARE TUCKED AGAINST THE CHEST, not held out on arms. Held out,
     they read as two objects beside a goaltender; tucked, they read as his. */

@@ -276,19 +276,16 @@ test('a goaltender stands in each crease, and the sides agree with the scoreboar
   const hostRight = (rich.sides || {})[1] === 'right';
   const [left, right] = gks;
   const [visitor, host] = hostRight ? [left, right] : [right, left];
-  /* ⭐⭐ BOTH GOALTENDERS NOW WEAR THEIR OWN CLUB'S COLOUR, and that is a change.
-     The glyph gave the visitor a WHITE body with a club-coloured outline, after
-     the real sweater convention. The figure that replaced it on 2026-10-04 is the
-     same drawing the SHOOTER uses, and `marks.js` has always painted a shooter in
-     his club's colour whichever end he came from — so keeping the white visitor
-     would have been the one place on the ice where two people of the same kind
-     were coloured by different rules. The identity claim is unchanged and is what
-     this still checks: the man in each crease carries his own club's colour, and
-     he is on the side the scoreboard says he is. */
+  /* THE VISITOR WEARS WHITE, TRIMMED IN ITS COLOUR — every visiting figure, the shooter
+     and the goaltender alike (`figures.js` `road`), as road teams do. Two clubs of one
+     colour (TBL-NYR both blue; five pairs share a hex) were otherwise two identical men.
+     Each still carries his own club's colour, and stands where the league says. */
   assert.ok(host.fills.includes(colourOf(a.$('hAb').textContent).toLowerCase()),
     "the host's goaltender does not wear the host's own colour");
   assert.ok(visitor.fills.includes(colourOf(a.$('aAb').textContent).toLowerCase()),
     "the visitor's goaltender does not wear the visitor's colour");
+  assert.ok(visitor.fills.includes('#ffffff') && !host.fills.includes('#ffffff'),
+    'the visitor wears white and the host does not');
   assert.notDeepEqual(host.fills, visitor.fills,
     'both goaltenders are painted identically, so the colour identifies nobody');
   assert.ok(hostRight ? host.x > 100 && visitor.x < 100 : host.x < 100 && visitor.x > 100,
@@ -863,4 +860,20 @@ test('every mark the stylesheet cuts a key for is NAMED to the reader', () => {
   for (const k of keys)
     assert.match(app, new RegExp(`class="${k}"`),
       `.${k} is styled and drawn, and the reader is never told what it means`);
+});
+
+test('the visiting shooter wears white, trimmed in his colour; the host shooter wears his colour', () => {
+  // MUTATION: drop `road:ft==='a'` in marks.js and the visitor's figure loses its white.
+  const a = boot();
+  const away = colourOf(a.$('aAb').textContent).toLowerCase();
+  const home = colourOf(a.$('hAb').textContent).toLowerCase();
+  const figs = a.every(d => d.$('events').innerHTML)
+    .flatMap(h => h.split(/<g class="ev fig/).slice(1).map(f => f.split(/<(?:g|circle|path|line) class="ev /)[0]));
+  const side = s => figs.filter(f => new RegExp(`^ [^"]*\\b${s}\\b`).test(f));
+  const [aw, hm] = [side('a'), side('h')];
+  assert.ok(aw.length && hm.length, `figures to compare: ${aw.length} visiting, ${hm.length} host`);
+  for (const f of aw) assert.ok(/fill="#ffffff"/i.test(f) && f.toLowerCase().includes(away),
+    'a visiting shooter is not in white trimmed with his colour');
+  for (const f of hm) assert.ok(!/fill="#ffffff"/i.test(f) && f.toLowerCase().includes(home),
+    'a host shooter is not in his own colour');
 });

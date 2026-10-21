@@ -111,7 +111,9 @@ test('on a blocked shot the figure wears the BLOCKER’s sweater, not the shoote
     const cls = m[1].split(/\s+/);
     const side = cls.includes('a') ? 'a' : cls.includes('h') ? 'h' : null;
     if (!side) continue;
-    for (const c of m[0].matchAll(/fill="(#[0-9a-fA-F]{6})"/g)) jerseys[side].add(c[1]);
+    // The visitor's white is its road kit (`figures.js` `road`), not a second club colour.
+    for (const c of m[0].matchAll(/fill="(#[0-9a-fA-F]{6})"/g))
+      if (c[1].toLowerCase() !== '#ffffff') jerseys[side].add(c[1]);
   }
   const only = s => [...s].filter(c => !jerseys[s === jerseys.a ? 'h' : 'a'].has(c));
   const aOnly = [...jerseys.a].filter(c => !jerseys.h.has(c));
