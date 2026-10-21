@@ -231,6 +231,10 @@ function strength(e, G, ab) {
 }
 
 /* ---------------------------------------------------------------- the hooks */
+function noCue(f, g) {
+  const P = g >= 0 ? ready(f.EV[g]) : null, nxt = f.EV[f.i + 1], rg = $('rg');
+  if (rg) rg.classList.toggle('labnocue', !!(P && nxt && f.playing && !f.REDUCED && nxt.s >= f.EV[g].s - P.before));
+}
 let hold = null;   // { i, g, ms, finished }
 export const tracked = {
   frame(f) {
@@ -243,11 +247,13 @@ export const tracked = {
     if (g >= 0) plan(f.G, f.EV[g]);
     if (f.cur && f.cur.type === 'goal') { plan(f.G, f.cur); offer(f); }
     // The next-play cue points at the next RECORDED event; on the frame the tracking takes
-    // over from, that is not where the tracking starts, so it is not drawn.
-    const P = g >= 0 ? ready(f.EV[g]) : null, nxt = f.EV[f.i + 1];
-    const rg = $('rg');
-    if (rg) rg.classList.toggle('labnocue', !!(P && nxt && f.playing && !f.REDUCED && nxt.s >= f.EV[g].s - P.before));
-    if (rg) rg.dataset.labcue = JSON.stringify({ i: f.i, g, P: !!P, nxt: nxt && nxt.s, gs: g >= 0 && f.EV[g].s, before: P && P.before, playing: f.playing, how: f.how });
+    // over from, that is not where the tracking starts, so it is not drawn. Asked again
+    // when the goal's file arrives, which is often during this frame's own pause.
+    // Load the next goal's file early, even across a face-off, so it is there in time.
+    for (let k = f.i + 1; k < f.EV.length && f.EV[k].s - (f.cur ? f.cur.s : 0) <= LOOKAHEAD_S; k++)
+      if (f.EV[k].type === 'goal') { plan(f.G, f.EV[k]); break; }
+    noCue(f, g);
+    if (g >= 0 && !ready(f.EV[g])) plan(f.G, f.EV[g]).then(() => { if (last === f) noCue(f, g); });
   },
   next(i) {
     const f = last;
