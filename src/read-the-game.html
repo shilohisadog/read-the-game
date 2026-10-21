@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mIwfr77uL8uHThZji4UQijSH6rtWLcKrArmuJN5PsVA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-QaGMgE+VRSJM4gtyxDAXrpddvV3oaYXeks//vQYzfCU='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-A8SV1WWWnYptqoNTSNq4c5cRKAVuyrO//LciSU10azA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-QaGMgE+VRSJM4gtyxDAXrpddvV3oaYXeks//vQYzfCU='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -4627,7 +4627,7 @@ function drawClip(at){
  const live=!!cur&&cur.type==='goal'&&cur.clip!=null;
  document.getElementById('rg').classList.toggle('hasclip',live);
  const recap=G.recap;
- if(at>=EV.length-1&&recap!=null){
+ if((at>=EV.length-1||sumOpen)&&recap!=null){
   if(b.dataset.id!==String(recap)){shutClip();b.dataset.id=String(recap);}
   b.hidden=false;
   $('clipDur').textContent='NHL.com';
@@ -5228,7 +5228,8 @@ function setOverlay(which){
  if(which&&playing)stop();
  if(archOpen)renderAlot();
  if(sumOpen)renderSum();
- drawBoard(EV[i],lens(i));}
+ drawBoard(EV[i],lens(i));
+ drawClip(i);}
 function setWork(open){setOverlay(open?'work':null);}
 $('work').onclick=()=>{setWork(!workOpen);if(workOpen)render(i,'');};
 $('alot').onclick=()=>setOverlay(archOpen?null:'alot');
