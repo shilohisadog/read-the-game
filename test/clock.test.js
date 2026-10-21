@@ -53,7 +53,12 @@ test('the app displays remaining time, never elapsed', () => {
   // Five display sites: scoreboard, its initial state, event tooltips, the
   // show-me-the-work header, and the why-popup. A mixed clock would be worse
   // than a consistently wrong one.
-  assert.ok(!/cur\.clock|e\.clock/.test(app),
+  /* ⚠️ ONE READ IS NOT A DISPLAY: src/lib/tracked.js `trackRow` matches a goal to its row
+     in the league's goals.json, which is keyed by elapsed time. That one expression is
+     exempted EXACTLY, so any other read of the elapsed field — a display — still fails. */
+  const MATCH = 'r.clock === e.clock';
+  assert.equal(app.split(MATCH).length - 1, 1, 'the goals.json match is not in the page exactly once');
+  assert.ok(!/cur\.clock|e\.clock/.test(app.replace(MATCH, '')),
     'no display site may read the elapsed field');
   assert.ok(app.includes("$('clk').textContent=cur?cur.rem:'20:00'"),
     'the scoreboard reads `rem`');

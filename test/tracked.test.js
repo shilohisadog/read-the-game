@@ -1,0 +1,115 @@
+/**
+ * The tracked goal's arithmetic and words (src/lib/tracked.js), on a real goal:
+ * #10 Panarin, LAK at WSH, 2026-10-20, with 2 seconds left in the first — the
+ * league's tracking file and the events our extract holds around it.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
+  trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
+  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE,
+} from '../src/lib/tracked.js';
+
+const FX = JSON.parse(readFileSync(new URL('./fixtures/tracked-2026020144-ev202.json', import.meta.url), 'utf8'));
+const G = { game: FX.game, teams: FX.teams, roster: FX.roster, events: FX.events };
+const EV = FX.events;
+const GOAL = EV.find(e => e.type === 'goal' && e.s === 1198);
+const P = trackPlan(FX.frames, GOAL);
+// The replay's own placement with the ends as the league draws them (app.js `AX`/`AY`, DIR 1).
+const AX = x => 100 + x, AY = y => 42.5 - y;
+
+test('the goals index names this goal by period, clock and scorer', () => {
+  const row = trackRow(FX.goals, GOAL);
+  assert.equal(row && row.ev, 202);
+  assert.equal(trackRow(FX.goals, { ...GOAL, clock: '19:57' }), null, 'a different clock is a different goal');
+});
+
+test('the plan finds the frame where the puck crosses the goal line', () => {
+  assert.ok(P, 'no plan');
+  const at = trackFeet(P.frames[P.k].onIce['1']), was = trackFeet(P.frames[P.k - 1].onIce['1']);
+  assert.ok(Math.abs(at.x) > 89 && Math.abs(was.x) <= 89, 'frame k is not the crossing');
+  assert.ok(Math.abs(at.y) <= 3.5, 'the puck crossed outside the posts');
+  assert.ok(P.before > 8 && P.before < 11, `${P.before} s of build-up`);
+  assert.equal(trackPlan(FX.frames, { ...GOAL, x: null }), null, 'a goal with no location cannot be oriented');
+});
+
+test('⭐ the tracking and the league\'s record put the same player in the same place', () => {
+  /* A SECOND PATH TO THE ORIENTATION. `turn` is read off the goal's sign; the hit's
+     location is the league's play-by-play, written down independently. At the hit's
+     moment the hitter (#14 Laferriere) must stand where the league recorded the hit.
+     MUTATION: flip `turn`, or the file's y (`42.5 - y/12`), and he is 20+ feet away. */
+  const win = trackWindow(P, EV), hit = win.find(e => e.type === 'hit');
+  assert.ok(hit, 'the fixture lost its hit');
+  const tag = trackTags(P, win).find(t => t.e === hit);
+  const o = Object.values(P.frames[trackFrameAt(P, tag.at)].onIce).find(x => x.playerId === hit.actor);
+  const f = trackFeet(o), d = Math.hypot(P.turn * f.x - hit.x, P.turn * f.y - hit.y);
+  assert.ok(d < 6, `the hitter is ${d.toFixed(1)} ft from where the league recorded the hit`);
+});
+
+test('the line names the recorded events in plain English, with each player\'s team', () => {
+  const win = trackWindow(P, EV);
+  assert.equal(trackRecorded(P, G, win),
+    ' Recorded by the league in these 10 seconds: a hit by #14 Laferriere (LAK) behind the WSH net.');
+  assert.equal(trackRecorded(P, G, []),
+    ' The league recorded nothing else in these 10 seconds: watch the puck.');
+  assert.equal(trackWho(P, G), 'Tracked · goal by #10 Panarin (LAK)');
+  assert.match(trackSay(P, G, win, 0.25), /^The last 10 seconds before the goal: every player and the puck as the league tracked them, 10 times a second, at a quarter of real speed\. Recorded/);
+  assert.match(trackSay(P, G, win, 1), /in real time\./);
+  assert.equal(trackFirst(P), '10 seconds before the goal. The black dot is the puck.');
+});
+
+test('a place is behind a net, in an end, or the middle of the ice', () => {
+  // The home club (WSH) defends -x in our extract.
+  assert.equal(trackPlace({ x: -97 }, G), ' behind the WSH net');
+  assert.equal(trackPlace({ x: 60 }, G), ' in the LAK end');
+  assert.equal(trackPlace({ x: 10 }, G), ' in the middle of the ice');
+  assert.equal(trackPlace({ x: null }, G), '');
+});
+
+test('the strength says who has the extra skater, from the goal\'s own code', () => {
+  const home = G.teams.home.id, away = G.teams.away.id;
+  assert.equal(trackStrength({ sit: '1451', own: home }, G), ' WSH has a power play: 5 skaters to LAK’s 4.');
+  assert.equal(trackStrength({ sit: '1451', own: away }, G), ' LAK is short-handed: 4 skaters to WSH’s 5.');
+  assert.equal(trackStrength({ sit: '1560', own: away }, G), ' WSH has pulled its goaltender: the net is empty.');
+  assert.equal(trackStrength({ sit: '1551', own: home }, G), '');
+});
+
+test('the stops are the first frame, each recorded event, and the goal line', () => {
+  const tags = trackTags(P, trackWindow(P, EV)), stops = trackStops(P, tags);
+  assert.deepEqual(stops, [P.frames[0].timeStamp, tags[0].at, P.frames[P.k].timeStamp]);
+  assert.equal(trackClock(P, P.k), '00:02', 'at the goal line the clock reads the goal\'s own');
+  assert.equal(trackClock(P, 0), '00:11');
+  assert.equal(trackFrameAt(P, 9e15), P.k, 'never past the goal line');
+});
+
+test('the goal ahead is in the same stretch of play, and the frame held is before its tracking', () => {
+  const g = EV.indexOf(GOAL), gs = trackGoals(EV);
+  assert.ok(gs.includes(g));
+  const faceoff = EV.findIndex(e => e.type === 'faceoff');
+  assert.equal(trackGoalAhead(EV, faceoff), g);
+  assert.equal(trackGoalAhead(EV, faceoff - 1), -1, 'a face-off stands between, so no');
+  assert.equal(trackGoalAhead(EV, -1), -1, 'pre-game has no stretch to be in');
+  const j = trackHoldFrame(EV, g, P);
+  assert.ok(EV[j].s < GOAL.s - P.before && EV[j + 1].s >= GOAL.s - P.before);
+});
+
+test('the frame draws twelve skaters and the puck, the visitor in white, the label inside the boards', () => {
+  const col = { [G.teams.home.id]: '#C8102E', [G.teams.away.id]: '#111111' };
+  const tags = trackTags(P, trackWindow(P, EV)), at = tags[0].at;
+  const svg = trackMarkup(P, trackFrameAt(P, at), at, { G, AX, AY, col, tags });
+  const dots = svg.match(/<circle cx/g) || [];
+  assert.ok(dots.length >= 10 && dots.length <= 13, `${dots.length} players`);
+  assert.match(svg, /class="tpk"/, 'no puck');
+  assert.match(svg, /fill="#fff" stroke="#111111"/, 'the visitor is not in white');
+  assert.match(svg, /fill="#C8102E"/, 'the host is not in its colour');
+  const tag = /<text class="tag" x="([\d.]+)"[^>]*text-anchor="(\w+)">Hit</.exec(svg);
+  assert.ok(tag, 'the hit is not labelled at its moment');
+  // Behind the WSH net, which is at the LEFT boards in this orientation: anchored at its
+  // start, so the word runs into the ice; and it stays at the hit (x = 100 - 97 = 3).
+  assert.equal(tag[2], 'start');
+  assert.ok(+tag[1] < TRACK_TAG_EDGE && +tag[1] > 3, `the label is at x=${tag[1]}, not beside the hit`);
+  const later = trackMarkup(P, trackFrameAt(P, at + TRACK_TAG_TENTHS), at + TRACK_TAG_TENTHS, { G, AX, AY, col, tags });
+  assert.doesNotMatch(later, />Hit</, 'the label outlasts its moment');
+});

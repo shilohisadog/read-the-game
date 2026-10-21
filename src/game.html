@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-T+3rSUX+jYkEfc0tbkILSt1hl7syYfLZqvSt5EvPuzo=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-QaGMgE+VRSJM4gtyxDAXrpddvV3oaYXeks//vQYzfCU='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xMJcpMLr9e9i+7PKPgRyIOhsmCCu4yTGYMLS6E+Z6zM=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-c8AqNTr5usCgN21V6gMXqaEHRthEb9l1eZUEYur532o='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -653,6 +653,22 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .playd.zoned .playline{color:var(--ink);font-weight:600}
 #rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}
 
+#rg{--track:#7c3aed}
+#rg.trk #events,#rg.trk #netmen,#rg.trk #lines,#rg.trk #puck,#rg.trk #labels,#rg.trk #draws,#rg.trk #whistles{opacity:.18;transition:opacity .4s}
+#rg.trk .evn,#rg.trk .whn,#rg.trk .zsn,#rg.trk .shotft,#rg.trkgoals .evn,#rg.trkgoals .whn,#rg.trkgoals .zsn,#rg.trkgoals .shotft{display:none}
+#rg.trk #cue,#rg.trknocue #cue,#rg.trkgoals.trk #caption{display:none}
+#rg.trkgoals.trk #events,#rg.trkgoals.trk #lines,#rg.trkgoals.trk #puck,#rg.trkgoals.trk #labels,#rg.trkgoals.trk #draws,#rg.trkgoals.trk #whistles,#rg.trkgoals.trk #netmen{display:none}
+#rg #track text{pointer-events:none}
+#rg #track .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+#rg #track .tag{font-size:2.6px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:.9px}
+#rg #track .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
+#rg #track .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
+#rg .trkc{display:inline-flex;align-items:center}
+#rg .trkc[hidden]{display:none}
+#rg .trkc span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--track);margin:0 6px 0 4px}
+#rg .transport .trkc button{color:var(--ink)}#rg .transport .trkc button[aria-pressed="true"]{color:var(--track)}
+#rg .wtrk{font:inherit;color:var(--track);background:none;border:0;padding:0;margin:0 0 0 10px;line-height:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
 .hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
  padding:15px 16px 14px;margin:0 0 14px}
 .hmf h3{margin:0 0 9px;font-size:1rem}
@@ -711,7 +727,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 
 <div class="lesson" id="lesson" hidden></div>
 
-<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g></svg>
   
   <p class="who" id="who" aria-live="polite"></p>
   
@@ -755,6 +771,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="icenote" id="iceNote"></p>
 
 <div class="transport"><button class="play" id="play">▶ Play</button>
+  <div class="grp trkc" id="trkMode" role="group" aria-label="What the replay plays" hidden><span>Replay</span><button type="button" class="spd" id="trkAll">All events</button><button type="button" class="spd" id="trkGoals">Goals</button></div>
+  <div class="grp trkc" id="trkSpeed" role="group" aria-label="Speed of the tracked goal" hidden><span>Speed</span><button type="button" class="spd" id="trkQ">&frac14;</button><button type="button" class="spd" id="trkH">&frac12;</button><button type="button" class="spd" id="trkR">Real time</button></div>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <div class="scrubwrap"><input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"><div class="gticks" id="gticks" role="group" aria-label="Goals in this game"></div></div><p class="gtickcap" id="gtickcap" hidden></p></div>
@@ -3499,6 +3517,168 @@ function sentenceFor(o) {
 }
 
 
+
+
+const TRACK_SPEEDS = [[0.25, '¼', 'at a quarter of real speed'],
+  [0.5, '½', 'at half speed'], [1, 'Real time', 'in real time']];
+const TRACK_SPEED = 0.25; 
+const TRACK_LOOKAHEAD_S = 40;
+const TRACK_STILL_MS = 1500;
+const TRACK_TAG_TENTHS = 8;
+const TRACK_TAG_EDGE = 16;
+const GOAL_LINE = 89, BLUE = 25;
+
+const TRACK_WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Shot missed the net',
+  'blocked-shot': 'Shot blocked', hit: 'Hit', giveaway: 'Gave the puck away',
+  takeaway: 'Took the puck away', faceoff: 'Face-off' };
+
+const trackFeet = o => ({ x: o.x / 12 - 100, y: 42.5 - o.y / 12 });
+
+function trackRow(rows, e) {
+  return (rows || []).find(r => r.per === e.per && r.clock === e.clock
+    && (r.scorer == null || r.scorer === e.actor)) || null;
+}
+
+function trackPlan(frames, e) {
+  if (!Array.isArray(frames) || !frames.length || e.x == null) return null;
+  let k = -1;
+  for (let j = 1; j < frames.length; j++) {
+    const a = frames[j - 1].onIce && frames[j - 1].onIce['1'], b = frames[j].onIce && frames[j].onIce['1'];
+    if (a && b && Math.abs(trackFeet(b).x) > GOAL_LINE && Math.abs(trackFeet(a).x) <= GOAL_LINE
+        && Math.abs(trackFeet(b).y) <= 3.5) { k = j; break; }
+  }
+  if (k < 0) return null;
+  const turn = Math.sign(e.x) === Math.sign(trackFeet(frames[k].onIce['1']).x) ? 1 : -1;
+  return { e, frames, k, before: (frames[k].timeStamp - frames[0].timeStamp) / 10, turn };
+}
+
+const trackGoals = EV => EV.reduce((a, e, k) => (e.type === 'goal' && e.pt !== 'SO' ? (a.push(k), a) : a), []);
+
+function trackGoalAhead(EV, i) {
+  if (i < 0) return -1;
+  for (let g = i + 1; g < EV.length; g++) {
+    if (EV[g].per !== EV[i].per || EV[g].s - EV[i].s > TRACK_LOOKAHEAD_S) return -1;
+    if (EV[g].type === 'goal') return g;
+    if (EV[g].type === 'faceoff' || EV[g].type === 'stoppage') return -1;
+  }
+  return -1;
+}
+
+function trackHoldFrame(EV, g, P, floor = 0) {
+  let j = g - 1;
+  while (j > floor && EV[j].s >= EV[g].s - P.before) j--;
+  return Math.max(j, floor);
+}
+
+function trackWindow(P, EV) {
+  const gi = EV.indexOf(P.e);
+  return EV.slice(0, gi < 0 ? 0 : gi)
+    .filter(e => e.per === P.e.per && e.s >= P.e.s - P.before && TRACK_WORDS[e.type]);
+}
+
+function trackPlace(e, G) {
+  if (e.x == null) return '';
+  const end = e.x < 0 ? G.teams.home.ab : G.teams.away.ab;
+  if (Math.abs(e.x) > GOAL_LINE) return ` behind the ${end} net`;
+  if (Math.abs(e.x) > BLUE) return ` in the ${end} end`;
+  return ' in the middle of the ice';
+}
+
+const abOf = (G, tid) => (tid === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
+const named = (G, id) => { const p = G.roster[id]; return p ? `#${p.n} ${p.nm} (${abOf(G, p.tid)})` : null; };
+
+function trackRecorded(P, G, win) {
+  const said = win.map(e => {
+    const a = named(G, e.actor), at = trackPlace(e, G);
+    if (!a) return null;
+    switch (e.type) {
+      case 'hit': return `a hit by ${a}${at}`;
+      case 'giveaway': return `${a} gave the puck away${at}`;
+      case 'takeaway': return `${a} took the puck away${at}`;
+      case 'shot-on-goal': return `a shot by ${a} that the goaltender stopped`;
+      case 'missed-shot': return `a shot by ${a} that missed the net`;
+      case 'blocked-shot': { const b = named(G, e.blk); return b ? `a shot by ${a}, blocked by ${b}` : `a shot by ${a} that was blocked`; }
+      case 'faceoff': return `a face-off${at}, won by ${a}`;
+      default: return null;
+    }
+  }).filter(Boolean);
+  const secs = Math.round(P.before);
+  if (!said.length) return ` The league recorded nothing else in these ${secs} seconds: watch the puck.`;
+  return ` Recorded by the league in these ${secs} seconds: ${said.join('; then ')}.`;
+}
+
+function trackStrength(e, G) {
+  const [ag, as, hs, hg] = String(e.sit || '').split('').map(Number);
+  if (![ag, as, hs, hg].every(Number.isFinite)) return '';
+  const home = e.own === G.teams.home.id, us = abOf(G, e.own), them = abOf(G, home ? G.teams.away.id : G.teams.home.id);
+  const mine = home ? hs : as, theirs = home ? as : hs, theirG = home ? ag : hg;
+  if (theirG === 0) return ` ${them} has pulled its goaltender: the net is empty.`;
+  if (mine > theirs) return ` ${us} has a power play: ${mine} skaters to ${them}’s ${theirs}.`;
+  if (mine < theirs) return ` ${us} is short-handed: ${mine} skaters to ${them}’s ${theirs}.`;
+  return '';
+}
+
+function trackWho(P, G) {
+  const p = G.roster[P.e.actor] || {};
+  return `Tracked · goal by #${p.n || ''} ${p.nm || ''} (${abOf(G, P.e.own)})`;
+}
+function trackSay(P, G, win, speed) {
+  const w = (TRACK_SPEEDS.find(x => x[0] === speed) || TRACK_SPEEDS[0])[2];
+  return `The last ${Math.round(P.before)} seconds before the goal: every player and the puck as the league tracked them, `
+    + `10 times a second, ${w}.${trackStrength(P.e, G)}${trackRecorded(P, G, win)}`;
+}
+const trackFirst = P => `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
+
+function trackTags(P, win) {
+  const tGoal = P.frames[P.k].timeStamp;
+  return win.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10 }));
+}
+function trackStops(P, tags) {
+  const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
+  return [...new Set([t0, ...tags.map(t => t.at).filter(v => v > t0 && v < tGoal), tGoal])].sort((a, b) => a - b);
+}
+function trackFrameAt(P, tt) {
+  let j = 0;
+  while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
+  return j;
+}
+function trackClock(P, j) {
+  const [m, s] = String(P.e.rem || '0:0').split(':').map(Number);
+  const r = Math.max(0, Math.floor(m * 60 + s + (P.frames[P.k].timeStamp - P.frames[j].timeStamp) / 10));
+  return `${String(Math.floor(r / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`;
+}
+
+function trackMarkup(P, j, tt, { G, AX, AY, col, tags }) {
+  const per = P.e.per, at = o => { const p = trackFeet(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
+  const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
+  const F = P.frames[j].onIce, out = [];
+  for (const o of Object.values(F)) {
+    if (!o.playerId) continue;
+    const s = at(o), r = G.roster[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a';
+    const gk = r.pos === 'G', star = stars.has(Number(o.playerId)), away = Number(o.teamId) === Number(G.teams.away.id);
+    const fill = away ? '#fff' : c, rim = away ? c : (gk ? '#0f1a23' : '#fff'), ink = away ? readableInk(c) : inkOn(c);
+    out.push(`<circle cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${gk ? 1.7 : star ? 1.6 : 1.35}" fill="${fill}" stroke="${rim}" stroke-width="${away ? (star ? .7 : .45) : (star ? .55 : .25)}"/>`
+      + `<text class="tn" x="${s.x.toFixed(2)}" y="${s.y.toFixed(2)}" fill="${ink}">${ESC(o.sweaterNumber)}</text>`);
+    if (Number(o.playerId) === Number(P.e.actor))
+      out.push(`<text class="tsc" x="${s.x.toFixed(2)}" y="${(s.y - 2.6).toFixed(2)}" fill="${c}">${ESC(r.nm || '')}</text>`);
+  }
+  const pk = F['1'];
+  if (pk) {
+    const s = at(pk);
+    out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r=".6"/>`);
+    for (const t of tags) {
+      if (!(tt >= t.at && tt < t.at + TRACK_TAG_TENTHS)) continue;
+      const e = t.e, q = e.x != null ? { x: AX(e.x, per), y: AY(e.y, per) } : s;
+      const anc = q.x > 200 - TRACK_TAG_EDGE ? 'end' : q.x < TRACK_TAG_EDGE ? 'start' : 'middle';
+      const lx = q.x + (anc === 'end' ? -2.2 : anc === 'start' ? 2.2 : 0);
+      const ly = anc !== 'middle' ? q.y + 0.9 : q.y > 78 ? q.y - 2.6 : q.y + 4;
+      out.push(`<text class="tag" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" text-anchor="${anc}">${ESC(TRACK_WORDS[e.type] || '')}</text>`);
+    }
+  }
+  return out.join('');
+}
+
+
 function goalTicks(events) {
   const n = events.length;
   const out = [];
@@ -4494,6 +4674,11 @@ const AWAYCOL=colourOf(AAB), HOMECOL=colourOf(HAB);
  el.style.setProperty('--away-text',readableInk(AWAYCOL));
  el.style.setProperty('--home-text',readableInk(HOMECOL));})();
 let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const TRK_ON=!PREVIEW&&typeof DOC==='function';
+const TRK_Q=new URLSearchParams(location.search);
+const TRK={rows:null,plans:new Map(),run:null,hold:null,offered:false,
+  goals:TRK_ON&&TRK_Q.get('replay')==='goals',
+  speed:TRACK_SPEEDS.some(x=>x[0]===Number(TRK_Q.get('speed')))?Number(TRK_Q.get('speed')):TRACK_SPEED};
 const NEWCOMER_DAYS=3;
 let visits=1;
 const NEWCOMER=(()=>{try{
@@ -4731,6 +4916,7 @@ function render(i,how){
  sayOnIce(cur);
  if(goalieOn)$('goaliePanel').innerHTML=goalieCards(G.goalies,R,goalieStats(i),{AID,AAB,HAB,mode:MODE()});
  if(workOpen)renderWork(L,cur,i);
+ trkFrame(i,how,cur);
 }
 function shortHanded(e){
  if(!e||e.type!=='goal'||e.pt==='SO'||!e.sit||e.sit.length!==4||e.own==null)return false;
@@ -5170,12 +5356,152 @@ function sayWho(e){const w=$('who');if(!w)return;
 function sayPlay(line){const d=$('playd');if(!d)return;
  $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
-function dwell(e){return captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
-function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
-function play(){closeLesson();if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
+function dwell(e){const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
+function step(){if(i>=EV.length-1){stop();return;}set(trkNext(i),'play');timer=setTimeout(step,dwell(EV[i]));}
+function play(){closeLesson();if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));trkKick();}
 const PLAY_REST='▶ Play';
 function stop(){playing=false;syncStep();clearTimeout(timer);sayOnIce(EV[i]);}
 $('play').onclick=()=>playing?stop():play();
+function trkFetch(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>null);}
+function trkRows(){return TRK.rows||(TRK.rows=trkFetch('track/'+G.game.id+'/goals.json').then(r=>Array.isArray(r)?r:[]));}
+function trkPlan(e){
+ if(TRK.plans.has(e))return TRK.plans.get(e);
+ const p=trkRows().then(rows=>{const row=trackRow(rows,e);return row?trkFetch('track/'+G.game.id+'/ev'+row.ev+'.json'):null;})
+  .then(frames=>trackPlan(frames,e));
+ p.then(v=>{p.value=v;p.done=true;});
+ TRK.plans.set(e,p);return p;}
+const trkReady=e=>{const p=TRK.plans.get(e);return p&&p.value?p.value:null;};
+function trkEnd(){
+ if(TRK.run&&TRK.run.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(TRK.run.raf);
+ TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');}
+function trkStart(P,still,free){
+ trkEnd();
+ const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
+ const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
+ const WHO=trackWho(P,G),SAY=trackSay(P,G,win,sp),FIRST=trackFirst(P);
+ let played=-still;
+ const now10=()=>t0+Math.max(0,played)/1000*sp*10;
+ const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
+  stops:trackStops(P,tags),at:now10,
+  left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
+  seek(v){played=(v-t0)/10/sp*1000;run.prev=null;trkKick(true);}};
+ const paint=()=>{
+  const tt=now10(),j=trackFrameAt(P,tt);
+  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags}));
+  document.getElementById('rg').classList.add('trk');
+  const say=played<0?FIRST:SAY;if($('playline').textContent!==say)sayPlay(say);
+  const w=$('who');if(w.textContent!==WHO){w.textContent=WHO;w.className='who plain';}
+  $('clk').textContent=trackClock(P,j);
+  return j;};
+ const tick=now=>{
+  if(TRK.run!==run)return;
+  const moving=run.free||playing,advanced=run.prev==null||now>run.prev;
+  if(moving&&run.prev!=null&&now>run.prev)played+=now-run.prev;
+  run.prev=now;
+  const j=paint();
+  run.raf=null;
+  if(j>=P.k){if(run.free&&typeof setTimeout==='function')setTimeout(()=>{if(TRK.run===run)trkEnd();},1500);return;}
+  if(moving&&advanced)run.raf=requestAnimationFrame(tick);};
+ run.tick=tick;run.paint=paint;TRK.run=run;
+ run.raf=requestAnimationFrame(tick);
+ return still+(P.before*1000)/sp;}
+function trkKick(force){const r=TRK.run;if(r&&!r.raf&&(force||playing||r.free)){r.prev=null;r.raf=requestAnimationFrame(r.tick);}}
+function trkFrame(k,how,cur){
+ if(!TRK_ON)return;
+ trkControl();
+ if(TRK.run&&!(TRK.hold&&k===TRK.hold.i&&how==='play'))trkEnd();
+ if(TRK.run)TRK.run.paint();
+ if(TRK.hold&&k!==TRK.hold.i)TRK.hold=null;
+ const g=trackGoalAhead(EV,k);
+ if(g>=0)trkPlan(EV[g]);
+ for(let n=k+1;n<EV.length&&EV[n].s-(cur?cur.s:0)<=TRACK_LOOKAHEAD_S;n++)if(EV[n].type==='goal'){trkPlan(EV[n]);break;}
+ if(TRK.goals)trackGoals(EV).filter(n=>n>=k).slice(0,3).forEach(n=>trkPlan(EV[n]));
+ trkNoCue(k,g);
+ if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i===k)trkNoCue(k,g);});
+ if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
+  const p=trkPlan(cur);
+  p.then(P=>{if(i!==k)return;
+   if(P&&(!playing||REDUCED)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
+   if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))
+    sayPlay(($('playline').textContent?$('playline').textContent+' ':'')+'No tracking for this goal.');});}}
+function trkNoCue(k,g){
+ const P=g>=0?trkReady(EV[g]):null,nxt=EV[k+1];
+ document.getElementById('rg').classList.toggle('trknocue',!!(TRK.goals||P&&nxt&&playing&&!REDUCED&&nxt.s>=EV[g].s-P.before));}
+function trkSeeIt(){const P=EV[i]&&trkReady(EV[i]);if(P)trkStart(P,0,true);}
+function trkExtra(e,base){
+ const h=TRK.hold;
+ if(h&&EV[h.i]===e)return Math.max(0,(TRK.run&&!h.wait?TRK.run.left():h.ms)-base);
+ return 0;}
+function trkNext(k){
+ if(!TRK_ON)return k+1;
+ if(TRK.goals)return trkGoalsNext(k);
+ if(TRK.hold&&TRK.hold.i===k){const g=TRK.hold.g;TRK.hold=null;trkEnd();return g;}
+ if(REDUCED)return k+1;
+ const g=trackGoalAhead(EV,k);if(g<0)return k+1;
+ const P=trkReady(EV[g]),nxt=EV[k+1];
+ if(!P||!nxt||nxt.s<EV[g].s-P.before)return k+1;
+ TRK.hold={i:k,g,P,ms:trkStart(P,0,false)};
+ return k;}
+const TRK_WAIT_MS=400;
+function trkGoalsNext(k){
+ const h=TRK.hold;
+ if(h&&h.i===k){TRK.hold=null;if(!h.wait){trkEnd();return h.g;}}
+ const g=trackGoals(EV).find(n=>n>k);
+ if(g==null)return EV.length-1;
+ const p=trkPlan(EV[g]);
+ if(!p.done&&!REDUCED){TRK.hold={i:k,g,ms:TRK_WAIT_MS,wait:true};return k;}
+ const P=p.value;
+ if(!P||REDUCED)return g;
+ const j=trackHoldFrame(EV,g,P,k);
+ TRK.hold={i:j,g,P,ms:trkStart(P,TRACK_STILL_MS,false)};
+ return j;}
+function trkStep(dir){
+ if(playing)stop();
+ const r=TRK.run;
+ if(r){const now=r.at(),k=dir>0?r.stops.find(v=>v>now+0.5):[...r.stops].reverse().find(v=>v<now-0.5);
+  if(k!=null){r.seek(k);return;}}
+ const gs=trackGoals(EV),here=r&&r.g>=0?r.g:i;
+ const g=dir>0?gs.find(n=>n>here)
+  :(!r&&EV[i]&&EV[i].type==='goal'&&gs.includes(i))?i:[...gs].reverse().find(n=>n<here);
+ if(g!=null)trkOpen(g,dir>0?'first':'goal');}
+function trkOpen(g,where){
+ const p=trkPlan(EV[g]);
+ if(!p.done){const at=i;p.then(()=>{if(i===at)trkOpen(g,where);});return;}
+ const P=p.value;
+ if(!P){stop();set(g,'jump');return;}
+ const j=trackHoldFrame(EV,g,P,0);
+ stop();set(j,'jump');
+ TRK.hold={i:j,g,P,ms:0};
+ TRK.hold.ms=trkStart(P,where==='first'?TRACK_STILL_MS:0,false);
+ if(where==='goal'&&TRK.run)TRK.run.seek(TRK.run.stops[TRK.run.stops.length-1]);}
+function trkSnap(v){
+ const gs=TRK.goals?trackGoals(EV):[];
+ return gs.length?gs.reduce((b,n)=>Math.abs(n-v)<Math.abs(b-v)?n:b,gs[0]):v;}
+function trkControl(){
+ if(!TRK.offered){TRK.offered=true;
+  trkRows().then(rows=>{TRK.shown=rows.length>0;trkPaint();});}
+ trkPaint();}
+function trkPaint(){
+ $('trkMode').hidden=!TRK.shown;$('trkSpeed').hidden=!TRK.shown;
+ $('trkAll').setAttribute('aria-pressed',String(!TRK.goals));$('trkGoals').setAttribute('aria-pressed',String(TRK.goals));
+ for(const [v,id] of [[0.25,'trkQ'],[0.5,'trkH'],[1,'trkR']])$(id).setAttribute('aria-pressed',String(TRK.speed===v));
+ document.getElementById('rg').classList.toggle('trkgoals',TRK.goals);}
+function trkUrl(k,v){if(typeof history==='undefined')return;
+ const u=new URL(location.href);if(v==null)u.searchParams.delete(k);else u.searchParams.set(k,v);
+ history.replaceState(history.state,'',u);}
+function trkMode(on){
+ if(on===TRK.goals)return;
+ if(playing)stop();
+ TRK.hold=null;trkEnd();TRK.goals=on;trkUrl('replay',on?'goals':null);trkPaint();set(i,'');}
+function trkSpeed(v){
+ if(v===TRK.speed)return;
+ TRK.speed=v;trkUrl('speed',v===TRACK_SPEED?null:String(v));trkPaint();
+ const h=TRK.hold;
+ if(TRK.run&&h&&!h.wait&&playing){stop();TRK.hold={...h,ms:trkStart(h.P,TRK.goals?TRACK_STILL_MS:0,false)};play();}}
+$('trkMode').hidden=true;$('trkSpeed').hidden=true; 
+if(TRK_ON){
+ $('trkAll').onclick=()=>trkMode(false);$('trkGoals').onclick=()=>trkMode(true);
+ $('trkQ').onclick=()=>trkSpeed(0.25);$('trkH').onclick=()=>trkSpeed(0.5);$('trkR').onclick=()=>trkSpeed(1);}
 if($('pressplay'))$('pressplay').onclick=()=>play();
 if($('rotgo'))$('rotgo').onclick=()=>document.getElementById('rg').classList.add('showanyway');
 const DBL_BACK=-1,DBL_FWD=1;
@@ -5195,7 +5521,7 @@ if(!PREVIEW){
    const r=ice.getBoundingClientRect();
    const back=r.width>0&&ev.clientX<r.left+r.width/2;
    stop();set((preI==null?i:preI)+(back?DBL_BACK:DBL_FWD),'jump');});}}
-function jump(d){stop();set(i+d,'jump');}
+function jump(d){if(TRK.goals){trkStep(d);return;}stop();set(i+d,'jump');}
 $('back').addEventListener('click',()=>jump(-1));
 $('fwd').addEventListener('click',()=>jump(1));
 let gesturing=false,reported=0;
@@ -5204,8 +5530,8 @@ $('scrub').onpointerdown=gestureBegan;
 $('scrub').onkeydown=gestureBegan;
 $('scrub').oninput=e=>{stop();
  if(gesturing&&++reported===1)return;
- set(+e.target.value,'');};
-$('scrub').onchange=e=>{gesturing=false;set(+e.target.value,'jump');};
+ set(trkSnap(+e.target.value),'');};
+$('scrub').onchange=e=>{gesturing=false;set(trkSnap(+e.target.value),'jump');};
 function setGear(g){gear=Math.max(0,Math.min(PACE.length-1,g));frameMs=PACE[gear];
  $('slower').disabled=gear===0;$('faster').disabled=gear===PACE.length-1;}
 $('slower').onclick=()=>setGear(gear-1);
@@ -5367,7 +5693,8 @@ $('labels').addEventListener('dblclick',ev=>{const b=$('clipbox');
 let doorOpened=false;
 const doorDidOpen=()=>{doorOpened=true;};
 $('who').addEventListener('click',ev=>{
- if(ev.target&&ev.target.closest&&ev.target.closest('.wclip'))openClip(null);});
+ if(ev.target&&ev.target.closest&&ev.target.closest('.wclip'))openClip(null);
+ if(ev.target&&ev.target.closest&&ev.target.closest('.wtrk'))trkSeeIt();});
 if($('clipbox'))$('clipbox').addEventListener('toggle',()=>{
  if($('clipbox').open)buildClip();else $('clipFrame').innerHTML='';});
 $('whyBk').addEventListener('click',e=>{const t=e.target;

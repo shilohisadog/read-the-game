@@ -174,5 +174,6 @@ The MIT licence covers our code only. NHL game data, statistics and marks are
 the NHL's and are not licensed by this repository. A small sample is included
 for testing and to let anyone check the methods above: the league's raw
 documents for one game (`data/pbp_2023020204.json`, `data/box_2023020204.json`)
-and per-game extracts derived from a few others (`data/rich*.json`,
-`test/fixtures/extracts/`).
+per-game extracts derived from a few others (`data/rich*.json`,
+`test/fixtures/extracts/`), and one goal's tracking file as the league publishes it,
+with the events around it (`test/fixtures/tracked-2026020144-ev202.json`).

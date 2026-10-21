@@ -131,7 +131,7 @@ __CSS__</style>
      it plays and pauses. `$('ice')` rather than a `.rinkbox>svg` selector --
      every other element this app binds is reached by id, and the one query
      that was not is the one the unit harness refused to model. -->
-<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g></svg>
   <!-- ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING. Kevin, 2026-09-07,
        looking at a giveaway: "the (vertical) distance between '#79 Hart gave the
        puck away' and the rink, there are many pixels between the event(s)".
@@ -372,6 +372,8 @@ __CSS__</style>
 <p class="icenote" id="iceNote"></p>
 
 <div class="transport"><button class="play" id="play">▶ Play</button>
+  <div class="grp trkc" id="trkMode" role="group" aria-label="What the replay plays" hidden><span>Replay</span><button type="button" class="spd" id="trkAll">All events</button><button type="button" class="spd" id="trkGoals">Goals</button></div>
+  <div class="grp trkc" id="trkSpeed" role="group" aria-label="Speed of the tracked goal" hidden><span>Speed</span><button type="button" class="spd" id="trkQ">&frac14;</button><button type="button" class="spd" id="trkH">&frac12;</button><button type="button" class="spd" id="trkR">Real time</button></div>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <div class="scrubwrap"><input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"><div class="gticks" id="gticks" role="group" aria-label="Goals in this game"></div></div><p class="gtickcap" id="gtickcap" hidden></p></div>
@@ -764,6 +766,9 @@ LIB = ["rink.js", "registry.js", "attribution.js", "layer.js", "strength.js", "b
        # BEFORE sentence.js, which asks it which competition a game is.
        "competitions.js",
        "teams.js", "layers/tied.js", "sentence.js",
+       # The tracked goal: the league's tracking of the seconds before a goal. AFTER
+       # teams.js and esc.js, which it imports; markup only, app.js fetches and draws.
+       "tracked.js",
        # WHERE A FRAME SITS ON THE SCRUB TRACK. Depends on nothing, so it can sit
        # anywhere; it is a LIB module rather than a few lines in app.js because
        # the two numbers in it -- the `(k+1)/n` fraction and the thumb-inset

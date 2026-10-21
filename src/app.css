@@ -2654,3 +2654,22 @@
 #rg .playline:hover{text-decoration:underline dotted}
 #rg .playd.zoned .playline{color:var(--ink);font-weight:600}
 #rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}
+
+/* THE TRACKED GOAL (app.js `trkStart`, src/lib/tracked.js). While it plays the play's
+   marks dim and their numbers go; in Goals they are not drawn at all, nor the next-play
+   cue, which marks the next RECORDED event and not where the tracking starts. */
+#rg{--track:#7c3aed}
+#rg.trk #events,#rg.trk #netmen,#rg.trk #lines,#rg.trk #puck,#rg.trk #labels,#rg.trk #draws,#rg.trk #whistles{opacity:.18;transition:opacity .4s}
+#rg.trk .evn,#rg.trk .whn,#rg.trk .zsn,#rg.trk .shotft,#rg.trkgoals .evn,#rg.trkgoals .whn,#rg.trkgoals .zsn,#rg.trkgoals .shotft{display:none}
+#rg.trk #cue,#rg.trknocue #cue,#rg.trkgoals.trk #caption{display:none}
+#rg.trkgoals.trk #events,#rg.trkgoals.trk #lines,#rg.trkgoals.trk #puck,#rg.trkgoals.trk #labels,#rg.trkgoals.trk #draws,#rg.trkgoals.trk #whistles,#rg.trkgoals.trk #netmen{display:none}
+#rg #track text{pointer-events:none}
+#rg #track .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+#rg #track .tag{font-size:2.6px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:.9px}
+#rg #track .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
+#rg #track .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
+#rg .trkc{display:inline-flex;align-items:center}
+#rg .trkc[hidden]{display:none}
+#rg .trkc span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--track);margin:0 6px 0 4px}
+#rg .transport .trkc button{color:var(--ink)}#rg .transport .trkc button[aria-pressed="true"]{color:var(--track)}
+#rg .wtrk{font:inherit;color:var(--track);background:none;border:0;padding:0;margin:0 0 0 10px;line-height:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}

@@ -109,7 +109,8 @@ test('the Face-offs panel places tonight’s busiest takers by their season shar
     { homeId: rich.teams.home.id, awayId: rich.teams.away.id, roster: rich.roster }).by)
     .sort((x, y) => (y[1].w + y[1].l) - (x[1].w + x[1].l))[0][0];
   const asked = [];
-  const doc = name => { asked.push(name); return Promise.resolve({ season: '2099', qualify: 41,
+  // The tracked goal asks for the game's tracking index at load; this test is about the panel.
+  const doc = name => { if (!name.startsWith('track/')) asked.push(name); return Promise.resolve({ season: '2099', qualify: 41,
     fo: { regular: 5, need: 29, range: { min: 0.35, max: 0.65, median: 0.51, n: 450 },
           seasons: { [season]: { [busiest]: [300, 500, 60] } } } }); };
   const a = boot(rich, RATES, '', null, doc);

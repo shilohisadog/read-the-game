@@ -515,7 +515,9 @@ export function pickLayer(a, token) {
   return a;
 }
 
-export function boot(game, rates, search = '', store = null, doc = undefined) {
+// `opts.motion`: the reader has NOT asked for reduced motion. Every media query answers
+// "matches" otherwise, which is reduced motion, and the tracked goal only animates without it.
+export function boot(game, rates, search = '', store = null, doc = undefined, opts = {}) {
   const dom = fakeDom();
   /**
    * THE REPLAY CLOCK, CAPTURED RATHER THAN STUBBED OUT.
@@ -549,7 +551,7 @@ export function boot(game, rates, search = '', store = null, doc = undefined) {
   // `localStorage` always answered null, so every boot was a first visit and
   // "a returning viewer sees no tips" could not have been tested.
   const b = bundle({
-    document: dom.document, matchMedia: () => ({ matches: true }),
+    document: dom.document, matchMedia: q => ({ matches: opts.motion && /reduce/.test(q) ? false : true }),
     /* ⭐ RUN SYNCHRONOUSLY, WHICH IS THE ONLY HONEST STUB HERE. `openClip` defers
        its scroll two frames so the section has its height before being centred —
        a real defect, found by looking. A stub that DROPPED the callback would
