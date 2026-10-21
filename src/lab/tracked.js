@@ -175,7 +175,13 @@ function start(P, f, _inWindow, done, still = 0, free = false) {
   let played = -still, prev = performance.now();
   const sp = speed, going = () => free || /Pause/.test($('play').textContent);
   const FIRST = `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
-  run = { done, left: () => Math.max(0, -played) + Math.max(0, (tGoal - (t0 + Math.max(0, played) / 1000 * sp * 10)) / 10) * 1000 / sp };
+  const now10 = () => t0 + Math.max(0, played) / 1000 * sp * 10;      // tracked time now, in tenths
+  run = { done, P, g: f.EV.indexOf(P.e),
+    left: () => Math.max(0, -played) + Math.max(0, (tGoal - now10()) / 10) * 1000 / sp,
+    at: now10,
+    // The stops Prev/Next move between: the first frame, each recorded event, the goal line.
+    stops: [...new Set([t0, ...tags.map(t => t.at).filter(v => v > t0 && v < tGoal), tGoal])].sort((a, b) => a - b),
+    seek(v) { played = (v - t0) / 10 / sp * 1000; if (!run.raf) run.raf = requestAnimationFrame(tick); } };
   const tick = now => {
     if (!run) return;
     if (going()) played += now - prev;
@@ -355,15 +361,45 @@ const goals = {
       if (!this.on || !last) return;
       const b = ev.target.closest && ev.target.closest('button'); if (!b || (b.id !== 'fwd' && b.id !== 'back')) return;
       ev.stopPropagation(); ev.preventDefault();
-      const gs = goalList(last.EV), i = last.i;
-      const k = b.id === 'fwd' ? gs.find(x => x > i) : [...gs].reverse().find(x => x < i);
-      if (k != null) to(k);
+      this.step(b.id === 'fwd' ? 1 : -1, to, oc);
     }, true);
     const sc = $('scrub'), oi = sc.oninput, oc = sc.onchange;
     const snap = v => { const gs = goalList(last ? last.EV : []); if (!this.on || !gs.length) return v;
       return gs.reduce((b, k) => (Math.abs(k - v) < Math.abs(b - v) ? k : b), gs[0]); };
     sc.oninput = e => oi && oi({ target: { value: String(snap(+e.target.value)) } });
     sc.onchange = e => oc && oc({ target: { value: String(snap(+e.target.value)) } });
+  },
+  /* Prev/Next in Goals mode. While a goal's tracking is on screen they move between its
+     stops (first frame, each recorded event, the goal line) and pause there; past either
+     end, to the next goal's first frame or the previous goal's goal line. A goal with no
+     tracking is its goal frame. */
+  step(dir, to, oc) {
+    const f = last; if (!f) return;
+    if (/Pause/.test($('play').textContent)) $('play').click();
+    if (run && run.stops) {
+      const now = run.at(), eps = 0.5;
+      const k = dir > 0 ? run.stops.find(v => v > now + eps) : [...run.stops].reverse().find(v => v < now - eps);
+      if (k != null) { run.seek(k); return; }
+    }
+    const gs = goalList(f.EV);
+    const here = run && run.g >= 0 ? run.g : f.i;
+    // On a goal's own frame, Prev goes back into its tracking, at the goal line.
+    const g = dir > 0 ? gs.find(x => x > here)
+      : (!run && f.cur && f.cur.type === 'goal' && gs.includes(f.i)) ? f.i
+      : [...gs].reverse().find(x => x < here);
+    if (g == null) return;
+    this.open(g, dir > 0 ? 'first' : 'goal', to, oc);
+  },
+  // Show goal `g`'s tracking, paused, at its first frame or at the goal line.
+  open(g, where, to, oc) {
+    const f = last, P = ready(f.EV[g]);
+    if (!P) { to(g); return; }                                    // no tracking: the goal frame
+    let j = g - 1;
+    while (j > 0 && f.EV[j].s >= f.EV[g].s - P.before) j--;
+    oc({ target: { value: String(j) } });                         // the frame under it; ends any run
+    hold = { i: j, g, P, inWindow: [], ms: 0 };
+    hold.ms = start(P, last, [], () => {}, where === 'first' ? STILL_MS : 0);
+    if (where === 'goal' && run) run.seek(run.stops[run.stops.length - 1]);
   },
   // "Replay: All events | Goals", beside Play, once the game is known to have tracked goals.
   control(f) {
