@@ -62,8 +62,10 @@ must be recorded or measured, never inferred (⛔ "X has the puck" was ruled out
 - **Goals mode: Next lands on the goal frame** after the goal line (`66677a9`).
 
 ### Open
-1. Teaching moments for the tracked goal (above). Challenges next: Goals mode is silent on a challenge; the
-   coaches' success rate (499 of 739 won) as an "Is that a lot?" needs a published measure. Candidates: the power play (in prose already), traffic
+1. Teaching moments for the tracked goal and Goals-mode UX (Kevin, 2026-10-22: "ponder" next). Challenges are
+   done: the color line, the stoppage card, Goals-mode stops ("Face-off after a review · …"), and the coaches'
+   record (`census.reviews`, 490 of 726). Open: the Stoppages total can count one goal whistle twice; no scrubber
+   tick for a goal that came off; the power-play line's "Over the last three seasons" is hard-coded. Candidates: the power play (in prose already), traffic
    in front of the net, how far the goaltender moved, the shooter's space, rebounds, odd-man rushes.
 2. The tracked goal on the front door's hero; the share link carrying `replay`/`speed`; smaller tracking
    files (~220 KB each, raw).
