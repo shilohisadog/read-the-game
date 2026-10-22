@@ -5338,7 +5338,9 @@ function shareUrl(){
     than a second kind of link: nothing is added to a share taken over the ice. */
  // The edition: this link's own, else the newest saved one, so the shared comparisons stay that night's.
  const ed=LINK.asof||(typeof NEWEST_EDITION==='string'?NEWEST_EDITION:null);
+ // The tracked goal's mode when not the default, and its speed always on a game that has one.
  return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'')
+         +(TRK.shown&&TRK.goals?'&replay=goals':'')+(TRK.shown?'&speed='+TRK.speed:'')
          +(sumOpen?'&summary=1':'')+(ed?'&asof='+ed:'');}
 
 const shareBtn=$('share'),shareSaid=$('sharesaid');
@@ -5359,7 +5361,10 @@ if(shareBtn)shareBtn.onclick=()=>{
     the sentence did not mention. `back.summary` rather than `sumOpen`, for the
     reason the moment is reported from `parse` too: what is named is what the LINK
     does, never what we meant it to do. */
- const also=back.summary?', with the summary showing':'';
+ const qs=new URLSearchParams(q),sp=TRACK_SPEEDS.find(x=>x[0]===Number(qs.get('speed')));
+ const also=(back.summary?', with the summary showing':'')
+  +(qs.get('replay')==='goals'?', in Goals mode':sp?', tracked goals':'')
+  +(sp?(sp[0]===1?' in real time':` at ${sp[1]} speed`):'');
  const done=ok=>{shareSaid.innerHTML=ok
    ?`Copied — it opens at ${where}${also}.`
    // ⚠️ A REFUSED CLIPBOARD IS NOT A FAILED FEATURE. Permission can be denied

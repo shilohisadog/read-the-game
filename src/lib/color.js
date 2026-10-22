@@ -78,6 +78,8 @@ export function colorNotes(game, ctx, rates) {
   const census = (rates && rates.census) || {};
   // The typical shift is the archive's mean (ruling 4), to the second.
   const SHIFT = census.shift && census.shift.mean != null ? Math.round(census.shift.mean) : null;
+  // The archive's scope is the count of games measured; measures.json publishes no start date.
+  const measuredOver = census.games ? `Across the ${census.games.toLocaleString('en-US')} games we have measured` : 'Across the games we have measured';
   const pp = census.whistles && census.whistles.ppGoals ? Math.round(census.whistles.ppChances / census.whistles.ppGoals) : null;
   const slot = rates && rates.slot && rates.slot.scoredFromInside && rates.slot.scoredFromOutside
     ? [Math.round(rates.slot.scoredFromInside.n / rates.slot.scoredFromInside.count),
@@ -95,7 +97,7 @@ export function colorNotes(game, ctx, rates) {
     const sit = next && next.sit;
     const short = sit && sit[1] !== sit[2] ? (+sit[1] < +sit[2] ? ctx.awayId : ctx.homeId) : null;
     if (short != null) return ` ${ab(short)} plays with fewer skaters ${until}: a "power play" for ${ab(other(short))}.`
-      + (pp ? ` Over the last three seasons, about 1 power play in ${pp} ended in a goal.` : '');
+      + (pp ? ` ${measuredOver}, about 1 power play in ${pp} ended in a goal.` : '');
     return sit ? ' Both teams keep the same number of skaters.' : '';
   };
 

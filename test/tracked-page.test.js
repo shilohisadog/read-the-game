@@ -147,3 +147,33 @@ test('under reduced motion Goals goes goal frame to goal frame, and offers the t
   await settle(); await settle();
   assert.match(a.$('who').innerHTML, /See it tracked/, 'the tracking is not offered');
 });
+
+test('⭐ a copied link carries the replay mode and the speed, and the confirmation says so', async () => {
+  const a = boot(rich, null, '', null, served(), MOTION);
+  await settle(); await settle();
+  a.at(GOALS[0].k, () => {});
+  a.$('share').onclick(); await settle();
+  let q = new URLSearchParams(a.copied.split('?')[1]);
+  assert.equal(q.get('replay'), null, 'All events is the default and is not written');
+  assert.equal(q.get('speed'), '0.25', 'a game with tracked goals always carries its speed');
+  assert.match(a.$('sharesaid').innerHTML, /, tracked goals at ¼ speed\./);
+  a.$('trkGoals').click(); a.$('trkH').click(); await settle();
+  a.$('share').onclick(); await settle();
+  q = new URLSearchParams(a.copied.split('?')[1]);
+  assert.equal(q.get('replay'), 'goals');
+  assert.equal(q.get('speed'), '0.5');
+  assert.match(a.$('sharesaid').innerHTML, /in Goals mode at ½ speed/);
+  // And the link opens that way.
+  const b = boot(rich, null, '?' + q.toString(), null, served(), MOTION);
+  await settle(); await settle();
+  assert.equal(b.$('trkGoals').getAttribute('aria-pressed'), 'true');
+  assert.equal(b.$('trkH').getAttribute('aria-pressed'), 'true');
+});
+
+test('a game with no tracked goals carries neither', async () => {
+  const a = boot(rich, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null));
+  await settle(); await settle();
+  a.at(10, () => {});
+  a.$('share').onclick(); await settle();
+  assert.doesNotMatch(a.copied, /replay=|speed=/);
+});

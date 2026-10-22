@@ -16,7 +16,7 @@ const roster = {
   24: { tid: AWAY, nm: 'Away24', pos: 'D' }, 29: { tid: AWAY, nm: 'AwayG', pos: 'G' },
 };
 const ctx = { roster, homeId: HOME, awayId: AWAY, homeAb: 'HOM', awayAb: 'AWY' };
-const RATES = { census: { shift: { mean: 47.8 }, whistles: { ppGoals: 5275, ppChances: 24991 } },
+const RATES = { census: { games: 4345, shift: { mean: 47.8 }, whistles: { ppGoals: 5275, ppChances: 24991 } },
   slot: { scoredFromInside: { count: 19626, n: 168930 }, scoredFromOutside: { count: 6634, n: 201723 } } };
 const ev = (type, s, x, extra = {}) => ({ type, per: 1, pt: 'REG', s, x, y: 0, sit: '1551', ...extra });
 // Home attacks +x (home defends -x), so x > 25 is the AWY end.
@@ -44,7 +44,7 @@ test('a penalty says "power play" only when the record shows one side a skater s
     ev('faceoff', 30, -69, { own: HOME, actor: 10, sit: sitAfter })]);
   assert.equal(notesOf(pen('1451'))[0][1],
     'Away21 sits in the penalty box for 2 minutes. AWY plays with fewer skaters until then: a "power play" for HOM.'
-    + ' Over the last three seasons, about 1 power play in 5 ended in a goal.');
+    + ' Across the 4,345 games we have measured, about 1 power play in 5 ended in a goal.');
   assert.equal(notesOf(pen('1441'))[0][1], 'Away21 sits in the penalty box for 2 minutes. Both teams keep the same number of skaters.');
   assert.equal(notesOf(pen('1451'), null)[0][1],
     'Away21 sits in the penalty box for 2 minutes. AWY plays with fewer skaters until then: a "power play" for HOM.',
