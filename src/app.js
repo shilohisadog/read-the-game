@@ -32,7 +32,7 @@ import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
 import { colorNotes } from './lib/color.js';
-import { challenges, reviewName, reviewSay } from './lib/challenge.js';
+import { challenges, challengeSay, reviewName, reviewSay } from './lib/challenge.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
 import { goalTicks, tickLeft } from './lib/scrub.js';
@@ -273,6 +273,15 @@ const CTX={roster:R,homeId:HID,awayId:AID,homeAb:HAB,awayAb:AAB,
 const REVIEW=new Map(challenges(G.events,CTX).map(r=>[r.at,r]));
 const TEAMAB=id=>id===HID?HAB:id===AID?AAB:'';
 const wName=w=>REVIEW.has(w.id)?reviewName(REVIEW.get(w.id),TEAMAB):RSN(w.rsn);
+/* Goals mode: a goal that came off has no goal event, so its stop is the first frame
+   after the review; a goal that stood carries its review on its own frame, since
+   Goals mode never reaches the penalty frame where All events says it. */
+const REVIEWS=[...REVIEW.values()];
+const REVIEW_STOP=new Map(REVIEWS.filter(r=>r.target!=null&&(r.outcome==='off'||r.outcome==='stayed-off')).map(r=>[frameOf(r.target),r]));
+const REVIEW_ON_GOAL=new Map(REVIEWS.filter(r=>r.goal!=null&&!r.onGoal&&(r.outcome==='stood'||r.outcome==='awarded')).map(r=>[r.goal,r]));
+const GOAL_STOPS=[...new Set([...trackGoals(EV),...REVIEW_STOP.keys()])].sort((a,b)=>a-b);
+const reviewWho=r=>r.who==='league'?'Review · a goal came off'
+ :r.outcome==='off'?`Review · ${TEAMAB(r.scorer)}'s goal came off`:`Review · ${TEAMAB(r.challenger)}'s goal does not count`;
 /* The work overlay's name for the rung it is reporting. Three states now, and
    the third is not "even strength" with extra steps — it is a different
    population and has to say so, or the overlay narrates a count it is not. */
@@ -291,7 +300,9 @@ const COLOR=colorNotes(G,CTX,RATES);
 /* WHAT A FRAME SHOWS OF ITS PLAY: the marks since the faceoff (`from`), those of
    a live zone stretch emphasised (`zoneFrom`), and the color note for the frame. */
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
- const n=EVI[k],p=playAt(PLAYS,n),line=COLOR.get(n)||'';
+ const n=EVI[k],p=playAt(PLAYS,n);
+ let line=COLOR.get(n)||'';
+ if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX);
  if(!p)return {from:k,line};
  const run=liveRun(zoneRuns(G.events,p,n,CTX));
  return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}
@@ -2862,6 +2873,7 @@ function trkGet(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>nul
 function trkRows(){return TRK.rows||(TRK.rows=trkGet('track/'+G.game.id+'/goals.json').then(r=>Array.isArray(r)?r:[]));}
 function trkPlan(e){
  if(TRK.plans.has(e))return TRK.plans.get(e);
+ if(!e||e.type!=='goal'){const p=Promise.resolve(null);p.value=null;p.done=true;TRK.plans.set(e,p);return p;}
  const p=trkRows().then(rows=>{const row=trackRow(rows,e);return row?trkGet('track/'+G.game.id+'/ev'+row.ev+'.json'):null;})
   .then(frames=>trackPlan(frames,e));
  p.then(v=>{p.value=v;p.done=true;});
@@ -2919,7 +2931,8 @@ function trkFrame(k,how,cur){
  const g=trackGoalAhead(EV,k);
  if(g>=0)trkPlan(EV[g]);
  for(let n=k+1;n<EV.length&&EV[n].s-(cur?cur.s:0)<=TRACK_LOOKAHEAD_S;n++)if(EV[n].type==='goal'){trkPlan(EV[n]);break;}
- if(TRK.goals)trackGoals(EV).filter(n=>n>=k).slice(0,3).forEach(n=>trkPlan(EV[n]));
+ if(TRK.goals)GOAL_STOPS.filter(n=>n>=k).slice(0,3).forEach(n=>trkPlan(EV[n]));
+ if(TRK.goals&&REVIEW_STOP.has(k)){const w=$('who');w.textContent=reviewWho(REVIEW_STOP.get(k));w.className='who plain';}
  // The next-play cue points at the next RECORDED event; where the tracking takes over,
  // that is not where it starts. Asked again when the file arrives, often during this pause.
  trkNoCue(k,g);
@@ -2959,7 +2972,7 @@ const TRK_WAIT_MS=400;
 function trkGoalsNext(k){
  const h=TRK.hold;
  if(h&&h.i===k){TRK.hold=null;if(!h.wait){trkEnd();return h.g;}}
- const g=trackGoals(EV).find(n=>n>k);
+ const g=GOAL_STOPS.find(n=>n>k);
  if(g==null)return EV.length-1;
  const p=trkPlan(EV[g]);
  if(!p.done&&!REDUCED){TRK.hold={i:k,g,ms:TRK_WAIT_MS,wait:true};return k;}
@@ -2978,7 +2991,7 @@ function trkStep(dir){
  if(r){const now=r.at(),k=dir>0?r.stops.find(v=>v>now+0.5):[...r.stops].reverse().find(v=>v<now-0.5);
   if(k!=null){r.seek(k);return;}
   if(dir>0&&r.g>=0){const g=r.g;TRK.hold=null;trkEnd();set(g,'jump');return;}}
- const gs=trackGoals(EV),here=r&&r.g>=0?r.g:i;
+ const gs=GOAL_STOPS,here=r&&r.g>=0?r.g:i;
  if(dir>0){const g=gs.find(n=>n>here);if(g!=null)trkOpen(g,'first');return;}
  if(!r&&EV[i]&&EV[i].type==='goal'&&gs.includes(i)){trkOpen(i,'goal');return;}
  const g=[...gs].reverse().find(n=>n<here);
@@ -2995,7 +3008,7 @@ function trkOpen(g,where){
  if(where==='goal'&&TRK.run)TRK.run.seek(TRK.run.stops[TRK.run.stops.length-1]);}
 // In Goals the scrubber stops on goals.
 function trkSnap(v){
- const gs=TRK.goals?trackGoals(EV):[];
+ const gs=TRK.goals?GOAL_STOPS:[];
  return gs.length?gs.reduce((b,n)=>Math.abs(n-v)<Math.abs(b-v)?n:b,gs[0]):v;}
 /* "Replay: All events | Goals" and "Speed: ¼ | ½ | Real time", beside Play, shown once
    the game is known to have tracked goals. The selected one is purple, like "Replay". */
