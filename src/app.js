@@ -280,8 +280,9 @@ const REVIEWS=[...REVIEW.values()];
 const REVIEW_STOP=new Map(REVIEWS.filter(r=>r.target!=null&&(r.outcome==='off'||r.outcome==='stayed-off')).map(r=>[frameOf(r.target),r]));
 const REVIEW_ON_GOAL=new Map(REVIEWS.filter(r=>r.goal!=null&&!r.onGoal&&(r.outcome==='stood'||r.outcome==='awarded')).map(r=>[r.goal,r]));
 const GOAL_STOPS=[...new Set([...trackGoals(EV),...REVIEW_STOP.keys()])].sort((a,b)=>a-b);
-const reviewWho=r=>r.who==='league'?'Review · a goal came off'
- :r.outcome==='off'?`Review · ${TEAMAB(r.scorer)}'s goal came off`:`Review · ${TEAMAB(r.challenger)}'s goal does not count`;
+// What the frame is (the restart face-off), then why Goals mode stopped on it.
+const reviewWho=r=>'Face-off after a review · '+(r.who==='league'?'a goal came off'
+ :r.outcome==='off'?`${TEAMAB(r.scorer)}'s goal came off`:`${TEAMAB(r.challenger)}'s goal does not count`);
 /* The work overlay's name for the rung it is reporting. Three states now, and
    the third is not "even strength" with extra steps — it is a different
    population and has to say so, or the overlay narrates a count it is not. */

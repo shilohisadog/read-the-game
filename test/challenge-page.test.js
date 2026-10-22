@@ -57,7 +57,7 @@ test('on that stop the name line says it, and the line under the rink says how',
   await settle(); await settle();
   a.at(OFF, () => {}); await settle();
   assert.equal(+a.$('scrub').value, OFF, 'the scrubber does not snap to the goal that came off');
-  assert.equal(a.$('who').textContent, `Review · ${ab[HOME]}'s goal came off`);
+  assert.equal(a.$('who').textContent, `Face-off after a review · ${ab[HOME]}'s goal came off`);
   assert.match(a.$('playline').textContent,
     new RegExp(`^${ab[HOME]} scored, but ${ab[AWAY]} challenged that ${ab[HOME]} was offside prior to the goal\\. The review determined`));
 });
