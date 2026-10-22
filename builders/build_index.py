@@ -1415,7 +1415,13 @@ __HELPERS__
     window.addEventListener('message', function (e) {
       if (e.origin !== location.origin || e.source !== f.contentWindow) return;
       var m = e.data;
-      if (!m || m.rtg !== 'attempts' || m.game !== g.id) return;
+      if (!m || m.game !== g.id) return;
+      // The frame found the goal's tracking file and will play it.
+      if (m.rtg === 'tracked' && pick.toGoal) {
+        $('herokick').textContent = when(g.d) + ' \u00b7 up to its first goal, then that goal as the league tracked it';
+        return;
+      }
+      if (m.rtg !== 'attempts') return;
       sayHero(g, measures, m);
     });
     $('heroframe').appendChild(f);

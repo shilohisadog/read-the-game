@@ -147,3 +147,12 @@ test('the census counts each review once, and a coach wins on a goal taken off o
   assert.deepEqual({ ...pub, what: undefined }, { coach: 6, coachWon: 4, league: 2, leagueOff: 0, what: undefined });
   assert.match(pub.what, /as counts/);
 });
+
+test('a failed challenge names the games measured once: the power-play rate after it says "In those games"', () => {
+  const rates = { census: { games: 4345, reviews: { coach: 726, coachWon: 490, league: 54, leagueOff: 26 },
+    whistles: { ppGoals: 5275, ppChances: 24991 } } };
+  const E = [fo(0, 0), goal(12, HOME, 10), stop(12, 'chlg-vis-goal-interference'), lost(12, AWAY), fo(12, 0, { sit: '1451' })];
+  const note = colorNotes(game(E), ctx, rates).get(3);
+  assert.equal(note.match(/games we have measured/g).length, 1, note);
+  assert.match(note, /a "power play" for HOM\. In those games, about 1 power play in 5 ended in a goal\.$/);
+});

@@ -5508,11 +5508,22 @@ if(PREVIEW){
      was just rebuilt to deliver. Guarded by a test that reads the duration out
      of the stylesheet rather than restating it here. */
   const GOAL_HOLD_MS=2600;
+  /* The goal as the league tracked it, between the frame before it and the goal frame:
+     the replay's two modes in one loop (Kevin, 2026-10-22). Same speed as the replay's
+     default. No file, or not in yet: the loop runs as it did. */
+  const GP=GOAL>=0&&typeof DOC==='function'?trkPlan(EV[GOAL]):null;
+  // The front door's headline says so only once the file is here.
+  if(GP&&window.parent!==window)GP.then(P=>{if(P)window.parent.postMessage({rtg:'tracked',game:(G.game&&G.game.id)||0},location.origin);});
+  let tracked=false;
   const tick=()=>{
+   // From the last frame before the tracked seconds, as All events does: the plays inside them are the tracking's.
+   if(!tracked&&GP&&GP.value&&k===trackHoldFrame(EV,GOAL,GP.value,START)+1){
+    tracked=true;k=GOAL;setTimeout(tick,trkStart(GP.value,TRACK_STILL_MS,true));return;}
+   if(k===GOAL)trkEnd();
    const shown=EV[k],last=k>=WINDOW,
     wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
    set(k,k>0?'play':'');
-   if(last){k=START;}else{k++;}
+   if(last){k=START;tracked=false;}else{k++;}
    setTimeout(tick,wait);};
   tick();}}
 }

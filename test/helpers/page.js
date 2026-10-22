@@ -610,6 +610,8 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
        assertion on it would fail for a reason that has nothing to do with the
        page. */
     get copied() { return dom.copied; },
+    /** What the page posted to its parent frame (the preview talks to the front door). */
+    get posted() { return dom.posted; },
     /* THE CLIPBOARD WRITE IS ASYNC, so the confirmation is composed in a
        microtask. A test that reads the status line straight after the press is
        reading the frame before it. `setImmediate` lands after every queued

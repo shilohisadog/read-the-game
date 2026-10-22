@@ -92,12 +92,13 @@ export function colorNotes(game, ctx, rates) {
   const REVIEWS = challenges(ev, ctx), REVIEWED = new Set(REVIEWS.map(r => ev[r.at]));
   const reviewAt = new Map(REVIEWS.filter(r => r.target != null).map(r => [r.target, r]));
   // What a penalty leaves on the ice, from the next situation code the record carries.
-  const strengthAfter = (n, until) => {
+  // `scoped`: the note has already named the games measured, so the rate says "In those games".
+  const strengthAfter = (n, until, scoped = false) => {
     const next = ev.slice(n + 1).find(x => x.sit && x.type !== 'penalty');
     const sit = next && next.sit;
     const short = sit && sit[1] !== sit[2] ? (+sit[1] < +sit[2] ? ctx.awayId : ctx.homeId) : null;
     if (short != null) return ` ${ab(short)} plays with fewer skaters ${until}: a "power play" for ${ab(other(short))}.`
-      + (pp ? ` ${measuredOver}, about 1 power play in ${pp} ended in a goal.` : '');
+      + (pp ? ` ${scoped ? 'In those games' : measuredOver}, about 1 power play in ${pp} ended in a goal.` : '');
     return sit ? ' Both teams keep the same number of skaters.' : '';
   };
 
@@ -134,7 +135,7 @@ export function colorNotes(game, ctx, rates) {
     const review = reviewAt.get(n);
     if (!say && review && !review.onGoal) {
       say = challengeSay(review, ab, score, ctx, census.reviews && { ...census.reviews, games: census.games });
-      if (review.penalty === n) say += strengthAfter(n, 'for those two minutes');
+      if (review.penalty === n) say += strengthAfter(n, 'for those two minutes', /games we have measured/.test(say));
     }
     // 1. A goal: what it does to the score, and how long the puck had stayed in that end.
     if (!say && e.type === 'goal' && shooter) {
