@@ -303,7 +303,7 @@ const COLOR=colorNotes(G,CTX,RATES);
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);
  let line=COLOR.get(n)||'';
- if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX);
+ if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX,RATES&&RATES.census&&RATES.census.reviews&&{...RATES.census.reviews,games:RATES.census.games});
  if(!p)return {from:k,line};
  const run=liveRun(zoneRuns(G.events,p,n,CTX));
  return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}

@@ -96,11 +96,28 @@ export function reviewSay(r, ab) {
   return `Play stopped for a goal, and ${C} challenged that ${CLAIM[r.kind](S)}.`;
 }
 
+// "about 2 in 3": the nearest share with a denominator of 2 to 5.
+function shareAbout(k, n) {
+  let best = null;
+  for (let q = 2; q <= 5; q++) for (let p = 1; p < q; p++)
+    if (!best || Math.abs(p / q - k / n) < Math.abs(best[0] / best[1] - k / n)) best = [p, q];
+  return `about ${best[0]} in ${best[1]}`;
+}
+const reviewCount = n => n.toLocaleString('en-US');
+
 /**
  * The sentence for review `r`. `ab(id)` gives a team's abbreviation; `score` is
- * {teamId: goals} as the frame shows it. A penalty's consequence is the caller's.
+ * {teamId: goals} as the frame shows it; `reviews` is the census's counts with its
+ * `games`, or null (a coach's challenge then says no base rate). A penalty's consequence is the caller's.
  */
-export function challengeSay(r, ab, score, ctx) {
+export function challengeSay(r, ab, score, ctx, reviews = null) {
+  const said = challengeOutcome(r, ab, score, ctx);
+  if (r.who === 'league' || !reviews || !reviews.coach) return said;
+  const over = reviews.games ? `Across the ${reviewCount(reviews.games)} games we have measured` : 'Across the games we have measured';
+  return `${said} ${over}, coaches have won ${reviewCount(reviews.coachWon)} of ${reviewCount(reviews.coach)} `
+    + `challenges of a goal, ${shareAbout(reviews.coachWon, reviews.coach)}.`;
+}
+function challengeOutcome(r, ab, score, ctx) {
   const S = r.scorer != null ? ab(r.scorer) : '', C = r.challenger != null ? ab(r.challenger) : '';
   const lost = ` and ${C} takes a two-minute penalty for losing the challenge.`;
   const h = score[ctx.homeId], a = score[ctx.awayId];

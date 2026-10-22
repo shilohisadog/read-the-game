@@ -122,3 +122,28 @@ test('⭐ the stoppage card names the goal as what stopped play, and the teams i
   assert.equal(reviewName(lg, ab), 'Goal, the league reviewed it for a missed stoppage');
   for (const r of [off, gi, own, lg]) assert.doesNotMatch(reviewName(r, ab) + reviewSay(r, ab), /home|visiting/i);
 });
+
+test('⭐ a coach\'s challenge carries the archive\'s counts, shown as counts; a league review does not', () => {
+  const rates = { census: { games: 4345, reviews: { coach: 739, coachWon: 499, league: 54, leagueOff: 26 } } };
+  const E = [fo(0, 0), stop(30, 'chlg-vis-off-side'), stop(30, 'offside'), fo(30, -20, { y: 22 })];
+  assert.equal(colorNotes(game(E), ctx, rates).get(3), 'HOM scored, but AWY challenged that HOM was offside prior to the goal. '
+    + 'The review determined HOM was offside, so the goal came off. The score stays tied, 0–0. '
+    + 'Across the 4,345 games we have measured, coaches have won 499 of 739 challenges of a goal, about 2 in 3.');
+  const L = [fo(0, 0), stop(30, 'chlg-league-off-side'), stop(30, 'offside'), fo(30, 20, { y: 22 })];
+  assert.doesNotMatch(colorNotes(game(L), ctx, rates).get(3), /coaches/);
+  assert.doesNotMatch(noteAt(E, 3), /coaches/, 'with no archive the counts are left out, not guessed');
+});
+
+test('the census counts each review once, and a coach wins on a goal taken off or its own goal made to count', async () => {
+  const { censusGame, censusAdd, censusRates } = await import('../src/lib/census.js');
+  const E = [fo(0, 0), stop(30, 'chlg-vis-off-side'), stop(30, 'offside'), fo(30, -20, { y: 22 }),     // won
+    goal(40, HOME, 10), stop(40, 'chlg-vis-goal-interference'), lost(40, AWAY), fo(40, 0),             // lost
+    stop(60, 'chlg-hm-goal-interference'), goal(60, HOME, 10), fo(60, 0),                              // won: own goal counts
+    goal(80, AWAY, 20), stop(80, 'chlg-league-off-side'), fo(80, 0),                                    // league, stood
+    stop(90, 'chlg-vis-puck-over-glass'), fo(90, 69, { y: 22 })];                                       // not a goal
+  const c = censusGame(E, { ...ctx, shifts: [] });
+  assert.deepEqual(c.reviews, { coach: 3, coachWon: 2, league: 1, leagueOff: 0 });
+  const pub = censusRates(censusAdd(censusAdd({}, c), c)).reviews;
+  assert.deepEqual({ ...pub, what: undefined }, { coach: 6, coachWon: 4, league: 2, leagueOff: 0, what: undefined });
+  assert.match(pub.what, /as counts/);
+});

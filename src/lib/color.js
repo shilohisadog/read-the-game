@@ -131,7 +131,7 @@ export function colorNotes(game, ctx, rates) {
     // 0. How a review of a goal ended, on the first frame of play after it.
     const review = reviewAt.get(n);
     if (!say && review && !review.onGoal) {
-      say = challengeSay(review, ab, score, ctx);
+      say = challengeSay(review, ab, score, ctx, census.reviews && { ...census.reviews, games: census.games });
       if (review.penalty === n) say += strengthAfter(n, 'for those two minutes');
     }
     // 1. A goal: what it does to the score, and how long the puck had stayed in that end.

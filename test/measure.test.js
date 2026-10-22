@@ -96,6 +96,8 @@ const TIER = [
   'scope.js', 'disputed.js',
   // league.js: our per-player counts and the league's copied rows (item 5).
   'league.js',
+  // challenge.js: the census counts reviews of a goal with the replay's own reader.
+  'challenge.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {

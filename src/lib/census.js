@@ -57,6 +57,7 @@ import { corsi } from './layers/corsi.js';
 import { situation, EVEN, POWER_PLAY, EMPTY_NET } from './strength.js';
 import { attackDirection, attackZone } from './rink.js';
 import { plays, markable } from './stretch.js';
+import { challenges } from './challenge.js';
 
 /**
  * The run of play a faceoff opens: every event until play stops again.
@@ -404,9 +405,15 @@ export function censusGame(events, ctx) {
     runLength.events[k] = (runLength.events[k] || 0) + 1;
     runLength.secs[t] = (runLength.secs[t] || 0) + 1;
   }
+  // Reviews of a goal (challenge.js): a coach wins when the goal comes off, or when its own goal is made to count.
+  const reviews = { coach: 0, coachWon: 0, league: 0, leagueOff: 0 };
+  for (const r of challenges(events, ctx)) {
+    if (r.who === 'league') { reviews.league++; if (r.outcome === 'off') reviews.leagueOff++; }
+    else { reviews.coach++; if (r.outcome === 'off' || r.outcome === 'awarded') reviews.coachWon++; }
+  }
   // faceoffZone and state are internal witnesses (tests cross-check endZone, pace and
   // power-play goals against them); censusRates does not publish them.
-  return { faceoffZone, endZone, faceoffRun, state, club, hitCorr, shooter, pace, shift, whistles, runLength };
+  return { faceoffZone, endZone, faceoffRun, state, club, hitCorr, shooter, pace, shift, whistles, runLength, reviews };
 }
 
 /** The value at share `q` of a histogram {value: count}: the smallest v with at least q of the counts at or below it. */
@@ -660,6 +667,16 @@ export function censusRates(t) {
        divides them two different ways — goals over CHANCES for the success rate,
        and chances over club-games for the frequency — so publishing one quotient
        would force the other surface to recover the counts anyway. */
+    // Counts, like `whistles`: the color line divides them once, beside the counts it quotes.
+    reviews: (() => {
+      const r = t.reviews || {};
+      return {
+        ...Object.fromEntries(['coach', 'coachWon', 'league', 'leagueOff'].map(k => [k, r[k] || 0])),
+        what: 'reviews of a goal across the archive, as counts: coach\u2019s challenges, and how many the '
+            + 'challenging coach won (the goal came off, or the team\u2019s own goal was made to count); '
+            + 'reviews the league started itself, and how many took the goal off.',
+      };
+    })(),
     whistles: (() => {
       const w = t.whistles || {};
       return {

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-B1aK7jeokIqo3IP/R+C3/AK5XiDuH9iP24igC6lcvmk=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-c8AqNTr5usCgN21V6gMXqaEHRthEb9l1eZUEYur532o='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nHm5gRh3DLKDIxqF9X+uQ7OdfjGfI9pZGK5OHQ2Tels=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-c8AqNTr5usCgN21V6gMXqaEHRthEb9l1eZUEYur532o='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3177,7 +3177,22 @@ function reviewSay(r, ab) {
   return `Play stopped for a goal, and ${C} challenged that ${CLAIM[r.kind](S)}.`;
 }
 
-function challengeSay(r, ab, score, ctx) {
+function shareAbout(k, n) {
+  let best = null;
+  for (let q = 2; q <= 5; q++) for (let p = 1; p < q; p++)
+    if (!best || Math.abs(p / q - k / n) < Math.abs(best[0] / best[1] - k / n)) best = [p, q];
+  return `about ${best[0]} in ${best[1]}`;
+}
+const reviewCount = n => n.toLocaleString('en-US');
+
+function challengeSay(r, ab, score, ctx, reviews = null) {
+  const said = challengeOutcome(r, ab, score, ctx);
+  if (r.who === 'league' || !reviews || !reviews.coach) return said;
+  const over = reviews.games ? `Across the ${reviewCount(reviews.games)} games we have measured` : 'Across the games we have measured';
+  return `${said} ${over}, coaches have won ${reviewCount(reviews.coachWon)} of ${reviewCount(reviews.coach)} `
+    + `challenges of a goal, ${shareAbout(reviews.coachWon, reviews.coach)}.`;
+}
+function challengeOutcome(r, ab, score, ctx) {
   const S = r.scorer != null ? ab(r.scorer) : '', C = r.challenger != null ? ab(r.challenger) : '';
   const lost = ` and ${C} takes a two-minute penalty for losing the challenge.`;
   const h = score[ctx.homeId], a = score[ctx.awayId];
@@ -3298,7 +3313,7 @@ function colorNotes(game, ctx, rates) {
     }
     const review = reviewAt.get(n);
     if (!say && review && !review.onGoal) {
-      say = challengeSay(review, ab, score, ctx);
+      say = challengeSay(review, ab, score, ctx, census.reviews && { ...census.reviews, games: census.games });
       if (review.penalty === n) say += strengthAfter(n, 'for those two minutes');
     }
     if (!say && e.type === 'goal' && shooter) {
@@ -4812,7 +4827,7 @@ const COLOR=colorNotes(G,CTX,RATES);
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);
  let line=COLOR.get(n)||'';
- if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX);
+ if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX,RATES&&RATES.census&&RATES.census.reviews&&{...RATES.census.reviews,games:RATES.census.games});
  if(!p)return {from:k,line};
  const run=liveRun(zoneRuns(G.events,p,n,CTX));
  return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}
