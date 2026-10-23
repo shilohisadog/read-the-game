@@ -2673,3 +2673,5 @@
 #rg .trkc span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--track);margin:0 6px 0 4px}
 #rg .transport .trkc button{color:var(--ink)}#rg .transport .trkc button[aria-pressed="true"]{color:var(--track)}
 #rg .wtrk{font:inherit;color:var(--track);background:none;border:0;padding:0;margin:0 0 0 10px;line-height:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+/* The shot's lane: the puck to the posts at the moment of the shot, see-through so the players in it show. */
+#rg #track .tlane{fill:var(--track);fill-opacity:.16;stroke:var(--track);stroke-opacity:.45;stroke-width:.25;pointer-events:none}

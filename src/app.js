@@ -58,7 +58,7 @@ import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackSay, trackFirst, trackTags,
-  trackStops, trackFrameAt, trackClock, trackMarkup } from './lib/tracked.js';
+  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, TRACK_LANE_SAY } from './lib/tracked.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -2889,17 +2889,19 @@ function trkStart(P,still,free){
  trkEnd();
  const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
- const WHO=trackWho(P,G),SAY=trackSay(P,G,win,sp),FIRST=trackFirst(P);
+ // The shot's lane, on a goal from beyond TRACK_LANE_FT: a stop of its own, and said once in the line.
+ const SHOT=trackShot(P,G.teams.home.id);
+ const WHO=trackWho(P,G),SAY=trackSay(P,G,win,sp)+(SHOT?TRACK_LANE_SAY:''),FIRST=trackFirst(P);
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
-  stops:trackStops(P,tags),at:now10,
+  stops:trackStops(P,tags,SHOT&&SHOT.at),at:now10,
   left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
   seek(v){played=(v-t0)/10/sp*1000;run.prev=null;trkKick(true);}};
  // One frame of the tracking, and the words and clock that go with it.
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
-  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags}));
+  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT}));
   document.getElementById('rg').classList.add('trk');
   const say=played<0?FIRST:SAY;if($('playline').textContent!==say)sayPlay(say);
   const w=$('who');if(w.textContent!==WHO){w.textContent=WHO;w.className='who plain';}

@@ -15,6 +15,7 @@
  */
 import { inkOn, readableInk } from './teams.js';
 import { ESC } from './esc.js';
+import { NET_X, GOAL_POST_Y, attackDirection, distanceToNet } from './rink.js';
 
 /** Replay speeds for the tracking: [factor, button label, words for the line]. */
 export const TRACK_SPEEDS = [[0.25, '¼', 'at a quarter of real speed'],
@@ -28,6 +29,13 @@ export const TRACK_STILL_MS = 1500;
 export const TRACK_TAG_TENTHS = 8;
 /** Half the longest label's width, in rink feet: nearer the boards, it runs away from them. */
 export const TRACK_TAG_EDGE = 16;
+/* Goals from beyond this many feet show the shot's lane. OUR choice, from the measure: someone stood in the
+   path on about half the goals from 30 to 45 feet and most beyond, against 4% to 20% closer in (2026-10-22). */
+export const TRACK_LANE_FT = 30;
+/* A shot leaves the stick: the puck goes from carrying speed to faster than anyone skates (~24 mph, 3.5 ft
+   a tenth of a second), or turns sharply while fast (a tip). Both numbers OUR choice; over the 323 goals
+   beyond 30 feet, the release nearest the recorded spot is within 3 feet of it on 79%, 6 feet on 90%. */
+export const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
 /** The goal line and the blue lines, feet from centre ice. */
 const GOAL_LINE = 89, BLUE = 25;
 
@@ -156,11 +164,46 @@ export function trackTags(P, win) {
   const tGoal = P.frames[P.k].timeStamp;
   return win.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10 }));
 }
-/** The stops Prev/Next move between: the first frame, each recorded event, the goal line. */
-export function trackStops(P, tags) {
+/** The stops Prev/Next move between: the first frame, each recorded event, the shot (`shotAt`), the goal line. */
+export function trackStops(P, tags, shotAt = null) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
-  return [...new Set([t0, ...tags.map(t => t.at).filter(v => v > t0 && v < tGoal), tGoal])].sort((a, b) => a - b);
+  const mid = [...tags.map(t => t.at), shotAt].filter(v => v != null && v > t0 && v < tGoal);
+  return [...new Set([t0, ...mid, tGoal])].sort((a, b) => a - b);
 }
+
+/**
+ * THE SHOT'S LANE, for a goal from beyond TRACK_LANE_FT: the triangle from the puck at the moment
+ * of the shot to the two posts. The moment is the release (see TRACK_CARRY_FT) nearest the spot the
+ * league recorded for the shot; the nearest frame when the tracking shows no release. The distance
+ * is the color line's. Null when there is no lane.
+ *   {j, at, apex, posts, ft} — `apex` and `posts` in league feet.
+ */
+export function trackShot(P, homeId) {
+  const e = P && P.e;
+  if (!e || e.x == null || e.y == null) return null;
+  const dir = attackDirection(e.own, homeId), ft = Math.round(distanceToNet(e.x, e.y, dir));
+  if (!(ft > TRACK_LANE_FT)) return null;
+  const at = t => { const pk = P.frames[t] && P.frames[t].onIce && P.frames[t].onIce['1'];
+    if (!pk) return null; const f = trackFeet(pk); return { x: P.turn * f.x, y: P.turn * f.y }; };
+  const pts = Array.from({ length: P.k + 1 }, (_, t) => at(t));
+  const off = t => (pts[t] ? Math.hypot(pts[t].x - e.x, pts[t].y - e.y) : Infinity);
+  const step = t => (pts[t] && pts[t + 1] ? { dx: pts[t + 1].x - pts[t].x, dy: pts[t + 1].y - pts[t].y } : null);
+  const len = s => Math.hypot(s.dx, s.dy);
+  const released = t => { const a = step(t - 1), b = step(t);
+    if (!a || !b || len(b) <= TRACK_CARRY_FT) return false;
+    if (len(a) <= TRACK_CARRY_FT) return true;
+    return Math.acos(Math.max(-1, Math.min(1, (a.dx * b.dx + a.dy * b.dy) / (len(a) * len(b))))) * 180 / Math.PI > TRACK_TURN_DEG; };
+  let j = -1;
+  for (let t = 1; t < P.k; t++) if (released(t) && (j < 0 || off(t) < off(j))) j = t;
+  if (j < 0) for (let t = 0; t <= P.k; t++) if (pts[t] && (j < 0 || off(t) < off(j))) j = t;
+  if (j < 0) return null;
+  const apex = pts[j];
+  return { j, at: P.frames[j].timeStamp, apex, ft,
+    posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
+}
+/** The line's words for the lane, said once per goal that has one. */
+export const TRACK_LANE_SAY = ' The shaded triangle runs from the puck to the posts at the moment of the shot: '
+  + 'anyone inside it was between the shot and the net.';
 /** The frame shown at file time `tt` (tenths), never past the goal line. */
 export function trackFrameAt(P, tt) {
   let j = 0;
@@ -180,10 +223,13 @@ export function trackClock(P, j) {
  * and the label of any recorded event within its moment at `tt`. `col` maps a team
  * id to its colour; AX/AY are the replay's own placement.
  */
-export function trackMarkup(P, j, tt, { G, AX, AY, col, tags }) {
+export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null }) {
   const per = P.e.per, at = o => { const p = trackFeet(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
   const F = P.frames[j].onIce, out = [];
+  // The lane, from the shot to the goal line, fixed where the shot was taken; under the players.
+  if (shot && tt >= shot.at)
+    out.push(`<polygon class="tlane" points="${[shot.apex, ...shot.posts].map(q => `${AX(q.x, per).toFixed(2)},${AY(q.y, per).toFixed(2)}`).join(' ')}"/>`);
   for (const o of Object.values(F)) {
     if (!o.playerId) continue;
     const s = at(o), r = G.roster[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a';

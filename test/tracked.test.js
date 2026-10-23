@@ -9,8 +9,9 @@ import { readFileSync } from 'node:fs';
 import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
-  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE,
+  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, TRACK_LANE_FT, TRACK_CARRY_FT,
 } from '../src/lib/tracked.js';
+import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
 
 const FX = JSON.parse(readFileSync(new URL('./fixtures/tracked-2026020144-ev202.json', import.meta.url), 'utf8'));
 const G = { game: FX.game, teams: FX.teams, roster: FX.roster, events: FX.events };
@@ -112,4 +113,41 @@ test('the frame draws twelve skaters and the puck, the visitor in white, the lab
   assert.ok(+tag[1] < TRACK_TAG_EDGE && +tag[1] > 3, `the label is at x=${tag[1]}, not beside the hit`);
   const later = trackMarkup(P, trackFrameAt(P, at + TRACK_TAG_TENTHS), at + TRACK_TAG_TENTHS, { G, AX, AY, col, tags });
   assert.doesNotMatch(later, />Hit</, 'the label outlasts its moment');
+});
+
+test('⭐ the shot\'s lane opens where the puck leaves the stick, the release nearest the spot the league recorded', () => {
+  const S = trackShot(P, G.teams.home.id);
+  assert.ok(S, 'a 38-foot goal has no lane');
+  assert.equal(S.ft, 38, 'not the distance the color line says');
+  const pk = t => { const f = trackFeet(P.frames[t].onIce['1']); return { x: P.turn * f.x, y: P.turn * f.y }; };
+  const stepAt = t => Math.hypot(pk(t + 1).x - pk(t).x, pk(t + 1).y - pk(t).y);
+  // A RELEASE BY THE TRACKING ALONE: carried into the frame, faster than anyone skates out of it.
+  assert.ok(stepAt(S.j - 1) <= TRACK_CARRY_FT && stepAt(S.j) > TRACK_CARRY_FT, `frame ${S.j} is not where the puck leaves the stick`);
+  // A SECOND PATH: the league recorded the shot at (-65, -30), independently; the release is near it, not elsewhere on the ice.
+  assert.ok(Math.hypot(S.apex.x - GOAL.x, S.apex.y - GOAL.y) < 10, 'the release is nowhere near the recorded shot');
+  assert.ok(S.j < P.k, 'the shot is not before the goal line');
+  // LAK, the visitor, attacks the -x net; the posts are the goal mouth's, 6 feet apart.
+  assert.deepEqual(S.posts, [{ x: -NET_X, y: -GOAL_POST_Y }, { x: -NET_X, y: GOAL_POST_Y }]);
+  assert.equal(GOAL_POST_Y * 2, 6);
+});
+
+test('a goal from 30 feet or closer has no lane, and one with no location has none', () => {
+  assert.equal(TRACK_LANE_FT, 30);
+  const near = trackPlan(FX.frames, { ...GOAL, x: -62, y: -10 });   // 29 ft
+  assert.equal(trackShot(near, G.teams.home.id), null);
+  const at30 = trackPlan(FX.frames, { ...GOAL, x: -65, y: -18 });   // hypot(24, 18) = 30 ft
+  assert.equal(trackShot(at30, G.teams.home.id), null, 'beyond 30 feet means beyond it');
+});
+
+test('the lane is drawn from the shot on, the same shape to the goal line, and under the players', () => {
+  const S = trackShot(P, G.teams.home.id), tags = trackTags(P, trackWindow(P, EV));
+  const col = { 15: '#c8102e', 26: '#111111' }, opt = { G, AX, AY, col, tags, shot: S };
+  const before = trackMarkup(P, S.j - 1, P.frames[S.j - 1].timeStamp, opt);
+  assert.doesNotMatch(before, /class="tlane"/, 'the lane is up before the shot');
+  const at = trackMarkup(P, S.j, P.frames[S.j].timeStamp, opt), late = trackMarkup(P, P.k, P.frames[P.k].timeStamp, opt);
+  const pts = m => (m.match(/class="tlane" points="([^"]+)"/) || [])[1];
+  assert.ok(pts(at), 'no lane at the shot');
+  assert.equal(pts(late), pts(at), 'the lane changed shape on the way to the goal line');
+  assert.ok(at.indexOf('tlane') < at.indexOf('<circle'), 'the lane is drawn over the players');
+  assert.ok(trackStops(P, tags, S.at).includes(S.at), 'the shot is not a stop');
 });

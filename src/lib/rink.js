@@ -18,6 +18,7 @@
 
 export const NET_X = 89;
 export const GOAL_LINE_X = 89;      // the same line; named for the rule that uses it
+export const GOAL_POST_Y = 3;       // the posts stand 6 feet apart (NHL Rule 2)
 export const BLUE_LINE_X = 25;      // zone boundary, and what an offside is about
 /* ⭐ THE NEUTRAL-ZONE FACE-OFF DOT, AND IT IS FIVE FEET OFF THE BLUE LINE.
    Not a rulebook figure remembered: `drawRink` records these nine spots as
