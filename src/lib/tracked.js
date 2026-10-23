@@ -15,7 +15,7 @@
  */
 import { inkOn, readableInk } from './teams.js';
 import { ESC } from './esc.js';
-import { NET_X, GOAL_POST_Y, attackDirection, distanceToNet } from './rink.js';
+import { NET_X, GOAL_POST_Y, BLUE_LINE_X, attackDirection, distanceToNet } from './rink.js';
 
 /** Replay speeds for the tracking: [factor, button label, words for the line]. */
 export const TRACK_SPEEDS = [[0.25, '¼', 'at a quarter of real speed'],
@@ -204,9 +204,30 @@ export function trackShot(P, homeId) {
   return { j, at: P.frames[j].timeStamp, apex, ft, lane,
     posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
 }
-/** The line's words for the lane, said once per goal that has one. */
-export const TRACK_LANE_SAY = ' The shaded triangle runs from the puck to the posts at the moment of the shot: '
-  + 'anyone inside it was between the shot and the net.';
+/**
+ * THE LIVE LANE at frame `j`: the triangle from the puck to the scoring team's posts while the puck is
+ * in that team's end (beyond the blue line) and more than TRACK_LANE_FT from the net; null otherwise.
+ * Elsewhere a shot is not on, and the triangle would cover half the rink.
+ */
+export function trackLaneAt(P, j, homeId) {
+  const pk = P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'];
+  if (!pk) return null;
+  const f = trackFeet(pk), p = { x: P.turn * f.x, y: P.turn * f.y }, dir = attackDirection(P.e.own, homeId);
+  if (!(p.x * dir > BLUE_LINE_X) || !(Math.round(distanceToNet(p.x, p.y, dir)) > TRACK_LANE_FT)) return null;
+  return { apex: p, posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
+}
+/** The line's words for the lanes this goal shows: the light one while it follows the puck, the held one from the shot. */
+export function trackLaneSay(P, G, shot) {
+  const home = G.teams.home, away = G.teams.away, end = Number(P.e.own) === Number(home.id) ? away.ab : home.ab;
+  let live = false;
+  for (let j = 0; j <= P.k && !live; j++) live = !!trackLaneAt(P, j, home.id);
+  const held = !!(shot && shot.lane);
+  if (live) return ` The light triangle runs from the puck to the posts while the puck is in the ${end} end, more than `
+    + `${TRACK_LANE_FT} feet from the net: anyone inside it stands between the puck and the net.`
+    + (held ? ' At the shot it darkens and holds where the shot was taken.' : '');
+  return held ? ' The shaded triangle runs from the puck to the posts at the moment of the shot: '
+    + 'anyone inside it was between the shot and the net.' : '';
+}
 /** The frame shown at file time `tt` (tenths), never past the goal line. */
 export function trackFrameAt(P, tt) {
   let j = 0;
@@ -230,9 +251,11 @@ export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null }) {
   const per = P.e.per, at = o => { const p = trackFeet(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
   const F = P.frames[j].onIce, out = [];
-  // The lane, from the shot to the goal line, fixed where the shot was taken; under the players.
-  if (shot && shot.lane && tt >= shot.at)
-    out.push(`<polygon class="tlane" points="${[shot.apex, ...shot.posts].map(q => `${AX(q.x, per).toFixed(2)},${AY(q.y, per).toFixed(2)}`).join(' ')}"/>`);
+  // The lane, under the players: held where the shot was taken from the shot to the goal line on a long
+  // goal; before that, light, following the puck while it is in the scoring team's end beyond TRACK_LANE_FT.
+  const lane = (cls, L) => `<polygon class="${cls}" points="${[L.apex, ...L.posts].map(q => `${AX(q.x, per).toFixed(2)},${AY(q.y, per).toFixed(2)}`).join(' ')}"/>`;
+  if (shot && shot.lane && tt >= shot.at) out.push(lane('tlane', shot));
+  else { const L = trackLaneAt(P, j, G.teams.home.id); if (L) out.push(lane('tlane live', L)); }
   for (const o of Object.values(F)) {
     if (!o.playerId) continue;
     const s = at(o), r = G.roster[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a';

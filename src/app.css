@@ -2674,4 +2674,6 @@
 #rg .transport .trkc button{color:var(--ink)}#rg .transport .trkc button[aria-pressed="true"]{color:var(--track)}
 #rg .wtrk{font:inherit;color:var(--track);background:none;border:0;padding:0;margin:0 0 0 10px;line-height:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 /* The shot's lane: the puck to the posts at the moment of the shot, see-through so the players in it show. */
-#rg #track .tlane{fill:var(--track);fill-opacity:.16;stroke:var(--track);stroke-opacity:.45;stroke-width:.25;pointer-events:none}
+#rg #track .tlane{fill:var(--track);fill-opacity:.2;stroke:var(--track);stroke-opacity:.55;stroke-width:.25;pointer-events:none}
+/* While it follows the puck, lighter: the lane right now, not the lane when the shot was taken. */
+#rg #track .tlane.live{fill-opacity:.11;stroke-opacity:.5;stroke-dasharray:.8 .6}

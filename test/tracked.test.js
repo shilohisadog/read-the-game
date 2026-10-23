@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
-  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, TRACK_LANE_FT, TRACK_CARRY_FT,
+  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, TRACK_LANE_FT, TRACK_CARRY_FT,
 } from '../src/lib/tracked.js';
 import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
 
@@ -147,15 +147,40 @@ test('a goal from 30 feet or closer has a shot stop but no lane: the frame where
   assert.equal(trackShot(trackPlan(FX.frames, GOAL), G.teams.home.id).lane, true);
 });
 
-test('the lane is drawn from the shot on, the same shape to the goal line, and under the players', () => {
+test('the lane follows the puck, faint, while it is in the scoring team\'s end beyond 30 feet; at the shot it freezes', () => {
   const S = trackShot(P, G.teams.home.id), tags = trackTags(P, trackWindow(P, EV));
   const col = { 15: '#c8102e', 26: '#111111' }, opt = { G, AX, AY, col, tags, shot: S };
-  const before = trackMarkup(P, S.j - 1, P.frames[S.j - 1].timeStamp, opt);
-  assert.doesNotMatch(before, /class="tlane"/, 'the lane is up before the shot');
-  const at = trackMarkup(P, S.j, P.frames[S.j].timeStamp, opt), late = trackMarkup(P, P.k, P.frames[P.k].timeStamp, opt);
-  const pts = m => (m.match(/class="tlane" points="([^"]+)"/) || [])[1];
-  assert.ok(pts(at), 'no lane at the shot');
-  assert.equal(pts(late), pts(at), 'the lane changed shape on the way to the goal line');
+  const mk = j => trackMarkup(P, j, P.frames[j].timeStamp, opt);
+  const live = m => (m.match(/class="tlane live" points="([^"]+)"/) || [])[1];
+  const held = m => (m.match(/class="tlane" points="([^"]+)"/) || [])[1];
+  const pk = j => { const f = trackFeet(P.frames[j].onIce['1']); return { x: P.turn * f.x, y: P.turn * f.y }; };
+  // LAK attacks -x: in its end is x < -25; beyond 30 feet of the net at -89.
+  const inBand = j => { const p = pk(j); return p.x < -25 && Math.round(Math.hypot(89 + p.x, p.y)) > 30; };
+  let sawLive = 0, sawOut = 0;
+  for (let j = 0; j < S.j; j++) {
+    const m = mk(j);
+    assert.equal(held(m), undefined, `frame ${j}: the held lane before the shot`);
+    if (inBand(j)) {
+      sawLive++;
+      const apex = live(m).split(' ')[0].split(',').map(Number), p = pk(j);
+      assert.deepEqual(apex, [+AX(p.x).toFixed(2), +AY(p.y).toFixed(2)], `frame ${j}: the live lane is not at the puck`);
+    } else { sawOut++; assert.equal(live(m), undefined, `frame ${j}: a lane with the puck outside the end or inside 30 feet`); }
+  }
+  assert.ok(sawLive > 0 && sawOut > 0, 'the fixture does not exercise both sides of the band');
+  const at = mk(S.j), late = mk(P.k);
+  assert.ok(held(at), 'no held lane at the shot');
+  assert.equal(held(late), held(at), 'the held lane changed shape on the way to the goal line');
+  assert.equal(live(at), undefined, 'two lanes at once');
   assert.ok(at.indexOf('tlane') < at.indexOf('<circle'), 'the lane is drawn over the players');
   assert.ok(trackStops(P, tags, S.at).includes(S.at), 'the shot is not a stop');
+});
+
+test('the line says what the faint and the held triangle are, in plain words, naming the end', () => {
+  const S = trackShot(P, G.teams.home.id);
+  const say = trackLaneSay(P, G, S);
+  assert.match(say, /light triangle runs from the puck to the posts while the puck is in the WSH end, more than 30 feet from the net/);
+  assert.match(say, /At the shot it darkens and holds/);
+  assert.doesNotMatch(say, /attacking zone|blue line/i, 'hockey speak');
+  const close = trackShot(trackPlan(FX.frames, { ...GOAL, x: -62, y: -10 }), G.teams.home.id);
+  assert.doesNotMatch(trackLaneSay(trackPlan(FX.frames, { ...GOAL, x: -62, y: -10 }), G, close), /darkens/, 'a close goal has no held lane to describe');
 });
