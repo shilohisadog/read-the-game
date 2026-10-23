@@ -2889,9 +2889,9 @@ function trkStart(P,still,free){
  trkEnd();
  const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
- // The shot's lane, on a goal from beyond TRACK_LANE_FT: a stop of its own, and said once in the line.
+ // The moment of the shot: a stop on every located goal; beyond TRACK_LANE_FT its lane is drawn and said.
  const SHOT=trackShot(P,G.teams.home.id);
- const WHO=trackWho(P,G),SAY=trackSay(P,G,win,sp)+(SHOT?TRACK_LANE_SAY:''),FIRST=trackFirst(P);
+ const WHO=trackWho(P,G),SAY=trackSay(P,G,win,sp)+(SHOT&&SHOT.lane?TRACK_LANE_SAY:''),FIRST=trackFirst(P);
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,

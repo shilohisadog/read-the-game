@@ -117,7 +117,7 @@ test('the frame draws twelve skaters and the puck, the visitor in white, the lab
 
 test('⭐ the shot\'s lane opens where the puck leaves the stick, the release nearest the spot the league recorded', () => {
   const S = trackShot(P, G.teams.home.id);
-  assert.ok(S, 'a 38-foot goal has no lane');
+  assert.ok(S && S.lane, 'a 38-foot goal has no lane');
   assert.equal(S.ft, 38, 'not the distance the color line says');
   const pk = t => { const f = trackFeet(P.frames[t].onIce['1']); return { x: P.turn * f.x, y: P.turn * f.y }; };
   const stepAt = t => Math.hypot(pk(t + 1).x - pk(t).x, pk(t + 1).y - pk(t).y);
@@ -131,12 +131,20 @@ test('⭐ the shot\'s lane opens where the puck leaves the stick, the release ne
   assert.equal(GOAL_POST_Y * 2, 6);
 });
 
-test('a goal from 30 feet or closer has no lane, and one with no location has none', () => {
+test('a goal from 30 feet or closer has a shot stop but no lane: the frame where the puck is at the recorded spot', () => {
   assert.equal(TRACK_LANE_FT, 30);
-  const near = trackPlan(FX.frames, { ...GOAL, x: -62, y: -10 });   // 29 ft
-  assert.equal(trackShot(near, G.teams.home.id), null);
-  const at30 = trackPlan(FX.frames, { ...GOAL, x: -65, y: -18 });   // hypot(24, 18) = 30 ft
-  assert.equal(trackShot(at30, G.teams.home.id), null, 'beyond 30 feet means beyond it');
+  const g = { ...GOAL, x: -62, y: -10 };                                  // 29 ft
+  const near = trackPlan(FX.frames, g), S = trackShot(near, G.teams.home.id);
+  assert.ok(S && S.lane === false, 'no shot, or a lane, on a 29-foot goal');
+  const off = t => { const f = trackFeet(near.frames[t].onIce['1']); return Math.hypot(near.turn * f.x - g.x, near.turn * f.y - g.y); };
+  for (let t = 0; t <= near.k; t++) assert.ok(off(S.j) <= off(t), `frame ${t} is nearer the recorded spot than the stop`);
+  const tags = trackTags(near, trackWindow(near, EV));
+  assert.ok(trackStops(near, tags, S.at).includes(S.at), 'the shot is not a stop');
+  const m = trackMarkup(near, near.k, near.frames[near.k].timeStamp, { G, AX, AY, col: {}, tags, shot: S });
+  assert.doesNotMatch(m, /tlane/, 'a lane on a close goal');
+  const at30 = trackShot(trackPlan(FX.frames, { ...GOAL, x: -65, y: -18 }), G.teams.home.id);   // 30 ft
+  assert.equal(at30.lane, false, 'beyond 30 feet means beyond it');
+  assert.equal(trackShot(trackPlan(FX.frames, GOAL), G.teams.home.id).lane, true);
 });
 
 test('the lane is drawn from the shot on, the same shape to the goal line, and under the players', () => {
