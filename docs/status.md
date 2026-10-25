@@ -61,6 +61,12 @@ must be recorded or measured, never inferred (⛔ "X has the puck" was ruled out
   after the review. Archive: 793 reviews; the centre-ice restart agrees on 771 of 778.
 - **Goals mode: Next lands on the goal frame** after the goal line (`66677a9`).
 
+- **The hero** rolls from the text replay into its first goal as tracked, ¼ speed (`e779d42`); the headline says so once the file is in.
+- **Share links** carry `replay` and `speed` (`08a4eee`); the power-play line quotes the games measured.
+- **The shot stop and lanes** (`c384944`, `de99908`, `72ced43`): every located goal has a shot stop (beyond 30 ft the
+  release nearest the recorded spot; closer, the frame nearest it); a light lane follows the puck in the scoring end
+  beyond 30 ft and holds at a long goal's shot. `trackShot`/`trackLaneAt` in `src/lib/tracked.js`.
+
 ### Open
 1. Teaching moments for the tracked goal and Goals-mode UX (Kevin, 2026-10-22: "ponder" next). Challenges are
    done: the color line, the stoppage card, Goals-mode stops ("Face-off after a review · …"), and the coaches'
