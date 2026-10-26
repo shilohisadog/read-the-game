@@ -32,7 +32,41 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-21 (end of day)
+## ⏭ 0.00 PICK UP HERE — 2026-10-26
+
+Everything here is live on readthegame.co and was checked in a real browser; gates, deploy and derive green.
+
+### Live now
+- **Goals mode is the default on a plain visit** (`be30e48`): a game link with no `at=` and no `summary=1`, on a game
+  with tracked goals (this season only). Links to a moment (lesson doors, shared moments) open in All events unless
+  `replay=goals`; `replay=all` asks for All events. The newcomer note describes whichever mode is showing.
+- **Goals mode walks** first frame → recorded events → the shot → the goal → the next goal. One goal is one stop:
+  the goal frame holds the tracked goal-line picture (`trkRest`, class `trkrest`), banner in the other half
+  (`284b2ae`, `840917f`). The scrubber goes where it is tapped. A goal that came off on review is a stop
+  ("Face-off after a review · TOR's goal came off").
+- **Lanes** (`src/lib/tracked.js`): a light dashed triangle from the puck to the posts while the puck is in the scoring
+  end beyond 20 ft (`trackLaneAt`); on goals beyond 20 ft it darkens and holds from the shot to the goal line
+  (`trackShot`). The shot's moment: beyond 30 ft the release nearest the recorded spot, within 30 the frame nearest it.
+  `TRACK_LANE_FT` 20 (visual), `TRACK_RELEASE_FT` 30, `TRACK_CARRY_FT` 3.5, `TRACK_TURN_DEG` 45 — all declared choices.
+- **Challenges** (`src/lib/challenge.js`): the outcome of every review of a goal, read from the record, said on the
+  first frame after it; the stoppage card names the goal as what stopped play; `census.reviews` published
+  ("coaches have won 490 of 726 challenges of a goal, about 2 in 3").
+- **The hero** rolls from the text replay into its first goal as tracked (`e779d42`); **share links** carry `replay`
+  and `speed` (`08a4eee`); base rates say "Across the 4,345 games we have measured".
+
+### Open
+1. The Stoppages total can count one goal whistle twice (the challenge stoppage and the ruling stoppage after it).
+2. A scrubber tick for a goal that came off.
+3. Re-measure how often someone is in the puck's path under the release rule before quoting it
+   (memory `screening-path-measure`; the published-in-chat figures used the earlier rule).
+4. ⚠️ The `lab` branch still carries its own older copy of the tracked goal — strip it before the next prototype.
+5. Goals-mode teaching moments / UX: nothing chosen yet. Show the novice tester Goals as the default.
+6. Move the deploy's no-network-page grep into `npm run gates`.
+7. Unexplained: rail witness 385/390; the feed's 28 vs our 27 shots on DiPietro (2026020120).
+8. Waiting on Kevin: data-model item 6, item 12 (reduced motion), the lesson strip on a landscape phone; the NHL's
+   reply to the 2026-10-19 permission request.
+
+## ⏭ 0.00 (previous) — 2026-10-21 (end of day)
 
 **Next (Kevin):** debug the tracked goal and add TEACHING MOMENTS to it — in a new thread. Teaching moments
 must be recorded or measured, never inferred (⛔ "X has the puck" was ruled out: nearest is not possession).
