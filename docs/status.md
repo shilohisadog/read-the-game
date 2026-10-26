@@ -67,6 +67,10 @@ must be recorded or measured, never inferred (⛔ "X has the puck" was ruled out
   release nearest the recorded spot; closer, the frame nearest it); a light lane follows the puck in the scoring end
   beyond 30 ft and holds at a long goal's shot. `trackShot`/`trackLaneAt` in `src/lib/tracked.js`.
 
+- **Goals is the default on a plain visit** (`be30e48`): no `at=`, no summary, and the game has tracked goals; moment
+  links keep All events. Goals mode: one goal is one stop (`284b2ae`), the banner clears the goal moment, the
+  scrubber goes where it is tapped (`840917f`), lanes from 20 ft (`ae277e9`).
+
 ### Open
 1. Teaching moments for the tracked goal and Goals-mode UX (Kevin, 2026-10-22: "ponder" next). Challenges are
    done: the color line, the stoppage card, Goals-mode stops ("Face-off after a review · …"), and the coaches'
