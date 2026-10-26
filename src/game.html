@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lHdy0VhaOi6zFIVX+kvnXIqcUeNClWA3g5z1yqpHCjM=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HpZLNlgNUTeepTwFsSTwefg9x7DpLSotnO6szPKTD6I=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3645,7 +3645,8 @@ const TRACK_LOOKAHEAD_S = 40;
 const TRACK_STILL_MS = 1500;
 const TRACK_TAG_TENTHS = 8;
 const TRACK_TAG_EDGE = 16;
-const TRACK_LANE_FT = 30;
+const TRACK_LANE_FT = 20;
+const TRACK_RELEASE_FT = 30;
 const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
 const GOAL_LINE = 89, BLUE = 25;
 
@@ -3764,7 +3765,7 @@ function trackShot(P, homeId) {
   const e = P && P.e;
   if (!e || e.x == null || e.y == null) return null;
   const dir = attackDirection(e.own, homeId), ft = Math.round(distanceToNet(e.x, e.y, dir));
-  const lane = ft > TRACK_LANE_FT;
+  const lane = ft > TRACK_LANE_FT, release = ft > TRACK_RELEASE_FT;
   const at = t => { const pk = P.frames[t] && P.frames[t].onIce && P.frames[t].onIce['1'];
     if (!pk) return null; const f = trackFeet(pk); return { x: P.turn * f.x, y: P.turn * f.y }; };
   const pts = Array.from({ length: P.k + 1 }, (_, t) => at(t));
@@ -3776,7 +3777,7 @@ function trackShot(P, homeId) {
     if (len(a) <= TRACK_CARRY_FT) return true;
     return Math.acos(Math.max(-1, Math.min(1, (a.dx * b.dx + a.dy * b.dy) / (len(a) * len(b))))) * 180 / Math.PI > TRACK_TURN_DEG; };
   let j = -1;
-  if (lane) for (let t = 1; t < P.k; t++) if (released(t) && (j < 0 || off(t) < off(j))) j = t;
+  if (release) for (let t = 1; t < P.k; t++) if (released(t) && (j < 0 || off(t) < off(j))) j = t;
   if (j < 0) for (let t = 0; t <= P.k; t++) if (pts[t] && (j < 0 || off(t) < off(j))) j = t;
   if (j < 0) return null;
   const apex = pts[j];

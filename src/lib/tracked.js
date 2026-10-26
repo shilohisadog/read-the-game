@@ -29,9 +29,12 @@ export const TRACK_STILL_MS = 1500;
 export const TRACK_TAG_TENTHS = 8;
 /** Half the longest label's width, in rink feet: nearer the boards, it runs away from them. */
 export const TRACK_TAG_EDGE = 16;
-/* Goals from beyond this many feet show the shot's lane. OUR choice, from the measure: someone stood in the
-   path on about half the goals from 30 to 45 feet and most beyond, against 4% to 20% closer in (2026-10-22). */
-export const TRACK_LANE_FT = 30;
+/* Beyond this many feet from the net the lane is drawn: light while it follows the puck, held from the shot
+   on. OUR choice and a visual one (Kevin, 2026-10-26): closer in the triangle shrinks to a stub over the crease. */
+export const TRACK_LANE_FT = 20;
+/* Beyond this the moment of the shot is the release (TRACK_CARRY_FT); closer in it is the frame nearest the
+   recorded spot, because close goals often go in too slowly for a release to show. Measured, 2026-10-23. */
+export const TRACK_RELEASE_FT = 30;
 /* A shot leaves the stick: the puck goes from carrying speed to faster than anyone skates (~24 mph, 3.5 ft
    a tenth of a second), or turns sharply while fast (a tip). Both numbers OUR choice; over the 323 goals
    beyond 30 feet, the release nearest the recorded spot is within 3 feet of it on 79%, 6 feet on 90%. */
@@ -173,8 +176,8 @@ export function trackStops(P, tags, shotAt = null) {
 
 /**
  * THE MOMENT OF THE SHOT, a Prev/Next stop on every goal with a recorded location; on a goal from
- * beyond TRACK_LANE_FT it also opens the lane (`lane`), the triangle from the puck to the two posts.
- * Beyond it, the moment is the release (see TRACK_CARRY_FT) nearest the spot the league recorded:
+ * beyond TRACK_LANE_FT it also holds the lane (`lane`), the triangle from the puck to the two posts.
+ * Beyond TRACK_RELEASE_FT, the moment is the release (see TRACK_CARRY_FT) nearest the spot the league recorded:
  * long shots leave the stick fast, often after the shooter has carried the puck past that spot.
  * Closer in, it is the frame where the puck is nearest that spot: close goals often go in too slowly
  * for a release to show (88% of the 908 within 3 feet, a median 0.3 s before the line). The distance
@@ -185,7 +188,7 @@ export function trackShot(P, homeId) {
   const e = P && P.e;
   if (!e || e.x == null || e.y == null) return null;
   const dir = attackDirection(e.own, homeId), ft = Math.round(distanceToNet(e.x, e.y, dir));
-  const lane = ft > TRACK_LANE_FT;
+  const lane = ft > TRACK_LANE_FT, release = ft > TRACK_RELEASE_FT;
   const at = t => { const pk = P.frames[t] && P.frames[t].onIce && P.frames[t].onIce['1'];
     if (!pk) return null; const f = trackFeet(pk); return { x: P.turn * f.x, y: P.turn * f.y }; };
   const pts = Array.from({ length: P.k + 1 }, (_, t) => at(t));
@@ -197,7 +200,7 @@ export function trackShot(P, homeId) {
     if (len(a) <= TRACK_CARRY_FT) return true;
     return Math.acos(Math.max(-1, Math.min(1, (a.dx * b.dx + a.dy * b.dy) / (len(a) * len(b))))) * 180 / Math.PI > TRACK_TURN_DEG; };
   let j = -1;
-  if (lane) for (let t = 1; t < P.k; t++) if (released(t) && (j < 0 || off(t) < off(j))) j = t;
+  if (release) for (let t = 1; t < P.k; t++) if (released(t) && (j < 0 || off(t) < off(j))) j = t;
   if (j < 0) for (let t = 0; t <= P.k; t++) if (pts[t] && (j < 0 || off(t) < off(j))) j = t;
   if (j < 0) return null;
   const apex = pts[j];
