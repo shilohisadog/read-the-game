@@ -2677,3 +2677,5 @@
 #rg #track .tlane{fill:var(--track);fill-opacity:.2;stroke:var(--track);stroke-opacity:.55;stroke-width:.25;pointer-events:none}
 /* While it follows the puck, lighter: the lane right now, not the lane when the shot was taken. */
 #rg #track .tlane.live{fill-opacity:.11;stroke-opacity:.5;stroke-dasharray:.8 .6}
+/* Goals: the goal stop holding the tracked picture (app.js `trkRest`). The replay's own marks give way; the banner stays. */
+#rg.trkrest #events,#rg.trkrest #lines,#rg.trkrest #puck,#rg.trkrest #draws,#rg.trkrest #whistles,#rg.trkrest #netmen,#rg.trkrest #cue{display:none}

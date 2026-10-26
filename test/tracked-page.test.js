@@ -71,48 +71,57 @@ test('⭐ Goals: Play goes into the first goal\'s tracking, then lands on that g
   const p = rich.roster[first.e.actor];
   assert.equal(a.$('who').textContent, `Tracked · goal by #${p.n} ${p.nm} (${first.e.own === rich.teams.home.id ? rich.teams.home.ab : rich.teams.away.ab})`);
   assert.match(a.$('playline').textContent, /seconds before the goal\. The black dot is the puck\./, 'the first frame is not held');
-  a.advance(1);
+  a.advance(1); await settle();
   assert.equal(+a.$('scrub').value, first.k, 'after the tracking, not the goal frame');
-  assert.equal(a.$('rg').classList.contains('trk'), false, 'the tracking outlived its goal');
+  assert.equal(a.$('rg').classList.contains('trk'), false, 'the tracking is still running on the goal');
+  // ⭐ ONE GOAL, ONE STOP: the goal frame holds the tracked picture of the puck in the net.
+  assert.ok(a.$('rg').classList.contains('trkrest'), 'the goal stop does not hold the tracked picture');
+  assert.match(a.$('track').innerHTML, /class="tpk"/, 'no puck in the held picture');
+  assert.match(a.$('labels').innerHTML, /GOAL/, 'the goal stop does not say GOAL');
 });
 
-test('Goals: Prev and Next step through a goal\'s stops, then to the next goal', async () => {
+test('Goals: Prev and Next step within a goal\'s tracking, and pause there', async () => {
   const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
   await settle(); await settle();
   a.at(0, () => {});
   a.$('fwd').click(); await settle(); await settle();
-  assert.ok(a.$('rg').classList.contains('trk'), 'Next did not open the first goal\'s tracking');
-  const clocks = [a.$('clk').textContent];
-  for (let n = 0; n < 3; n++) { a.$('fwd').click(); await settle(); clocks.push(a.$('clk').textContent); }
-  // First frame -> the file's goal line (no recorded events of this game fall in its window)
-  // -> the goal's own frame.
-  assert.notEqual(clocks[0], clocks[1], 'Next did not move within the goal');
+  assert.ok(a.$('rg').classList.contains('trk'), 'Next did not open the next goal\'s tracking');
+  const first = a.$('clk').textContent;
+  a.$('fwd').click(); await settle();
+  assert.ok(a.$('rg').classList.contains('trk'), 'one Next left a goal with a shot stop');
+  const second = a.$('clk').textContent;
+  assert.notEqual(second, first, 'Next did not move within the goal');
   a.$('back').click(); await settle();
   assert.ok(a.$('rg').classList.contains('trk'), 'Prev left the tracking');
+  assert.notEqual(a.$('clk').textContent, second, 'Prev did not move back');
   assert.equal(a.$('play').textContent.includes('Pause'), false, 'stepping did not pause');
 });
 
-test('⭐ Goals: Next lands on the goal itself after its goal line, and Prev comes back the same way', async () => {
+test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, which holds the puck in the net', async () => {
   const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
   await settle(); await settle();
-  a.at(0, () => {});                         // Goals snaps the scrubber to the first goal
+  a.at(0, () => {}); await settle(); await settle();   // Goals snaps the scrubber to the first goal
   const [g0, g1, g2] = GOALS;
-  const trk = () => a.$('rg').classList.contains('trk'), at = () => +a.$('scrub').value;
+  const trk = () => a.$('rg').classList.contains('trk'), rest = () => a.$('rg').classList.contains('trkrest');
+  const at = () => +a.$('scrub').value, clk = () => a.$('clk').textContent;
   const next = async () => { a.$('fwd').click(); await settle(); await settle(); };
   const prev = async () => { a.$('back').click(); await settle(); await settle(); };
   assert.equal(at(), g0.k);
+  assert.ok(rest(), 'the first goal does not hold its tracked picture');
   await next();
-  assert.ok(trk(), 'Next did not open the second goal\'s tracking');
-  for (let n = 0; n < 8 && trk(); n++) await next();
-  assert.equal(at(), g1.k, 'past the goal line, Next skipped the goal frame');
-  assert.equal(a.$('track').innerHTML, '', 'the tracking is still drawn over the goal frame');
+  assert.ok(trk() && !rest(), 'Next did not open the second goal\'s tracking');
+  const seen = [];
+  for (let n = 0; n < 8 && trk(); n++) { seen.push(clk()); await next(); }
+  assert.equal(at(), g1.k, 'the stops did not end on the goal frame');
+  assert.ok(rest() && !trk(), 'the goal frame does not hold the tracked picture');
+  assert.equal(new Set(seen).size, seen.length, `a stop repeated: ${seen}`);
   await next();
-  assert.ok(trk(), 'from the goal frame, Next did not open the next goal');
+  assert.ok(trk() && !rest(), 'from the goal, Next did not open the next goal');
   await prev();
-  assert.equal(trk(), false, 'Prev from the first tracked frame stayed in the tracking');
   assert.equal(at(), g1.k, 'Prev from the next goal\'s first frame did not land on the previous goal');
+  assert.ok(rest());
   await prev();
-  assert.ok(trk(), 'Prev from the goal frame did not go back into its tracking');
+  assert.ok(trk(), 'Prev from the goal did not go back into its tracking');
   assert.ok(g2, 'the reference game needs three goals for this walk');
 });
 

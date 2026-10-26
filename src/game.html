@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BQqLM23enlQH4oohXVmd/wl/oNYi2QxWuOOkeJjpPnI=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-U54NfWWtepXnRtHv1aejTH2zW5b76/h1Not3USgwlgE='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hqBjCCwtXBVKjSw52u/Zd7YHHiSeAa0isNvul/KaF5Q=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -670,6 +670,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .wtrk{font:inherit;color:var(--track);background:none;border:0;padding:0;margin:0 0 0 10px;line-height:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 #rg #track .tlane{fill:var(--track);fill-opacity:.2;stroke:var(--track);stroke-opacity:.55;stroke-width:.25;pointer-events:none}
 #rg #track .tlane.live{fill-opacity:.11;stroke-opacity:.5;stroke-dasharray:.8 .6}
+#rg.trkrest #events,#rg.trkrest #lines,#rg.trkrest #puck,#rg.trkrest #draws,#rg.trkrest #whistles,#rg.trkrest #netmen,#rg.trkrest #cue{display:none}
 
 .hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
  padding:15px 16px 14px;margin:0 0 14px}
@@ -5561,7 +5562,7 @@ function trkStart(P,still,free){
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
-  stops:trackStops(P,tags,SHOT&&SHOT.at),at:now10,
+  stops:trackStops(P,tags,SHOT&&SHOT.at).filter(v=>!TRK.goals||v!==tGoal),at:now10,
   left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
   seek(v){played=(v-t0)/10/sp*1000;run.prev=null;trkKick(true);}};
  const paint=()=>{
@@ -5587,6 +5588,7 @@ function trkStart(P,still,free){
 function trkKick(force){const r=TRK.run;if(r&&!r.raf&&(force||playing||r.free)){r.prev=null;r.raf=requestAnimationFrame(r.tick);}}
 function trkFrame(k,how,cur){
  if(!TRK_ON)return;
+ trkRestClear();
  trkControl();
  if(TRK.run&&!(TRK.hold&&k===TRK.hold.i&&how==='play'))trkEnd();
  if(TRK.run)TRK.run.paint();
@@ -5601,9 +5603,18 @@ function trkFrame(k,how,cur){
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
   const p=trkPlan(cur);
   p.then(P=>{if(i!==k)return;
-   if(P&&(!playing||REDUCED)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
+   if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
+   if(P&&(!playing||REDUCED)&&(REDUCED||!TRK.goals)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
    if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))
     sayPlay(($('playline').textContent?$('playline').textContent+' ':'')+'No tracking for this goal.');});}}
+function trkRestClear(){if(!TRK.rest)return;TRK.rest=null;if(!TRK.run)put($('track'),'');document.getElementById('rg').classList.remove('trkrest');}
+function trkRest(k,P){
+ if(i!==k||TRK.run)return;
+ const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},tG=P.frames[P.k].timeStamp;
+ put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,tags:trackTags(P,trackWindow(P,EV)),shot:trackShot(P,G.teams.home.id)}));
+ document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
+ const pk=P.frames[P.k].onIce['1'],e=EV[k];
+ if(pk){const f=trackFeet(pk);drawLabel(e,{x:AX(P.turn*f.x,e.per),y:AY(P.turn*f.y,e.per)});}}
 function trkNoCue(k,g){
  const P=g>=0?trkReady(EV[g]):null,nxt=EV[k+1];
  document.getElementById('rg').classList.toggle('trknocue',!!(TRK.goals||P&&nxt&&playing&&!REDUCED&&nxt.s>=EV[g].s-P.before));}
@@ -5909,7 +5920,7 @@ function sinceLine(ev){
   return `· P${ev.per} ${ESC(ev.rem)}${d}`;
 }
 
-function drawLabel(e){const g=$('labels');const p=place(e);if(!p){put(g,'');return;}
+function drawLabel(e,at){const g=$('labels');const p=at||place(e);if(!p){put(g,'');return;}
  const lx=p.x,ly=p.y;
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL;
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');

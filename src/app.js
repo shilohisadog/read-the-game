@@ -58,7 +58,7 @@ import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackSay, trackFirst, trackTags,
-  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneSay } from './lib/tracked.js';
+  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneSay, trackFeet } from './lib/tracked.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -2895,7 +2895,8 @@ function trkStart(P,still,free){
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
-  stops:trackStops(P,tags,SHOT&&SHOT.at),at:now10,
+  // In Goals the goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
+  stops:trackStops(P,tags,SHOT&&SHOT.at).filter(v=>!TRK.goals||v!==tGoal),at:now10,
   left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
   seek(v){played=(v-t0)/10/sp*1000;run.prev=null;trkKick(true);}};
  // One frame of the tracking, and the words and clock that go with it.
@@ -2926,6 +2927,7 @@ function trkKick(force){const r=TRK.run;if(r&&!r.raf&&(force||playing||r.free)){
    next goal's file early, and keep the controls and the ice's classes current. */
 function trkFrame(k,how,cur){
  if(!TRK_ON)return;
+ trkRestClear();
  trkControl();
  if(TRK.run&&!(TRK.hold&&k===TRK.hold.i&&how==='play'))trkEnd();
  // A tracking that carries on over this frame paints over what the render just wrote.
@@ -2943,9 +2945,21 @@ function trkFrame(k,how,cur){
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
   const p=trkPlan(cur);
   p.then(P=>{if(i!==k)return;
-   if(P&&(!playing||REDUCED)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
+   if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
+   if(P&&(!playing||REDUCED)&&(REDUCED||!TRK.goals)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
    if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))
     sayPlay(($('playline').textContent?$('playline').textContent+' ':'')+'No tracking for this goal.');});}}
+/* GOALS: ONE GOAL, ONE STOP. The goal frame keeps its scoreboard, banner, line and highlight, and holds
+   the tracking's picture at the goal line: the puck in the net, everyone where the league tracked them.
+   The banner moves to the puck. `trkrest`, not `trk`: nothing is running. */
+function trkRestClear(){if(!TRK.rest)return;TRK.rest=null;if(!TRK.run)put($('track'),'');document.getElementById('rg').classList.remove('trkrest');}
+function trkRest(k,P){
+ if(i!==k||TRK.run)return;
+ const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},tG=P.frames[P.k].timeStamp;
+ put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,tags:trackTags(P,trackWindow(P,EV)),shot:trackShot(P,G.teams.home.id)}));
+ document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
+ const pk=P.frames[P.k].onIce['1'],e=EV[k];
+ if(pk){const f=trackFeet(pk);drawLabel(e,{x:AX(P.turn*f.x,e.per),y:AY(P.turn*f.y,e.per)});}}
 function trkNoCue(k,g){
  const P=g>=0?trkReady(EV[g]):null,nxt=EV[k+1];
  document.getElementById('rg').classList.toggle('trknocue',!!(TRK.goals||P&&nxt&&playing&&!REDUCED&&nxt.s>=EV[g].s-P.before));}
@@ -3962,7 +3976,7 @@ function sinceLine(ev){
   return `· P${ev.per} ${ESC(ev.rem)}${d}`;
 }
 
-function drawLabel(e){const g=$('labels');const p=place(e);if(!p){put(g,'');return;}
+function drawLabel(e,at){const g=$('labels');const p=at||place(e);if(!p){put(g,'');return;}
  const lx=p.x,ly=p.y;
  /* ⭐ THE GOAL'S WORDS COME FROM `playSaid`, LIKE EVERY OTHER PLAY'S. This branch
     wrote its own sentence -- "🚨 GOAL — Stankoven" -- and it was the one label on
