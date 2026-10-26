@@ -214,8 +214,12 @@ let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
    Off on the front door's hero, and wherever no fetcher was handed in. */
 const TRK_ON=!PREVIEW&&typeof DOC==='function';
 const TRK_Q=new URLSearchParams(location.search);
+/* GOALS IS THE DEFAULT ON A PLAIN VISIT (Kevin, 2026-10-26): a game link that names no moment and no summary.
+   A link to a moment (every lesson door, every shared moment) opens in All events, as it always has, unless it
+   says `replay=goals`; `replay=all` asks for All events. A game with no tracked goals falls back (trkControl). */
+const TRK_PLAIN=!LINK.at&&!LINK.summary;
 const TRK={rows:null,plans:new Map(),run:null,hold:null,offered:false,
-  goals:TRK_ON&&TRK_Q.get('replay')==='goals',
+  goals:TRK_ON&&(TRK_Q.get('replay')==='goals'||(TRK_Q.get('replay')==null&&TRK_PLAIN)),
   speed:TRACK_SPEEDS.some(x=>x[0]===Number(TRK_Q.get('speed')))?Number(TRK_Q.get('speed')):TRACK_SPEED};
 /* WHETHER THIS IS A FIRST VISIT — a fact the page has never had, and the reason
    230 words of teaching copy were either permanent furniture or absent.
@@ -3028,7 +3032,7 @@ function trkOpen(g,where){
    the game is known to have tracked goals. The selected one is purple, like "Replay". */
 function trkControl(){
  if(!TRK.offered){TRK.offered=true;
-  trkRows().then(rows=>{TRK.shown=rows.length>0;trkPaint();});}
+  trkRows().then(rows=>{TRK.shown=rows.length>0;if(!TRK.shown&&TRK.goals){TRK.goals=false;drawNewcomer();}trkPaint();});}
  trkPaint();}
 function trkPaint(){
  $('trkMode').hidden=!TRK.shown;$('trkSpeed').hidden=!TRK.shown;
@@ -3041,7 +3045,7 @@ function trkUrl(k,v){if(typeof history==='undefined')return;
 function trkMode(on){
  if(on===TRK.goals)return;
  if(playing)stop();
- TRK.hold=null;trkEnd();TRK.goals=on;trkUrl('replay',on?'goals':null);trkPaint();set(i,'');}
+ TRK.hold=null;trkEnd();TRK.goals=on;trkUrl('replay',on?'goals':(TRK_PLAIN?'all':null));trkPaint();drawNewcomer();set(i,'');}
 // A new speed restarts the goal being tracked at that speed, so the hold matches what plays.
 function trkSpeed(v){
  if(v===TRK.speed)return;
@@ -4601,7 +4605,14 @@ function drawNewcomer(){
     the fake-DOM absence trap in a new costume, caught only because the test asks
     the greeting to match the MARKUP's label rather than its own. A constant both
     sides read needs no DOM at all. */
- el.innerHTML=`<b>New here?</b> Press <b>${PLAY_REST}</b> and just watch — every event `
+ // In Goals the greeting describes Goals, and says where the whole game is.
+ if(TRK.goals){el.innerHTML=`<b>New here?</b> Press <b>${PLAY_REST}</b> to watch this game's goals, each one `
+  +`as the league tracked it: every player and the puck in the seconds before it went in, ${(TRACK_SPEEDS.find(x=>x[0]===TRK.speed)||TRACK_SPEEDS[0])[2]}. `
+  +`Use <b>Prev</b> and <b>Next</b> to stop on the moments in each goal: the start, the shot, the goal. `
+  +`When you want the whole game, every recorded event in order, choose <b>All events</b> beside Play. `
+  +`Nothing is invented: every number here comes from the league's own record of the game.`
+  +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;}
+ else el.innerHTML=`<b>New here?</b> Press <b>${PLAY_REST}</b> and just watch — every event `
   +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
   +`The <b class="ncue">green shading</b> shows you where the next play happens, so you are `
   +`looking in the right place when it does. `
@@ -5356,7 +5367,8 @@ function shareUrl(){
  const ed=LINK.asof||(typeof NEWEST_EDITION==='string'?NEWEST_EDITION:null);
  // The tracked goal's mode when not the default, and its speed always on a game that has one.
  return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'')
-         +(TRK.shown&&TRK.goals?'&replay=goals':'')+(TRK.shown?'&speed='+TRK.speed:'')
+         // A pre-game link names no moment, so it would open in Goals: say All events when that is what was showing.
+         +(TRK.shown&&TRK.goals?'&replay=goals':TRK.shown&&n==null?'&replay=all':'')+(TRK.shown?'&speed='+TRK.speed:'')
          +(sumOpen?'&summary=1':'')+(ed?'&asof='+ed:'');}
 
 const shareBtn=$('share'),shareSaid=$('sharesaid');

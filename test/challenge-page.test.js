@@ -69,7 +69,7 @@ test('⭐ Goals: a goal that stood says so on its own frame; All events says it 
   assert.equal(+g.$('scrub').value, STOOD);
   assert.match(g.$('playline').textContent,
     new RegExp(`${ab[AWAY]} scored, and ${ab[HOME]} challenged that a ${ab[AWAY]} player interfered with the goaltender\\. The review concluded the goal stands, and ${ab[HOME]} takes a two-minute penalty for losing the challenge\\.`));
-  const all = boot(G, null, '', null, served);
+  const all = boot(G, null, '?replay=all', null, served);
   await settle(); await settle();
   all.at(STOOD, () => {}); await settle();
   assert.doesNotMatch(all.$('playline').textContent, /challenged/, 'All events says it twice');

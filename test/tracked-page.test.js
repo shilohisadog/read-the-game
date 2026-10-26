@@ -43,18 +43,32 @@ test('a game whose index lists no goals offers no controls', async () => {
   assert.equal(shown(a), false, 'controls for a game with nothing tracked');
 });
 
-test('a game with tracked goals offers Replay and Speed, All events and ¼ selected', async () => {
-  const asked = [];
-  const a = boot(rich, null, '', null, served(asked));
+test('⭐ a plain visit opens in Goals; a link to a moment, or replay=all, opens in All events', async () => {
+  const mode = async q => { const a = boot(rich, null, q, null, served(), MOTION); await settle(); await settle();
+    assert.ok(shown(a), 'the controls stayed hidden');
+    return { goals: a.$('trkGoals').getAttribute('aria-pressed') === 'true', all: a.$('trkAll').getAttribute('aria-pressed') === 'true',
+      cls: a.$('rg').classList.contains('trkgoals'), q: a.$('trkQ').getAttribute('aria-pressed'), a }; };
+  const plain = await mode('');
+  assert.ok(plain.goals && !plain.all && plain.cls, 'a plain visit is not in Goals');
+  assert.equal(plain.q, 'true', '¼ is not the speed');
+  assert.match(plain.a.$('newcomer').innerHTML, /watch this game's goals/, 'the greeting describes All events in Goals');
+  const at = TL[40], moment = await mode(`?at=${at.per}-${at.rem}`);
+  assert.ok(moment.all && !moment.goals, 'a link to a moment did not open in All events');
+  const all = await mode('?replay=all');
+  assert.ok(all.all && !all.goals, 'replay=all did not open in All events');
+  assert.match(all.a.$('newcomer').innerHTML, /every event/, 'the greeting describes Goals in All events');
+  const goalsAt = await mode(`?at=${at.per}-${at.rem}&replay=goals`);
+  assert.ok(goalsAt.goals, 'replay=goals on a moment link was ignored');
+  // Choosing All events on a plain visit is written into the address, so a reload keeps it.
+  plain.a.$('trkAll').click();
+  assert.ok(plain.a.$('trkAll').getAttribute('aria-pressed') === 'true');
+});
+
+test('a plain visit to a game with no tracked goals stays in All events', async () => {
+  const a = boot(rich, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null), MOTION);
   await settle(); await settle();
-  assert.ok(asked.includes(`track/${rich.game.id}/goals.json`), 'the index was never asked for');
-  assert.ok(shown(a), 'the controls stayed hidden');
-  assert.equal(a.$('trkAll').getAttribute('aria-pressed'), 'true');
-  assert.equal(a.$('trkGoals').getAttribute('aria-pressed'), 'false');
-  assert.equal(a.$('trkQ').getAttribute('aria-pressed'), 'true');
-  a.$('trkGoals').click();
-  assert.equal(a.$('trkGoals').getAttribute('aria-pressed'), 'true');
-  assert.ok(a.$('rg').classList.contains('trkgoals'));
+  assert.equal(a.$('rg').classList.contains('trkgoals'), false, 'Goals with nothing to show');
+  assert.match(a.$('newcomer').innerHTML, /every event/);
 });
 
 test('⭐ Goals: Play goes into the first goal\'s tracking, then lands on that goal', async () => {
@@ -163,12 +177,12 @@ test('under reduced motion Goals goes goal frame to goal frame, and offers the t
 });
 
 test('⭐ a copied link carries the replay mode and the speed, and the confirmation says so', async () => {
-  const a = boot(rich, null, '', null, served(), MOTION);
+  const a = boot(rich, null, '?replay=all', null, served(), MOTION);
   await settle(); await settle();
   a.at(GOALS[0].k, () => {});
   a.$('share').onclick(); await settle();
   let q = new URLSearchParams(a.copied.split('?')[1]);
-  assert.equal(q.get('replay'), null, 'All events is the default and is not written');
+  assert.equal(q.get('replay'), null, 'a link to a moment opens in All events without saying so');
   assert.equal(q.get('speed'), '0.25', 'a game with tracked goals always carries its speed');
   assert.match(a.$('sharesaid').innerHTML, /, tracked goals at ¼ speed\./);
   a.$('trkGoals').click(); a.$('trkH').click(); await settle();
@@ -227,4 +241,11 @@ test('⭐ in Goals the scrubber goes where it is tapped, the very start and end 
     a.$('scrub').onchange({ target: { value: String(k) } }); await settle();
     assert.equal(+a.$('scrub').value, k, `a tap at ${k} moved to ${a.$('scrub').value}`);
   }
+});
+
+test('a pre-game link copied in All events says so, since a link with no moment opens in Goals', async () => {
+  const a = boot(rich, null, '?replay=all', null, served(), MOTION);
+  await settle(); await settle();
+  a.$('share').onclick(); await settle();
+  assert.equal(new URLSearchParams(a.copied.split('?')[1]).get('replay'), 'all');
 });
