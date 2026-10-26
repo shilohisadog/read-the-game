@@ -148,9 +148,8 @@ function run({ search = '', docs = {}, at = null } = {}) {
       ? { ok: true, json: () => Promise.resolve(served[key]) }
       : { ok: false, json: () => Promise.resolve(null) });
   };
-  /* THE FRAME TALKS BACK. The hero's sentence is about shot attempts, which only
-     the preview frame can compute -- so the page listens, and a harness with no
-     `window` could not boot it at all, let alone see the message. */
+  /* THE FRAME TALKS BACK: it says when it will play a tracked goal, so the page
+     listens, and a harness with no `window` could not boot it at all. */
   const heard = {};
   const win = { addEventListener: (t, fn) => (heard[t] = heard[t] || []).push(fn) };
   const Real = Date;
@@ -361,216 +360,6 @@ test('a relocated team explains itself rather than trailing off', () => {
     assert.match(textOf(r.ids.main), /relocated to utah/i);
   });
 });
-
-/**
- * IS THIS GAME THE USUAL CASE — the caption CHENG required to be computed.
- *
- * The thesis now sits directly above the hero, so the hero reads as an instance
- * of it. The hero is the most recent game, which means some nights confirm the
- * rate and some contradict it: "the caption must handle both, which means the
- * relationship has to be computed, not written." A hand-authored clause here
- * would be the #start defect a third time — copy asserting a relationship the
- * data is free to invert overnight.
- *
- * So the fixtures invert it deliberately. Every arm below is reachable from real
- * data, and three of them are unreachable from the default fixture, which is
- * exactly how the first pass left them untested.
- */
-/* THE MEASURE IS ATTEMPTS NOW, AND IT ARRIVES FROM THE FRAME. The catalog's
-   shots are deliberately NOT what this reads: the loop above the sentence counts
-   attempts, so the sentence counts attempts, and the only thing that can compute
-   them is the preview. `ash`/`hsh` stay on the row and are ignored on purpose --
-   if the page ever reads them again this fixture makes the wrong number
-   obvious, because they disagree with the posted totals. */
-function heroRelation({ aAtt, hAtt, as, hs, count, n, level, measured }) {
-  const cat = { games: [{ id: 2023020200, d: '2024-02-09', a: 'TOR', h: 'BUF',
-                          as, hs, ash: 9, hsh: 9, t: 2, v: 1 }] };
-  const measures = { ...MEASURES, baseRates: { ...MEASURES.baseRates,
-    moreAttemptsLost: { what: 'the team with more shot attempts lost',
-      population: 'NHL regular season and playoffs', n, count },
-    /* `level` is optional: passing null REMOVES the second rate, which is the
-       only way to test that the hero degrades to the single sentence rather
-       than printing a dangling connective. */
-    ...(level === undefined ? {} : { moreLevelControlLost: level }) },
-    /* `measured` is optional for the same reason `level` is: passing nothing
-       REMOVES the population clause, which is the only way to test that the line
-       degrades to the two rates rather than printing a subtraction from zero. */
-    ...(measured === undefined ? {} : { measured }) };
-  const r = run({ docs: { ...ALL, 'catalog.json': cat, 'measures.json': measures } });
-  return r.settle().then(() => {
-    r.post({ rtg: 'attempts', game: 2023020200, a: aAtt, h: hAtt });
-    return textOf(r.ids.herorel);
-  });
-}
-/**
- * ⭐⭐ THREE TOTALS ON ONE LINE, AND THE READER CAN CHECK THE ARITHMETIC.
- *
- * The hero says "over N games" and then quotes two smaller denominators. Until
- * 2026-09-15 nothing said why they differ, which on a site whose pitch is CHECK
- * OUR WORK reads as sloppiness rather than as the rule it is: `eligible()` in
- * `src/lib/archive.js` drops a game LEVEL on a measure, because a tie is not a
- * case for "the leader lost" in either direction. Kevin asked for the clause.
- *
- * ⛔ THE FIGURES ARE SUBTRACTED, NOT TYPED, so the test computes what it expects
- * from the fixture rather than restating the sentence — otherwise this would be
- * a mirror of the builder and would pass against any arithmetic at all.
- */
-test('the hero says why its three totals differ, and the subtraction holds', async () => {
-  const line = await heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4,
-    ...LEADERS_LOSE, level: { count: 300, n: 900 }, measured: 1200 });
-
-  // 1200 measured, 1000 with an attempts leader, 900 with a level-score leader.
-  assert.match(line, /1,200 games measured/, 'the population is not named');
-  assert.match(line, /200 had equal attempts/, '1200 - 1000 = 200');
-  assert.match(line, /300 had equal attempts while the score was tied/, '1200 - 900 = 300');
-  assert.match(line, /not a case for either team/, 'the RULE is missing, so the numbers explain nothing');
-
-  /* ⭐ AND EVERY TOTAL ON THE LINE MUST RECONCILE, which is the claim a reader
-     would actually make with a pencil. Parsed back out of the rendered sentence
-     by an independent path: the two denominators plus the two gaps must each
-     reach the measured population. */
-  // `textOf` joins adjacent spans, so the sentence arrives with doubled spaces.
-  const flat = line.replace(/\s+/g, ' ');
-  const num = (re, what) => {
-    const m = re.exec(flat);
-    assert.ok(m, `${what} is not on the line: ${JSON.stringify(line)}`);
-    return +m[1].replace(/,/g, '');
-  };
-  const attempts = num(/more shot attempts \w+ [\d,]+ of ([\d,]+) games\./, 'the attempts total');
-  const levelN   = num(/that team \w+ [\d,]+ of ([\d,]+)\./, 'the level-score total');
-  const population = num(/of ([\d,]+) games measured/, 'the measured population');
-  const gapA = num(/([\d,]+) had equal attempts/, 'the attempts gap');
-  const gapL = num(/, and ([\d,]+) had equal attempts while the score was tied/, 'the level-score gap');
-
-  assert.equal(attempts + gapA, population,
-    `${attempts} + ${gapA} is not ${population} — the attempts gap does not reconcile`);
-  assert.equal(levelN + gapL, population,
-    `${levelN} + ${gapL} is not ${population} — the level-score gap does not reconcile`);
-});
-
-test('⛔ …and with no population published the clause stays off, rather than subtracting from nothing', async () => {
-  /* THE HALF THAT MAKES THE TEST ABOVE MEAN SOMETHING. `measured` is a key in a
-     document the pipeline writes; an older `measures.json` has the rates and not
-     the population. Printing "of 0 games measured, -1,000 were level" is exactly
-     the shape this project refuses elsewhere — a figure computed from an absence.
-     Mutating the guard away makes this red. */
-  const line = await heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4,
-    ...LEADERS_LOSE, level: { count: 300, n: 900 } });
-  assert.match(line, /of 1,000 games/, 'the rates themselves stopped rendering');
-  assert.doesNotMatch(line, /games measured/, 'the clause printed without a population to subtract from');
-  assert.doesNotMatch(line, /-\d/, 'a negative gap reached the page');
-});
-
-// The attempts leader loses 20% of the time — so the leader USUALLY WINS, 80%.
-const LEADERS_WIN = { count: 200, n: 1000 };
-// And the mirror: the leader loses 80% of the time.
-const LEADERS_LOSE = { count: 800, n: 1000 };
-// TOR away, BUF home. `aAtt`/`hAtt` are attempts, `as`/`hs` goals.
-const BUF_LED_SHOTS = { aAtt: 22, hAtt: 33 };
-
-/**
- * ⭐ RETARGETED 2026-08-25, AND THE HALF THAT MATTERED IS KEPT.
- *
- * This asserted "That is the usual outcome." — a sentence that classified THIS
- * game against the rate, and therefore stated who won. Kevin, reading the front
- * door: "we still give away the outcome of the game." The clause is gone.
- *
- * WHAT SURVIVES IS THE MUTATION THE OLD TEST EXISTED FOR: the rate's own
- * direction is READ, not assumed. The archive publishes every rate as "lost",
- * so a caption saying the leader WINS must print 100 minus that. A hard-coded
- * "leaders usually lose" passes half of this and fails the other half.
- *
- * WHAT IS NEW is the claim the change is about, and it needs the four fixtures
- * the old test used: whichever way the game went, the caption must not say.
- */
-test('the hero caption reads the rate BOTH WAYS and never states this outcome', () =>
-  Promise.all([
-    heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_WIN }),
-    heroRelation({ ...BUF_LED_SHOTS, as: 4, hs: 1, ...LEADERS_WIN }),
-    heroRelation({ ...BUF_LED_SHOTS, as: 4, hs: 1, ...LEADERS_LOSE }),
-    heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE }),
-  ]).then(([winnerLed, winnerTrailed, ledAndLost, ledAndWon]) => {
-    // Same rate, opposite games: the caption must be IDENTICAL, because the
-    // only thing it is allowed to describe is the archive.
-    assert.equal(winnerLed, winnerTrailed,
-      'the caption changed with the result — it is still describing this game');
-    assert.equal(ledAndLost, ledAndWon);
-
-    /* AND THE FIGURE IS THE ONE IT JUST NAMED. A FRACTION SINCE 2026-09-10, not
-       a percentage — the hero now states two rates with DIFFERENT denominators
-       and a pair of percentages would print one `n` between them.
-
-       ⭐ AND THE FRACTION IS THE SHARPER PROBE HERE, which the percentage was
-       not. Both fixtures print the same COUNT — `LEADERS_WIN` is 200 of 1,000 so
-       the leader takes 800, `LEADERS_LOSE` is 800 of 1,000 so the leader loses
-       800 — so the only thing separating these two assertions is the VERB, which
-       is precisely the direction this test exists to pin. */
-    assert.match(winnerLed, /wins 800 of 1,000 games/);
-    assert.match(ledAndLost, /loses 800 of 1,000 games/);
-
-    // THE SPOILER, NAMED. BUF led attempts in every fixture; in two of them BUF
-    // won and in two BUF lost, so any verb of outcome would have to appear.
-    for (const t of [winnerLed, winnerTrailed, ledAndLost, ledAndWon])
-      assert.doesNotMatch(t, /\b(won|lost|usual outcome|the game was level)\b/,
-        `the caption states how the game ended: "${t}"`);
-  }));
-
-/**
- * ⭐⭐ THE LAST CONDITION WENT ON 2026-09-09, AND IT WAS COSTING THE SITE ITS
- * ONLY CLAIM.
- *
- * This test used to assert the opposite of what it asserts now — that equal
- * attempts produce `''`. The reasoning was "no leader, no subject for the rate",
- * which is the CLASSIFYING caption's logic outliving the classifying caption:
- * it is only coherent while the sentence is about this game. Once the sentence
- * describes the archive and nothing else, a tie here is not a fact about the
- * archive and cannot withhold one.
- *
- * ⛔ WHAT MADE IT URGENT WAS A SCREENSHOT, NOT AN ARGUMENT. The live hero on
- * 2026-09-09 is CAR at VGK, 9 June 2026, **tied 52–52 on attempts** — so the
- * front door read `Both teams took 52 shot attempts.` and then stopped, with the
- * flagship finding rendering empty. The hero moves only when the archive does
- * and the archive does not move until the season opens, so this was the whole
- * claim of the front page for three months, with every test in this file green.
- *
- * ⭐ THE GENERAL SHAPE, because it is the third time here: a condition survived
- * the reason that justified it. The cure that worked was not re-reading the
- * code — it was asking what the branch DOES when it fires.
- *
- * WHAT STILL WITHHOLDS THE RATE is zero attempts on both sides, and that one is
- * about this game: the rate sits under a count of the hero's own attempts, and
- * with no count above it, it is a statistic with nothing to be about.
- */
-test('a tie still states the archive rate — the rate is about the ARCHIVE', () =>
-  Promise.all([
-    // Equal attempts: no leader, and the rate is unchanged by that.
-    heroRelation({ aAtt: 30, hAtt: 30, as: 1, hs: 4, ...LEADERS_WIN }),
-    // A game that ended level. Silent once, for the outcome clause's sake.
-    heroRelation({ ...BUF_LED_SHOTS, as: 3, hs: 3, ...LEADERS_WIN }),
-    // The leader case, as the control: the same rate, the same words.
-    heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_WIN }),
-  ]).then(([noLeader, levelGame, hasLeader]) => {
-    assert.match(noLeader, /wins 800 of 1,000 games/,
-      'the hero states no finding at all when the two teams tie on attempts');
-    assert.match(levelGame, /wins 800 of 1,000 games/,
-      'a level game lost its rate — that condition was about the outcome clause');
-
-    // ⭐ AND IT IS THE SAME SENTENCE. A tie must not earn its own wording, or the
-    // page would be describing THIS game again by choosing how to phrase itself.
-    assert.equal(noLeader, hasLeader,
-      'the tie gets a different sentence — the caption is describing the game again');
-    // The denominator travels with it, on every branch.
-    assert.ok(noLeader.includes('of 1,000 games'), `the denominator is missing: ${noLeader}`);
-  }));
-
-test('⭐ …but a hero that counted nothing still says nothing', () =>
-  // THE PAIRED HALF, and it is the condition that survives. "Always print the
-  // rate" is satisfied by a page that prints it under an empty scoreboard, which
-  // is a statistic with nothing to be about — and it is what this change would
-  // have shipped if the gate had simply been deleted rather than narrowed.
-  heroRelation({ aAtt: 0, hAtt: 0, as: 1, hs: 4, ...LEADERS_WIN })
-    .then(none => assert.equal(none, '',
-      `a rate was printed for a hero with no attempts counted: ${none}`)));
 
 test('the hero is the ONLY route to the game it shows, and both halves agree', () => {
   // THIS TEST HAS BEEN WRONG TWICE AND THE HISTORY IS THE POINT.
@@ -1375,82 +1164,26 @@ test('the front door leads with the most recent game, and it PLAYS', () => {
   });
 });
 
-test('the shot line reads the LEADER, home or away, and says it both ways round', () => {
-  // THE MUTATION THAT SURVIVED ONCE ALREADY, in the same slot: the fixture's
-  // newest game has the HOME side leading shots, so reading the home side is
-  // indistinguishable from reading the leader. The second fixture has the away
-  // side leading, and losing.
-  const home = run({ docs: ALL });
-  const p1 = home.settle().then(() => {
-    // ABSENT UNTIL THE FRAME SPEAKS, which is the site's own idiom -- the verdict
-    // card is absent until the horn. Asserted before posting, because a sentence
-    // that rendered on the catalog's shots and then rewrote itself would be
-    // worse than either version.
-    // NOT-YET-WRITTEN IS STRONGER THAN EMPTY HERE. This fake registers an id the
-    // first time the page asks for it, so an untouched #herosub is absent from
-    // `ids` entirely -- which proves the page never even reached for it.
-    assert.ok(!home.ids.herosub || home.ids.herosub.textContent === '',
-      'the sentence rendered before any measure existed');
-    home.post({ rtg: 'attempts', game: NEWEST_ID, a: 22, h: 33 });
-    // WAS `..., 33 to 22, and won.` — the outcome came off on 2026-08-25.
-    // NAMED, NOT ABBREVIATED, since 2026-09-11: this sat directly under a
-    // headline reading "Buffalo Sabres" and said "BUF" — the same club, two
-    // vocabularies, an inch apart, seen only by looking at the rendered card.
-    /* ⛔ AND IT NAMES ITS SCOPE, since 2026-09-11. CHENG: "82 to 45 is 127
-       attempts before the first goal ... the scoreboard reads 0-0, so almost none
-       of those 127 have happened yet." These are WHOLE-GAME totals sitting beside
-       a loop that shows the opening seconds — both true, different scopes, and
-       nothing said so. The builder comment had said "WHOLE GAME, NOT THE LOOP'S
-       WINDOW" all along: to the code, never to the reader. */
-    assert.match(home.ids.herosub.textContent,
-      /^Over the whole game, Buffalo Sabres took more shot attempts, 33 to 22\.$/);
-  });
+test('the kicker names the tracked goal only when our own frame says it will play one', async () => {
+  const front = pageDocs(CATALOG, INDEX)['front.json'];
+  const r = run({ docs: { ...ALL, 'front.json': { ...front, hero: { ...front.hero, toGoal: true } } } });
+  await r.settle();
+  const before = r.ids.herokick.textContent;
+  assert.match(before, /up to its first goal$/);
+  r.post({ rtg: 'tracked', game: NEWEST_ID }, { origin: 'https://evil.example' });
+  r.post({ rtg: 'tracked', game: NEWEST_ID }, { source: { isFrame: true } });
+  r.post({ rtg: 'tracked', game: NEWEST_ID + 1 });
+  assert.equal(r.ids.herokick.textContent, before, 'a message not from our frame, or about another game, was believed');
+  r.post({ rtg: 'tracked', game: NEWEST_ID });
+  assert.match(r.ids.herokick.textContent, /up to its first goal, then that goal as the league tracked it$/);
+});
 
-  // BUF away, 30 attempts to 20, and lost 2-5.
-  //
-  // ⭐ THE DOCTRINE §9 HALF OF THIS RETIRED, AND SAY WHY RATHER THAN JUST
-  // DELETING IT. The concern was selective honesty: the leader LOSING is the
-  // site's thesis at its smallest, so it had to be said in the same shape as
-  // the winning case or we would be showing only the surprising half. The
-  // sentence no longer names the outcome in EITHER case, so there is no half to
-  // select — §9 is satisfied structurally instead of by symmetry.
-  // WHAT THIS STILL PROVES is the mutation it was written for: the page reads
-  // the LEADER and not the home side. Home leads above, away leads here, and a
-  // page that printed `g.h` unconditionally passes one and fails the other.
-  const AWAY = { games: [CATALOG.games[0]] };
-  const away = run({ docs: { ...ALL, 'catalog.json': AWAY } });
-  const p2 = away.settle().then(() => {
-    away.post({ rtg: 'attempts', game: AWAY.games[0].id, a: 30, h: 20 });
-    assert.match(away.ids.herosub.textContent,
-      /^Over the whole game, Buffalo Sabres took more shot attempts, 30 to 20\.$/);
-    assert.doesNotMatch(away.ids.herosub.textContent, /\b(won|lost)\b/,
-      'the away-leader arm still states the result');
-  });
-
-  // And an even shot count says so rather than picking a side.
-  const EVEN = { games: [{ ...CATALOG.games[1], ash: 27, hsh: 27 }] };
-  const even = run({ docs: { ...ALL, 'catalog.json': EVEN } });
-  const p3 = even.settle().then(() => {
-    even.post({ rtg: 'attempts', game: EVEN.games[0].id, a: 27, h: 27 });
-    assert.match(even.ids.herosub.textContent, /^Over the whole game, both teams took 27 shot attempts\.$/);
-  });
-
-  /* ⭐ AND IT IS REFUSED FROM ANYWHERE ELSE. The totals decide a sentence on the
-     front door, so the page takes them only from the frame it made, at its own
-     origin. Without this the checks are three lines nothing exercises. */
-  const forged = run({ docs: ALL });
-  const p4 = forged.settle().then(() => {
-    forged.post({ rtg: 'attempts', game: NEWEST_ID, a: 99, h: 1 }, { origin: 'https://evil.example' });
-    assert.ok(!forged.ids.herosub || forged.ids.herosub.textContent === '',
-      'a cross-origin sender was believed');
-    forged.post({ rtg: 'attempts', game: NEWEST_ID, a: 99, h: 1 }, { source: { isFrame: true } });
-    assert.ok(!forged.ids.herosub || forged.ids.herosub.textContent === '',
-      'a sender that is not our frame was believed');
-    forged.post({ rtg: 'attempts', game: NEWEST_ID + 1, a: 99, h: 1 });
-    assert.ok(!forged.ids.herosub || forged.ids.herosub.textContent === '',
-      'totals for a DIFFERENT game were used');
-  });
-  return Promise.all([p1, p2, p3, p4]);
+test('the hero carries no figures: the kicker, the two clubs and the button', async () => {
+  const r = run({ docs: ALL });
+  await r.settle();
+  assert.ok(!r.ids.herosub && !r.ids.herorel, 'the attempts lede is back under the hero');
+  assert.doesNotMatch(html.slice(html.indexOf('<div class="hero"'), html.indexOf('id="herogo"')),
+    /id="hero(sub|rel)"/, 'the lede slots are back in the markup');
 });
 
 test('a refused or out-of-scope game is never the hero', () => {
@@ -1568,35 +1301,6 @@ test('the page states what it is, above everything else', () => {
   // scope claim, and scope does not move.
   assert.doesNotMatch(h1[1].replace(/since 2023/, ''), /\d[\d,]{2,}/,
     'a count was typed into copy that cannot be re-derived');
-});
-
-test('the one figure left on the front page carries its denominator', () => {
-  // ALSO RETARGETED. "Every rate is published with its denominator and
-  // population" read the three-bar scale, which Kevin cut. The DOCTRINE does not
-  // retire with the element that happened to carry it — a rate without its
-  // reference class is the thing this site teaches against. The hero caption is
-  // now the only place the front page prints a figure, and it is computed:
-  // "That is the usual outcome. Across 3,957 games the shot leader wins 54.2%."
-  const r = run({ docs: ALL });
-  return r.settle().then(() => {
-    r.post({ rtg: 'attempts', game: NEWEST_ID, a: 22, h: 33 });
-    const cap = textOf(r.ids.herorel);   // #herorel is where drawHero writes it
-    /* ⛔ FRACTIONS, AND THE DOCTRINE IS BETTER SERVED BY THEM THAN IT WAS BY THE
-       PERCENTAGE. This used to find a `54.2%` and then look for `Across N games`
-       in the same sentence — one reference class, stated once, up front. The hero
-       now carries TWO rates with different denominators, so each figure carries
-       its own inline and the check is no longer "is there an n somewhere near"
-       but "does EVERY sentence with a figure in it carry that figure's own n". */
-    assert.doesNotMatch(cap, /%/,
-      `the hero caption prints a percentage, which hides its denominator: "${cap.slice(0, 140)}"`);
-    assert.ok(/[\d,]+ of [\d,]+/.test(cap),
-      `the hero caption prints no figure at all: "${cap.slice(0, 140)}"`);
-    for (const sentence of cap.split(/(?<=\.)\s/)) {
-      if (!/\d/.test(sentence)) continue;
-      assert.match(sentence, /[\d,]+ of [\d,]+/,
-        `"${sentence}" prints a figure with no reference class`);
-    }
-  });
 });
 
 /* ------------------------------------------------------------------------
@@ -1719,28 +1423,6 @@ test('the daily block renders last night from recent.json, with doors', async ()
     ['game.html?game=2025020801', 'game.html?game=2025020802']);
 });
 
-test('⛔ THE NIGHTLY COUNT AND THE ARCHIVE RATE ARE NEVER IN ONE SENTENCE', async () => {
-  /* CHENG's q2 as it reaches a reader. The module cannot break this on its own —
-     it never sees the archive figure — so the check has to be on the PAGE, where
-     both are rendered and where the adjacency lives. The archive's rate keeps
-     `#herorel`; the night's counts keep `#dailysay`; neither element may carry
-     the other's kind of number. */
-  const r = run({ docs: { ...ALL, 'recent.json': RECENT, 'schedule.json': SCHEDULE } });
-  await r.settle(); await r.settle();
-  // The rate is written only once the preview frame reports the game's attempts,
-  // so it has to be delivered or the control below is vacuous.
-  r.post({ rtg: 'attempts', game: NEWEST_ID, a: 30, h: 22 });
-  // THE CONTROL, and it moved from a percentage to a fraction with the caption.
-  assert.match(textOf(r.ids.herorel), /[\d,]+ of [\d,]+ games/,
-    'the archive rate must still be on the page, or this test proves nothing');
-  for (const id of ['dailykick', 'dailysay']) {
-    assert.doesNotMatch(r.ids[id].textContent, /%/, `${id} printed a rate`);
-    assert.doesNotMatch(r.ids[id].textContent, /\d\.\d/, `${id} printed a decimal`);
-  }
-  assert.doesNotMatch(textOf(r.ids.herorel), /last night/i,
-    'the archive sentence took on the night as its subject');
-});
-
 /** Was the block revealed? The fake document only mints an element when the
  *  script asks for it, so an untouched `#daily` is ABSENT rather than hidden —
  *  and `assert.equal(ids.daily.hidden, true)` would throw on the very case it is
@@ -1848,8 +1530,8 @@ test('no recent.json and no schedule.json: the block stays hidden, page intact',
 });
 
 test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires', () => {
-  /* `.daily:not([hidden]){grid-column:1;grid-row:6}` places it in the card's
-     sixth row — the slack the frame leaves in column one. That rule is a claim
+  /* `.daily:not([hidden]){grid-column:1;grid-row:4}` places it in the card's
+     last row — the slack the frame leaves in column one. That rule is a claim
      about ANCESTRY: move `#daily` out to be a sibling of the card and the
      selector still matches, the declarations still parse, and the block silently
      lands full-width underneath instead. Nothing else here would go red.
@@ -1867,70 +1549,10 @@ test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires'
     depth += 1;
   }
   assert.ok(ok, '#daily is not inside #hero — the grid rule places it nowhere');
-  assert.match(html, /\.daily:not\(\[hidden\]\)\{[^}]*grid-row:6/,
+  assert.match(html, /\.daily:not\(\[hidden\]\)\{[^}]*grid-row:4/,
     'the rule that consumes the placement is gone');
 });
 
-
-/**
- * ⛔⛔ THE HERO ANSWERS ITS OWN PARADOX, AND UNTIL 2026-09-10 IT DID NOT.
- *
- * `moreLevelControlLost` was computed by `archive.js`, published in
- * `measures.json`, and read by NOTHING — so the front door stated that the team
- * with more shot attempts usually loses and stopped there. A novice's only
- * available conclusion from that is *shot counts are meaningless*, which is the
- * opposite of the truth reached from entirely true data: the same failure as a
- * filtered list with no base rate, and we held the correction the whole time.
- *
- * CHENG, ruling on whether answering it defuses the hook: *"the hook is not the
- * mystery, it is that two honest counts of nearly the same thing land on
- * opposite sides of 50%. An unresolved 54.3% is a curiosity; the pair is an
- * argument."*
- *
- * ⛔ AND EACH FIGURE CARRIES ITS OWN `n`, WHICH IS THE WHOLE REASON THESE ARE
- * FRACTIONS. The two rates have DIFFERENT denominators — a game with no
- * level-play edge is not in the second — so a pair of percentages would print
- * one reference class between them and silently attribute it to both.
- */
-test('⛔ the hero states BOTH rates, each with its own denominator', () =>
-  heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE,
-                 level: { what: 'the team that controlled play while the score was tied lost',
-                          population: 'NHL regular season and playoffs', n: 900, count: 300 } })
-    .then(cap => {
-      // The leader loses 800 of 1,000 …
-      assert.match(cap, /loses 800 of 1,000 games/, `the first rate is missing: "${cap}"`);
-      // … and while the score was tied the same club WINS 600 of 900. Different
-      // verb AND different denominator, which is the entire point of the pair.
-      assert.match(cap, /wins 600 of 900/, `the level-control rate is missing: "${cap}"`);
-      assert.match(cap, /while the score was tied/,
-        'the second rate does not say what makes it different from the first');
-      // ⭐ THE CONNECTIVE IS READ, NEVER ASSUMED. These two rates point opposite
-      // ways, so the sentence may say so. A hard-coded "turns over" would be a
-      // welded claim that outlives the data that justified it.
-      assert.match(cap, /turns over/, `the reversal is not named: "${cap}"`);
-      assert.doesNotMatch(cap, /%/, 'a percentage would hide the two denominators');
-    }));
-
-test('⭐ …and when the archive stops reversing, the sentence stops saying it does', () =>
-  heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE,
-                 level: { what: 'the team that controlled play while the score was tied lost',
-                          population: 'NHL regular season and playoffs', n: 900, count: 700 } })
-    .then(cap => {
-      // Both rates now point the SAME way, so "turns over" would be false.
-      assert.match(cap, /loses 800 of 1,000 games/);
-      assert.match(cap, /loses 700 of 900/);
-      assert.match(cap, /and it holds/, `the connective still claims a reversal: "${cap}"`);
-      assert.doesNotMatch(cap, /turns over/,
-        'the caption asserts a reversal the archive is not showing');
-    }));
-
-test('⭐ …and a hero with no second rate says the first one alone', () =>
-  heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE, level: null })
-    .then(cap => {
-      assert.match(cap, /loses 800 of 1,000 games/, 'the first rate went with the second');
-      assert.doesNotMatch(cap, /while the score was tied|turns over|and it holds/,
-        `a dangling clause survived the missing rate: "${cap}"`);
-    }));
 
 /* ───────────────────────── THE FRONT DOOR'S TWO CARD BLOCKS ─────────────────
  * Kevin, 2026-09-11, looking at the laptop below the fold: *"seems like we

@@ -236,9 +236,7 @@ test('the ledger lists nothing that is already back in the light', () => {
  *
  * ⭐ THE DIAGNOSIS IS THE WINDOW, NOT THE SURFACE. A split bar is a whole-game
  * instrument and the preview is a ten-second loop, so it can only ever show the
- * extreme. The unit is still named where the number is: `#herosub` says "Both
- * teams took 52 shot attempts", computed over the whole game and posted from
- * this frame — so what left the hero is a contradicting picture, not the fact.
+ * extreme. Since 2026-10-26 the hero carries no whole-game figures at all.
  */
 test('⛔ the hero shows no metric readout at all — it has no window for one', () => {
   /* ⏹ THIS ASSERTED THE `.cbar` AND `.counters` PARKS UNTIL 2026-09-17, when both

@@ -5458,33 +5458,8 @@ if(PREVIEW){
  /* ⏹ THE PREVIEW RAN WITH THE ATTEMPTS LAYER ON UNTIL 2026-09-17, so "the counts
     are built in front of you". The hero hides the layer box and has had no
     counters since 2026-09-09, so the layer changed nothing a visitor could see.
-    Kevin: drop it. The hero is the base view -- the game itself -- and the
-    attempts reach the front door as a sentence, posted below. The loop opens at
-    the faceoff -- see START below. */
- /* ⭐ AND THE FRAME HANDS THE PARENT THE NUMBER IT ALREADY HAS.
-    The home page describes this game in a sentence under the rink, and that
-    sentence had to be about the SAME measure the bar above it showed -- Kevin:
-    "they need to be the same measure" -- and the bar is gone, but the sentence
-    still has to be ours rather than the league's. The parent cannot compute it: attempts
-    are decided by `corsi`, the catalog is built in Python, and it carries the
-    LEAGUE's quoted numbers rather than any of ours.
-
-    IT DOES NOT NEED TO. This frame already holds the extract and has already run
-    the reducer on it (CHENG). Storing attempts in the catalog would have cost
-    2,378 bytes gzipped on every visit to both pages, and made the catalog carry
-    one of our own computed metrics for the first time; the parent re-fetching
-    the extract costs 13,023 gzipped whenever the cache misses, and with
-    `loading="lazy"` on the frame the ordering that would make it hit is not ours
-    to assume. A message costs nothing and assumes nothing.
-
-    WHOLE GAME, NOT THE LOOP'S WINDOW. The sentence is about the game the way the
-    score is; `evenOnly:false` is stated for the same reason it is stated above.
-    Same origin both ways -- the target is named rather than '*', and the parent
-    checks the origin it came from. */
- if(window.parent!==window){
-  const fin=corsi.reduce(G.events,{...CTX,evenOnly:false});
-  window.parent.postMessage({rtg:'attempts',game:(G.game&&G.game.id)||0,
-   a:fin.t[AID]||0,h:fin.t[HID]||0},location.origin);}
+    Kevin: drop it. The hero is the base view -- the game itself. The loop opens
+    at the faceoff -- see START below. */
  /* ⭐ THE LOOP BEGINS AT THE OPENING FACEOFF. Kevin, 2026-09-17: "start the
     hero at the opening faceoff -- that level sets everything and it's what a
     novice fan would expect."

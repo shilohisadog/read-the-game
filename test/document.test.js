@@ -106,14 +106,14 @@ for (const f of PAGES) {
 }
 
 test('the homepage does not describe an archive as one game', () => {
-  // The page serves 4,553 games across three seasons. Any metadata claiming a
+  // The page serves every game since 2023. Any metadata claiming a
   // single game is the stale-claim bug, and it is worse in metadata than in the
   // body because no reader of the page can see it to notice.
   const html = readFileSync(new URL('index.html', SRC), 'utf8');
   const desc = html.match(/<meta name="description" content="([^"]+)"/)[1];
   assert.doesNotMatch(desc, /\b(a single|one) (NHL )?game\b/i,
     `the homepage description claims one game: "${desc}"`);
-  assert.match(desc, /seasons|archive|games/i, 'and it should say what it is');
+  assert.match(desc, /every NHL game|seasons|archive|games/i, 'and it should say what it is');
 });
 
 /**

@@ -622,23 +622,13 @@ test('preview asks for nothing it does not show', () => {
   });
 });
 
-test('⭐ the SHELL posts its attempt totals, because the home page reads them', () => {
-  // THE PAGE A VISITOR IS SERVED. The hero's sentence is about shot attempts and
-  // only this frame can compute them -- so if the shipped shell does not post,
-  // the front door has a silent empty sentence and nothing else notices. The
-  // inlined build passing is not evidence about this one; they are two files.
+test('⭐ the framed preview posts nothing until it has a tracked goal to play', () => {
+  // The home page reads only the 'tracked' message; the reference extract has no
+  // tracking file served, so the frame stays silent.
   const r = run({ search: '?game=2023020204&preview=1',
                   responses: { 'extract/': EXTRACT } });
   return r.settle().then(() => {
-    assert.equal(r.posted.length, 1, 'the framed preview posted nothing');
-    const { m, o } = r.posted[0];
-    assert.equal(m.rtg, 'attempts');
-    assert.equal(m.game, 2023020204);
-    // THE REFERENCE GAME'S OWN TOTALS: MIN 80, BUF 55, pinned in memory and in
-    // test/rink.test.js. A message carrying zeroes would satisfy a shape check.
-    assert.deepEqual({ a: m.a, h: m.h }, { a: 80, h: 55 },
-      'the totals are not this game — the reducer ran on the wrong thing');
-    assert.equal(o, 'https://x', 'posted to a wildcard target rather than our own origin');
+    assert.deepEqual(r.posted.map(p => p.m.rtg), [], 'the frame posted without a tracked goal');
   });
 });
 

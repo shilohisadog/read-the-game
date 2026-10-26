@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Read the Game — hockey, made legible</title>
-<meta name="description" content="Three seasons of NHL games, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
+<meta name="description" content="Every NHL game since 2023, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Read the Game — hockey, made legible">
-<meta property="og:description" content="Three seasons of NHL games, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
+<meta property="og:description" content="Every NHL game since 2023, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:image" content="https://readthegame.co/card.png?v=55df1c0f7e">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="One end of an NHL rink: a goaltender in his net, a faceoff at the end-zone dot, and the slot shaded in front of the net — the one region this site paints on the ice. Beside it: NHL games, replayed event by event.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Read the Game — hockey, made legible">
-<meta name="twitter:description" content="Three seasons of NHL games, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
+<meta name="twitter:description" content="Every NHL game since 2023, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta name="twitter:image" content="https://readthegame.co/card.png?v=55df1c0f7e">
 <meta name="twitter:image:alt" content="One end of an NHL rink: a goaltender in his net, a faceoff at the end-zone dot, and the slot shaded in front of the net — the one region this site paints on the ice. Beside it: NHL games, replayed event by event.">
 <meta property="og:url" content="https://readthegame.co/">
@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1WybNzu/0wXW3XdK54V7L/+BqmFKQGA3T9y1nrpIi0k=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-WqMYeMnBzx+m4dImnN8BgNLMq+mx0xGYUlR3Nl4etE8='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t0J2/i8Wne+VlF2/BLYYK2gEK5UHDDZTr8XmrJ9PvUs=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -114,10 +114,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .heroframe:hover{border-color:var(--blue)}
 @media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
-.herosub{margin:0 0 4px;font-size:.9rem;color:var(--muted);max-width:56ch}
-.herorel:empty{display:none}
-.herorel{margin:0 0 15px;font-size:.9rem;color:var(--muted);max-width:56ch}
-.herorel b{color:var(--ink);font-weight:650}
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
@@ -175,22 +171,20 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
   .opener .eyebrow{grid-column:1;grid-row:1}
   .opener .says{grid-column:1;grid-row:2;margin-bottom:0}
   .opener .pucknote:not([hidden]){display:block;grid-column:2;grid-row:1/span 2;align-self:end;
-   margin:0;max-width:58ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
+   margin:0;max-width:68ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
   .opener .pucknote b{color:var(--ink);font-weight:650}
   .hero:not([hidden]){
     display:grid;
     grid-template-columns:minmax(320px,400px) minmax(0,1fr);
-    grid-template-rows:repeat(5,min-content) 1fr;
+    grid-template-rows:repeat(3,min-content) 1fr;
     column-gap:clamp(20px,2.4vw,34px);
     align-items:start;
   }
   .hero:not([hidden]) .heroframe{grid-column:2;grid-row:1/-1;margin:0}
   .hero:not([hidden]) .herokick{grid-column:1;grid-row:1}
   .hero:not([hidden]) .heroline{grid-column:1;grid-row:2}
-  .hero:not([hidden]) .herosub{grid-column:1;grid-row:3}
-  .hero:not([hidden]) .herorel{grid-column:1;grid-row:4}
-  .hero:not([hidden]) .herogo{grid-column:1;grid-row:5;justify-self:start;margin-top:4px}
-  .daily:not([hidden]){grid-column:1;grid-row:6;align-self:end;width:100%}
+  .hero:not([hidden]) .herogo{grid-column:1;grid-row:3;justify-self:start;margin-top:4px}
+  .daily:not([hidden]){grid-column:1;grid-row:4;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
@@ -302,9 +296,10 @@ footer p{margin:0 0 8px}
 
 <h1 class="says">Every NHL game since 2023, replayed event by event. <span class="by">We made it for people who like hockey and were never shown how to read it.</span></h1>
 
-<p class="pucknote" id="pucknote"><b>The puck only appears where something happened</b>
-&mdash; a shot, a hit, a face-off. The feed we read records those moments and
-nothing in between, so that is all we draw.</p>
+<p class="pucknote" id="pucknote"><b>The puck appears only where something happened</b>
+&mdash; a shot, a hit, a face-off &mdash; because the feed we read records those
+moments and nothing in between. <b>This season&rsquo;s goals are the exception:</b>
+the league tracked each one, so for those we draw the puck and every skater moving.</p>
 </div>
 
 
@@ -316,9 +311,6 @@ nothing in between, so that is all we draw.</p>
     
     <div class="heroframe" id="heroframe"></div>
     <p class="heroline" id="heroline"></p>
-    <p class="herosub" id="herosub"></p>
-    
-    <p class="herorel" id="herorel"></p>
     <a class="herogo" id="herogo" href="game.html">Read the whole game &rarr;</a>
     
     <section class="daily" id="daily" hidden>
@@ -884,54 +876,7 @@ function disputedNote(n) {
 
 
 
-  function sayHero(g, measures, att) {
-    var a = att.a, h = att.h;
-    if (!a && !h) return; 
-    var lead = a === h ? null : nameOf(a > h ? g.a : g.h);
-    if (lead == null) {
-      $('herosub').textContent =
-        'Over the whole game, both teams took ' + a + ' shot attempts.';
-    } else {
-      var hi = Math.max(a, h), lo = Math.min(a, h);
-      $('herosub').textContent = 'Over the whole game, ' + lead
-        + ' took more shot attempts, ' + hi + ' to ' + lo + '.';
-    }
-
-    var at = measures && measures.baseRates && measures.baseRates.moreAttemptsLost;
-    var rel = $('herorel');
-    rel.textContent = ''; 
-    var lv = measures && measures.baseRates && measures.baseRates.moreLevelControlLost;
-    var side = function (r) {
-      return r.count / r.n > 0.5 ? ['loses', r.count] : ['wins', r.n - r.count];
-    };
-    if (at && at.n) {
-      var a = side(at);
-      rel.appendChild(el('span', null,
-        'Across this archive the team with more shot attempts '));
-      rel.appendChild(el('b', null,
-        a[0] + ' ' + a[1].toLocaleString() + ' of ' + at.n.toLocaleString() + ' games.'));
-      if (lv && lv.n) {
-        var b = side(lv);
-        rel.appendChild(el('span', null, ' Count only the attempts taken while the '
-          + 'score was tied' + (a[0] === b[0] ? ' and it holds: ' : ' and it turns over: ')
-          + 'that team '));
-        rel.appendChild(el('b', null,
-          b[0] + ' ' + b[1].toLocaleString() + ' of ' + lv.n.toLocaleString() + '.'));
-      }
-      if (measures.measured && measures.measured >= at.n) {
-        var gap = ' Totals differ because a game with equal counts is not a case '
-          + 'for either team: of ' + measures.measured.toLocaleString() + ' games measured, '
-          + (measures.measured - at.n).toLocaleString() + ' had equal attempts';
-        if (lv && lv.n && measures.measured >= lv.n) {
-          gap += ', and ' + (measures.measured - lv.n).toLocaleString()
-            + ' had equal attempts while the score was tied';
-        }
-        rel.appendChild(el('span', null, gap + '.'));
-      }
-    }
-  }
-
-  function drawHero(pick, measures) {
+  function drawHero(pick) {
     if (!pick) return;
     var g = pick.game;
     $('herokick').textContent = when(g.d) + ' \u00b7 ' + (pick.toGoal
@@ -948,12 +893,8 @@ function disputedNote(n) {
       if (e.origin !== location.origin || e.source !== f.contentWindow) return;
       var m = e.data;
       if (!m || m.game !== g.id) return;
-      if (m.rtg === 'tracked' && pick.toGoal) {
+      if (m.rtg === 'tracked' && pick.toGoal)
         $('herokick').textContent = when(g.d) + ' \u00b7 up to its first goal, then that goal as the league tracked it';
-        return;
-      }
-      if (m.rtg !== 'attempts') return;
-      sayHero(g, measures, m);
     });
     $('heroframe').appendChild(f);
     var hit = el('a', 'herohit');
@@ -1096,10 +1037,9 @@ function disputedNote(n) {
   }
 
   Promise.all([grab('front.json'), team ? grab('team/' + team + '.json') : null,
-               grab('schedule.json'), team ? null : grab('recent.json'),
-               team ? null : grab('measures.json')])
+               grab('schedule.json'), team ? null : grab('recent.json')])
     .then(function (r) {
-      var front = r[0] || {}, schedule = r[2], slate = r[3], measures = r[4];
+      var front = r[0] || {}, schedule = r[2], slate = r[3];
       SCHEDULE = schedule;
       var games = team ? ((r[1] && r[1].games) || []) : [];
       var dailyShown = false;
@@ -1113,7 +1053,7 @@ function disputedNote(n) {
           .forEach(function (id) { $(id).hidden = true; });
       } else {
         drawGrid(front.teams);
-        drawHero(front.hero, measures);
+        drawHero(front.hero);
         dailyShown = drawDaily(slate, schedule, front.newest);
       }
       var s = describe(front.status || null, new Date().toISOString());

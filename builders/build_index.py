@@ -129,7 +129,7 @@ LIMITS = [
 ]
 
 TITLE = "Read the Game — hockey, made legible"
-DESC = ("Three seasons of NHL games, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.")
+DESC = ("Every NHL game since 2023, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.")
 
 # The style and the policy are page-specific head content; the document
 # shell itself lives in builders/page.py so there is one definition of
@@ -283,14 +283,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    rather than a tighter one. Measured at 390 and 1100, not reasoned. */
 @media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
-.herosub{margin:0 0 4px;font-size:.9rem;color:var(--muted);max-width:56ch}
-/* THE HERO'S RELATION TO THE RATE ABOVE IT. Same size and colour as .herosub,
-   because it is the second half of the same thought and a louder treatment would
-   make one game argue with 3,957. The verdict itself is bold; the rate that
-   settles it is not. */
-.herorel:empty{display:none}
-.herorel{margin:0 0 15px;font-size:.9rem;color:var(--muted);max-width:56ch}
-.herorel b{color:var(--ink);font-weight:650}
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
@@ -332,8 +324,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
 /* The attempts figure is the reason the row is here rather than in a scores
-   list, and it is `--muted` for the same reason `.herorel` is: it is the second
-   half of the thought, and matching the score's weight would make the two
+   list, and it is `--muted` because it is the second half of the thought, and matching the score's weight would make the two
    numbers argue. `tabular-nums` so a column of them lines up. */
 .drow .datt{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dmore{display:block;margin:3px 0 0;font-size:.83rem;color:var(--blue);text-decoration:none}
@@ -470,7 +461,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
      sentence stayed on screen — Kevin saw it there after the fix shipped. The
      warning was already written for the element next door. */
   .opener .pucknote:not([hidden]){display:block;grid-column:2;grid-row:1/span 2;align-self:end;
-   margin:0;max-width:58ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
+   margin:0;max-width:68ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
   .opener .pucknote b{color:var(--ink);font-weight:650}
   /* ⛔ THE 78ch CAP IS GONE, AND IT WAS SOLVING THE WRONG HALF OF THE PROBLEM.
      It existed because the cards were full-width boxes in ONE column, so at
@@ -485,13 +476,9 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
   .hero:not([hidden]){
     display:grid;
     grid-template-columns:minmax(320px,400px) minmax(0,1fr);
-    /* ⚠️ THE SIXTH ROW IS THE SLACK, and without it the text column is spread
-       down the card. A grid item spanning five rows distributes ITS height across
-       those rows, so the frame's ~470px was being handed to the five text rows --
-       measured at 1900, the sentences sat 88, 83 and 119px apart, which reads as
-       four unrelated notes rather than one thought. Five `min-content` rows plus
-       one `1fr` underneath send the surplus to the bottom of the card instead. */
-    grid-template-rows:repeat(5,min-content) 1fr;
+    /* The last row is the slack: without it the frame's height is spread across
+       the text rows. `1fr` underneath sends the surplus to the bottom of the card. */
+    grid-template-rows:repeat(3,min-content) 1fr;
     column-gap:clamp(20px,2.4vw,34px);
     align-items:start;
   }
@@ -500,15 +487,13 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
   .hero:not([hidden]) .heroframe{grid-column:2;grid-row:1/-1;margin:0}
   .hero:not([hidden]) .herokick{grid-column:1;grid-row:1}
   .hero:not([hidden]) .heroline{grid-column:1;grid-row:2}
-  .hero:not([hidden]) .herosub{grid-column:1;grid-row:3}
-  .hero:not([hidden]) .herorel{grid-column:1;grid-row:4}
   /* `justify-self:start` because a grid item stretches by default and the button
      is `inline-block`: without it the anchor's BOX fills the column while its
      background does not, so the click target and the thing that looks clickable
      stop being the same rectangle. That is the hit-target defect of 2026-09-08
      waiting to happen in a third place. */
-  .hero:not([hidden]) .herogo{grid-column:1;grid-row:5;justify-self:start;margin-top:4px}
-  /* ⭐ ROW SIX IS THE SLACK, AND THIS IS WHAT IT WAS BEING SAVED FOR. The five
+  .hero:not([hidden]) .herogo{grid-column:1;grid-row:3;justify-self:start;margin-top:4px}
+  /* ⭐ THE LAST ROW IS THE SLACK, AND THIS IS WHAT IT WAS BEING SAVED FOR. The
      text rows are `min-content` and the frame spans the card, so column one runs
      out of sentences about two thirds of the way down -- measured at 1900,
      ~900px of gutter. The block that fills it is the only one on the page that
@@ -518,7 +503,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
      under the button with the surplus beneath. Without it the row's height is
      the slack and the block sits at its top edge, which reads as a paragraph
      that lost its place rather than as the foot of the card. */
-  .daily:not([hidden]){grid-column:1;grid-row:6;align-self:end;width:100%}
+  .daily:not([hidden]){grid-column:1;grid-row:4;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
@@ -808,10 +793,13 @@ BODY = r"""<div class="wrap front">
      this would add ~50px to a phone whose first screen he is separately judging
      for length. THE COST, STATED: a phone reader does not get this sentence. They
      get the game page's four-word legend entry if they open a game, and nothing
-     before that. -->
-<p class="pucknote" id="pucknote"><b>The puck only appears where something happened</b>
-&mdash; a shot, a hit, a face-off. The feed we read records those moments and
-nothing in between, so that is all we draw.</p>
+     before that.
+     ⚠️ "This season's goals" holds while tracking.yml has fetched one season
+     (2026-27, Kevin 2026-10-26); fetching a second makes it false. -->
+<p class="pucknote" id="pucknote"><b>The puck appears only where something happened</b>
+&mdash; a shot, a hit, a face-off &mdash; because the feed we read records those
+moments and nothing in between. <b>This season&rsquo;s goals are the exception:</b>
+the league tracked each one, so for those we draw the puck and every skater moving.</p>
 </div>
 
 <!-- THE PAGE NOW LEADS WITH THE GAME. Kevin, with a screenshot of everything
@@ -845,12 +833,6 @@ nothing in between, so that is all we draw.</p>
          also means it never loads for a visitor who does not reach it. -->
     <div class="heroframe" id="heroframe"></div>
     <p class="heroline" id="heroline"></p>
-    <p class="herosub" id="herosub"></p>
-    <!-- WHETHER THIS GAME IS THE USUAL CASE. Declared here and filled from
-         script, like every other line in this block -- a slot in the markup is
-         also the one place that decides whether it is shown, and `:empty` keeps
-         a game the rate cannot classify from taking any room. -->
-    <p class="herorel" id="herorel"></p>
     <a class="herogo" id="herogo" href="game.html">Read the whole game &rarr;</a>
     <!-- ⭐ THE ONE ELEMENT ON THIS PAGE WHOSE CONTENT IS A FUNCTION OF THE DATE.
          docs/front-door.md §3 stated it as an invariant rather than a taste:
@@ -1192,195 +1174,8 @@ __HELPERS__
      nothing is computed from the selection. */
 
 
-  /* THE SENTENCE UNDER THE RINK, ON THE MEASURE THE BAR ABOVE IT SHOWS.
-     Kevin: "we show Control in the replay loop but describe shots on goal in the
-     text below the rink, those should be consistent... they need to be the same
-     measure." It used to read off `ash`/`hsh`, which are the LEAGUE's shots on
-     goal quoted into the catalog, while the loop counted attempts -- two
-     measures on one screen with nothing saying they were different.
-
-     IT IS ABSENT UNTIL THE NUMBER EXISTS, and that is the site's own idiom
-     rather than a compromise: the verdict card is absent until the horn, the
-     whistle layer's why-line stays empty. A sentence that renders on shots and
-     then rewrites itself to attempts would be worse than either.
-
-     THE COST, STATED: this sentence now depends on the preview frame having
-     booted. That is a real coupling and it is the one this project has flagged
-     hardest before -- if the frame ever goes, this goes with it. */
-  function sayHero(g, measures, att) {
-    var a = att.a, h = att.h;
-    if (!a && !h) return;                 /* nothing counted: say nothing */
-    /* ⚠️ NAMED, NOT ABBREVIATED, BECAUSE THE LINE ABOVE IT IS. The headline reads
-       "Carolina Hurricanes" and this read "CAR took more shot attempts" directly
-       under it -- the same club, two vocabularies, one inch apart. Seen only by
-       looking at the rendered card. The SCOREBOARD inside the frame still shows
-       the three-letter badge, and that is the point rather than a leftover: the
-       code and the name are on screen together, which is how a newcomer learns
-       that MTL is Montreal. */
-    var lead = a === h ? null : nameOf(a > h ? g.a : g.h);
-    /* ⭐ AND IT NO LONGER SAYS WHO WON.
-       Kevin, reading the front door after the score came off the line above:
-       "VGK took more shot attempts, 50 to 44, and lost ... i.e. we still give
-       away the outcome of the game." He is right, and the margin coming off
-       while the RESULT stayed was half a fix -- the visitor still knew how it
-       ended before pressing anything.
-       THE ARGUMENT SURVIVES INTACT, and it is stronger as a question than as a
-       statement. The pitch was `... and lost. That is the usual outcome.` --
-       a tension raised and resolved in the same breath, with nothing left for
-       the button to answer. What replaces it raises the tension and stops:
-       the attempts, then the archive's own rate, then `Read the whole game`.
-       NOTHING IS HIDDEN, and nothing here is newly withheld that the scoreboard
-       does not fill in as the game plays. */
-    /* ⛔⛔ THE SCOPE IS STATED, BECAUSE THE PICTURE BESIDE IT SHOWS A FRACTION OF
-       IT. CHENG, 2026-09-11: *"82 to 45 is 127 attempts before the first goal.
-       Those are whole-game totals, not loop totals — the scoreboard reads 0-0 at
-       19:46 of the first period, so almost none of those 127 have happened yet.
-       A reader who joins them concludes the loop is about to show 127
-       attempts."* He is right, and the comment below has said WHOLE GAME, NOT THE
-       LOOP'S WINDOW all along — to the code, never to the reader.
-       ⛔ AND HIS OTHER SUGGESTED FIX WOULD HAVE BROKEN SOMETHING. Moving the
-       sentence under `Read the whole game`, where whole-game scope is implied,
-       separates it from the archive rate that follows — and that rate is
-       CONDITIONED ON FINAL TOTALS (see below, and CHENG's own earlier ruling that
-       it must never sit beside a LIVE count). The pairing is the argument; only
-       the scope was missing.
-       ⚠️ NOT "Across", which is how the archive sentence two lines down opens.
-       Two adjacent sentences beginning with the same word read as one list. */
-    if (lead == null) {
-      $('herosub').textContent =
-        'Over the whole game, both teams took ' + a + ' shot attempts.';
-    } else {
-      var hi = Math.max(a, h), lo = Math.min(a, h);
-      $('herosub').textContent = 'Over the whole game, ' + lead
-        + ' took more shot attempts, ' + hi + ' to ' + lo + '.';
-    }
-
-    /* IS THIS THE USUAL CASE? COMPUTED, NEVER WRITTEN -- unchanged in shape from
-       the shots version, because the reason for that shape did not change. The
-       hero is the most recent game, so some nights the attempts leader won and
-       some nights it lost; a hand-written clause here would be copy asserting a
-       relationship the data is free to invert overnight.
-       SAID EITHER WAY ROUND, because naming the relationship only when the game
-       is the exception is Doctrine 9's selective honesty.
-       NOTHING IS SAID WHEN NOTHING WAS COUNTED, and that is now the only gate:
-       the `return` above, on zero attempts either side. This line used to read
-       "a tie in the measure has no leader and a tie on the scoreboard has no
-       outcome" -- both true, neither a reason, and the second half had already
-       been retired when the outcome clause went. See below.
-       AND THE RATE APPLIES HERE. It is conditioned on FINAL totals, which is
-       what this is -- the game is over. (CHENG: that is why this does not
-       collide with his ruling that the rate must not sit beside a LIVE count.) */
-    var at = measures && measures.baseRates && measures.baseRates.moreAttemptsLost;
-    var rel = $('herorel');
-    rel.textContent = '';                 /* a second message must not append twice */
-    /* `won` IS GONE FROM THIS BRANCH TOO, and with it the condition that a level
-       game gets silence. That rule existed because there was an OUTCOME to
-       classify and a draw could not be classified; the rate is a fact about the
-       archive, not a verdict on this game.
-       ⭐⭐ AND ON 2026-09-09 THE LAST CONDITION WENT THE SAME WAY, FOR THE SAME
-       REASON, ONE STEP LATER. It read `lead != null` -- no attempts leader, no
-       rate -- and that was the classifying caption's logic surviving the
-       classifying caption. It is only coherent if the rate is ABOUT this game:
-       once the sentence describes the archive and nothing else, a tie here is
-       not a fact about the archive and cannot withhold one.
-       ⛔ THE COST WAS LIVE AND NOBODY HAD COSTED IT. Kevin's screenshot of the
-       front door: `Both teams took 52 shot attempts.` and then nothing. The hero
-       is CAR at VGK, 9 June 2026, tied 52-52 on attempts -- so the site's
-       flagship finding, the one thing here a reader cannot get anywhere else,
-       rendered EMPTY. The hero only changes when the archive does, and the
-       archive does not move again until the season opens, so this was the front
-       door's whole claim for three months. A condition whose failure mode is
-       "the site states no finding at all" is too expensive for the tidiness of
-       not naming a leader that does not exist.
-       WHAT STILL WITHHOLDS IT is the `return` above: no attempts counted, no
-       sentence and no rate -- because the rate belongs under a count of this
-       game's attempts, and alone it is a statistic with nothing to be about.
-       THE DIRECTION IS STILL READ, NEVER ASSUMED. The archive publishes every
-       rate as "lost", so a caption saying the leader WINS must print 100 minus
-       that -- a correct sentence with the wrong number welded to it is the
-       failure this shape exists to prevent. */
-    /* ⭐⭐ AND THE ANSWER, FROM THE SAME DOCUMENT AND THE SAME FUNCTION.
-       `moreLevelControlLost` was computed, published, and read by NOTHING until
-       2026-09-10. Stating the paradox alone teaches a novice that shot counts
-       are meaningless, which is the opposite of the truth from entirely true
-       data -- the same failure as a filtered list with no base rate, and we held
-       the correction the whole time.
-       ⛔ FRACTIONS, AND HERE IT IS CORRECTNESS RATHER THAN HOUSE STYLE. The two
-       rates have DIFFERENT denominators -- a game with no level-play edge is
-       dropped from the second -- so two percentages side by side would print one
-       `n` between them and hide the one thing a reader has to see. This line used
-       to say "loses 54.3% of the time". */
-    var lv = measures && measures.baseRates && measures.baseRates.moreLevelControlLost;
-    /* THE DIRECTION IS READ FOR EACH HALF SEPARATELY, never assumed -- the
-       archive publishes every rate as "lost", and a caption asserting a REVERSAL
-       that the archive has stopped showing is the welded-wrong-number failure the
-       comment above already names. So the verb comes from the data and the
-       connective comes from whether the two verbs differ. */
-    /* ⛔ PRESENT TENSE, AND IT IS LOAD-BEARING. `homepage.test.js` forbids the
-       tokens `won` and `lost` here and allows `loses` and `wins`, which is not
-       fussiness: the hero previews a game the visitor has NOT watched, and a past
-       tense verb beside it reads as the result. Kevin, on the front door: *"we
-       still give away the outcome of the game."* The first draft of this change
-       printed "lost 2,194 of 4,029" and the guard caught it. */
-    var side = function (r) {
-      return r.count / r.n > 0.5 ? ['loses', r.count] : ['wins', r.n - r.count];
-    };
-    if (at && at.n) {
-      var a = side(at);
-      rel.appendChild(el('span', null,
-        'Across this archive the team with more shot attempts '));
-      rel.appendChild(el('b', null,
-        a[0] + ' ' + a[1].toLocaleString() + ' of ' + at.n.toLocaleString() + ' games.'));
-      if (lv && lv.n) {
-        var b = side(lv);
-        rel.appendChild(el('span', null, ' Count only the attempts taken while the '
-          + 'score was tied' + (a[0] === b[0] ? ' and it holds: ' : ' and it turns over: ')
-          + 'that team '));
-        rel.appendChild(el('b', null,
-          b[0] + ' ' + b[1].toLocaleString() + ' of ' + lv.n.toLocaleString() + '.'));
-      }
-      /* ⭐⭐ WHY THREE TOTALS, AND THE READER CAN SEE ALL THREE OF THEM.
-         The page says "over 4,192 games" a few lines up and then quotes 4,100
-         and 3,925 here — three populations, one archive, and until 2026-09-15
-         only the first explained itself. For a site whose whole pitch is CHECK
-         OUR WORK, three unexplained denominators invite "well, which is it?",
-         and that is a correctness problem wearing a legibility costume. Kevin
-         asked for the clause; this is it.
-
-         THE RULE IS `eligible()` IN `src/lib/archive.js`, and it is one line:
-         a game LEVEL on a measure is dropped from that measure, because a tie
-         is not a case for "the leader lost" in either direction. Nothing is
-         being hidden — the games are simply not evidence about a leader they
-         do not have.
-
-         ⭐ AND THE TWO GAPS DIFFER FOR A REASON A READER CAN CHECK. Attempts
-         over a whole game are large numbers and rarely tie; attempts taken only
-         while the score was LEVEL are a smaller count, so they tie more often.
-         Anyone who doubts it can subtract: the totals are all on this line.
-
-         ⛔ COMPUTED, NEVER TYPED. `prose-constants.test.js` forbids writing a
-         number the code owns into the sentence describing it, and all three of
-         these belong to the archive. `measured` is the same population the
-         rates are drawn from — `measure.mjs` filters with `inScope` BEFORE
-         pushing, so `summarise`'s own `records.filter(inScope)` is a no-op and
-         the subtraction is honest. That was checked rather than assumed: the
-         two could have been different populations, and `measured` is
-         `records.length` unfiltered. */
-      if (measures.measured && measures.measured >= at.n) {
-        var gap = ' Totals differ because a game with equal counts is not a case '
-          + 'for either team: of ' + measures.measured.toLocaleString() + ' games measured, '
-          + (measures.measured - at.n).toLocaleString() + ' had equal attempts';
-        if (lv && lv.n && measures.measured >= lv.n) {
-          gap += ', and ' + (measures.measured - lv.n).toLocaleString()
-            + ' had equal attempts while the score was tied';
-        }
-        rel.appendChild(el('span', null, gap + '.'));
-      }
-    }
-  }
-
   // `pick` is front.json's `hero` (src/lib/front.js::heroOf).
-  function drawHero(pick, measures) {
+  function drawHero(pick) {
     if (!pick) return;
     var g = pick.game;
     /* WHAT THE VISITOR IS ABOUT TO WATCH, in the words the branch earns. The
@@ -1409,20 +1204,15 @@ __HELPERS__
     f.setAttribute('loading', 'lazy');
     f.setAttribute('scrolling', 'no');
     f.setAttribute('tabindex', '-1');
-    /* THE NUMBER ARRIVES FROM THE FRAME, and the listener is attached BEFORE the
-       frame is, so a fast boot cannot beat it. Origin and source are both
-       checked: same-origin only, and only from the frame we made. */
+    /* The frame says when it will play a tracked goal; the listener is attached
+       before the frame so a fast boot cannot beat it. Same origin, our frame only. */
     window.addEventListener('message', function (e) {
       if (e.origin !== location.origin || e.source !== f.contentWindow) return;
       var m = e.data;
       if (!m || m.game !== g.id) return;
       // The frame found the goal's tracking file and will play it.
-      if (m.rtg === 'tracked' && pick.toGoal) {
+      if (m.rtg === 'tracked' && pick.toGoal)
         $('herokick').textContent = when(g.d) + ' \u00b7 up to its first goal, then that goal as the league tracked it';
-        return;
-      }
-      if (m.rtg !== 'attempts') return;
-      sayHero(g, measures, m);
     });
     $('heroframe').appendChild(f);
     /* THE RECTANGLE, over the frame rather than around it -- see `.herohit`.
@@ -1444,12 +1234,7 @@ __HELPERS__
        prints its ending before you press play is a recap.
        THE LISTS KEEP THEIR SCORES. Browsing is a choice and a visitor may well
        be looking for that 6-5 game; the hero is handed to you. The score
-       appears where it was asked for, not where a game was chosen for you.
-       ⚠️ THE SENTENCE BELOW THIS ONE STILL CAN. `sayHero` says "and won" or "and
-       lost" when the attempts leader is decided, because that IS the site's
-       argument and removing it would gut the pitch. So this is the margin
-       withheld, not the outcome -- stated here rather than left to be
-       discovered, because the two lines are eight pixels apart. */
+       appears where it was asked for, not where a game was chosen for you. */
     $('heroline').textContent = nameOf(g.a) + ' at ' + nameOf(g.h);
 
     $('herogo').href = 'game.html?game=' + g.id;
@@ -1754,10 +1539,9 @@ __HELPERS__
   // front.json is the front door and the status line; a team view adds its own
   // rows (src/lib/page-docs.js).
   Promise.all([grab('front.json'), team ? grab('team/' + team + '.json') : null,
-               grab('schedule.json'), team ? null : grab('recent.json'),
-               team ? null : grab('measures.json')])
+               grab('schedule.json'), team ? null : grab('recent.json')])
     .then(function (r) {
-      var front = r[0] || {}, schedule = r[2], slate = r[3], measures = r[4];
+      var front = r[0] || {}, schedule = r[2], slate = r[3];
       /* ⚠️ HOISTED FOR `drawTeam`, which is called below and needs the fixtures
          for its "Next" line. Passing it as a sixth argument would thread it
          through a signature three other callers do not need. */
@@ -1810,7 +1594,7 @@ __HELPERS__
         drawGrid(front.teams);
         /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a
            Dallas game; the hero exists for the visitor who has not chosen. */
-        drawHero(front.hero, measures);
+        drawHero(front.hero);
         /* SAME GATE, AND FOR A SECOND REASON. A team page is a question already
            asked, so a league-wide slate is an interruption there -- and the
            block is placed in the hero's sixth grid row, which on a team page has

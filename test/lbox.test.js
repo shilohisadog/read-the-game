@@ -335,9 +335,8 @@ test('the box is a constant height and the caption clears it from one source', (
  * `.cbar` is parked on both surfaces now, because in a ten-second loop that
  * whole-game bar read `1 - 0` for fifteen of eighteen seconds and drew it as a
  * 100%/0% proportion beside a caption saying the game was 52-52.
- * ⭐ THE HERO STILL LOSES NOTHING, for a different reason: `#herosub` on the
- * parent page says "Both teams took 52 shot attempts", computed over the whole
- * game and posted from this frame. The fact is named where the number is.
+ * The hero carries no whole-game figures at all since 2026-10-26 (Kevin): the
+ * front door is the replay, and the counts live inside the game.
  */
 test('the layer box does not reach the front-door hero', () => {
   const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');

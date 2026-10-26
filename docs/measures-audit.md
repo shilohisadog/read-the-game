@@ -55,7 +55,7 @@ published rate.
 `measures.json` carries `featured`, `reach` and `goalieNight` ✔ with no reader on
 any page, and `census.faceoffZone`, `census.shooter`, `census.drawStrength`,
 `census.state` read only by the derive log. `rule` and `scope` are label strings
-no page reads. Stale comment: `build_index.py:5788–5792` says the slot row is not on
+no page reads. Stale comment: `build_index.py:5616–5620` says the slot row is not on
 the card; it is (need 39 since the 10-13 re-measure).
 
 ---
