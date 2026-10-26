@@ -100,14 +100,19 @@ test('Goals: Prev and Next step within a goal\'s tracking, and pause there', asy
 test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, which holds the puck in the net', async () => {
   const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
   await settle(); await settle();
-  a.at(0, () => {}); await settle(); await settle();   // Goals snaps the scrubber to the first goal
   const [g0, g1, g2] = GOALS;
+  a.at(g0.k, () => {}); await settle(); await settle();
   const trk = () => a.$('rg').classList.contains('trk'), rest = () => a.$('rg').classList.contains('trkrest');
   const at = () => +a.$('scrub').value, clk = () => a.$('clk').textContent;
   const next = async () => { a.$('fwd').click(); await settle(); await settle(); };
   const prev = async () => { a.$('back').click(); await settle(); await settle(); };
   assert.equal(at(), g0.k);
   assert.ok(rest(), 'the first goal does not hold its tracked picture');
+  // The banner is written clear of the goal moment: in the other half, with no leader line to the puck.
+  const x = +(a.$('labels').innerHTML.match(/class="glab" x="([\d.]+)"/) || [])[1];
+  const puckX = +(a.$('track').innerHTML.match(/class="tpk" cx="([\d.]+)"/) || [])[1];
+  assert.ok(Number.isFinite(x) && Number.isFinite(puckX) && (x - 100) * (puckX - 100) < 0, `banner at ${x}, puck at ${puckX}: same half`);
+  assert.doesNotMatch(a.$('labels').innerHTML, /<line/, 'a leader line across the play');
   await next();
   assert.ok(trk() && !rest(), 'Next did not open the second goal\'s tracking');
   const seen = [];
@@ -211,4 +216,15 @@ test('a hero whose first goal has no tracking file loops as before, and says not
   assert.ok(!a.posted.some(p => p.msg.rtg === 'tracked'));
   for (let n = 0; n < 120 && +a.$('scrub').value < GOALS[0].k; n++) { a.advance(1); await settle(); assert.equal(a.$('rg').classList.contains('trk'), false); }
   assert.equal(+a.$('scrub').value, GOALS[0].k);
+});
+
+test('⭐ in Goals the scrubber goes where it is tapped, the very start and end included', async () => {
+  const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
+  await settle(); await settle();
+  const last = TL.length - 1, mid = Math.floor((GOALS[0].k + GOALS[1].k) / 2);
+  for (const k of [0, mid, last]) {
+    a.$('scrub').value = String(k);
+    a.$('scrub').onchange({ target: { value: String(k) } }); await settle();
+    assert.equal(+a.$('scrub').value, k, `a tap at ${k} moved to ${a.$('scrub').value}`);
+  }
 });

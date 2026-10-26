@@ -2958,8 +2958,9 @@ function trkRest(k,P){
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},tG=P.frames[P.k].timeStamp;
  put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,tags:trackTags(P,trackWindow(P,EV)),shot:trackShot(P,G.teams.home.id)}));
  document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
+ // The banner goes to the middle of the other half, which is nearly always empty: the goal moment stays clear.
  const pk=P.frames[P.k].onIce['1'],e=EV[k];
- if(pk){const f=trackFeet(pk);drawLabel(e,{x:AX(P.turn*f.x,e.per),y:AY(P.turn*f.y,e.per)});}}
+ if(pk){const f=trackFeet(pk),x=AX(P.turn*f.x,e.per);drawLabel(e,{x:x>100?50:150,y:16,far:true});}}
 function trkNoCue(k,g){
  const P=g>=0?trkReady(EV[g]):null,nxt=EV[k+1];
  document.getElementById('rg').classList.toggle('trknocue',!!(TRK.goals||P&&nxt&&playing&&!REDUCED&&nxt.s>=EV[g].s-P.before));}
@@ -3023,10 +3024,6 @@ function trkOpen(g,where){
  TRK.hold={i:j,g,P,ms:0};
  TRK.hold.ms=trkStart(P,where==='first'?TRACK_STILL_MS:0,false);
  if(where==='goal'&&TRK.run)TRK.run.seek(TRK.run.stops[TRK.run.stops.length-1]);}
-// In Goals the scrubber stops on goals.
-function trkSnap(v){
- const gs=TRK.goals?GOAL_STOPS:[];
- return gs.length?gs.reduce((b,n)=>Math.abs(n-v)<Math.abs(b-v)?n:b,gs[0]):v;}
 /* "Replay: All events | Goals" and "Speed: ¼ | ½ | Real time", beside Play, shown once
    the game is known to have tracked goals. The selected one is purple, like "Replay". */
 function trkControl(){
@@ -3206,8 +3203,9 @@ $('scrub').onpointerdown=gestureBegan;
 $('scrub').onkeydown=gestureBegan;
 $('scrub').oninput=e=>{stop();
  if(gesturing&&++reported===1)return;
- set(trkSnap(+e.target.value),'');};
-$('scrub').onchange=e=>{gesturing=false;set(trkSnap(+e.target.value),'jump');};
+ set(+e.target.value,'');};
+// Where the reader taps, in Goals too (Kevin): Play and Next carry on to the next goal from there.
+$('scrub').onchange=e=>{gesturing=false;set(+e.target.value,'jump');};
 /* THE SPEED CONTROL NOW GOVERNS THE CAPTION TOO, and until this change it did
    not govern anything but the frame. Measured: the caption ran 2067ms visible at
    every speed, because it was a CSS constant and the pace was a setTimeout, so a
@@ -3997,7 +3995,9 @@ function drawLabel(e,at){const g=$('labels');const p=at||place(e);if(!p){put(g,'
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL;
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
    let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
-   put(g,`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 ${ESC(playSaid(e))}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`);return;}
+   // `far`: written at `at` itself with no leader, clear of the play (Goals' goal stop).
+   const far=!!(at&&at.far);if(far){tx=lx;anc='middle';ty=ly;}
+   put(g,`<g class="plabgrp">${far?'':`<line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/>`}<text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 ${ESC(playSaid(e))}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`);return;}
  let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
  // THE TEAM, IN WORDS. The figure on the ice is one colour and two clubs can
  // wear the same one, so the label says whose play it was rather than leaving
