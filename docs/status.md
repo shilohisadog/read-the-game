@@ -37,6 +37,10 @@ state.
 Everything here is live on readthegame.co and was checked in a real browser; gates, deploy and derive green.
 
 ### Live now
+- **Front door trimmed** (`4ea602c`, `5448721`): the hero is kicker + clubs + button (attempts lede and archive rate
+  removed; Kevin: details live inside the site) — phone hero 1053→766 px, button now above the fold. Puck note: "This
+  season's goals come with an addition: … we also draw the puck and every skater moving." Tracking stays 2026-27 only
+  (NHL permission pending); fetching a second season makes "this season's" false.
 - **Goals mode is the default on a plain visit** (`be30e48`): a game link with no `at=` and no `summary=1`, on a game
   with tracked goals (this season only). Links to a moment (lesson doors, shared moments) open in All events unless
   `replay=goals`; `replay=all` asks for All events. The newcomer note describes whichever mode is showing.
