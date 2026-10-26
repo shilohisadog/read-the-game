@@ -798,8 +798,8 @@ BODY = r"""<div class="wrap front">
      (2026-27, Kevin 2026-10-26); fetching a second makes it false. -->
 <p class="pucknote" id="pucknote"><b>The puck appears only where something happened</b>
 &mdash; a shot, a hit, a face-off &mdash; because the feed we read records those
-moments and nothing in between. <b>This season&rsquo;s goals are the exception:</b>
-the league tracked each one, so for those we draw the puck and every skater moving.</p>
+moments and nothing in between. <b>This season&rsquo;s goals come with an addition:</b>
+the league tracked each one, so for those we also draw the puck and every skater moving.</p>
 </div>
 
 <!-- THE PAGE NOW LEADS WITH THE GAME. Kevin, with a screenshot of everything
