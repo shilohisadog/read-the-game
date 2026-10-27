@@ -59,7 +59,7 @@ sharper, not safer.
    *equally silent and harder to detect, because nothing looks broken*. Also
    **the reader in the trust argument is a hockey fan** — the stated novice does
    not know ends switch at all, and a rink that mirrors mid-game may read as a
-   glitch to her. Both are predictions about unobserved users.
+   glitch to the novice tester. Both are predictions about unobserved users.
 2. **The sentence is a PREREQUISITE, not an alternative** — needed in both modes,
    so it is never thrown away. **The arrows are its natural home.** It needs the
    `display:` provenance form, and the still-unmade normalization disclosure has

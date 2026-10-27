@@ -58,7 +58,7 @@ the layer is already on**. Possible shapes, unranked and unmeasured:
 argument is a prediction about what a casual viewer can hold in their head at
 once, and [[novice-tester-scheduled]] is the instrument — on a phone, where the
 gymnastics are worst. Kevin's own framing ("which is what we are trying to
-reduce for the casual viewer") names her as the reader.
+reduce for the casual viewer") names the novice tester as the reader.
 
 Related: the same session established the objective function that already
 settled the benches question — see [[ends-switching-reopened]] — and the same

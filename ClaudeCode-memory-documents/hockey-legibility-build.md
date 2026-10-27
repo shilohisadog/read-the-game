@@ -1196,7 +1196,7 @@ it: *"it integrates the work into the UX, as opposed to a kinda bolt-on."*
 4. ⏸ **K4 — a killer feature.** My read after building the loop: *everything is
    built and nothing is connected*, so the killer feature is the **return path**,
    not a new feature. ⛔ **STILL GATED: no novice has ever used this site**
-   ([[novice-tester-scheduled]] — she is on a phone).
+   ([[novice-tester-scheduled]] — the novice tester is on a phone).
 5. ⏸ **K1's surface** — `transition.js` is built and unwired. Text is the wrong
    medium (its sentence repeats 47×/game); it wants a MARK, which is K2's
    neighbourhood.
