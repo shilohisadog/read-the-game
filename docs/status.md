@@ -37,6 +37,11 @@ state.
 Everything here is live on readthegame.co and was checked in a real browser; gates, deploy and derive green.
 
 ### Live now
+- **2026-10-27** (`3f28aa8`…`32fabf7`): the empty-net strength sentence uses `standing()` from `strength.js`,
+  so a goal by the team that pulled its goalie (1560 home, 0651 away) says the net is empty. Roster names and
+  jerseys are escaped at the caption, the who-line, the why-popup and the goaltending cards, and `test/esc.test.js`
+  fails when `p.nm` / `p.n` are interpolated into HTML raw. A tip-in primary assist is called the shot only when
+  that touch is the release (the same ~3-tenth window).
 - **2026-10-27** (`7547aef`…`0a34b9e`): Goals mode says one thing at a time under the rink; "where these notes
   come from" closes on a new frame; goal banner at centre ice. **Assist stops** in tracked goals (who from the
   league's a1/a2, when from the tracking: nearest within 5.5 ft; 319/344 primary found on a 367-goal sample).
@@ -75,6 +80,13 @@ Everything here is live on readthegame.co and was checked in a real browser; gat
 7. Unexplained: rail witness 385/390; the feed's 28 vs our 27 shots on DiPietro (2026020120).
 8. Waiting on Kevin: data-model item 6, item 12 (reduced motion), the lesson strip on a landscape phone; the NHL's
    reply to the 2026-10-19 permission request.
+9. `src/app.js` is a 5,562-line file. The page tests boot the built HTML with `new Function`, so coverage
+   cannot attribute a line to it.
+10. README still describes five layers and a `goalie-eye-view.html` that is not in the tree. The picker is
+    Just events, Control, slot, blocked, goaltending, why play stopped, zone starts, who shoots, face-offs.
+11. `worker/trigger.js`, when the token is missing, points at `wrangler secret put GITHUB_TOKEN`. `trigger.yml`
+    says that command binds the secret to the wrong Cloudflare resource; the secret is set on the Worker in
+    the dashboard.
 
 ## ⏭ 0.00 (previous) — 2026-10-21 (end of day)
 
