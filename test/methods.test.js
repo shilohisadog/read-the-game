@@ -55,6 +55,7 @@ const MEASURES = {
       what: 'of the unblocked shot attempts whose location the feed records, this '
           + 'many were taken from inside the slot' } },
   census: { games: 4192,
+    assists: {"goals": 26766, "none": 1710, "noneShare": 0.06388702084734364, "one": 4818, "oneShare": 0.18000448329970858, "two": 20238, "twoShare": 0.7561084958529478, "what": "goals across the archive by how many assists the league credited them with: two, one or none (n counts GOALS; shootout goals are left out, since the league credits them with no assists)."},
     faceoffRun: {"first": {"n": 194092, "w": 119392, "winnerShare": 0.615}, "later": {"n": 122653, "w": 63571, "winnerShare": 0.518}, "loserShot": 114332, "runs": 245260, "second": {"n": 122634, "w": 66733, "winnerShare": 0.544}, "third": {"n": 76504, "w": 40285, "winnerShare": 0.527}, "what": "the shot attempts in the run of play a face-off opens, until the next whistle: for the 1st, 2nd, 3rd and later attempt, how many the team that won the face-off took (w) out of all (n); and how many runs saw a shot attempt at all, by the winner, and by the loser (n counts FACE-OFFS)", "winnerShot": 143666, "withShot": 194092},
     pace: { what: 'shot attempts taken in one situation, out of the minutes played '
               + 'in that situation, scaled to sixty',

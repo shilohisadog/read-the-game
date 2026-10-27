@@ -99,6 +99,10 @@ export const MEASURES = [
     counts: 'skater seconds on the ice', of: 'skater shifts', credit: 'none', unit: 'seconds', strength: 'all',
     score: 'any', scopes: ['archive'], typical: 'mean', witness: null, family: 'shift',
     keys: { league: 'shift', derivation: 'shift' } },
+  { id: 'assistsArchive', name: 'how many assists a goal carries', heading: 'How many assists a goal carries',
+    says: 'Of every goal we hold, how many the league credited with two assists, with one, and with none.',
+    counts: 'goals', of: 'goals, shootout goals left out', credit: 'none', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['archive'], typical: 'league figure', witness: null, keys: { printed: 'assists' } },
 
   // Goaltending.
   { id: 'shotsFaced', name: 'shots the goaltenders faced', says: 'Shots on goal and goals against, with a goaltender in the net.',

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+ely3BXNhtxTQn6oX3JkhLk4hkgxN6W1PgoHupc9S6Q=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-R8f1gfqbBVyyGNd0VyDWTALJrZWuZcq9+cnmdaNOQsw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -765,6 +765,10 @@ const MEASURES = [
     counts: 'skater seconds on the ice', of: 'skater shifts', credit: 'none', unit: 'seconds', strength: 'all',
     score: 'any', scopes: ['archive'], typical: 'mean', witness: null, family: 'shift',
     keys: { league: 'shift', derivation: 'shift' } },
+  { id: 'assistsArchive', name: 'how many assists a goal carries', heading: 'How many assists a goal carries',
+    says: 'Of every goal we hold, how many the league credited with two assists, with one, and with none.',
+    counts: 'goals', of: 'goals, shootout goals left out', credit: 'none', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['archive'], typical: 'league figure', witness: null, keys: { printed: 'assists' } },
 
   { id: 'shotsFaced', name: 'shots the goaltenders faced', says: 'Shots on goal and goals against, with a goaltender in the net.',
     counts: 'shots on goal + goals, goalie in net', of: 'game', credit: 'goaltender', unit: 'count',
@@ -1391,6 +1395,19 @@ const PRINTED = {
     caveat: 'A run lasts until the next whistle. Only shot attempts are counted, because '
           + 'the record does not say who had the puck between them: this is the first '
           + 'shot attempt, not the first touch.' },
+  assists: {
+    label: measure('assistsArchive').heading,
+    where: 'The Assists card on What you can see here.',
+    reads: [
+      { is: 'Goals credited with two assists', at: ['census', 'assists'], num: 'two', den: 'goals', out: 'twoShare', as: 'ratio', unit: '%' },
+      { is: 'With one', at: ['census', 'assists'], num: 'one', den: 'goals', out: 'oneShare', as: 'ratio', unit: '%' },
+      { is: 'With none', at: ['census', 'assists'], num: 'none', den: 'goals', out: 'noneShare', as: 'ratio', unit: '%' },
+    ],
+    why: 'A goal is usually the end of a passing play, and the league says so: it credits the scorer and up '
+       + 'to two teammates who played the puck just before. The replay names them.',
+    caveat: 'An assist is the official scorer\u2019s decision, made in the arena from what they saw, and it '
+          + 'can be changed after the game. A goal with none is not always one nobody passed to: if the '
+          + 'other team had control of the puck in between, the passes before it do not count.' },
   zoneStarts: {
     label: measure('endZoneWorth').heading,
     where: 'The front door, and The attacking zone card on '

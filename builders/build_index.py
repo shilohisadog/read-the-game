@@ -2002,6 +2002,19 @@ def _archive():
         "__SHIFT_PER__": f"{sh['perPlayerGame']:.0f}",
         "__SHIFT_N__": num(sh["n"]),
     })
+    # Goals by how many assists the league credited them with (the assists card).
+    ast = (m.get("census") or {}).get("assists") or {}
+    for k in ("goals", "two", "one", "none"):
+        if not ast.get(k) and k != "none":
+            raise SystemExit(
+                f"learn: measures.json census.assists.{k} is missing -- the assists card "
+                "cannot say how many goals carried an assist. Re-run derive.")
+    out.update({
+        "__AST_GOALS__": num(ast["goals"]),
+        "__AST_TWO__": num(ast["two"]),
+        "__AST_ONE__": num(ast["one"]),
+        "__AST_NONE__": num(ast.get("none", 0)),
+    })
     ez = (m.get("census") or {}).get("endZone") or {}
     for k in ("atkPerDraw", "defPerDraw"):
         if ez.get(k) is None:
@@ -2415,6 +2428,10 @@ FIGURE_DERIVATION = {
     "__SHIFT_MEAN__":         "shift",
     "__SHIFT_PER__":          "shift",
     "__SHIFT_N__":            "shift",
+    "__AST_GOALS__":          "assists",
+    "__AST_TWO__":            "assists",
+    "__AST_ONE__":            "assists",
+    "__AST_NONE__":           "assists",
     "__ZONE_ATK__":           "zoneStarts",
     "__ZONE_DEF__":           "zoneStarts",
     "__ZONE_DRAWS__":         "zoneStarts",
@@ -2797,6 +2814,14 @@ LEARN_CARDS = [
     ("rules", "empty-net", "The empty net",
      "Losing late, a team trades its goaltender for a sixth skater. Nothing is "
      "toggled here &mdash; the goalie is simply no longer on the ice."),
+    # ASSISTS: the league's own credit for the play before a goal. The replay names both on the goal's label,
+    # and on this season's tracked goals Prev/Next stops on each, in the league's words.
+    ("rules", "assists", "Assists",
+     "When a goal goes in, the league also credits up to two teammates who played the puck just "
+     "before the scorer, each with an <em>assist</em>: the last one before the goal gets the "
+     "<em>primary assist</em>, the one before that the <em>secondary assist</em>. Over every goal we "
+     "hold, __AST_TWO__ of __AST_GOALS__ carried two assists, __AST_ONE__ one, and __AST_NONE__ none. "
+     "So most goals are the end of a passing play, and the replay names the players who made it."),
     # ⚠️⚠️ THESE TWO BLURBS WERE A PAIR POINTING AT ONE MOMENT, and the control
     # diagram broke the pair. The doors are consecutive events in one second of
     # one game -- `at=1-18:40.1` and `at=1-18:40.2` -- so control's copy said

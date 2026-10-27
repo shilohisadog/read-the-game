@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W/EKokB+2JyGtAN0DONmoRSyuL8cpSyORz0hBHwnfJ4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xMsOjPnU+ot9fNW3Oqdn2p+b1suEAzCOxp2DJ+9jNiE=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -645,6 +645,10 @@ const MEASURES = [
     counts: 'skater seconds on the ice', of: 'skater shifts', credit: 'none', unit: 'seconds', strength: 'all',
     score: 'any', scopes: ['archive'], typical: 'mean', witness: null, family: 'shift',
     keys: { league: 'shift', derivation: 'shift' } },
+  { id: 'assistsArchive', name: 'how many assists a goal carries', heading: 'How many assists a goal carries',
+    says: 'Of every goal we hold, how many the league credited with two assists, with one, and with none.',
+    counts: 'goals', of: 'goals, shootout goals left out', credit: 'none', unit: 'share', strength: 'all',
+    score: 'any', scopes: ['archive'], typical: 'league figure', witness: null, keys: { printed: 'assists' } },
 
   { id: 'shotsFaced', name: 'shots the goaltenders faced', says: 'Shots on goal and goals against, with a goaltender in the net.',
     counts: 'shots on goal + goals, goalie in net', of: 'game', credit: 'goaltender', unit: 'count',

@@ -277,6 +277,19 @@ const PRINTED = {
     caveat: 'A run lasts until the next whistle. Only shot attempts are counted, because '
           + 'the record does not say who had the puck between them: this is the first '
           + 'shot attempt, not the first touch.' },
+  assists: {
+    label: measure('assistsArchive').heading,
+    where: 'The Assists card on What you can see here.',
+    reads: [
+      { is: 'Goals credited with two assists', at: ['census', 'assists'], num: 'two', den: 'goals', out: 'twoShare', as: 'ratio', unit: '%' },
+      { is: 'With one', at: ['census', 'assists'], num: 'one', den: 'goals', out: 'oneShare', as: 'ratio', unit: '%' },
+      { is: 'With none', at: ['census', 'assists'], num: 'none', den: 'goals', out: 'noneShare', as: 'ratio', unit: '%' },
+    ],
+    why: 'A goal is usually the end of a passing play, and the league says so: it credits the scorer and up '
+       + 'to two teammates who played the puck just before. The replay names them.',
+    caveat: 'An assist is the official scorer\u2019s decision, made in the arena from what they saw, and it '
+          + 'can be changed after the game. A goal with none is not always one nobody passed to: if the '
+          + 'other team had control of the puck in between, the passes before it do not count.' },
   zoneStarts: {
     label: measure('endZoneWorth').heading,
     where: 'The front door, and The attacking zone card on '

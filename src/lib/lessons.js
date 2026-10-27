@@ -277,6 +277,9 @@ export function momentsOf(game) {
     ['score', ['corsi'], firstWhileTrailing(corsi, events, { ...ctx, evenOnly: true }),
      'the first attempt the Control layer counts at even strength for a team that is behind',
      'even'],
+    // ASSISTS: the first goal the league credited with two, where the goal's label names both.
+    ['assists', [], events.findIndex(e => e.type === 'goal' && e.pt !== 'SO' && e.a2 != null),
+     'the first goal the league credited with two assists'],
     /* OVERTIME: the goal that ends it. `periodLabel()` renders "Overtime · 3-on-3"
        for it from recorded fields, so the frame says what the rule is. */
     ['overtime', [], events.findIndex(e => e.pt === 'OT' && e.type === 'goal'),
@@ -351,7 +354,7 @@ export function doorAt(game, [id, layers, index, rule, strength = 'all']) {
 
 /** The lessons in the order of the learn page; the nightly pick goes in it. */
 export const LESSON_ORDER = ['icing', 'faceoffs', 'offside', 'penalties', 'overtime',
-  'empty-net', 'control', 'blocked', 'slot', 'goaltending', 'situations', 'zones',
+  'empty-net', 'assists', 'control', 'blocked', 'slot', 'goaltending', 'situations', 'zones',
   'shifts', 'score'];
 
 /**
