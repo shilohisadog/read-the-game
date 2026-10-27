@@ -158,20 +158,9 @@ __CSS__</style>
        into the newcomer dismissal; that flag means "I know how this site works",
        and who took the shot is not scaffolding a reader outgrows. -->
   <p class="who" id="who" aria-live="polite"></p>
-  <!-- THE COLOR LINE (src/lib/color.js): what a color analyst would add, from
-       the record, the rulebook and the archive. Pressing it opens where the notes
-       come from. The row is reserved so it never moves Play. -->
-  <details class="playd" id="playd"><summary class="playline" title="Where these notes come from"><span id="playline"></span></summary>
-  <p class="playwork" id="playwork">Each note comes from the league&rsquo;s record of
-  this game, the NHL rulebook, or how often something happened across
-  <span id="pwgames">the games we have measured</span>. The record never says which team
-  had the puck, or why anyone did anything.<span id="pwtrk" hidden></span>
-  <span id="pwrow" hidden>&ldquo;Events in a row&rdquo; counts the
-  numbered marks on the ice; three in a row in one zone is our own rule for when the puck
-  has stayed there, and its seconds run between recorded events, because nobody records
-  when the puck crossed a blue line.</span>
-  <span id="pwshift" hidden>A typical shift is the middle of every
-  shift we hold.</span><span id="pwrun" hidden></span></p></details>
+  <!-- The color line for this frame (src/lib/color.js). Plain text: the source
+       disclosure described the site, not the event, so it does not open here. -->
+  <div class="playd" id="playd"><span class="playline" id="playline"></span></div>
   <!-- ⭐⭐ WHO IS ON THE ICE, AND IT IS A LIST BECAUSE THAT IS WHAT WE KNOW.
        Kevin, 2026-09-10: *"we don't surface players on the ice at all; should we
        have a toggle... only clickable when not playing?"* — then, on the obvious

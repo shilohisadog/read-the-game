@@ -109,9 +109,8 @@ test('Goals: Prev and Next step within a goal\'s tracking, and pause there', asy
   assert.ok(a.$('rg').classList.contains('trk'), 'Prev left the tracking');
   assert.notEqual(a.$('clk').textContent, second, 'Prev did not move back');
   assert.equal(a.$('play').textContent.includes('Pause'), false, 'stepping did not pause');
-  // One thing at a time: the note under the rink is the triangle's line or nothing; the account is in the panel.
+  // One thing at a time: the note under the rink is this frame's line, or nothing.
   assert.match(a.$('playline').textContent, /^(|Anyone inside the (light|shaded) triangle .*)$/, 'the whole account is under the rink');
-  assert.match(a.$('pwtrk').textContent, /10 times a second/, 'the panel does not carry the tracked goal\'s account');
 });
 
 test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, which holds the puck in the net', async () => {
