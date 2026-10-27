@@ -39,6 +39,10 @@ export const TRACK_RELEASE_FT = 30;
    a tenth of a second), or turns sharply while fast (a tip). Both numbers OUR choice; over the 323 goals
    beyond 30 feet, the release nearest the recorded spot is within 3 feet of it on 79%, 6 feet on 90%. */
 export const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
+/* Within this many feet of a skater the puck is his: the tracking places the body, and a stick reaches past it.
+   OUR choice. Over 367 goals (60 games, 2026-10-27) it finds the primary assist with the puck on 319 of 344
+   assisted goals, and the next teammate to hold it is one the league did not credit on 11 of those 319. */
+export const TRACK_REACH_FT = 5.5;
 /** The goal line and the blue lines, feet from centre ice. */
 const GOAL_LINE = 89, BLUE = 25;
 
@@ -167,10 +171,12 @@ export function trackTags(P, win) {
   const tGoal = P.frames[P.k].timeStamp;
   return win.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10 }));
 }
-/** The stops Prev/Next move between: the first frame, each recorded event, the shot (`shotAt`), the goal line. */
-export function trackStops(P, tags, shotAt = null) {
+/** The stops Prev/Next move between: the first frame, each recorded event, the shot (`shotAt`), each assist, the goal line. */
+export function trackStops(P, tags, shotAt = null, assists = []) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
-  const mid = [...tags.map(t => t.at), shotAt].filter(v => v != null && v > t0 && v < tGoal);
+  // An assist that is the shot itself (a tip, a rebound) is the shot's stop.
+  const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= 3)).map(a => a.at);
+  const mid = [...tags.map(t => t.at), shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
   return [...new Set([t0, ...mid, tGoal])].sort((a, b) => a - b);
 }
 
@@ -206,6 +212,46 @@ export function trackShot(P, homeId) {
   const apex = pts[j];
   return { j, at: P.frames[j].timeStamp, apex, ft, lane,
     posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
+}
+/** Per frame to the goal line: the player nearest the puck within TRACK_REACH_FT, or null. */
+export function trackHolders(P) {
+  const out = [];
+  for (let j = 0; j <= P.k; j++) {
+    const o = P.frames[j].onIce || {}, pk = o['1'];
+    let best = null, bd = TRACK_REACH_FT;
+    if (pk) { const p = trackFeet(pk);
+      for (const [key, s] of Object.entries(o)) {
+        if (key === '1' || s.playerId == null) continue;
+        const f = trackFeet(s), d = Math.hypot(f.x - p.x, f.y - p.y);
+        if (d <= bd) { bd = d; best = s.playerId; } } }
+    out.push(best);
+  }
+  return out;
+}
+/**
+ * THE ASSISTS, WHO FROM THE LEAGUE'S RECORD AND WHEN FROM THE TRACKING: the last frame the primary assist
+ * has the puck before the scorer's last touch, and the secondary's last before that. `shot` when the puck
+ * went from him to the net, not to a teammate: a tip, or a goaltender next to have it (a rebound).
+ *   [{pid, rank, j, at, shot}], secondary first; [] when the goal is unassisted or he never has it here.
+ */
+export function trackAssists(P, H = trackHolders(P)) {
+  const e = P.e;
+  if (e.a1 == null) return [];
+  const last = (pid, before) => { for (let j = before - 1; j >= 0; j--) if (H[j] === Number(pid)) return j; return -1; };
+  const sc = last(e.actor, P.k + 1), r1 = last(e.a1, sc >= 0 ? sc : P.k + 1);
+  if (r1 < 0) return [];
+  const next = j => { for (let t = j + 1; t <= P.k; t++) if (H[t] != null && H[t] !== H[j]) return H[t]; return null; };
+  const tip = /tip|deflect/.test(e.st || '');
+  const mk = (pid, rank, j) => ({ pid: Number(pid), rank, j, at: P.frames[j].timeStamp,
+    shot: (rank === 1 && tip) || (next(j) != null && next(j) === Number(e.goalie)) });
+  const out = [mk(e.a1, 1, r1)];
+  if (e.a2 != null) { const r2 = last(e.a2, r1); if (r2 >= 0) out.unshift(mk(e.a2, 2, r2)); }
+  return out;
+}
+/** The name line at an assist: what he did, and the credit in the league's words. */
+export function trackAssistSay(a, G) {
+  const p = G.roster[a.pid] || {};
+  return `#${p.n || ''} ${p.nm || ''} ${a.shot ? 'shoots' : 'passes'} · the league credits him with the ${a.rank === 1 ? 'primary' : 'secondary'} assist`;
 }
 /**
  * THE LIVE LANE at frame `j`: the triangle from the puck to the scoring team's posts while the puck is

@@ -253,3 +253,28 @@ test('a pre-game link copied in All events says so, since a link with no moment 
   a.$('share').onclick(); await settle();
   assert.equal(new URLSearchParams(a.copied.split('?')[1]).get('replay'), 'all');
 });
+
+test('⭐ Goals: Next steps onto each assist, and the name line gives the league\'s credit', async () => {
+  // The Toews goal's tracking, under the reference game's first goal given that goal's scorer and assists.
+  const TX = JSON.parse(readFileSync(new URL('./fixtures/tracked-2026020167-ev67.json', import.meta.url), 'utf8'));
+  const tg = TX.events.find(e => e.type === 'goal'), R = structuredClone(rich);
+  const g = R.events.find(e => e.type === 'goal' && e.pt !== 'SO');
+  Object.assign(g, { actor: tg.actor, a1: tg.a1, a2: tg.a2, x: tg.x, y: tg.y, st: tg.st });
+  for (const id of [tg.actor, tg.a1, tg.a2]) R.roster[id] = { ...TX.roster[id], tid: g.own };
+  const tl = boot(R).timeline, rows = tl.map((e, k) => ({ e, k })).filter(({ e }) => e && e.type === 'goal' && e.pt !== 'SO')
+    .map(({ e, k }) => ({ ev: 1000 + k, per: e.per, clock: e.clock, scorer: e.actor }));
+  const a = boot(R, null, '?replay=goals', null,
+    name => Promise.resolve(name.endsWith('goals.json') ? rows : TX.frames), MOTION);
+  await settle(); await settle();
+  a.at(0, () => {});
+  const said = [];
+  for (let n = 0; n < 10 && !said.some(s => /primary/.test(s)); n++) {
+    a.$('fwd').click(); await settle(); await settle();
+    said.push(a.$('who').textContent);
+  }
+  const two = said.findIndex(s => s === '#29 MacKinnon passes · the league credits him with the secondary assist');
+  const one = said.findIndex(s => s === '#88 Necas passes · the league credits him with the primary assist');
+  assert.ok(two >= 0, `Next never stopped on the secondary assist: ${JSON.stringify(said)}`);
+  assert.ok(one > two, 'the primary assist is not the stop after the secondary');
+  assert.ok(a.$('rg').classList.contains('trk'), 'the assist stop left the tracking');
+});

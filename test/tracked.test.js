@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
-  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT,
+  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT,
 } from '../src/lib/tracked.js';
 import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
 
@@ -202,4 +202,54 @@ test('the line says what the faint and the held triangle are, in plain words, na
   assert.doesNotMatch(say, /attacking zone|blue line/i, 'hockey speak');
   const close = trackShot(trackPlan(FX.frames, { ...GOAL, x: -75, y: -5 }), G.teams.home.id);
   assert.doesNotMatch(trackLaneSay(trackPlan(FX.frames, { ...GOAL, x: -75, y: -5 }), G, close), /darkens/, 'a close goal has no held lane to describe');
+});
+
+/* THE ASSISTS on an assisted goal: #7 Toews, TBL at COL, 2026-10-23, from #88 Necas and #29 MacKinnon.
+   Read frame by frame by a separate script (nearest skater within 4 ft): #29 carries the puck 5.6–7.6 s
+   into the file, #88 has it 8.2–9.0 s, Toews shoots at 9.8 s. */
+const TX = JSON.parse(readFileSync(new URL('./fixtures/tracked-2026020167-ev67.json', import.meta.url), 'utf8'));
+const TG = { game: TX.game, teams: TX.teams, roster: TX.roster, events: TX.events };
+const TGOAL = TX.events.find(e => e.type === 'goal');
+const TP = trackPlan(TX.frames, TGOAL);
+const secs = a => (a.at - TP.frames[0].timeStamp) / 10;
+
+test('⭐ the assists come from the league\'s record; the tracking says when the puck left each', () => {
+  const A = trackAssists(TP);
+  assert.deepEqual(A.map(a => [a.rank, a.pid]), [[2, TGOAL.a2], [1, TGOAL.a1]], 'not the league\'s two assists, secondary first');
+  const [a2, a1] = A;
+  assert.ok(secs(a2) >= 7.4 && secs(a2) <= 7.9, `the secondary assist at ${secs(a2)} s, not the end of #29's carry`);
+  assert.ok(secs(a1) >= 8.9 && secs(a1) <= 9.3, `the primary assist at ${secs(a1)} s, not the end of #88's carry`);
+  assert.ok(!a1.shot && !a2.shot, 'a pass called a shot');
+  // At each moment he is the nearest player to the puck, and within reach.
+  for (const a of A) {
+    const o = TP.frames[a.j].onIce, pk = trackFeet(o['1']), me = Object.values(o).find(v => v.playerId === a.pid);
+    const d = q => Math.hypot(trackFeet(q).x - pk.x, trackFeet(q).y - pk.y);
+    assert.ok(d(me) <= TRACK_REACH_FT, `#${me.sweaterNumber} is ${d(me).toFixed(1)} ft from the puck`);
+    assert.ok(Object.entries(o).every(([k, v]) => k === '1' || v.playerId == null || d(v) >= d(me)), 'someone else was nearer');
+  }
+  assert.equal(trackAssistSay(a1, TG), '#88 Necas passes · the league credits him with the primary assist');
+  assert.equal(trackAssistSay(a2, TG), '#29 MacKinnon passes · the league credits him with the secondary assist');
+});
+
+test('the assists are Prev/Next stops, between the first frame and the shot', () => {
+  const A = trackAssists(TP), S = trackShot(TP, TG.teams.home.id);
+  const stops = trackStops(TP, [], S && S.at, A);
+  for (const a of A) assert.ok(stops.includes(a.at), `no stop at the ${a.rank === 1 ? 'primary' : 'secondary'} assist`);
+  assert.ok(A.every(a => a.at < S.at), 'an assist after the shot');
+});
+
+test('an assist that is the shot itself is the shot\'s stop, not a second one', () => {
+  const tip = trackPlan(TX.frames, { ...TGOAL, st: 'tip-in' }), A = trackAssists(tip), a1 = A.find(a => a.rank === 1);
+  assert.ok(a1.shot, 'a tip-in\'s primary assist is not his shot');
+  assert.match(trackAssistSay(a1, TG), /^#88 Necas shoots · the league credits him with the primary assist$/);
+  assert.ok(!trackStops(tip, [], a1.at + 2, A).includes(a1.at), 'the shot and the assist are two stops');
+  assert.ok(trackStops(tip, [], a1.at + 20, A).includes(a1.at), 'an assist two seconds before the shot lost its stop');
+});
+
+test('an unassisted goal has no assists, and a recorded assist the tracking never sees is left out', () => {
+  assert.equal(GOAL.a1, undefined);
+  assert.deepEqual(trackAssists(P), []);
+  const ghost = trackPlan(TX.frames, { ...TGOAL, a1: 1, a2: TGOAL.a2 });
+  assert.deepEqual(trackAssists(ghost), [], 'a primary assist who never has the puck still got a moment');
+  assert.equal(trackHolders(TP).length, TP.k + 1);
 });

@@ -56,9 +56,9 @@ import { faceoffs } from './lib/layers/faceoffs.js';
 import { periodLabel } from './lib/period.js';
 import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
-import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, trackRow, trackPlan,
+import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG_TENTHS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackSay, trackFirst, trackTags,
-  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneSay, trackLaneLine } from './lib/tracked.js';
+  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneSay, trackLaneLine, trackAssists, trackAssistSay } from './lib/tracked.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -2905,22 +2905,25 @@ function trkStart(P,still,free){
  // The moment of the shot: a stop on every located goal; beyond TRACK_LANE_FT its lane is held. The light lane is markup's.
  const SHOT=trackShot(P,G.teams.home.id);
  // The note says one thing at a time; the whole account waits in "where these notes come from".
- const WHO=trackWho(P,G),FIRST=trackFirst(P);
+ const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P);
  playWork(trackSay(P,G,win,sp)+trackLaneSay(P,G,SHOT));
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
   // In Goals the goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
-  stops:trackStops(P,tags,SHOT&&SHOT.at).filter(v=>!TRK.goals||v!==tGoal),at:now10,
+  stops:trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal),at:now10,
   left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
-  seek(v){played=(v-t0)/10/sp*1000;run.prev=null;trkKick(true);}};
+  seek(v){played=(v-t0)/10/sp*1000;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
  // One frame of the tracking, and the words and clock that go with it.
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
   put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT}));
   document.getElementById('rg').classList.add('trk');
   const say=played<0?FIRST:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
-  const w=$('who');if(w.textContent!==WHO){w.textContent=WHO;w.className='who plain';}
+  // At an assist the name line says who made it and the league's credit, as long as a label stays up or to the next stop.
+  const upTo=a=>Math.min(a.at+TRACK_TAG_TENTHS*2,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
+  const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
+  const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
   $('clk').textContent=trackClock(P,j);
   return j;};
  const tick=now=>{

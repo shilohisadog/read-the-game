@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vQXhKQK9Cbd65t5tn31t0ess4GT5WmAs9X/zkOn0Aw0=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ktNeUqxF4y7IiyIlnK6Zl58TYpqpaXEPdvaNEGHzDSY=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3650,6 +3650,7 @@ const TRACK_TAG_EDGE = 16;
 const TRACK_LANE_FT = 20;
 const TRACK_RELEASE_FT = 30;
 const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
+const TRACK_REACH_FT = 5.5;
 const GOAL_LINE = 89, BLUE = 25;
 
 const TRACK_WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Shot missed the net',
@@ -3757,9 +3758,10 @@ function trackTags(P, win) {
   const tGoal = P.frames[P.k].timeStamp;
   return win.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10 }));
 }
-function trackStops(P, tags, shotAt = null) {
+function trackStops(P, tags, shotAt = null, assists = []) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
-  const mid = [...tags.map(t => t.at), shotAt].filter(v => v != null && v > t0 && v < tGoal);
+  const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= 3)).map(a => a.at);
+  const mid = [...tags.map(t => t.at), shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
   return [...new Set([t0, ...mid, tGoal])].sort((a, b) => a - b);
 }
 
@@ -3785,6 +3787,38 @@ function trackShot(P, homeId) {
   const apex = pts[j];
   return { j, at: P.frames[j].timeStamp, apex, ft, lane,
     posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
+}
+function trackHolders(P) {
+  const out = [];
+  for (let j = 0; j <= P.k; j++) {
+    const o = P.frames[j].onIce || {}, pk = o['1'];
+    let best = null, bd = TRACK_REACH_FT;
+    if (pk) { const p = trackFeet(pk);
+      for (const [key, s] of Object.entries(o)) {
+        if (key === '1' || s.playerId == null) continue;
+        const f = trackFeet(s), d = Math.hypot(f.x - p.x, f.y - p.y);
+        if (d <= bd) { bd = d; best = s.playerId; } } }
+    out.push(best);
+  }
+  return out;
+}
+function trackAssists(P, H = trackHolders(P)) {
+  const e = P.e;
+  if (e.a1 == null) return [];
+  const last = (pid, before) => { for (let j = before - 1; j >= 0; j--) if (H[j] === Number(pid)) return j; return -1; };
+  const sc = last(e.actor, P.k + 1), r1 = last(e.a1, sc >= 0 ? sc : P.k + 1);
+  if (r1 < 0) return [];
+  const next = j => { for (let t = j + 1; t <= P.k; t++) if (H[t] != null && H[t] !== H[j]) return H[t]; return null; };
+  const tip = /tip|deflect/.test(e.st || '');
+  const mk = (pid, rank, j) => ({ pid: Number(pid), rank, j, at: P.frames[j].timeStamp,
+    shot: (rank === 1 && tip) || (next(j) != null && next(j) === Number(e.goalie)) });
+  const out = [mk(e.a1, 1, r1)];
+  if (e.a2 != null) { const r2 = last(e.a2, r1); if (r2 >= 0) out.unshift(mk(e.a2, 2, r2)); }
+  return out;
+}
+function trackAssistSay(a, G) {
+  const p = G.roster[a.pid] || {};
+  return `#${p.n || ''} ${p.nm || ''} ${a.shot ? 'shoots' : 'passes'} · the league credits him with the ${a.rank === 1 ? 'primary' : 'secondary'} assist`;
 }
 function trackLaneAt(P, j, homeId) {
   const pk = P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'];
@@ -5571,20 +5605,22 @@ function trkStart(P,still,free){
  const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
  const SHOT=trackShot(P,G.teams.home.id);
- const WHO=trackWho(P,G),FIRST=trackFirst(P);
+ const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P);
  playWork(trackSay(P,G,win,sp)+trackLaneSay(P,G,SHOT));
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
-  stops:trackStops(P,tags,SHOT&&SHOT.at).filter(v=>!TRK.goals||v!==tGoal),at:now10,
+  stops:trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal),at:now10,
   left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
-  seek(v){played=(v-t0)/10/sp*1000;run.prev=null;trkKick(true);}};
+  seek(v){played=(v-t0)/10/sp*1000;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
   put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT}));
   document.getElementById('rg').classList.add('trk');
   const say=played<0?FIRST:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
-  const w=$('who');if(w.textContent!==WHO){w.textContent=WHO;w.className='who plain';}
+  const upTo=a=>Math.min(a.at+TRACK_TAG_TENTHS*2,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
+  const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
+  const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
   $('clk').textContent=trackClock(P,j);
   return j;};
  const tick=now=>{
