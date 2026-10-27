@@ -687,8 +687,10 @@ export function censusRates(t) {
     // Counts: the assists card divides them once, beside the counts it quotes.
     assists: (() => {
       const a = t.assists || {};
+      const n = a.goals || 0, share = k => (n ? (a[k] || 0) / n : null);
       return {
         ...Object.fromEntries(['goals', 'two', 'one', 'none'].map(k => [k, a[k] || 0])),
+        twoShare: share('two'), oneShare: share('one'), noneShare: share('none'),
         what: 'goals across the archive by how many assists the league credited them with: two, one or '
             + 'none (n counts GOALS; shootout goals are left out, since the league credits them with no assists).',
       };

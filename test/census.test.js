@@ -862,6 +862,7 @@ test('goals by assists: counted from the league\'s own a1/a2, shootout goals lef
   const c = censusGame(g.events, { ...ctxOf(g), shifts: g.shifts || [] });
   assert.deepEqual(c.assists, want);
   const pub = censusRates(censusAdd(censusAdd({}, c), c)).assists;
-  assert.deepEqual({ ...pub, what: undefined }, { goals: 2 * want.goals, two: 2 * want.two, one: 2 * want.one, none: 2 * want.none, what: undefined });
+  assert.deepEqual({ ...pub, what: undefined }, { goals: 2 * want.goals, two: 2 * want.two, one: 2 * want.one, none: 2 * want.none,
+    twoShare: want.two / want.goals, oneShare: want.one / want.goals, noneShare: want.none / want.goals, what: undefined });
   assert.match(pub.what, /n counts GOALS/);
 });
