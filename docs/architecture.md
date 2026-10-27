@@ -43,10 +43,10 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 832 |
 | **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (60 modules) | 14,007 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 901 |
-| **presentation** | generates the pages | `build_*.py` (8) | 7,973 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 5,563 |
+| **presentation** | generates the pages | `build_*.py` (8) | 7,962 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 5,545 |
 
-<sub>Counted 2026-10-27 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **60 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 43 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,563 lines **3,814 are comment-only and 1580 are code**, and **419 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-10-27 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **60 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 43 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 5,545 lines **3,809 are comment-only and 1567 are code**, and **419 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---
