@@ -209,10 +209,7 @@ route = Sportradar (Official Global Data Distributor, tracking data included), S
 LAB DEMO: lab.read-the-game.pages.dev/lab/tracking.html (one file, 2025020002 ev481, Brazeau). ⚠️ COORDINATES:
 league feet = (x/12 − 100, 42.5 − y/12) — the sprite y is OPPOSITE the play-by-play's (puck on the face-off dot
 at sprite +21.9 vs pbp (69,−22)); then our extract's per-period turn `f` (read off the goal's sign). Shot
-matched pbp to <1 ft. Frames can hold 11 objects (someone untracked). Contacts given to Kevin: NHL has NO public
-permissions email — NHL.com/contact (subject "DMCA/Trademark and Copyright Requests") or NHL Enterprises, L.P.,
-Attn: Legal Department, One Manhattan West, 395 9th Ave, New York NY 10001, (212) 789-2000; Sportradar via
-sportradar.com/contact or developer.sportradar.com/contact → "Sales" (us-sales@sportradar.com per search, unverified).
+matched pbp to <1 ft. Frames can hold 11 objects (someone untracked).
 📨 2026-10-19: Kevin SENT the permission request via NHL.com/contact (my draft: non-commercial, no ads/subscription/
 betting; ~5 docs/game nightly + proposed goal sprites ~6–7/game; open source, MIT covers OUR CODE ONLY). README's
 licence section now says so (it had claimed "a single-game excerpt" — false: raw for 1 game + ~11 derived extracts).

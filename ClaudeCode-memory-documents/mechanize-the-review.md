@@ -3114,7 +3114,7 @@ first period). **When a design argument feels stuck, check whether two different
 axes are being argued as one.**
 
 **A TEST WHOSE OUTCOME YOU CAN PREDICT PRODUCES NO INFORMATION.** I proposed
-holding the first-visit mechanism for the novice test. Kevin wrote down her likely
+holding the first-visit mechanism for the novice test. Kevin wrote down the novice tester's likely
 responses — *"where should I click", "why should I click there", "what's corsi"* —
 which is the whole finding. And **a first visit is not renewable**: one person has
 exactly one. Build the thing, then test it; testing an obviously-unfinished page
@@ -3378,8 +3378,8 @@ viewports: **inline 320px desktop / 538px phone; stacked 341px / 516px.** Correc
 numbers. I took the inline one, and wrote the reason into the source: *"Kevin's
 stated viewing perspective is the laptop."*
 
-Then Kevin: **"I use a laptop but my wife will use her phone to view the site."**
-She is the novice tester. **The audience the whole site exists for is on the
+Then Kevin: he uses a laptop, and the novice tester will use a phone.
+**The audience the whole site exists for is on the
 smaller screen**, so 21px of laptop buys 22px of phone and the trade reverses.
 
 **CHENG: this is the first failure in this project that none of our techniques

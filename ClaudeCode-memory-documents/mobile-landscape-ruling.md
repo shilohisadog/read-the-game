@@ -145,4 +145,4 @@ see they reached the right game before being asked to do anything.
 3. `#lbox` and `#lcap` — portrait-path only now, behind the prompt.
 
 See [[looking-at-pixels]] for the phone-vs-laptop rule this run re-earned, and
-[[novice-tester-scheduled]] — she is on a phone, which is why this mattered.
+[[novice-tester-scheduled]] — the novice tester is on a phone, which is why this mattered.
