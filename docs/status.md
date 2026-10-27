@@ -37,6 +37,12 @@ state.
 Everything here is live on readthegame.co and was checked in a real browser; gates, deploy and derive green.
 
 ### Live now
+- **2026-10-27** (`7547aef`…`0a34b9e`): Goals mode says one thing at a time under the rink; "where these notes
+  come from" closes on a new frame; goal banner at centre ice. **Assist stops** in tracked goals (who from the
+  league's a1/a2, when from the tracking: nearest within 5.5 ft; 319/344 primary found on a 367-goal sample).
+  Goals passes through non-stop frames with no reading pause (was 5.4 s). **Shootout stop** in Goals. **Assists
+  lesson** (rules card, `census.assists` 20,238/4,818/1,710 of 26,766, methods `#m-assists`). Kevin kept the
+  editions ruling: shared replay links keep `asof` and that night's code (trade-off 4) — test with plain links.
 - **Front door trimmed** (`4ea602c`, `5448721`): the hero is kicker + clubs + button (attempts lede and archive rate
   removed; Kevin: details live inside the site) — phone hero 1053→766 px, button now above the fold. Puck note: "This
   season's goals come with an addition: … we also draw the puck and every skater moving." Tracking stays 2026-27 only
