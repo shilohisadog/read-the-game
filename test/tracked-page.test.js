@@ -301,3 +301,40 @@ test('⛔ Goals: a goal whose file has not arrived waits a moment and asks again
   assert.ok(a.wait <= 400, `waiting for the file holds ${a.wait} ms`);
   release(FX.frames);
 });
+
+/* A game settled by a shootout: CAR at PHI, 2025-12-13, tied after overtime, CAR's one shootout goal the only
+   one. And a playoff game whose period 5 is overtime, not a shootout: CAR at NYR, 2024-05-07. */
+const XG = id => JSON.parse(readFileSync(new URL(`./fixtures/extracts/${id}.json`, import.meta.url), 'utf8'));
+function goalsOf(game) {
+  const tl = boot(game).timeline;
+  const rows = tl.map((e, k) => ({ e, k })).filter(({ e }) => e && e.type === 'goal' && e.pt !== 'SO')
+    .map(({ e, k }) => ({ ev: 1000 + k, per: e.per, clock: e.clock, scorer: e.actor }));
+  return { tl, fetch: name => Promise.resolve(name.endsWith('goals.json') ? rows : FX.frames) };
+}
+
+test('⭐ Goals: a game settled by a shootout stops on its first attempt and says so, then the horn', async () => {
+  const game = XG('2025020501'), { tl, fetch } = goalsOf(game);
+  const so = tl.findIndex(e => e && e.pt === 'SO'), last = tl.map((e, k) => e && e.type === 'goal' && e.pt !== 'SO' ? k : -1).filter(k => k >= 0).pop();
+  const a = boot(game, null, '?replay=goals', null, fetch);              // reduced motion: stop to stop
+  await settle(); await settle();
+  a.at(last, () => {}); await settle();
+  a.$('fwd').click(); await settle(); await settle();
+  assert.equal(+a.$('scrub').value, so, 'Next went from the last goal past the shootout');
+  assert.equal(a.$('who').textContent, "The shootout's first attempt · overtime ended without a goal");
+  assert.equal(a.$('playline').textContent, 'Overtime ended without a goal, so a shootout decided the game. '
+    + 'CAR won the shootout 1–0, and the team that wins a shootout is credited with one goal on the final score.');
+  a.$('play').click(); a.advance(1); await settle();
+  assert.equal(+a.$('scrub').value, tl.length - 1, 'Play did not go from the shootout to the horn');
+  const all = boot(game, null, '?replay=all', null, fetch);
+  await settle(); await settle();
+  all.at(so, () => {}); await settle();
+  assert.doesNotMatch(all.$('playline').textContent + all.$('who').textContent, /overtime ended without a goal/i, 'All events took the Goals stop\'s words');
+});
+
+test('a playoff game whose fifth period is overtime has no shootout stop', async () => {
+  const game = XG('2023030222'), { tl, fetch } = goalsOf(game);
+  assert.equal(tl.findIndex(e => e && e.pt === 'SO'), -1);
+  const a = boot(game, null, '?replay=goals', null, fetch);
+  await settle(); await settle();
+  for (let k = -1; k < tl.length; k++) { a.at(k, () => {}); assert.doesNotMatch(a.$('who').textContent + a.$('playline').textContent, /shootout/, `frame ${k}`); }
+});

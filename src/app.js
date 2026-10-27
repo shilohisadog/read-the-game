@@ -283,7 +283,17 @@ const wName=w=>REVIEW.has(w.id)?reviewName(REVIEW.get(w.id),TEAMAB):RSN(w.rsn);
 const REVIEWS=[...REVIEW.values()];
 const REVIEW_STOP=new Map(REVIEWS.filter(r=>r.target!=null&&(r.outcome==='off'||r.outcome==='stayed-off')).map(r=>[frameOf(r.target),r]));
 const REVIEW_ON_GOAL=new Map(REVIEWS.filter(r=>r.goal!=null&&!r.onGoal&&(r.outcome==='stood'||r.outcome==='awarded')).map(r=>[r.goal,r]));
-const GOAL_STOPS=[...new Set([...trackGoals(EV),...REVIEW_STOP.keys()])].sort((a,b)=>a-b);
+// Goals: a game settled by a shootout stops on its first attempt, rather than going from the last goal to the horn.
+const SO_STOP=SOFIRST;
+const GOAL_STOPS=[...new Set([...trackGoals(EV),...REVIEW_STOP.keys(),...(SO_STOP>=0?[SO_STOP]:[])])].sort((a,b)=>a-b);
+// What the frame is, then why Goals stopped there; the result is counted from the shootout's goals.
+const SO_WHO="The shootout's first attempt · overtime ended without a goal";
+function soSay(){const n={[HID]:0,[AID]:0};
+ for(const e of G.events)if(e.type==='goal'&&e.pt==='SO')n[e.own]=(n[e.own]||0)+1;
+ const said='Overtime ended without a goal, so a shootout decided the game.';
+ if(n[HID]===n[AID])return said;
+ const w=n[HID]>n[AID]?HID:AID;
+ return `${said} ${TEAMAB(w)} won the shootout ${Math.max(n[HID],n[AID])}–${Math.min(n[HID],n[AID])}, and the team that wins a shootout is credited with one goal on the final score.`;}
 // What the frame is (the restart face-off), then why Goals mode stopped on it.
 const reviewWho=r=>'Face-off after a review · '+(r.who==='league'?'a goal came off'
  :r.outcome==='off'?`${TEAMAB(r.scorer)}'s goal came off`:`${TEAMAB(r.challenger)}'s goal does not count`);
@@ -307,6 +317,7 @@ const COLOR=colorNotes(G,CTX,RATES);
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);
  let line=COLOR.get(n)||'';
+ if(TRK.goals&&SO_STOP>=0&&k===SO_STOP)line=soSay();
  if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX,RATES&&RATES.census&&RATES.census.reviews&&{...RATES.census.reviews,games:RATES.census.games});
  if(!p)return {from:k,line};
  const run=liveRun(zoneRuns(G.events,p,n,CTX));
@@ -2961,6 +2972,7 @@ function trkFrame(k,how,cur){
  for(let n=k+1;n<EV.length&&EV[n].s-(cur?cur.s:0)<=TRACK_LOOKAHEAD_S;n++)if(EV[n].type==='goal'){trkPlan(EV[n]);break;}
  if(TRK.goals)GOAL_STOPS.filter(n=>n>=k).slice(0,3).forEach(n=>trkPlan(EV[n]));
  if(TRK.goals&&REVIEW_STOP.has(k)){const w=$('who');w.textContent=reviewWho(REVIEW_STOP.get(k));w.className='who plain';}
+ if(TRK.goals&&SO_STOP>=0&&k===SO_STOP){const w=$('who');w.textContent=SO_WHO;w.className='who plain';}
  // The next-play cue points at the next RECORDED event; where the tracking takes over,
  // that is not where it starts. Asked again when the file arrives, often during this pause.
  trkNoCue(k,g);
