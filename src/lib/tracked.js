@@ -15,6 +15,7 @@
  */
 import { inkOn, readableInk } from './teams.js';
 import { ESC } from './esc.js';
+import { standing, EMPTY_NET, POWER_PLAY, PENALTY_SHOT } from './strength.js';
 import { NET_X, GOAL_POST_Y, BLUE_LINE_X, attackDirection, distanceToNet } from './rink.js';
 
 /** Replay speeds for the tracking: [factor, button label, words for the line]. */
@@ -140,16 +141,20 @@ export function trackRecorded(P, G, win) {
   return ` Recorded by the league in these ${secs} seconds: ${said.join('; then ')}.`;
 }
 
-/** " NYR has a power play: 5 skaters to TBL's 4." from the goal's own situation code, or "". */
+/** " WSH has a power play: 5 skaters to LAK’s 4." or "" at even strength.
+ *  Read by standing(), the same decoder as the scoreboard, so the club that
+ *  pulled its goalie is named for that — 6-on-5 at an empty net is not a power play. */
 export function trackStrength(e, G) {
-  const [ag, as, hs, hg] = String(e.sit || '').split('').map(Number);
-  if (![ag, as, hs, hg].every(Number.isFinite)) return '';
-  const home = e.own === G.teams.home.id, us = abOf(G, e.own), them = abOf(G, home ? G.teams.away.id : G.teams.home.id);
-  const mine = home ? hs : as, theirs = home ? as : hs, theirG = home ? ag : hg;
-  if (theirG === 0) return ` ${them} has pulled its goaltender: the net is empty.`;
-  if (mine > theirs) return ` ${us} has a power play: ${mine} skaters to ${them}’s ${theirs}.`;
-  if (mine < theirs) return ` ${us} is short-handed: ${mine} skaters to ${them}’s ${theirs}.`;
-  return '';
+  const home = G.teams.home, away = G.teams.away;
+  const s = standing(e && e.sit, {
+    homeId: home.id, awayId: away.id, homeAb: home.ab, awayAb: away.ab,
+  });
+  if (!s || s.kind === PENALTY_SHOT) return '';
+  if (s.kind === EMPTY_NET) return ` ${s.ab} has pulled its goaltender: the net is empty.`;
+  if (s.kind !== POWER_PLAY) return '';
+  const us = abOf(G, e.own), them = abOf(G, e.own === home.id ? away.id : home.id);
+  if (s.id === e.own) return ` ${us} has a power play: ${s.own} skaters to ${them}’s ${s.opp}.`;
+  return ` ${us} is short-handed: ${s.opp} skaters to ${them}’s ${s.own}.`;
 }
 
 /** The name line: "Tracked · goal by #9 Kempe (LAK)". */

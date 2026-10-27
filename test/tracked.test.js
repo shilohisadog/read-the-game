@@ -74,7 +74,14 @@ test('the strength says who has the extra skater, from the goal\'s own code', ()
   assert.equal(trackStrength({ sit: '1451', own: home }, G), ' WSH has a power play: 5 skaters to LAK’s 4.');
   assert.equal(trackStrength({ sit: '1451', own: away }, G), ' LAK is short-handed: 4 skaters to WSH’s 5.');
   assert.equal(trackStrength({ sit: '1560', own: away }, G), ' WSH has pulled its goaltender: the net is empty.');
+  // The club that pulled is the one named, whichever side scored. 1560 is the
+  // home goalie out; 0651 is the away goalie out. Both used to read as a power play
+  // when the pulling team was the one that scored.
+  assert.equal(trackStrength({ sit: '1560', own: home }, G), ' WSH has pulled its goaltender: the net is empty.');
+  assert.equal(trackStrength({ sit: '0651', own: away }, G), ' LAK has pulled its goaltender: the net is empty.');
+  assert.equal(trackStrength({ sit: '0651', own: home }, G), ' LAK has pulled its goaltender: the net is empty.');
   assert.equal(trackStrength({ sit: '1551', own: home }, G), '');
+  assert.equal(trackStrength({ sit: '0101', own: away }, G), '', 'a penalty shot is not a power play and not an empty net');
 });
 
 test('the stops are the first frame, each recorded event, and the goal line', () => {
