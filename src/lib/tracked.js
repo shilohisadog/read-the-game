@@ -28,6 +28,8 @@ export const TRACK_LOOKAHEAD_S = 40;
 export const TRACK_STILL_MS = 1500;
 /** An event's label stays up this much GAME time (tenths): Kevin, half of 1.5 s. */
 export const TRACK_TAG_TENTHS = 8;
+/** A tip and the shot are the same touch when they fall within this many tenths. */
+export const TRACK_SAME_SHOT = 3;
 /** Half the longest label's width, in rink feet: nearer the boards, it runs away from them. */
 export const TRACK_TAG_EDGE = 16;
 /* Beyond this many feet from the net the lane is drawn: light while it follows the puck, held from the shot
@@ -179,8 +181,8 @@ export function trackTags(P, win) {
 /** The stops Prev/Next move between: the first frame, each recorded event, the shot (`shotAt`), each assist, the goal line. */
 export function trackStops(P, tags, shotAt = null, assists = []) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
-  // An assist that is the shot itself (a tip, a rebound) is the shot's stop.
-  const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= 3)).map(a => a.at);
+  // An assist that is the shot itself (a tip at the release, a rebound) is the shot's stop.
+  const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= TRACK_SAME_SHOT)).map(a => a.at);
   const mid = [...tags.map(t => t.at), shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
   return [...new Set([t0, ...mid, tGoal])].sort((a, b) => a - b);
 }
@@ -236,10 +238,12 @@ export function trackHolders(P) {
 /**
  * THE ASSISTS, WHO FROM THE LEAGUE'S RECORD AND WHEN FROM THE TRACKING: the last frame the primary assist
  * has the puck before the scorer's last touch, and the secondary's last before that. `shot` when the puck
- * went from him to the net, not to a teammate: a tip, or a goaltender next to have it (a rebound).
+ * went from him to the net, not to a teammate: a tip or deflection whose touch is the release (within
+ * TRACK_SAME_SHOT tenths of trackShot), or a goaltender next to have it (a rebound). `homeId` places the
+ * release; without it a tip stays a pass, because the release cannot be found.
  *   [{pid, rank, j, at, shot}], secondary first; [] when the goal is unassisted or he never has it here.
  */
-export function trackAssists(P, H = trackHolders(P)) {
+export function trackAssists(P, homeId = null, H = trackHolders(P)) {
   const e = P.e;
   if (e.a1 == null) return [];
   const last = (pid, before) => { for (let j = before - 1; j >= 0; j--) if (H[j] === Number(pid)) return j; return -1; };
@@ -247,8 +251,13 @@ export function trackAssists(P, H = trackHolders(P)) {
   if (r1 < 0) return [];
   const next = j => { for (let t = j + 1; t <= P.k; t++) if (H[t] != null && H[t] !== H[j]) return H[t]; return null; };
   const tip = /tip|deflect/.test(e.st || '');
-  const mk = (pid, rank, j) => ({ pid: Number(pid), rank, j, at: P.frames[j].timeStamp,
-    shot: (rank === 1 && tip) || (next(j) != null && next(j) === Number(e.goalie)) });
+  const shotAt = homeId == null ? null : (trackShot(P, homeId) || {}).at;
+  const mk = (pid, rank, j) => {
+    const at = P.frames[j].timeStamp;
+    const release = rank === 1 && tip && shotAt != null && Math.abs(at - shotAt) <= TRACK_SAME_SHOT;
+    return { pid: Number(pid), rank, j, at,
+      shot: release || (next(j) != null && next(j) === Number(e.goalie)) };
+  };
   const out = [mk(e.a1, 1, r1)];
   if (e.a2 != null) { const r2 = last(e.a2, r1); if (r2 >= 0) out.unshift(mk(e.a2, 2, r2)); }
   return out;

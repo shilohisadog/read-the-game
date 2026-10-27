@@ -2921,7 +2921,7 @@ function trkStart(P,still,free){
  // The moment of the shot: a stop on every located goal; beyond TRACK_LANE_FT its lane is held. The light lane is markup's.
  const SHOT=trackShot(P,G.teams.home.id);
  // The note says one thing at a time; the whole account waits in "where these notes come from".
- const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P);
+ const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P,G.teams.home.id);
  playWork(trackSay(P,G,win,sp)+trackLaneSay(P,G,SHOT));
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
