@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-D0TJbIdY9vF5lF1F8TPnmspFVJNUfme+QmVvCLuTNs4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t3FhdkHk0XDP/wo1qL0bd6wgdpwjZn25c10ZlK2XJo8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -2111,6 +2111,12 @@ function formatDate(iso) {
 }
 
 
+function ESC(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+}
+
+
+
 
 function whyMarkup(e, { dir, AID, AAB, HAB, AWAYCOL, HOMECOL, R }) {
  const HX=x=>11+Math.abs(x), HY=y=>42.5-y;
@@ -2125,18 +2131,13 @@ function whyMarkup(e, { dir, AID, AAB, HAB, AWAYCOL, HOMECOL, R }) {
    <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
    <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
  return `<div class="whyhd ${tid===AID?'a':'h'}"><div><div class="t">${isGoal?'🚨 A GOAL from the slot':'⚡ Why this counts as a slot shot'}</div>
-   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" type="button" aria-label="Close">✕</button></div>
+   <div class="s">${p?'#'+ESC(p.n)+' '+ESC(p.nm):ESC(ab)} · ${ESC(ab)} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" type="button" aria-label="Close">✕</button></div>
   <div class="whybody"><div class="whydiag">${diag}</div>
    <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ ${HIGH_DANGER_FT} ft. <span class="chk">✓</span></span></div>
    <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
    <div class="factor"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within ±${SLOT_HALF_WIDTH} ft of the middle) <span class="chk">✓</span>':'outside the slot'}</span></div>
    <div class="factor last"><span class="fv">${inFront?'Front':'Behind'}</span><span class="fl">Side of the goal line — ${inFront?'<b>in front of the net</b> <span class="chk">✓</span>':'behind the net'}. A wrap-around is close, but it is not from the slot.</span></div>
    <div class="whyrule"><b>The rule, and you can check it:</b> a shot counts as <b>from the slot</b> when <b>all three</b> are true — it is <b>≤ ${HIGH_DANGER_FT} ft from the net</b>, <b>within ±${SLOT_HALF_WIDTH} ft of the middle</b>, and <b>in front of the goal line</b> (a wrap-around from behind the net is close, but it is not from the slot). All three true here. This is <b>our own geometric rule</b>, not a model and not anybody else's statistic — it says where the shot came from, and nothing about how likely it was to go in. Measure it yourself on the diagram.</div></div>`;
-}
-
-
-function ESC(s) {
-  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }
 
 
@@ -2286,10 +2287,11 @@ function iceNote(sit, AAB, HAB) {
 }
 
 
+
 function goalieCards(goalies, roster, stats, { AID, AAB, HAB, mode }) {
   return goalies.map(id=>{const p=roster[id];if(!p)return '';const tid=p.tid,side=tid===AID?'a':'h',ab=tid===AID?AAB:HAB;const st=stats[id]||{f:0,s:0,gl:0,hf:0,hs:0};
  const faced=st.f?`${st.s} of ${st.f}`:'—';
- return `<div class="gcard"><div class="gname ${side}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${mode})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');
+ return `<div class="gcard"><div class="gname ${side}">${ESC(p.nm)} <span class="sub">${ESC(ab)} · #${ESC(p.n)}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${mode})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');
 }
 
 
@@ -3644,12 +3646,14 @@ function sentenceFor(o) {
 
 
 
+
 const TRACK_SPEEDS = [[0.25, '¼', 'at a quarter of real speed'],
   [0.5, '½', 'at half speed'], [1, 'Real time', 'in real time']];
 const TRACK_SPEED = 0.25; 
 const TRACK_LOOKAHEAD_S = 40;
 const TRACK_STILL_MS = 1500;
 const TRACK_TAG_TENTHS = 8;
+const TRACK_SAME_SHOT = 3;
 const TRACK_TAG_EDGE = 16;
 const TRACK_LANE_FT = 20;
 const TRACK_RELEASE_FT = 30;
@@ -3737,14 +3741,16 @@ function trackRecorded(P, G, win) {
 }
 
 function trackStrength(e, G) {
-  const [ag, as, hs, hg] = String(e.sit || '').split('').map(Number);
-  if (![ag, as, hs, hg].every(Number.isFinite)) return '';
-  const home = e.own === G.teams.home.id, us = abOf(G, e.own), them = abOf(G, home ? G.teams.away.id : G.teams.home.id);
-  const mine = home ? hs : as, theirs = home ? as : hs, theirG = home ? ag : hg;
-  if (theirG === 0) return ` ${them} has pulled its goaltender: the net is empty.`;
-  if (mine > theirs) return ` ${us} has a power play: ${mine} skaters to ${them}’s ${theirs}.`;
-  if (mine < theirs) return ` ${us} is short-handed: ${mine} skaters to ${them}’s ${theirs}.`;
-  return '';
+  const home = G.teams.home, away = G.teams.away;
+  const s = standing(e && e.sit, {
+    homeId: home.id, awayId: away.id, homeAb: home.ab, awayAb: away.ab,
+  });
+  if (!s || s.kind === PENALTY_SHOT) return '';
+  if (s.kind === EMPTY_NET) return ` ${s.ab} has pulled its goaltender: the net is empty.`;
+  if (s.kind !== POWER_PLAY) return '';
+  const us = abOf(G, e.own), them = abOf(G, e.own === home.id ? away.id : home.id);
+  if (s.id === e.own) return ` ${us} has a power play: ${s.own} skaters to ${them}’s ${s.opp}.`;
+  return ` ${us} is short-handed: ${s.opp} skaters to ${them}’s ${s.own}.`;
 }
 
 function trackWho(P, G) {
@@ -3764,7 +3770,7 @@ function trackTags(P, win) {
 }
 function trackStops(P, tags, shotAt = null, assists = []) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
-  const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= 3)).map(a => a.at);
+  const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= TRACK_SAME_SHOT)).map(a => a.at);
   const mid = [...tags.map(t => t.at), shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
   return [...new Set([t0, ...mid, tGoal])].sort((a, b) => a - b);
 }
@@ -3806,7 +3812,7 @@ function trackHolders(P) {
   }
   return out;
 }
-function trackAssists(P, H = trackHolders(P)) {
+function trackAssists(P, homeId = null, H = trackHolders(P)) {
   const e = P.e;
   if (e.a1 == null) return [];
   const last = (pid, before) => { for (let j = before - 1; j >= 0; j--) if (H[j] === Number(pid)) return j; return -1; };
@@ -3814,8 +3820,13 @@ function trackAssists(P, H = trackHolders(P)) {
   if (r1 < 0) return [];
   const next = j => { for (let t = j + 1; t <= P.k; t++) if (H[t] != null && H[t] !== H[j]) return H[t]; return null; };
   const tip = /tip|deflect/.test(e.st || '');
-  const mk = (pid, rank, j) => ({ pid: Number(pid), rank, j, at: P.frames[j].timeStamp,
-    shot: (rank === 1 && tip) || (next(j) != null && next(j) === Number(e.goalie)) });
+  const shotAt = homeId == null ? null : (trackShot(P, homeId) || {}).at;
+  const mk = (pid, rank, j) => {
+    const at = P.frames[j].timeStamp;
+    const release = rank === 1 && tip && shotAt != null && Math.abs(at - shotAt) <= TRACK_SAME_SHOT;
+    return { pid: Number(pid), rank, j, at,
+      shot: release || (next(j) != null && next(j) === Number(e.goalie)) };
+  };
   const out = [mk(e.a1, 1, r1)];
   if (e.a2 != null) { const r2 = last(e.a2, r1); if (r2 >= 0) out.unshift(mk(e.a2, 2, r2)); }
   return out;
@@ -5175,13 +5186,13 @@ function shortHanded(e){
  if(!(mine<theirs))return false;
  return PBOX.some(s=>s.team===e.own&&s.start<=e.s&&s.end>=e.s);}
 function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const side=tid===AID?'a':'h';
- const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
+ const p=R[e.actor];const who=p?`<span class="num">#${ESC(p.n)}</span>${ESC(p.nm)}`:ESC(ab);
  const label=kind==='goal'?'🚨 GOAL':kind==='penalty'?'⛔ Penalty':'⚡ Shot from the slot';
  const sh=kind==='goal'&&shortHanded(e)?'<span class="shg">short-handed</span>':'';
  const dm=kind==='penalty'&&e.min===4?'<span class="dmn">double minor</span>':'';
  sayCaption(side,ab,label,`${sh}${dm} · ${who}`,e);}
 function sayCaption(side,ab,label,rest,e){const c=$('caption');
- c.innerHTML=(ab?`<span class="tag ${side}">${ab}</span>`:'')+`<b>${label}</b>${rest}`;
+ c.innerHTML=(ab?`<span class="tag ${side}">${ESC(ab)}</span>`:'')+`<b>${label}</b>${rest}`;
  c.classList.toggle('stay',e===EV[EV.length-1]);
  c.style.animationDuration=dwell(e)+'ms';
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
@@ -5569,7 +5580,7 @@ function rank(){return {isIcing:e=>ICING.has(e),isOffside:e=>OFFSIDE.has(e),
                         isKill:e=>ENDED.has(e),isSlot:isHD,slotOn:hdOn};}
 function captioned(e){return announcement(e,rank())!==null;}
 function namesActor(e){return !!e&&e.type==='goal'&&!!place(e);}
-function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
+function whoTag(p){return `<span class="num">#${ESC(p.n)}</span> ${ESC(p.nm)}`;}
 let onIceOn=false;
 function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
  if(!e||playing||PREVIEW||e.s==null){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
@@ -5579,8 +5590,8 @@ function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
  if(t){t.hidden=false;t.setAttribute('aria-pressed',onIceOn?'true':'false');}
  if(!onIceOn){b.hidden=true;b.innerHTML='';return;}
  const col=(side,ab)=>`<div class="oc"><div class="oab">${ESC(ab)}</div>`
-  +side.skaters.map(p=>`<div><span class="num">#${p.n}</span> ${ESC(p.nm)}</div>`).join('')
-  +side.goalies.map(p=>`<div class="og"><span class="num">#${p.n}</span> ${ESC(p.nm)} &middot; goal</div>`).join('')
+  +side.skaters.map(p=>`<div><span class="num">#${ESC(p.n)}</span> ${ESC(p.nm)}</div>`).join('')
+  +side.goalies.map(p=>`<div class="og"><span class="num">#${ESC(p.n)}</span> ${ESC(p.nm)} &middot; goal</div>`).join('')
   +`</div>`;
  b.innerHTML=col(on.away,AAB)+col(on.home,HAB)
   +`<p class="olim">From the league&rsquo;s shift chart. During a change it can `
@@ -5634,7 +5645,7 @@ function trkStart(P,still,free){
  const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
  const SHOT=trackShot(P,G.teams.home.id);
- const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P);
+ const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P,G.teams.home.id);
  playWork(trackSay(P,G,win,sp)+trackLaneSay(P,G,SHOT));
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;

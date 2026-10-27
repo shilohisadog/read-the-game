@@ -1265,7 +1265,7 @@ function shortHanded(e){
  if(!(mine<theirs))return false;
  return PBOX.some(s=>s.team===e.own&&s.start<=e.s&&s.end>=e.s);}
 function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const side=tid===AID?'a':'h';
- const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
+ const p=R[e.actor];const who=p?`<span class="num">#${ESC(p.n)}</span>${ESC(p.nm)}`:ESC(ab);
  const label=kind==='goal'?'🚨 GOAL':kind==='penalty'?'⛔ Penalty':'⚡ Shot from the slot';
  // THE TRAILING CLAUSE IS GONE, and it is the residue of a rename. When the
  // label read "⚡ High danger" a suffix naming the slot was the sentence's only
@@ -1321,7 +1321,7 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
    a club's colour on that sentence would make the page assert the inference it
    deliberately leaves to the reader. No club, no chip. */
 function sayCaption(side,ab,label,rest,e){const c=$('caption');
- c.innerHTML=(ab?`<span class="tag ${side}">${ab}</span>`:'')+`<b>${label}</b>${rest}`;
+ c.innerHTML=(ab?`<span class="tag ${side}">${ESC(ab)}</span>`:'')+`<b>${label}</b>${rest}`;
  /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
     `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
     unrelated to it, and the speed buttons moved one of them. Driving the
@@ -2701,7 +2701,7 @@ function namesActor(e){return !!e&&e.type==='goal'&&!!place(e);}
  * A margin is not a word boundary. Here the space is a character and the margin
  * is dropped, so the two agree.
  */
-function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
+function whoTag(p){return `<span class="num">#${ESC(p.n)}</span> ${ESC(p.nm)}`;}
 /**
  * The active player's line: WHO, and WHAT HE DID.
  *
@@ -2757,8 +2757,8 @@ function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
  if(t){t.hidden=false;t.setAttribute('aria-pressed',onIceOn?'true':'false');}
  if(!onIceOn){b.hidden=true;b.innerHTML='';return;}
  const col=(side,ab)=>`<div class="oc"><div class="oab">${ESC(ab)}</div>`
-  +side.skaters.map(p=>`<div><span class="num">#${p.n}</span> ${ESC(p.nm)}</div>`).join('')
-  +side.goalies.map(p=>`<div class="og"><span class="num">#${p.n}</span> ${ESC(p.nm)} &middot; goal</div>`).join('')
+  +side.skaters.map(p=>`<div><span class="num">#${ESC(p.n)}</span> ${ESC(p.nm)}</div>`).join('')
+  +side.goalies.map(p=>`<div class="og"><span class="num">#${ESC(p.n)}</span> ${ESC(p.nm)} &middot; goal</div>`).join('')
   +`</div>`;
  b.innerHTML=col(on.away,AAB)+col(on.home,HAB)
   +`<p class="olim">From the league&rsquo;s shift chart. During a change it can `

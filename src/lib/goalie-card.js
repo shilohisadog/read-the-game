@@ -17,6 +17,7 @@
  * pins `#goaliePanel` across 61 states of the goaltending walk, and
  * `test/goalie-card.test.js` asserts the refusals by name.
  */
+import { ESC } from './esc.js';
 
 /**
  *   goalies  ids, in the order the page shows them
@@ -38,5 +39,5 @@ export function goalieCards(goalies, roster, stats, { AID, AAB, HAB, mode }) {
  // 35-shot game look like a rate you could compare, which is the belief the
  // whole site exists to correct. One game is one game.
  const faced=st.f?`${st.s} of ${st.f}`:'—';
- return `<div class="gcard"><div class="gname ${side}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${mode})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');
+ return `<div class="gcard"><div class="gname ${side}">${ESC(p.nm)} <span class="sub">${ESC(ab)} · #${ESC(p.n)}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${mode})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');
 }

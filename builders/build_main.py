@@ -740,13 +740,14 @@ LIB = ["rink.js", "registry.js", "attribution.js", "layer.js", "strength.js", "b
        # `ingest-state.js` carried — two copies of one thing, in two files, both
        # right. `day.js` is the one implementation and both of them now call it.
        "day.js",
-       # AFTER rink.js, whose three slot constants it states in words -- it is the
-       # why-popup's markup, split out of boot at `return markup` / `write to
-       # document` so the purity of this tier survives the move.
-       "why.js",
        # The HTML escaper. Used by app.js thirty times and by every markup module
        # extracted from it -- a primitive, not an argument to thread through.
+       # BEFORE why.js, which interpolates roster names through it.
        "esc.js",
+       # AFTER rink.js, whose three slot constants it states in words -- it is the
+       # why-popup's markup, split out of boot at `return markup` / `write to
+       # document` so the purity of this tier survives the move. AFTER esc.js.
+       "why.js",
        # The show-me-the-work panel's markup. AFTER esc.js and layer.js, which it
        # imports; the panel itself is composed here and written by app.js.
        "work.js",

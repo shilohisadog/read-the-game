@@ -16,6 +16,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { ESC } from '../src/lib/esc.js';
+import { whyMarkup } from '../src/lib/why.js';
+import { goalieCards } from '../src/lib/goalie-card.js';
 
 test('⭐ the four characters that can break out of markup are escaped', () => {
   assert.equal(ESC('<script>'), '&lt;script&gt;');
@@ -82,4 +84,110 @@ test('⭐⭐ …and no call site puts escaped text inside a single-quoted attrib
                'the single-quote scan does not detect the shape it exists to forbid');
   assert.equal(UNSAFE.test('<b title="${ESC(name)}">'), false,
                'the scan flags a double-quoted attribute, which is the safe and normal case');
+});
+
+/* A roster field left raw inside a template that is HTML. `.nm` is a name.
+   `p.n` is a jersey. A bare `.n` is also a count this page prints (`d.n`
+   face-offs), so that shape is not what this looks for. Templates with no
+   `<` are text, and the caller escapes those (playSaid). */
+function skipString(src, j) {
+  const q = src[j++];
+  while (j < src.length) {
+    if (src[j] === '\\') { j += 2; continue; }
+    if (src[j] === q) return j + 1;
+    j++;
+  }
+  return j;
+}
+function scanExpr(src, j, bad) {
+  let braces = 1;
+  while (j < src.length && braces) {
+    const c = src[j];
+    if (c === '\\') { j += 2; continue; }
+    if (c === "'" || c === '"') { j = skipString(src, j); continue; }
+    if (c === '`') { j = scanTemplate(src, j, bad); continue; }
+    if (c === '{') braces++;
+    else if (c === '}') { braces--; if (!braces) return j; }
+    j++;
+  }
+  return j;
+}
+function scanTemplate(src, i, bad) {
+  let j = i + 1;
+  const exprs = [];
+  while (j < src.length) {
+    const c = src[j];
+    if (c === '\\') { j += 2; continue; }
+    if (c === '`') {
+      if (src.slice(i, j + 1).includes('<')) {
+        for (const ex of exprs) {
+          const rest = ex.replace(/\bESC\s*\(\s*(?:[^()]|\([^()]*\))*\)/g, '');
+          if (/\.nm\b|\bp\.n\b/.test(rest)) bad.push('${' + ex + '}');
+        }
+      }
+      return j + 1;
+    }
+    if (c === '$' && src[j + 1] === '{') {
+      const open = j + 2;
+      const close = scanExpr(src, open, bad);
+      exprs.push(src.slice(open, close));
+      j = close + 1;
+      continue;
+    }
+    j++;
+  }
+  return src.length;
+}
+function rawRosterInHtml(src) {
+  const bad = [];
+  const stripped = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (let i = 0; i < stripped.length; i++) {
+    if (stripped[i] !== '`') continue;
+    i = scanTemplate(stripped, i, bad) - 1;
+  }
+  return bad;
+}
+
+test('⭐ a player name or jersey interpolated into HTML goes through ESC', () => {
+  const files = ['src/app.js', 'src/lib/why.js', 'src/lib/goalie-card.js'];
+  const bad = [];
+  for (const f of files) {
+    const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+    for (const hit of rawRosterInHtml(src)) bad.push(`${f}: ${hit}`);
+  }
+  assert.deepEqual(bad, [],
+    'these interpolate a roster name or jersey into HTML without ESC:\n  ' + bad.join('\n  '));
+
+  assert.deepEqual(rawRosterInHtml('`<b>${p.nm}</b>`'), ['${p.nm}'],
+    'the scan does not see a raw name');
+  assert.deepEqual(rawRosterInHtml('`<b>${p.n}</b>`'), ['${p.n}'],
+    'the scan does not see a raw jersey');
+  assert.deepEqual(rawRosterInHtml('`<b>${ESC(p.nm)} ${ESC(p.n)}</b>`'), [],
+    'the scan flags a name that is escaped');
+  assert.deepEqual(rawRosterInHtml('`<b>${ESC(p.nm)} ${p.n}</b>`'), ['${p.n}'],
+    'escaping the name must not hide the jersey beside it');
+  assert.deepEqual(rawRosterInHtml('`${p.nm}`'), [],
+    'a template with no markup is text, and this scan is not about it');
+  assert.deepEqual(rawRosterInHtml('`<b>${d.n}</b>`'), [],
+    'a count named n is not a jersey');
+});
+
+test('⭐ a hostile roster name cannot break out of the why-popup or a goalie card', () => {
+  const name = '<img src=x onerror=alert(1)>', jersey = '1"><svg>';
+  const why = whyMarkup(
+    { x: -75, y: 2, own: 1, per: 1, rem: '12:00', type: 'shot-on-goal', actor: 7 },
+    { dir: 1, AID: 2, AAB: 'AAA', HAB: 'H<B', AWAYCOL: '#111111', HOMECOL: '#eeeeee',
+      R: { 7: { n: jersey, nm: name } } });
+  assert.equal(why.includes(name), false, 'the why-popup interpolated the raw name');
+  assert.equal(why.includes(jersey), false, 'the why-popup interpolated the raw jersey');
+  assert.ok(why.includes(ESC(name)) && why.includes(ESC(jersey)) && why.includes(ESC('H<B')),
+    'the escaped name, jersey, or club is missing from the why-popup');
+
+  const card = goalieCards(['g'], { g: { nm: name, n: jersey, tid: 1 } },
+    { g: { f: 2, s: 1, gl: 1, hf: 0, hs: 0 } },
+    { AID: 2, AAB: 'AAA', HAB: 'H<B', mode: 'all situations' });
+  assert.equal(card.includes(name), false, 'the goalie card interpolated the raw name');
+  assert.equal(card.includes(jersey), false, 'the goalie card interpolated the raw jersey');
+  assert.ok(card.includes(ESC(name)) && card.includes(ESC(jersey)) && card.includes(ESC('H<B')),
+    'the escaped name, jersey, or club is missing from the goalie card');
 });
