@@ -529,9 +529,9 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
    * queue: the page has exactly one timer in flight, and `clearTimeout` really
    * cancels it, so a queue would let a cancelled frame fire later.
    */
-  let pending = null;
-  const setTimeout_ = fn => { pending = fn; return 1; };
-  const clearTimeout_ = () => { pending = null; };
+  let pending = null, pendingMs = null;
+  const setTimeout_ = (fn, ms) => { pending = fn; pendingMs = ms; return 1; };
+  const clearTimeout_ = () => { pending = null; pendingMs = null; };
   // `location` is part of the environment this bundle runs in — the preview loop
   // and the shell's game selector both read the query string — so the fake
   // models it rather than the code defending against its absence.
@@ -623,6 +623,8 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
      * actually advanced, so a test cannot mistake a dead timer for a finished
      * game.
      */
+    /** How long the pending timer asked to wait, in ms (null with none pending). */
+    get wait() { return pending ? pendingMs : null; },
     advance(n) {
       let moved = 0;
       for (let k = 0; k < n; k++) { if (!pending) break; const f = pending; pending = null; f(); moved++; }

@@ -278,3 +278,26 @@ test('⭐ Goals: Next steps onto each assist, and the name line gives the league
   assert.ok(one > two, 'the primary assist is not the stop after the secondary');
   assert.ok(a.$('rg').classList.contains('trk'), 'the assist stop left the tracking');
 });
+
+test('⛔ Goals: Play does not hold the opening face-off for a frame\'s reading time', async () => {
+  const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
+  await settle(); await settle();
+  a.$('play').click();
+  assert.equal(+a.$('scrub').value, 0, 'Play did not start the game over');
+  assert.ok(a.wait <= 400, `the opening face-off is held ${a.wait} ms before the first goal`);
+  a.advance(1); await settle();
+  assert.ok(a.$('rg').classList.contains('trk'), 'the first goal\'s tracking did not follow the face-off');
+});
+
+test('⛔ Goals: a goal whose file has not arrived waits a moment and asks again, not a frame\'s reading time', async () => {
+  let release;
+  const late = new Promise(r => { release = r; });
+  const a = boot(rich, null, '?replay=goals', null,
+    name => name.endsWith('goals.json') ? Promise.resolve(ROWS) : late, MOTION);
+  await settle(); await settle();
+  a.$('play').click();
+  a.advance(1); await settle();
+  assert.equal(a.$('rg').classList.contains('trk'), false, 'tracking with no file');
+  assert.ok(a.wait <= 400, `waiting for the file holds ${a.wait} ms`);
+  release(FX.frames);
+});

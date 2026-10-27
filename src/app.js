@@ -2842,7 +2842,12 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
-function dwell(e){const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
+function dwell(e){
+ // Goals passes through a frame that is not one of its stops (the opening face-off, a frame held for a
+ // tracking or a file): it waits for the tracking or the file, never a frame's reading time.
+ if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
+  const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
+ const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
 // The tracked goal may hold this frame while it plays, or (Goals) choose the next one.
 function step(){if(i>=EV.length-1){stop();return;}set(trkNext(i),'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
