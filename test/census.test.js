@@ -848,3 +848,20 @@ test('⭐ icing is counted the same way offside is, and published the same way',
   assert.equal(censusRates(censusAdd({}, c)).whistles.icings, 2,
     'counted but never published is invisible to every page');
 });
+
+test('goals by assists: counted from the league\'s own a1/a2, shootout goals left out', () => {
+  // A second path to the count: walk the shootout fixture's goals here, by hand.
+  const g = load('./fixtures/extracts/2025020501.json');
+  const goals = g.events.filter(e => e.type === 'goal');
+  const want = { goals: 0, two: 0, one: 0, none: 0 };
+  for (const e of goals) {
+    if (e.pt === 'SO') { assert.equal(e.a1, undefined, 'a shootout goal with an assist'); continue; }
+    want.goals++; want[e.a2 ? 'two' : e.a1 ? 'one' : 'none']++;
+  }
+  assert.ok(goals.some(e => e.pt === 'SO'), 'the fixture has no shootout goal to leave out');
+  const c = censusGame(g.events, { ...ctxOf(g), shifts: g.shifts || [] });
+  assert.deepEqual(c.assists, want);
+  const pub = censusRates(censusAdd(censusAdd({}, c), c)).assists;
+  assert.deepEqual({ ...pub, what: undefined }, { goals: 2 * want.goals, two: 2 * want.two, one: 2 * want.one, none: 2 * want.none, what: undefined });
+  assert.match(pub.what, /n counts GOALS/);
+});

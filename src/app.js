@@ -4638,7 +4638,7 @@ function drawNewcomer(){
  // In Goals the greeting describes Goals, and says where the whole game is.
  if(TRK.goals){el.innerHTML=`<b>New here?</b> Press <b>${PLAY_REST}</b> to watch this game's goals, each one `
   +`as the league tracked it: every player and the puck in the seconds before it went in, ${(TRACK_SPEEDS.find(x=>x[0]===TRK.speed)||TRACK_SPEEDS[0])[2]}. `
-  +`Use <b>Prev</b> and <b>Next</b> to stop on the moments in each goal: the start, the shot, the goal. `
+  +`Use <b>Prev</b> and <b>Next</b> to stop on the moments in each goal: the start, the passes the league credits as assists, the shot, the goal. `
   +`When you want the whole game, every recorded event in order, choose <b>All events</b> beside Play. `
   +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;}

@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Aui9oyA1/yHOKzGOGH1BRZ27Z+gVZcCguEISPUR/rKc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RHN9boC5VoTeELyJkVn56iej4bzx8dnwNA4ZqJWPdf0=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-rRehRFNvmN8NopeKDQwApvOPrAiTSuHHEZnBA5iMEMQ='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -6120,7 +6120,7 @@ function drawNewcomer(){
    :'';
  if(TRK.goals){el.innerHTML=`<b>New here?</b> Press <b>${PLAY_REST}</b> to watch this game's goals, each one `
   +`as the league tracked it: every player and the puck in the seconds before it went in, ${(TRACK_SPEEDS.find(x=>x[0]===TRK.speed)||TRACK_SPEEDS[0])[2]}. `
-  +`Use <b>Prev</b> and <b>Next</b> to stop on the moments in each goal: the start, the shot, the goal. `
+  +`Use <b>Prev</b> and <b>Next</b> to stop on the moments in each goal: the start, the passes the league credits as assists, the shot, the goal. `
   +`When you want the whole game, every recorded event in order, choose <b>All events</b> beside Play. `
   +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;}

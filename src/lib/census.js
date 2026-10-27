@@ -411,9 +411,16 @@ export function censusGame(events, ctx) {
     if (r.who === 'league') { reviews.league++; if (r.outcome === 'off') reviews.leagueOff++; }
     else { reviews.coach++; if (r.outcome === 'off' || r.outcome === 'awarded') reviews.coachWon++; }
   }
+  // Goals by how many assists the league credited (the shootout's goals are not goals in this sense).
+  const assists = { goals: 0, two: 0, one: 0, none: 0 };
+  for (const e of events) {
+    if (e.type !== 'goal' || e.pt === 'SO') continue;
+    assists.goals++;
+    if (e.a2 != null) assists.two++; else if (e.a1 != null) assists.one++; else assists.none++;
+  }
   // faceoffZone and state are internal witnesses (tests cross-check endZone, pace and
   // power-play goals against them); censusRates does not publish them.
-  return { faceoffZone, endZone, faceoffRun, state, club, hitCorr, shooter, pace, shift, whistles, runLength, reviews };
+  return { faceoffZone, endZone, faceoffRun, state, club, hitCorr, shooter, pace, shift, whistles, runLength, reviews, assists };
 }
 
 /** The value at share `q` of a histogram {value: count}: the smallest v with at least q of the counts at or below it. */
@@ -675,6 +682,15 @@ export function censusRates(t) {
         what: 'reviews of a goal across the archive, as counts: coach\u2019s challenges, and how many the '
             + 'challenging coach won (the goal came off, or the team\u2019s own goal was made to count); '
             + 'reviews the league started itself, and how many took the goal off.',
+      };
+    })(),
+    // Counts: the assists card divides them once, beside the counts it quotes.
+    assists: (() => {
+      const a = t.assists || {};
+      return {
+        ...Object.fromEntries(['goals', 'two', 'one', 'none'].map(k => [k, a[k] || 0])),
+        what: 'goals across the archive by how many assists the league credited them with: two, one or '
+            + 'none (n counts GOALS; shootout goals are left out, since the league credits them with no assists).',
       };
     })(),
     whistles: (() => {
