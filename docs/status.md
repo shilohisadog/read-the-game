@@ -72,8 +72,10 @@ Everything here is live on readthegame.co and was checked in a real browser; gat
 ### Open
 1. The Stoppages total can count one goal whistle twice (the challenge stoppage and the ruling stoppage after it).
 2. A scrubber tick for a goal that came off.
-3. Re-measure how often someone is in the puck's path under the release rule before quoting it
-   (memory `screening-path-measure`; the published-in-chat figures used the earlier rule).
+3. Re-measure how often someone is in the puck's path before anyone quotes it
+   (memory `screening-path-measure`). The old figures were 16.6% (a skater's centre strictly inside
+   the triangle) and 22.5% (within 1 ft), under the nearest-frame rule. The release rule pushes
+   any-in-path to about 33% at 1 ft.
 4. ⚠️ The `lab` branch still carries its own older copy of the tracked goal — strip it before the next prototype.
 5. Goals-mode teaching moments / UX: nothing chosen yet. Show the novice tester Goals as the default.
 6. Move the deploy's no-network-page grep into `npm run gates`.
@@ -87,6 +89,18 @@ Everything here is live on readthegame.co and was checked in a real browser; gat
 11. `worker/trigger.js`, when the token is missing, points at `wrangler secret put GITHUB_TOKEN`. `trigger.yml`
     says that command binds the secret to the wrong Cloudflare resource; the secret is set on the Worker in
     the dashboard.
+12. The power-play line's "Over the last three seasons" is hard-coded, and slightly wrong now that the census
+    includes 2026-27 (memory `challenge-outcomes`). Derive the span, or declare it as policy.
+13. Data-model item 7: collapse the season-from-id copies; add the index-vs-catalog and id-type-vs-schedule-type
+    checks (`docs/data-model-review.md` §6, memory `data-model-review`).
+14. Data-model item 8: re-copy the stale fixtures and guard their vintage.
+15. Data-model item 10: wording for D4 (scrubber goal ticks include shootout goals), D7 (a boxscore note's
+    event-log count drops unwitnessed goaltenders) and D8 (`unreconciled` described wrongly); `recent.json`
+    carries two jobs.
+16. Data-model item 11: take the narrative out of source comments, file by file. A comment says what the code
+    does, plus a one-line why; the story belongs in the commit or in docs (memory `feedback-comments-not-narrative`).
+17. Waiting on Kevin: `terrain-3d.html`. Its door is gone and no test names it, so deleting it is clean; the
+    ruling is still open (memory `workshop-inventory`).
 
 ## ⏭ 0.00 (previous) — 2026-10-21 (end of day)
 
