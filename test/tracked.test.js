@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
-  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT,
+  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
 } from '../src/lib/tracked.js';
 import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
 
@@ -74,7 +74,14 @@ test('the strength says who has the extra skater, from the goal\'s own code', ()
   assert.equal(trackStrength({ sit: '1451', own: home }, G), ' WSH has a power play: 5 skaters to LAK’s 4.');
   assert.equal(trackStrength({ sit: '1451', own: away }, G), ' LAK is short-handed: 4 skaters to WSH’s 5.');
   assert.equal(trackStrength({ sit: '1560', own: away }, G), ' WSH has pulled its goaltender: the net is empty.');
+  // The club that pulled is the one named, whichever side scored. 1560 is the
+  // home goalie out; 0651 is the away goalie out. Both used to read as a power play
+  // when the pulling team was the one that scored.
+  assert.equal(trackStrength({ sit: '1560', own: home }, G), ' WSH has pulled its goaltender: the net is empty.');
+  assert.equal(trackStrength({ sit: '0651', own: away }, G), ' LAK has pulled its goaltender: the net is empty.');
+  assert.equal(trackStrength({ sit: '0651', own: home }, G), ' LAK has pulled its goaltender: the net is empty.');
   assert.equal(trackStrength({ sit: '1551', own: home }, G), '');
+  assert.equal(trackStrength({ sit: '0101', own: away }, G), '', 'a penalty shot is not a power play and not an empty net');
 });
 
 test('the stops are the first frame, each recorded event, and the goal line', () => {
@@ -239,11 +246,25 @@ test('the assists are Prev/Next stops, between the first frame and the shot', ()
 });
 
 test('an assist that is the shot itself is the shot\'s stop, not a second one', () => {
-  const tip = trackPlan(TX.frames, { ...TGOAL, st: 'tip-in' }), A = trackAssists(tip), a1 = A.find(a => a.rank === 1);
-  assert.ok(a1.shot, 'a tip-in\'s primary assist is not his shot');
-  assert.match(trackAssistSay(a1, TG), /^#88 Necas shoots · the league credits him with the primary assist$/);
-  assert.ok(!trackStops(tip, [], a1.at + 2, A).includes(a1.at), 'the shot and the assist are two stops');
-  assert.ok(trackStops(tip, [], a1.at + 20, A).includes(a1.at), 'an assist two seconds before the shot lost its stop');
+  const home = TG.teams.home.id;
+  const tip = trackPlan(TX.frames, { ...TGOAL, st: 'tip-in' });
+  const S = trackShot(tip, home);
+  const A = trackAssists(tip, home), a1 = A.find(a => a.rank === 1);
+  assert.ok(S, 'the tip has no recorded release');
+  assert.ok(Math.abs(a1.at - S.at) > TRACK_SAME_SHOT,
+    `the primary touch is ${Math.abs(a1.at - S.at)} tenths from the release`);
+  assert.equal(a1.shot, false, 'a touch well before the release is not the shot');
+  assert.match(trackAssistSay(a1, TG), /^#88 Necas passes · the league credits him with the primary assist$/);
+  assert.ok(trackStops(tip, [], S.at, A).includes(a1.at), 'a pass before the shot lost its stop');
+  // Move that frame onto the release. Copy it so the fixture's own timestamps stay put.
+  const frames = tip.frames.map((f, i) => i === a1.j ? { ...f, timeStamp: S.at - 2 } : f);
+  const close = trackPlan(frames, { ...TGOAL, st: 'tip-in' });
+  const C = trackAssists(close, home), c1 = C.find(a => a.rank === 1);
+  const shotAt = trackShot(close, home).at;
+  assert.ok(Math.abs(c1.at - shotAt) <= TRACK_SAME_SHOT, 'the moved touch is not inside the release window');
+  assert.equal(c1.shot, true, 'a tip within three tenths of the release is not his shot');
+  assert.match(trackAssistSay(c1, TG), /^#88 Necas shoots · the league credits him with the primary assist$/);
+  assert.ok(!trackStops(close, [], shotAt, C).includes(c1.at), 'the shot and the assist are two stops');
 });
 
 test('an unassisted goal has no assists, and a recorded assist the tracking never sees is left out', () => {
