@@ -231,6 +231,11 @@ export function trackLaneSay(P, G, shot) {
   return held ? ' The shaded triangle runs from the puck to the posts at the moment of the shot: '
     + 'anyone inside it was between the shot and the net.' : '';
 }
+/** The note while frame `j` plays: the triangle's one-line reading while one is drawn, else "". */
+export function trackLaneLine(P, j, tt, shot, homeId) {
+  if (shot && shot.lane && tt >= shot.at) return 'Anyone inside the shaded triangle was between the shot and the net.';
+  return trackLaneAt(P, j, homeId) ? 'Anyone inside the light triangle stands between the puck and the net.' : '';
+}
 /** The frame shown at file time `tt` (tenths), never past the goal line. */
 export function trackFrameAt(P, tt) {
   let j = 0;

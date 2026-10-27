@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
-  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT,
+  trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT,
 } from '../src/lib/tracked.js';
 import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
 
@@ -180,6 +180,18 @@ test('the lane follows the puck, faint, while it is in the scoring team\'s end b
   assert.equal(live(at), undefined, 'two lanes at once');
   assert.ok(at.indexOf('tlane') < at.indexOf('<circle'), 'the lane is drawn over the players');
   assert.ok(trackStops(P, tags, S.at).includes(S.at), 'the shot is not a stop');
+});
+
+test('the note under the rink reads the triangle that is drawn, and is empty when none is', () => {
+  const S = trackShot(P, G.teams.home.id), home = G.teams.home.id, tt = j => P.frames[j].timeStamp;
+  assert.equal(trackLaneLine(P, S.j, tt(S.j), S, home), 'Anyone inside the shaded triangle was between the shot and the net.');
+  let live = 0, none = 0;
+  for (let j = 0; j < S.j; j++) {
+    const line = trackLaneLine(P, j, tt(j), S, home), drawn = trackMarkup(P, j, tt(j), { G, AX: x => x, AY: y => y, col: {}, tags: [], shot: S });
+    assert.equal(!!line, /tlane/.test(drawn), `frame ${j}: the line and the drawing disagree`);
+    if (line) { live++; assert.match(line, /light triangle/); } else none++;
+  }
+  assert.ok(live > 0 && none > 0, 'the fixture does not exercise both a drawn and an undrawn lane');
 });
 
 test('the line says what the faint and the held triangle are, in plain words, naming the end', () => {

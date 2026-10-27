@@ -109,6 +109,9 @@ test('Goals: Prev and Next step within a goal\'s tracking, and pause there', asy
   assert.ok(a.$('rg').classList.contains('trk'), 'Prev left the tracking');
   assert.notEqual(a.$('clk').textContent, second, 'Prev did not move back');
   assert.equal(a.$('play').textContent.includes('Pause'), false, 'stepping did not pause');
+  // One thing at a time: the note under the rink is the triangle's line or nothing; the account is in the panel.
+  assert.match(a.$('playline').textContent, /^(|Anyone inside the (light|shaded) triangle .*)$/, 'the whole account is under the rink');
+  assert.match(a.$('pwtrk').textContent, /10 times a second/, 'the panel does not carry the tracked goal\'s account');
 });
 
 test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, which holds the puck in the net', async () => {
@@ -122,10 +125,11 @@ test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, whic
   const prev = async () => { a.$('back').click(); await settle(); await settle(); };
   assert.equal(at(), g0.k);
   assert.ok(rest(), 'the first goal does not hold its tracked picture');
-  // The banner is written clear of the goal moment: in the other half, with no leader line to the puck.
+  // The banner sits at centre ice (Kevin), clear of the goal moment, with no leader line to the puck.
   const x = +(a.$('labels').innerHTML.match(/class="glab" x="([\d.]+)"/) || [])[1];
   const puckX = +(a.$('track').innerHTML.match(/class="tpk" cx="([\d.]+)"/) || [])[1];
-  assert.ok(Number.isFinite(x) && Number.isFinite(puckX) && (x - 100) * (puckX - 100) < 0, `banner at ${x}, puck at ${puckX}: same half`);
+  assert.equal(x, 100, 'the banner is not at centre ice');
+  assert.ok(Number.isFinite(puckX) && Math.abs(puckX - x) > 60, `banner at ${x}, puck at ${puckX}: on the goal moment`);
   assert.doesNotMatch(a.$('labels').innerHTML, /<line/, 'a leader line across the play');
   await next();
   assert.ok(trk() && !rest(), 'Next did not open the second goal\'s tracking');

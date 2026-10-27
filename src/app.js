@@ -58,7 +58,7 @@ import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackSay, trackFirst, trackTags,
-  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneSay, trackFeet } from './lib/tracked.js';
+  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneSay, trackLaneLine } from './lib/tracked.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -379,14 +379,19 @@ function counted(slice){return levelOnly?tiedControl.reduce(slice,CTX)
                                         :corsi.reduce(slice,CTX);}
 function lens(k){return counted(upto(k));}
 const $=id=>document.getElementById(id);
+let PLAYK=-1;
+// The panel's details, each shown with the kind of note it explains.
+const PWX=[['pwrow',/in a row/],['pwshift',/typical shift/],['pwrun',/ of play/]];
+// The tracked goal's whole account, in "where these notes come from" while it plays.
+function playWork(t){const x=$('pwtrk');if(x){x.textContent=t?' '+t:'';x.hidden=!t;}}
+{const n=$('pwgames'),g=RATES&&RATES.census&&RATES.census.games;if(n&&g)n.textContent='the '+g.toLocaleString('en-US')+' games we have measured';}
 // Where the long-run notes' thresholds come from, from the published archive.
-{const rl=RATES&&RATES.census&&RATES.census.runLength,pw=$('playwork');
- if(pw&&rl&&rl.runs&&rl.events&&rl.events.p75!=null&&rl.secs&&rl.secs.p90!=null){
-  const t=rl.secs.p90,sp=document.createElement('span');
+{const rl=RATES&&RATES.census&&RATES.census.runLength,sp=$('pwrun');
+ if(sp&&rl&&rl.runs&&rl.events&&rl.events.p75!=null&&rl.secs&&rl.secs.p90!=null){
+  const t=rl.secs.p90;
   sp.textContent=' A long run of play is noted once it passes '+rl.events.p75+' events (3 in 4 of the '
    +rl.runs.toLocaleString()+' runs of play we have measured, face-off to whistle, end within that), and again past '
-   +Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+' of play (9 in 10 end sooner).';
-  pw.appendChild(sp);}}
+   +Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+' of play (9 in 10 end sooner).';}}
 /**
  * ⭐⭐ A SUBTREE WHOSE MARKUP DID NOT CHANGE IS NOT REWRITTEN, and the reason is
  * not performance: REPLACING AN ELEMENT RESTARTS ITS ENTRANCE ANIMATION.
@@ -1197,6 +1202,8 @@ function render(i,how){
      case 'final': sayCaption(null,null,'🏁 Final','',cur); break;
    }}
  sayWho(cur);
+ // "Where these notes come from" answers this frame's note, so it closes when the frame changes.
+ if(PLAYK!==i){PLAYK=i;const d=$('playd');if(d)d.open=false;}
  sayPlay(PREVIEW?'':PLAY.line);
  // AT REST ONLY -- `render` runs on every frame including during playback, and
  // `sayOnIce` reads `playing` itself rather than being called from two places.
@@ -2830,6 +2837,8 @@ function sayWho(e){const w=$('who');if(!w)return;
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function sayPlay(line){const d=$('playd');if(!d)return;
  $('playline').textContent=line;d.classList.toggle('none',!line);if(!line)d.open=false;
+ // Each detail in the panel shows with the kind of note it explains.
+ for(const [id,re] of PWX){const x=$(id);if(x)x.hidden=!re.test(line);}
  // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
@@ -2886,7 +2895,7 @@ function trkPlan(e){
 const trkReady=e=>{const p=TRK.plans.get(e);return p&&p.value?p.value:null;};
 function trkEnd(){
  if(TRK.run&&TRK.run.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(TRK.run.raf);
- TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');}
+ TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');playWork('');}
 /* Lay goal P over the rink; returns how long it will take, in ms. `still` holds the first
    frame; `free` ("See it tracked") plays whether or not the replay is playing. */
 function trkStart(P,still,free){
@@ -2895,7 +2904,9 @@ function trkStart(P,still,free){
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
  // The moment of the shot: a stop on every located goal; beyond TRACK_LANE_FT its lane is held. The light lane is markup's.
  const SHOT=trackShot(P,G.teams.home.id);
- const WHO=trackWho(P,G),SAY=trackSay(P,G,win,sp)+trackLaneSay(P,G,SHOT),FIRST=trackFirst(P);
+ // The note says one thing at a time; the whole account waits in "where these notes come from".
+ const WHO=trackWho(P,G),FIRST=trackFirst(P);
+ playWork(trackSay(P,G,win,sp)+trackLaneSay(P,G,SHOT));
  let played=-still;
  const now10=()=>t0+Math.max(0,played)/1000*sp*10;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
@@ -2908,7 +2919,7 @@ function trkStart(P,still,free){
   const tt=now10(),j=trackFrameAt(P,tt);
   put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT}));
   document.getElementById('rg').classList.add('trk');
-  const say=played<0?FIRST:SAY;if($('playline').textContent!==say)sayPlay(say);
+  const say=played<0?FIRST:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
   const w=$('who');if(w.textContent!==WHO){w.textContent=WHO;w.className='who plain';}
   $('clk').textContent=trackClock(P,j);
   return j;};
@@ -2955,16 +2966,15 @@ function trkFrame(k,how,cur){
     sayPlay(($('playline').textContent?$('playline').textContent+' ':'')+'No tracking for this goal.');});}}
 /* GOALS: ONE GOAL, ONE STOP. The goal frame keeps its scoreboard, banner, line and highlight, and holds
    the tracking's picture at the goal line: the puck in the net, everyone where the league tracked them.
-   The banner moves to the puck. `trkrest`, not `trk`: nothing is running. */
+   The banner moves to centre ice. `trkrest`, not `trk`: nothing is running. */
 function trkRestClear(){if(!TRK.rest)return;TRK.rest=null;if(!TRK.run)put($('track'),'');document.getElementById('rg').classList.remove('trkrest');}
 function trkRest(k,P){
  if(i!==k||TRK.run)return;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},tG=P.frames[P.k].timeStamp;
  put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,tags:trackTags(P,trackWindow(P,EV)),shot:trackShot(P,G.teams.home.id)}));
  document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
- // The banner goes to the middle of the other half, which is nearly always empty: the goal moment stays clear.
- const pk=P.frames[P.k].onIce['1'],e=EV[k];
- if(pk){const f=trackFeet(pk),x=AX(P.turn*f.x,e.per);drawLabel(e,{x:x>100?50:150,y:16,far:true});}}
+ // The banner sits at centre ice, clear of the goal moment and nearer it than the far half (Kevin).
+ drawLabel(EV[k],{x:100,y:16,far:true});}
 function trkNoCue(k,g){
  const P=g>=0?trkReady(EV[g]):null,nxt=EV[k+1];
  document.getElementById('rg').classList.toggle('trknocue',!!(TRK.goals||P&&nxt&&playing&&!REDUCED&&nxt.s>=EV[g].s-P.before));}
