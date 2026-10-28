@@ -2860,7 +2860,6 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 // The distance rate under the caption. Goals only: Event mode already carries the source note there.
 function sayDist(e){const el=$('playdist');if(!el)return;
- // Goals only. Event mode keeps the source note under the caption.
  const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
  el.textContent=say;el.hidden=!say;}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).

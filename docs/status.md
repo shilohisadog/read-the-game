@@ -84,7 +84,7 @@ Everything here is live on readthegame.co and was checked in a real browser; gat
 7. Unexplained: rail witness 385/390; the feed's 28 vs our 27 shots on DiPietro (2026020120).
 8. Waiting on Kevin: data-model item 6, item 12 (reduced motion), the lesson strip on a landscape phone; the NHL's
    reply to the 2026-10-19 permission request.
-9. `src/app.js` is a 5,572-line file. The page tests boot the built HTML with `new Function`, so coverage
+9. `src/app.js` is a 5,571-line file. The page tests boot the built HTML with `new Function`, so coverage
    cannot attribute a line to it.
 10. README still describes five layers and a `goalie-eye-view.html` that is not in the tree. The picker is
     Just events, Control, slot, blocked, goaltending, why play stopped, zone starts, who shoots, face-offs.

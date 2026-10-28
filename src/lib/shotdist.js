@@ -12,7 +12,7 @@
  */
 import { corsiTeam, SHOT_TYPES } from './attribution.js';
 import { attackDirection, distanceToNet } from './rink.js';
-import { EMPTY_NET, situation } from './strength.js';
+import { EMPTY_NET, standing } from './strength.js';
 
 /** Width of one band, in feet. */
 export const BAND_FT = 5;
@@ -28,20 +28,18 @@ export function shotFeet(e, shooter, homeId) {
   return Math.round(distanceToNet(e.x, e.y, attackDirection(shooter, homeId)));
 }
 
-/** The start of the band that holds `ft`, using the same rounding the caption uses. */
-export function bandFrom(ft) {
-  return Math.floor(Math.max(0, ft) / BAND_FT) * BAND_FT;
+/** The start of the band that holds `ft`. `width` is the published band, defaulting to the policy. */
+export function bandFrom(ft, width = BAND_FT) {
+  return Math.floor(Math.max(0, ft) / width) * width;
 }
 
 /**
  * True when the shot is at a net with no goalie in it.
- * `situation()` already reads the goalie digits; the team that pulled is not the shooter.
+ * standing() names the team that pulled; that team is not the shooter.
  */
 export function atEmptyNet(e, shooter, ctx) {
-  const s = situation(e && e.sit, ctx);
-  if (!s || s.kind !== EMPTY_NET || shooter == null) return false;
-  const pulled = s.code[0] === '0' ? ctx.awayId : ctx.homeId;
-  return pulled !== shooter;
+  const s = standing(e && e.sit, ctx);
+  return !!(s && s.kind === EMPTY_NET && shooter != null && s.id !== shooter);
 }
 
 /**
@@ -51,7 +49,6 @@ export function atEmptyNet(e, shooter, ctx) {
  */
 export function countBands(events, counted, ctx) {
   const bands = new Map();
-  // Shots at an empty net are left out. They inflate long-range rates and mislead a newcomer.
   const leftOut = { goals: 0, n: 0 };
   for (const id of counted) {
     const e = events[id];
@@ -85,28 +82,23 @@ const POLICY = `Counted in ${BAND_FT}-foot bands over every situation, with no s
 /** The archive document: one row per band that occurred, plus the policies that built it. */
 export function shotDistance(rows) {
   const acc = new Map();
-  let games = 0;
+  let games = 0, leftN = 0, leftGoals = 0;
   for (const g of rows) {
     if (!g.dist) continue;
     games++;
-    for (const [from, goals, n] of g.dist.rows || g.dist) {
+    for (const [from, goals, n] of g.dist.rows) {
       let b = acc.get(from);
       if (!b) acc.set(from, b = { goals: 0, n: 0 });
       b.goals += goals;
       b.n += n;
     }
+    leftN += g.dist.leftOut.n;
+    leftGoals += g.dist.leftOut.goals;
   }
   const bands = [...acc.keys()].sort((a, b) => a - b).map(from => {
     const b = acc.get(from);
     return { from, to: from + BAND_FT, goals: b.goals, n: b.n, rate: b.n ? b.goals / b.n : null };
   });
-  let leftN = 0, leftGoals = 0;
-  for (const g of rows) {
-    const left = g.dist && g.dist.leftOut;
-    if (!left) continue;
-    leftN += left.n;
-    leftGoals += left.goals;
-  }
   return { bandFt: BAND_FT, minN: MIN_BAND_N, games, bands,
            leftOut: { n: leftN, goals: leftGoals }, what: POLICY };
 }
@@ -116,7 +108,7 @@ export function distanceSentence(ft, doc) {
   if (ft == null || !doc || !doc.bands) return '';
   const width = doc.bandFt || BAND_FT;
   const floor = doc.minN || MIN_BAND_N;
-  const from = Math.floor(Math.max(0, ft) / width) * width;
+  const from = bandFrom(ft, width);
   const b = doc.bands.find(x => x.from === from) || { goals: 0, n: 0, rate: null };
   const span = `${from}–${from + width}`;
   const n = b.n.toLocaleString('en-US');

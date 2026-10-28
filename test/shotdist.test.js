@@ -58,8 +58,8 @@ test('the sentence quotes the rate, and refuses a band under the floor', () => {
 
 test('archive rows sum, and a record without bands does not invent a zero', () => {
   const doc = shotDistance([
-    { dist: [[10, 2, 20], [15, 1, 10]] },
-    { dist: [[10, 3, 30]] },
+    { dist: { rows: [[10, 2, 20], [15, 1, 10]], leftOut: { goals: 0, n: 0 } } },
+    { dist: { rows: [[10, 3, 30]], leftOut: { goals: 1, n: 2 } } },
     {},
   ]);
   assert.equal(doc.games, 2);
@@ -69,6 +69,8 @@ test('archive rows sum, and a record without bands does not invent a zero', () =
   assert.equal(ten.goals, 5);
   assert.equal(ten.n, 50);
   assert.equal(ten.rate, 5 / 50);
+  assert.equal(doc.leftOut.goals, 1);
+  assert.equal(doc.leftOut.n, 2);
   assert.match(doc.what, /blocked/i);
   assert.match(doc.what, /30/);
 });
