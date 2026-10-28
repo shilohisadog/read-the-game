@@ -3,7 +3,10 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { boot, app } from './helpers/page.js';
+
+const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
 
 test('the line carries the color note for its frame, and is hidden without one', () => {
   const a = boot();
@@ -55,8 +58,33 @@ test('the line\'s state classes are its own: no other rule on the page can resty
   }
 });
 
-test('the color line does not open a source note', () => {
-  // The disclosure described the site, not the event, so the event view no longer carries it.
-  assert.match(app, /id="playline"/);
-  assert.doesNotMatch(app, /<details class="playd"|id="playwork"|Each note comes from|Where these notes come from/);
+test('"where these notes come from" closes when the frame changes', () => {
+  const a = boot();
+  // Two frames in a row that both carry a note, so an empty note cannot be what closes it.
+  const lines = a.every(d => d.$('playline').textContent);
+  const k = lines.findIndex((l, n) => n > 0 && l && lines[n + 1]);
+  assert.ok(k > 0, 'no two noted frames in a row');
+  a.at(k, () => {});
+  assert.ok(a.$('playline').textContent, 'the frame has no note to open');
+  assert.equal(a.$('playline').tabIndex, 0, 'Event mode took the line out of the tab order');
+  assert.equal(a.$('playline').getAttribute('title'), 'Where these notes come from', 'Event mode dropped the disclosure name');
+  a.$('playd').open = true;
+  a.$('fwd').click();
+  assert.equal(a.$('playd').open, false, 'the panel followed the reader to the next frame');
+});
+
+test('each detail in the panel shows only with the kind of note it explains', () => {
+  const a = boot(null, MEASURES);
+  const frames = a.every(d => ({ line: d.$('playline').textContent,
+    row: !d.$('pwrow').hidden, shift: !d.$('pwshift').hidden, run: !d.$('pwrun').hidden }));
+  for (const [key, re] of [['row', /in a row/], ['shift', /typical shift/], ['run', / of play/]])
+    frames.forEach((f, k) => assert.equal(f[key], re.test(f.line), `frame ${k}: the ${key} detail and the note disagree`));
+  assert.ok(frames.some(f => f.row), 'no frame exercises the events-in-a-row detail');
+  assert.ok(frames.some(f => f.line && !f.row && !f.shift && !f.run), 'no frame shows the panel with only its base');
+  assert.equal(a.$('pwgames').textContent, `the ${MEASURES.census.games.toLocaleString('en-US')} games we have measured`,
+    'the panel does not carry the archive\'s game count');
+  const panel = app.slice(app.indexOf('id="playwork"'), app.indexOf('</details>', app.indexOf('id="playwork"')));
+  assert.doesNotMatch(panel, /three seasons/, 'the panel still counts seasons');
+  assert.match(panel, /<span id="pwgames">the games we have measured<\/span>/, 'with no archive, the count has no wording to fall back on');
+  assert.doesNotMatch(panel, /id="pwtrk"/, 'the tracked goal\'s account is not part of this note');
 });

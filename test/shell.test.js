@@ -200,7 +200,7 @@ function run({ search = '', responses = {} } = {}) {
     innerHTML: '', value: '', dataset: {}, childNodes: [{ nodeValue: '' }],
     style: { setProperty() {}, getPropertyValue() { return ''; } },
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
-    setAttribute() {}, getAttribute() { return null; }, addEventListener() {},
+    setAttribute() {}, removeAttribute() {}, getAttribute() { return null; }, addEventListener() {},
     /* ⭐ THE PAGE BUILDS NODES. The goal ticks under the scrubber are created
        with `document.createElement` and positioned through CSSOM, because a
        `style` attribute is inert under this site's hash-pinned `style-src`.

@@ -390,6 +390,17 @@ function counted(slice){return levelOnly?tiedControl.reduce(slice,CTX)
                                         :corsi.reduce(slice,CTX);}
 function lens(k){return counted(upto(k));}
 const $=id=>document.getElementById(id);
+let PLAYK=-1;
+// The panel's details, each shown with the kind of note it explains.
+const PWX=[['pwrow',/in a row/],['pwshift',/typical shift/],['pwrun',/ of play/]];
+{const n=$('pwgames'),g=RATES&&RATES.census&&RATES.census.games;if(n&&g)n.textContent='the '+g.toLocaleString('en-US')+' games we have measured';}
+// Where the long-run notes' thresholds come from, from the published archive.
+{const rl=RATES&&RATES.census&&RATES.census.runLength,sp=$('pwrun');
+ if(sp&&rl&&rl.runs&&rl.events&&rl.events.p75!=null&&rl.secs&&rl.secs.p90!=null){
+  const t=rl.secs.p90;
+  sp.textContent=' A long run of play is noted once it passes '+rl.events.p75+' events (3 in 4 of the '
+   +rl.runs.toLocaleString()+' runs of play we have measured, face-off to whistle, end within that), and again past '
+   +Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+' of play (9 in 10 end sooner).';}}
 /**
  * ⭐⭐ A SUBTREE WHOSE MARKUP DID NOT CHANGE IS NOT REWRITTEN, and the reason is
  * not performance: REPLACING AN ELEMENT RESTARTS ITS ENTRANCE ANIMATION.
@@ -1200,6 +1211,8 @@ function render(i,how){
      case 'final': sayCaption(null,null,'🏁 Final','',cur); break;
    }}
  sayWho(cur);
+ // "Where these notes come from" answers this frame's note, so it closes when the frame changes.
+ if(PLAYK!==i){PLAYK=i;const d=$('playd');if(d)d.open=false;}
  sayPlay(PREVIEW?'':PLAY.line);
  // AT REST ONLY -- `render` runs on every frame including during playback, and
  // `sayOnIce` reads `playing` itself rather than being called from two places.
@@ -2832,8 +2845,15 @@ function sayWho(e){const w=$('who');if(!w)return;
   if(a.say.indexOf('{b}')===0)subj=q;}
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function sayPlay(line){const d=$('playd');if(!d)return;
- // The color note for this frame. Empty hides the reserved row so Play does not jump.
- $('playline').textContent=line;d.classList.toggle('none',!line);
+ const s=$('playline');
+ s.textContent=line;d.classList.toggle('none',!line);
+ // Close the source note when the line is empty, and in Goals: that note describes the site, not the event.
+ if(!line||TRK.goals)d.open=false;
+ // Goals is plain text: the summary leaves the tab order and is not named as a disclosure.
+ s.tabIndex=TRK.goals?-1:0;
+ if(TRK.goals)s.removeAttribute('title');else s.setAttribute('title','Where these notes come from');
+ // Each extra sentence shows only with the color line it explains, and never in Goals.
+ for(const [id,re] of PWX){const x=$(id);if(x)x.hidden=TRK.goals||!re.test(line);}
  // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
