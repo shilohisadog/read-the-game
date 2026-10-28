@@ -98,6 +98,8 @@ const TIER = [
   'league.js',
   // challenge.js: the census counts reviews of a goal with the replay's own reader.
   'challenge.js',
+  // shotdist.js: goal rate by distance, the same feet the caption already uses.
+  'shotdist.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {

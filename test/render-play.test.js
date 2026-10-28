@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { boot, app } from './helpers/page.js';
+import { boot, app, rich } from './helpers/page.js';
 
 const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
 
@@ -56,6 +56,18 @@ test('the line\'s state classes are its own: no other rule on the page can resty
         `"${sel.trim()}" can restyle the play line through .${c}`);
     }
   }
+});
+
+test('Event mode does not show the distance line', () => {
+  // The source note already lives under the caption here. The rate is a Goals line.
+  const rates = { shotDistance: { bandFt: 5, minN: 30, bands: [
+    { from: 10, to: 15, goals: 12, n: 100, rate: 0.12 }] } };
+  const a = boot(rich, rates);
+  const k = a.timeline.findIndex(e => e && e.type === 'goal' && e.x != null);
+  assert.ok(k > 0, 'the fixture has no located goal');
+  a.at(k, () => {});
+  assert.equal(a.$('playdist').hidden, true, 'Event mode showed the distance line');
+  assert.equal(a.$('playdist').textContent, '');
 });
 
 test('"where these notes come from" closes when the frame changes', () => {

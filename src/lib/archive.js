@@ -30,6 +30,7 @@ import { distribution } from './distribution.js';
    wrong number in the one place we invite verification. See
    `test/prose-constants.test.js`. */
 import { HIGH_DANGER_FT, SLOT_HALF_WIDTH } from './rink.js';
+import { shotDistance } from './shotdist.js';
 /* ⭐⭐ RE-EXPORTED, NOT RE-DEFINED. Half the repo imports `inScope` and the
    disputed trio from here, and moving the NAMES would be churn for no gain —
    the same judgement `inScope`'s own docstring records from when the id-reading
@@ -613,6 +614,8 @@ export function summarise(records) {
     // Where the goals come from. A share of a population, like attemptMix, and
     // the reason the base layer shades the slot at all.
     slot: slotShare(games),
+    // How often a shot from a given distance goes in. See shotdist.js for the policies.
+    shotDistance: shotDistance(games),
     // ⭐ HOW FAR OUT EACH KIND OF ATTEMPT IS RECORDED. The one number that makes
     // the blocked-shot coordinate legible rather than merely disclaimed.
     // ⭐ AND WHAT A GOALTENDER'S NIGHT LOOKS LIKE, as two integers rather than a

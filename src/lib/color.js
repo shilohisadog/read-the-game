@@ -21,7 +21,7 @@ import { framed, inShootout } from './layer.js';
 import { isHighDangerEvent } from './layers/goaltending.js';
 import { WHY, icingRestarts } from './layers/whistle.js';
 import { liveRun, markable, playAt, plays, zoneRuns } from './stretch.js';
-import { attackDirection, distanceToNet } from './rink.js';
+import { shotFeet } from './shotdist.js';
 
 /* The league's `shotType` (SCHEMA 7, `st`), in plain words; an unknown value reads "A shot". */
 export const SHOT_WORDS = {
@@ -36,8 +36,8 @@ const SHOTS_TYPED = new Set(['shot-on-goal', 'missed-shot', 'goal']);
 export function shotLead(e, shooter, homeId) {
   if (!SHOTS_TYPED.has(e.type) || shooter == null) return null;
   const what = (e.st && SHOT_WORDS[e.st]) || 'A shot';
-  if (e.x == null || e.y == null) return e.st ? `${what}.` : null;
-  const ft = Math.round(distanceToNet(e.x, e.y, attackDirection(shooter, homeId)));
+  const ft = shotFeet(e, shooter, homeId);
+  if (ft == null) return e.st ? `${what}.` : null;
   return `${what} from ${ft} ${ft === 1 ? 'foot' : 'feet'}.`;
 }
 

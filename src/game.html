@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tg5guQdt/MGDoxojoqwE1MMvbDz62jyPU/1sTz9fVoI=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-soP8DGtBbVHsk7Hwupw278s8ZVw3sFuzz2+qQEt0Qog='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VcYJOI2s3mZRoKLXuk4lSO2AuGd32wNB+gjTASY6D3g=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-sSkfQ2RCKjJ8Hxwu0/b5DYn1OGC2d8LSK1jVzO//g9E='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -652,6 +652,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .playline:hover{text-decoration:underline dotted}
 #rg .playd.zoned .playline{color:var(--ink);font-weight:600}
 #rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}
+#rg .playdist{margin:0 2px 4px;text-align:center;font-size:.82rem;line-height:1.3;color:var(--ink)}
+#rg.preview .playdist{display:none!important}
 
 #rg{--track:#7c3aed}
 #rg.trk #events,#rg.trk #netmen,#rg.trk #lines,#rg.trk #puck,#rg.trk #labels,#rg.trk #draws,#rg.trk #whistles{opacity:.18;transition:opacity .4s}
@@ -748,6 +750,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   when the puck crossed a blue line.</span>
   <span id="pwshift" hidden>A typical shift is the middle of every
   shift we hold.</span><span id="pwrun" hidden></span></p></details>
+  
+  <p class="playdist" id="playdist" hidden></p>
   
   
   <div class="oiwrap" id="oiWrap"><button class="oibtn" id="onIceBtn" type="button"
@@ -3230,6 +3234,105 @@ function challengeOutcome(r, ab, score, ctx) {
 
 
 
+const BAND_FT = 5;
+const MIN_BAND_N = 30;
+
+function shotFeet(e, shooter, homeId) {
+  if (!e || shooter == null || e.x == null || e.y == null) return null;
+  return Math.round(distanceToNet(e.x, e.y, attackDirection(shooter, homeId)));
+}
+
+function bandFrom(ft, width = BAND_FT) {
+  return Math.floor(Math.max(0, ft) / width) * width;
+}
+
+function atEmptyNet(e, shooter, ctx) {
+  const s = standing(e && e.sit, ctx);
+  return !!(s && s.kind === EMPTY_NET && shooter != null && s.id !== shooter);
+}
+
+function countBands(events, counted, ctx) {
+  const bands = new Map();
+  const leftOut = { goals: 0, n: 0 };
+  for (const id of counted) {
+    const e = events[id];
+    if (!e || !SHOT_TYPES.has(e.type)) continue;
+    const shooter = corsiTeam(e, ctx.roster);
+    const ft = shotFeet(e, shooter, ctx.homeId);
+    if (ft == null) continue;
+    if (atEmptyNet(e, shooter, ctx)) {
+      leftOut.n++;
+      if (e.type === 'goal') leftOut.goals++;
+      continue;
+    }
+    const from = bandFrom(ft);
+    let b = bands.get(from);
+    if (!b) bands.set(from, b = { goals: 0, n: 0 });
+    b.n++;
+    if (e.type === 'goal') b.goals++;
+  }
+  return {
+    rows: [...bands.entries()].sort((a, b) => a[0] - b[0]).map(([from, b]) => [from, b.goals, b.n]),
+    leftOut,
+  };
+}
+
+const POLICY = `Counted in ${BAND_FT}-foot bands over every situation, with no split by `
+  + 'shot type. A blocked shot is left out because the feed records where it was '
+  + 'stopped, not where it was taken. Shots at an empty net are left out because '
+  + 'they inflate long-range rates and mislead a newcomer. '
+  + `A band with fewer than ${MIN_BAND_N} attempts is not quoted. n counts attempts, not games.`;
+
+function shotDistance(rows) {
+  const acc = new Map();
+  let games = 0, leftN = 0, leftGoals = 0;
+  for (const g of rows) {
+    if (!g.dist) continue;
+    games++;
+    for (const [from, goals, n] of g.dist.rows) {
+      let b = acc.get(from);
+      if (!b) acc.set(from, b = { goals: 0, n: 0 });
+      b.goals += goals;
+      b.n += n;
+    }
+    leftN += g.dist.leftOut.n;
+    leftGoals += g.dist.leftOut.goals;
+  }
+  const bands = [...acc.keys()].sort((a, b) => a - b).map(from => {
+    const b = acc.get(from);
+    return { from, to: from + BAND_FT, goals: b.goals, n: b.n, rate: b.n ? b.goals / b.n : null };
+  });
+  return { bandFt: BAND_FT, minN: MIN_BAND_N, games, bands,
+           leftOut: { n: leftN, goals: leftGoals }, what: POLICY };
+}
+
+function distanceSentence(ft, doc) {
+  if (ft == null || !doc || !doc.bands) return '';
+  const width = doc.bandFt || BAND_FT;
+  const floor = doc.minN || MIN_BAND_N;
+  const from = bandFrom(ft, width);
+  const b = doc.bands.find(x => x.from === from) || { goals: 0, n: 0, rate: null };
+  const span = `${from}–${from + width}`;
+  const n = b.n.toLocaleString('en-US');
+  if (b.n < floor) {
+    return `Shots from ${span} feet are too few to quote (n = ${n}; a band under ${floor} is not quoted).`;
+  }
+  const pct = (b.rate * 100).toFixed(1);
+  return `Shots from ${span} feet go in about ${pct}% of the time (n = ${n}), `
+    + `in ${width}-foot bands, every situation, blocked shots and empty nets left out.`;
+}
+
+function goalLine(e, ctx, doc) {
+  if (!e || e.type !== 'goal') return '';
+  const shooter = corsiTeam(e, ctx.roster);
+  if (atEmptyNet(e, shooter, ctx)) return 'The net was empty, so there\u2019s no goalie to beat.';
+  return distanceSentence(shotFeet(e, shooter, ctx.homeId), doc);
+}
+
+
+
+
+
 
 
 
@@ -3245,8 +3348,8 @@ const SHOTS_TYPED = new Set(['shot-on-goal', 'missed-shot', 'goal']);
 function shotLead(e, shooter, homeId) {
   if (!SHOTS_TYPED.has(e.type) || shooter == null) return null;
   const what = (e.st && SHOT_WORDS[e.st]) || 'A shot';
-  if (e.x == null || e.y == null) return e.st ? `${what}.` : null;
-  const ft = Math.round(distanceToNet(e.x, e.y, attackDirection(shooter, homeId)));
+  const ft = shotFeet(e, shooter, homeId);
+  if (ft == null) return e.st ? `${what}.` : null;
   return `${what} from ${ft} ${ft === 1 ? 'foot' : 'feet'}.`;
 }
 
@@ -5176,6 +5279,7 @@ function render(i,how){
  sayWho(cur);
  if(PLAYK!==i){PLAYK=i;const d=$('playd');if(d)d.open=false;}
  sayPlay(PREVIEW?'':PLAY.line);
+ sayDist(cur);
  sayOnIce(cur);
  if(goalieOn)$('goaliePanel').innerHTML=goalieCards(G.goalies,R,goalieStats(i),{AID,AAB,HAB,mode:MODE()});
  if(workOpen)renderWork(L,cur,i);
@@ -5624,6 +5728,9 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  if(TRK.goals)s.removeAttribute('title');else s.setAttribute('title','Where these notes come from');
  for(const [id,re] of PWX){const x=$(id);if(x)x.hidden=TRK.goals||!re.test(line);}
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
+function sayDist(e){const el=$('playdist');if(!el)return;
+ const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
+ el.textContent=say;el.hidden=!say;}
 function dwell(e){
  if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
   const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
