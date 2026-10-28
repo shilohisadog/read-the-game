@@ -124,6 +124,8 @@ test('Goals mode shows the color line with no tap target', async () => {
   assert.match(app, /#rg\.trkgoals \.playline\{cursor:default;pointer-events:none\}/, 'Goals still offers the line as a tap target');
   assert.equal(a.$('pwrow').hidden && a.$('pwshift').hidden && a.$('pwrun').hidden, true, 'the source note is showing in Goals');
   assert.equal(a.$('playd').open, false);
+  assert.equal(a.$('playline').tabIndex, -1, 'Goals still tabs to the disclosure');
+  assert.equal(a.$('playline').getAttribute('title'), null, 'Goals still names it as a disclosure');
   a.$('playd').open = true;
   a.at(k, () => {});
   assert.equal(a.$('playd').open, false, 'Goals reopened the source note');

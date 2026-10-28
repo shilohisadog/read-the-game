@@ -66,6 +66,8 @@ test('"where these notes come from" closes when the frame changes', () => {
   assert.ok(k > 0, 'no two noted frames in a row');
   a.at(k, () => {});
   assert.ok(a.$('playline').textContent, 'the frame has no note to open');
+  assert.equal(a.$('playline').tabIndex, 0, 'Event mode took the line out of the tab order');
+  assert.equal(a.$('playline').getAttribute('title'), 'Where these notes come from', 'Event mode dropped the disclosure name');
   a.$('playd').open = true;
   a.$('fwd').click();
   assert.equal(a.$('playd').open, false, 'the panel followed the reader to the next frame');

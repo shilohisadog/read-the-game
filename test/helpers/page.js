@@ -152,6 +152,7 @@ export function fakeDom() {
       contains(c) { return this._c.has(c); },
     },
     setAttribute(k, v) { this[k] = v; },
+    removeAttribute(k) { delete this[k]; },
     // Reading back what was written. Absent returns null, as the real DOM does,
     // rather than undefined -- a fake that answers a question differently from
     // the thing it stands in for is a test that passes for its own reasons.

@@ -160,7 +160,7 @@ __CSS__</style>
   <p class="who" id="who" aria-live="polite"></p>
   <!-- The color line (src/lib/color.js). All events opens where the note comes from.
        Goals leaves it plain text: that disclosure describes the site, not the event. -->
-  <details class="playd" id="playd"><summary class="playline" title="Where these notes come from"><span id="playline"></span></summary>
+  <details class="playd" id="playd"><summary class="playline" id="playline" title="Where these notes come from"></summary>
   <p class="playwork" id="playwork">Each note comes from the league&rsquo;s record of
   this game, the NHL rulebook, or how often something happened across
   <span id="pwgames">the games we have measured</span>. The record never says which team

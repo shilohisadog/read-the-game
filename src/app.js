@@ -2845,9 +2845,13 @@ function sayWho(e){const w=$('who');if(!w)return;
   if(a.say.indexOf('{b}')===0)subj=q;}
  w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function sayPlay(line){const d=$('playd');if(!d)return;
- $('playline').textContent=line;d.classList.toggle('none',!line);
+ const s=$('playline');
+ s.textContent=line;d.classList.toggle('none',!line);
  // Close the source note when the line is empty, and in Goals: that note describes the site, not the event.
  if(!line||TRK.goals)d.open=false;
+ // Goals is plain text: the summary leaves the tab order and is not named as a disclosure.
+ s.tabIndex=TRK.goals?-1:0;
+ if(TRK.goals)s.removeAttribute('title');else s.setAttribute('title','Where these notes come from');
  // Each extra sentence shows only with the color line it explains, and never in Goals.
  for(const [id,re] of PWX){const x=$(id);if(x)x.hidden=TRK.goals||!re.test(line);}
  // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
