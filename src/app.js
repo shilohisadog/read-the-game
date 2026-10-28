@@ -32,6 +32,7 @@ import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
 import { colorNotes } from './lib/color.js';
+import { distanceSentence, shotFeet } from './lib/shotdist.js';
 import { challenges, challengeSay, reviewName, reviewSay } from './lib/challenge.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
@@ -1214,6 +1215,7 @@ function render(i,how){
  // "Where these notes come from" answers this frame's note, so it closes when the frame changes.
  if(PLAYK!==i){PLAYK=i;const d=$('playd');if(d)d.open=false;}
  sayPlay(PREVIEW?'':PLAY.line);
+ sayDist(cur);
  // AT REST ONLY -- `render` runs on every frame including during playback, and
  // `sayOnIce` reads `playing` itself rather than being called from two places.
  sayOnIce(cur);
@@ -2856,6 +2858,11 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  for(const [id,re] of PWX){const x=$(id);if(x)x.hidden=TRK.goals||!re.test(line);}
  // `zoned`, not `zone`: `.zone` is the layer panels' class and would restyle the line as one.
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
+// The distance rate under the caption. Goals only: Event mode already carries the source note there.
+function sayDist(e){const el=$('playdist');if(!el)return;
+ const ft=TRK.goals&&e&&e.type==='goal'?shotFeet(e,corsiTeam(e,R),HID):null;
+ const say=distanceSentence(ft,RATES&&RATES.shotDistance);
+ el.textContent=say;el.hidden=!say;}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
 function dwell(e){
  // Goals passes through a frame that is not one of its stops (the opening face-off, a frame held for a

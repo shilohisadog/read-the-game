@@ -33,6 +33,7 @@ import { zonestart } from '../src/lib/layers/zonestart.js';
 import { shooters } from '../src/lib/layers/shooters.js';
 import { faceoffs } from '../src/lib/layers/faceoffs.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
+import { countBands } from '../src/lib/shotdist.js';
 import { situation, DECLINED } from '../src/lib/strength.js';
 import { inScope, summarise, dataThrough, playerSeasons } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
@@ -216,6 +217,8 @@ export function measureGame(g) {
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
     slot, located, goals, goalies, faced, saves, oz, fo,
+    // 5-foot bands of unblocked located attempts. Same distance as the caption.
+    dist: countBands(g.events, all.counted, ctx),
     /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
        rink puts a live count on each lens, and it is `LEDGER[id](sl)
        .counted.length` for every one of them — so a reference class built on
