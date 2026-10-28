@@ -5,10 +5,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { corsiTeam } from '../src/lib/attribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { rich } from './helpers/page.js';
 import {
-  BAND_FT, MIN_BAND_N, bandFrom, countBands, distanceSentence, shotDistance,
+  BAND_FT, MIN_BAND_N, atEmptyNet, bandFrom, countBands, distanceSentence, goalLine, shotDistance,
 } from '../src/lib/shotdist.js';
 
 const ctx = {
@@ -26,7 +27,7 @@ test('a band is five feet wide, and the caption\'s rounded feet pick it', () => 
 
 test('blocked shots are not counted, and a located goal is', () => {
   const counted = corsi.reduce(rich.events, { ...ctx, evenOnly: false }).counted;
-  const rows = countBands(rich.events, counted, ctx);
+  const rows = countBands(rich.events, counted, ctx).rows;
   const n = rows.reduce((s, r) => s + r[2], 0);
   const goals = rows.reduce((s, r) => s + r[1], 0);
   const blocked = counted.filter(id => rich.events[id].type === 'blocked-shot').length;
@@ -49,7 +50,7 @@ test('the sentence quotes the rate, and refuses a band under the floor', () => {
   };
   assert.equal(distanceSentence(13, doc),
     'Shots from 10–15 feet go in about 12.0% of the time (n = 100), '
-    + 'in 5-foot bands, every situation, blocked shots left out.');
+    + 'in 5-foot bands, every situation, blocked shots and empty nets left out.');
   assert.match(distanceSentence(172, doc), /too few to quote/);
   assert.match(distanceSentence(172, doc), /under 30/);
   assert.equal(distanceSentence(13, null), '');
@@ -72,12 +73,46 @@ test('archive rows sum, and a record without bands does not invent a zero', () =
   assert.match(doc.what, /30/);
 });
 
-test('the published bands are the same attempts as the slot measure', () => {
+test('a shot at an empty net is left out; a shot taken with your own net empty stays', () => {
+  const events = rich.events.map(e => ({ ...e }));
+  const goal = events.find(e => e.type === 'goal' && e.x != null);
+  const shooter = corsiTeam(goal, rich.roster);
+  const counted = () => corsi.reduce(events, { ...ctx, evenOnly: false }).counted;
+  const goalsOf = made => made.rows.reduce((s, r) => s + r[1], 0);
+  const had = goalsOf(countBands(events, counted(), ctx));
+  // The net being shot at is empty.
+  goal.sit = shooter === ctx.homeId ? '0651' : '1650';
+  assert.equal(atEmptyNet(goal, shooter, ctx), true);
+  const atNet = countBands(events, counted(), ctx);
+  assert.equal(goalsOf(atNet), had - 1);
+  assert.equal(atNet.leftOut.goals, 1);
+  // The shooter's own net is empty, so the shot is still at a goalie.
+  goal.sit = shooter === ctx.homeId ? '1560' : '0651';
+  assert.equal(atEmptyNet(goal, shooter, ctx), false);
+  assert.equal(goalsOf(countBands(events, counted(), ctx)), had);
+});
+
+test('an empty-net goal says the net was empty, not a rate', () => {
+  const goal = rich.events.find(e => e.type === 'goal' && e.x != null);
+  const shooter = corsiTeam(goal, rich.roster);
+  const e = { ...goal, sit: shooter === ctx.homeId ? '0651' : '1650' };
+  const doc = { bandFt: 5, minN: 30, bands: [
+    { from: bandFrom(10), to: 15, goals: 12, n: 100, rate: 0.12 }] };
+  const line = goalLine(e, ctx, doc);
+  assert.equal(line, 'The net was empty, so there\u2019s no goalie to beat.');
+  assert.doesNotMatch(line, /%/);
+});
+
+test('the published bands leave empty nets out of the slot measure\u2019s attempts', () => {
   const m = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
   const n = m.shotDistance.bands.reduce((s, b) => s + b.n, 0);
   const goals = m.shotDistance.bands.reduce((s, b) => s + b.goals, 0);
-  assert.equal(n, m.slot.attempts.n, 'distance bands are not the unblocked located attempts');
-  assert.equal(goals, m.attemptMix.byType.goal, 'a goal was left out of the bands');
+  assert.equal(n + m.shotDistance.leftOut.n, m.slot.attempts.n,
+    'a located unblocked attempt is neither in a band nor an empty-net exclusion');
+  assert.equal(goals + m.shotDistance.leftOut.goals, m.attemptMix.byType.goal,
+    'a goal is neither in a band nor an empty-net exclusion');
+  assert.ok(m.shotDistance.leftOut.n > 0, 'no empty-net attempt was removed');
+  assert.match(m.shotDistance.what, /empty net/i);
   for (const b of m.shotDistance.bands) {
     assert.equal(b.to - b.from, m.shotDistance.bandFt);
     assert.equal(b.rate, b.goals / b.n);

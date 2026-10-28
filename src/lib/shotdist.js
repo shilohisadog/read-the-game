@@ -5,11 +5,14 @@
  * feed records. Five feet is the policy: wide enough to quote, narrow enough
  * that a shot from the crease and a shot from the blue line are not one number.
  * Blocked shots are left out because the feed records where the puck was
- * stopped, not where it was shot. Every situation is counted, and shots are not
- * split by type: those bands would be too thin to quote (Kevin, 2026-10-28).
+ * stopped, not where it was shot. Shots at an empty net are left out too:
+ * they inflate long-range rates and mislead a newcomer. Every situation is
+ * counted, and shots are not split by type: those bands would be too thin to
+ * quote (Kevin, 2026-10-28).
  */
 import { corsiTeam, SHOT_TYPES } from './attribution.js';
 import { attackDirection, distanceToNet } from './rink.js';
+import { EMPTY_NET, situation } from './strength.js';
 
 /** Width of one band, in feet. */
 export const BAND_FT = 5;
@@ -31,29 +34,52 @@ export function bandFrom(ft) {
 }
 
 /**
+ * True when the shot is at a net with no goalie in it.
+ * `situation()` already reads the goalie digits; the team that pulled is not the shooter.
+ */
+export function atEmptyNet(e, shooter, ctx) {
+  const s = situation(e && e.sit, ctx);
+  if (!s || s.kind !== EMPTY_NET || shooter == null) return false;
+  const pulled = s.code[0] === '0' ? ctx.awayId : ctx.homeId;
+  return pulled !== shooter;
+}
+
+/**
  * Tally unblocked, located attempts in `counted` (a Control reducer's counted set)
  * into 5-foot bands. `counted` is that set so this cannot grow a second definition
  * of what an attempt is.
  */
 export function countBands(events, counted, ctx) {
   const bands = new Map();
+  // Shots at an empty net are left out. They inflate long-range rates and mislead a newcomer.
+  const leftOut = { goals: 0, n: 0 };
   for (const id of counted) {
     const e = events[id];
     if (!e || !SHOT_TYPES.has(e.type)) continue;
-    const ft = shotFeet(e, corsiTeam(e, ctx.roster), ctx.homeId);
+    const shooter = corsiTeam(e, ctx.roster);
+    const ft = shotFeet(e, shooter, ctx.homeId);
     if (ft == null) continue;
+    if (atEmptyNet(e, shooter, ctx)) {
+      leftOut.n++;
+      if (e.type === 'goal') leftOut.goals++;
+      continue;
+    }
     const from = bandFrom(ft);
     let b = bands.get(from);
     if (!b) bands.set(from, b = { goals: 0, n: 0 });
     b.n++;
     if (e.type === 'goal') b.goals++;
   }
-  return [...bands.entries()].sort((a, b) => a[0] - b[0]).map(([from, b]) => [from, b.goals, b.n]);
+  return {
+    rows: [...bands.entries()].sort((a, b) => a[0] - b[0]).map(([from, b]) => [from, b.goals, b.n]),
+    leftOut,
+  };
 }
 
 const POLICY = `Counted in ${BAND_FT}-foot bands over every situation, with no split by `
   + 'shot type. A blocked shot is left out because the feed records where it was '
-  + 'stopped, not where it was taken. '
+  + 'stopped, not where it was taken. Shots at an empty net are left out because '
+  + 'they inflate long-range rates and mislead a newcomer. '
   + `A band with fewer than ${MIN_BAND_N} attempts is not quoted. n counts attempts, not games.`;
 
 /** The archive document: one row per band that occurred, plus the policies that built it. */
@@ -63,7 +89,7 @@ export function shotDistance(rows) {
   for (const g of rows) {
     if (!g.dist) continue;
     games++;
-    for (const [from, goals, n] of g.dist) {
+    for (const [from, goals, n] of g.dist.rows || g.dist) {
       let b = acc.get(from);
       if (!b) acc.set(from, b = { goals: 0, n: 0 });
       b.goals += goals;
@@ -74,7 +100,15 @@ export function shotDistance(rows) {
     const b = acc.get(from);
     return { from, to: from + BAND_FT, goals: b.goals, n: b.n, rate: b.n ? b.goals / b.n : null };
   });
-  return { bandFt: BAND_FT, minN: MIN_BAND_N, games, bands, what: POLICY };
+  let leftN = 0, leftGoals = 0;
+  for (const g of rows) {
+    const left = g.dist && g.dist.leftOut;
+    if (!left) continue;
+    leftN += left.n;
+    leftGoals += left.goals;
+  }
+  return { bandFt: BAND_FT, minN: MIN_BAND_N, games, bands,
+           leftOut: { n: leftN, goals: leftGoals }, what: POLICY };
 }
 
 /** The sentence under a located goal, or '' when there is nothing to say. */
@@ -91,5 +125,13 @@ export function distanceSentence(ft, doc) {
   }
   const pct = (b.rate * 100).toFixed(1);
   return `Shots from ${span} feet go in about ${pct}% of the time (n = ${n}), `
-    + `in ${width}-foot bands, every situation, blocked shots left out.`;
+    + `in ${width}-foot bands, every situation, blocked shots and empty nets left out.`;
+}
+
+/** The line under a goal in Goals. An empty net is a sentence, not a rate. */
+export function goalLine(e, ctx, doc) {
+  if (!e || e.type !== 'goal') return '';
+  const shooter = corsiTeam(e, ctx.roster);
+  if (atEmptyNet(e, shooter, ctx)) return 'The net was empty, so there\u2019s no goalie to beat.';
+  return distanceSentence(shotFeet(e, shooter, ctx.homeId), doc);
 }

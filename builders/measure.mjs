@@ -217,7 +217,7 @@ export function measureGame(g) {
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
     slot, located, goals, goalies, faced, saves, oz, fo,
-    // 5-foot bands of unblocked located attempts. Same distance as the caption.
+    // 5-foot bands of unblocked located attempts, empty nets left out. Same distance as the caption.
     dist: countBands(g.events, all.counted, ctx),
     /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
        rink puts a live count on each lens, and it is `LEDGER[id](sl)

@@ -32,7 +32,7 @@ import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
 import { colorNotes } from './lib/color.js';
-import { distanceSentence, shotFeet } from './lib/shotdist.js';
+import { goalLine } from './lib/shotdist.js';
 import { challenges, challengeSay, reviewName, reviewSay } from './lib/challenge.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
@@ -2860,8 +2860,8 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 // The distance rate under the caption. Goals only: Event mode already carries the source note there.
 function sayDist(e){const el=$('playdist');if(!el)return;
- const ft=TRK.goals&&e&&e.type==='goal'?shotFeet(e,corsiTeam(e,R),HID):null;
- const say=distanceSentence(ft,RATES&&RATES.shotDistance);
+ // Goals only. Event mode keeps the source note under the caption.
+ const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
  el.textContent=say;el.hidden=!say;}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
 function dwell(e){

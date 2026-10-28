@@ -157,6 +157,20 @@ test('Goals mode says how often shots from that distance go in', async () => {
   assert.match(few.textContent, /under 30/);
 });
 
+test('an empty-net goal in Goals says the net was empty, not a rate', async () => {
+  const game = JSON.parse(JSON.stringify(rich));
+  const goal = game.events.find(e => e.type === 'goal' && e.x != null);
+  const shooter = corsiTeam(goal, game.roster);
+  goal.sit = shooter === game.teams.home.id ? '0651' : '1650';
+  const a = boot(game, { shotDistance: { bandFt: 5, minN: 30, bands: [
+    { from: 0, to: 5, goals: 12, n: 100, rate: 0.12 }] } }, '?replay=goals', null, served(), MOTION);
+  await settle(); await settle();
+  const k = a.timeline.findIndex(e => e && e.type === 'goal' && e.x != null);
+  a.at(k, () => {});
+  assert.equal(a.$('playdist').textContent, 'The net was empty, so there\u2019s no goalie to beat.');
+  assert.doesNotMatch(a.$('playdist').textContent, /%/);
+});
+
 test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, which holds the puck in the net', async () => {
   const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
   await settle(); await settle();
