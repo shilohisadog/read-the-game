@@ -2674,6 +2674,11 @@
 #rg #track .tag{font-size:2.6px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:.9px}
 #rg #track .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
 #rg #track .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
+/* The attacking blue line while the puck approaches it. The pulse is the approach; reduced motion already stops every animation, and the stroke stays still. */
+#rg #track .onside{stroke:var(--blue);stroke-width:1.7;stroke-linecap:round;opacity:.5;pointer-events:none}
+#rg #track .onside.approach{animation:onsideglow 1.4s ease-in-out infinite}
+@keyframes onsideglow{50%{opacity:.18}}
+#rg #track .tck{font-size:2.4px;font-weight:800;stroke:#fff;stroke-width:.45;paint-order:stroke;text-anchor:middle}
 #rg .trkc{display:inline-flex;align-items:center}
 #rg .trkc[hidden]{display:none}
 #rg .trkc span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--track);margin:0 6px 0 4px}

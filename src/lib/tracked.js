@@ -16,7 +16,7 @@
 import { inkOn, readableInk } from './teams.js';
 import { ESC } from './esc.js';
 import { standing, EMPTY_NET, POWER_PLAY, PENALTY_SHOT } from './strength.js';
-import { NET_X, GOAL_POST_Y, BLUE_LINE_X, attackDirection, distanceToNet } from './rink.js';
+import { NET_X, GOAL_POST_Y, BLUE_LINE_X, ZONE_BAND_FT, attackDirection, distanceToNet } from './rink.js';
 
 /** Replay speeds for the tracking: [factor, button label, words for the line]. */
 export const TRACK_SPEEDS = [[0.25, '¼', 'at a quarter of real speed'],
@@ -48,6 +48,10 @@ export const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
 export const TRACK_REACH_FT = 5.5;
 /** The goal line and the blue lines, feet from centre ice. */
 const GOAL_LINE = 89, BLUE = 25;
+/** Radius of the puck dot. The tracked point is its centre, so the dot has not fully crossed a line until the centre is this far past it. */
+export const PUCK_R = 0.6;
+/** Radius of a skater dot. Same reason as PUCK_R: a dot still touching the line has not crossed. */
+export const SKATER_R = 1.35;
 
 /** Each recorded event's label on the ice, in plain English. */
 export const TRACK_WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Shot missed the net',
@@ -296,6 +300,52 @@ export function trackLaneLine(P, j, tt, shot, homeId) {
   if (shot && shot.lane && tt >= shot.at) return 'Anyone inside the shaded triangle was between the shot and the net.';
   return trackLaneAt(P, j, homeId) ? 'Anyone inside the light triangle stands between the puck and the net.' : '';
 }
+
+/** "Onside: the puck crossed the blue line before any LAK player did." */
+export const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
+
+const trackAx = (P, o, dir) => {
+  if (!o || o.x == null || o.y == null) return null;
+  const f = trackFeet(o);
+  return P.turn * f.x * dir;
+};
+
+/**
+ * The frame the puck's dot clears the attacking blue line ahead of every attacking skater, or null.
+ * The caption says the puck crossed first, so a clip that does not show that is left blank.
+ *   {j, at, from, ids, say} — `from` is the first frame of the approach, `ids` the attacking skaters.
+ */
+export function trackEntry(P, homeId, roster, ab) {
+  if (!P || !P.e || homeId == null) return null;
+  const dir = attackDirection(P.e.own, homeId), own = Number(P.e.own);
+  const axAt = j => trackAx(P, P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'], dir);
+  const puckClear = BLUE_LINE_X + PUCK_R, skaterClear = BLUE_LINE_X + SKATER_R;
+  let prev = null, hit = null;
+  for (let j = 0; j <= P.k; j++) {
+    const ax = axAt(j);
+    if (ax == null) { prev = null; continue; }
+    if (prev != null && prev <= puckClear && ax > puckClear) hit = j;
+    prev = ax;
+  }
+  if (hit == null) return null;
+  const ids = [];
+  for (const o of Object.values(P.frames[hit].onIce || {})) {
+    if (!o.playerId || Number(o.teamId) !== own) continue;
+    const r = roster && roster[o.playerId];
+    if (r && r.pos === 'G') continue;
+    const ax = trackAx(P, o, dir);
+    if (ax == null || ax > skaterClear) return null;
+    ids.push(Number(o.playerId));
+  }
+  if (!ids.length) return null;
+  let from = hit;
+  for (let j = hit - 1; j >= 0; j--) {
+    const ax = axAt(j);
+    if (ax == null || ax <= BLUE_LINE_X - ZONE_BAND_FT || ax > puckClear) break;
+    from = j;
+  }
+  return { j: hit, at: P.frames[hit].timeStamp, from, ids, say: trackEntrySay(ab) };
+}
 /** The frame shown at file time `tt` (tenths), never past the goal line. */
 export function trackFrameAt(P, tt) {
   let j = 0;
@@ -315,10 +365,13 @@ export function trackClock(P, j) {
  * and the label of any recorded event within its moment at `tt`. `col` maps a team
  * id to its colour; AX/AY are the replay's own placement.
  */
-export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null }) {
+export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry = null, blue = null }) {
   const per = P.e.per, at = o => { const p = trackFeet(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
   const F = P.frames[j].onIce, out = [];
+  // The attacking blue line, faint while the puck approaches and held on the frame it clears.
+  if (entry && blue && j >= entry.from && j <= entry.j)
+    out.push(`<line class="onside${j < entry.j ? ' approach' : ''}" x1="${blue.x.toFixed(2)}" y1="${blue.y1.toFixed(2)}" x2="${blue.x.toFixed(2)}" y2="${blue.y2.toFixed(2)}"/>`);
   // The lane, under the players: held where the shot was taken from the shot to the goal line on a long
   // goal; before that, light, following the puck while it is in the scoring team's end beyond TRACK_LANE_FT.
   const lane = (cls, L) => `<polygon class="${cls}" points="${[L.apex, ...L.posts].map(q => `${AX(q.x, per).toFixed(2)},${AY(q.y, per).toFixed(2)}`).join(' ')}"/>`;
@@ -329,15 +382,17 @@ export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null }) {
     const s = at(o), r = G.roster[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a';
     const gk = r.pos === 'G', star = stars.has(Number(o.playerId)), away = Number(o.teamId) === Number(G.teams.away.id);
     const fill = away ? '#fff' : c, rim = away ? c : (gk ? '#0f1a23' : '#fff'), ink = away ? readableInk(c) : inkOn(c);
-    out.push(`<circle cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${gk ? 1.7 : star ? 1.6 : 1.35}" fill="${fill}" stroke="${rim}" stroke-width="${away ? (star ? .7 : .45) : (star ? .55 : .25)}"/>`
+    out.push(`<circle cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${gk ? 1.7 : star ? 1.6 : SKATER_R}" fill="${fill}" stroke="${rim}" stroke-width="${away ? (star ? .7 : .45) : (star ? .55 : .25)}"/>`
       + `<text class="tn" x="${s.x.toFixed(2)}" y="${s.y.toFixed(2)}" fill="${ink}">${ESC(o.sweaterNumber)}</text>`);
+    if (entry && j === entry.j && entry.ids.includes(Number(o.playerId)))
+      out.push(`<text class="tck" x="${(s.x + 2.2).toFixed(2)}" y="${(s.y - 1.5).toFixed(2)}" fill="${c}">\u2713</text>`);
     if (Number(o.playerId) === Number(P.e.actor))
       out.push(`<text class="tsc" x="${s.x.toFixed(2)}" y="${(s.y - 2.6).toFixed(2)}" fill="${c}">${ESC(r.nm || '')}</text>`);
   }
   const pk = F['1'];
   if (pk) {
     const s = at(pk);
-    out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r=".6"/>`);
+    out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${PUCK_R}"/>`);
     for (const t of tags) {
       if (!(tt >= t.at && tt < t.at + TRACK_TAG_TENTHS)) continue;
       // At the spot the league recorded (the puck when it recorded none), running away from the nearest boards.

@@ -19,7 +19,7 @@
    ⚠️ THE PREAMBLE IS NOT SHIPPED. Prose a reader of the PAGE needs belongs
    below, not here. */
 import {
-  ENDS_KEY, ENDS_NOTE, ENDS_SHOOTOUT, NET_X, attackDirection, endsKeyShowing, endsNoteShowing
+  ENDS_KEY, ENDS_NOTE, ENDS_SHOOTOUT, NET_X, BLUE_LINE_X, attackDirection, endsKeyShowing, endsNoteShowing
 } from './lib/rink.js';
 import {
   ATTRIBUTION, corsiTeam, missSay, shootingTeam, SHOT_TYPES
@@ -59,7 +59,8 @@ import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG_TENTHS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
-  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay } from './lib/tracked.js';
+  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
+  trackEntry } from './lib/tracked.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -74,7 +75,7 @@ import { leagueDiffs } from './lib/league.js';
 import { sections } from './lib/sections.js';
 /* ⭐ THE ONE IMPORT THAT IS NOT SATISFIED ABOVE THE FUNCTION -- see the marker
    inside it, and the note beside it, for why the rink's paint lands elsewhere. */
-import { SX, SY, furniture, netGlyph } from './lib/rinkart.js';
+import { SX, SY, boardsY, furniture, netGlyph } from './lib/rinkart.js';
 /* ⭐⭐⭐ THE GOALTENDERS ARE DRAWN BY THE SAME HAND AS THE SHOOTER, since
    2026-10-04. They used to use `rinkart.js::goalieGlyph` -- a circle, a capsule
    and a line -- while the shooter three feet away was `FIG.mascot`, a character
@@ -2924,6 +2925,10 @@ function trkEnd(){
  TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');}
 /* Lay goal P over the rink; returns how long it will take, in ms. `still` holds the first
    frame; `free` ("See it tracked") plays whether or not the replay is playing. */
+// The attacking blue line, in the same screen positions the rink paints it.
+function entryBlue(P){
+ const x=AX(BLUE_LINE_X*attackDirection(P.e.own,HID),P.e.per),ys=boardsY(x);
+ return {x,y1:ys[0],y2:ys[1]};}
 function trkStart(P,still,free){
  trkEnd();
  const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
@@ -2931,19 +2936,30 @@ function trkStart(P,still,free){
  // The moment of the shot: a stop on every located goal; beyond TRACK_LANE_FT its lane is held. The light lane is markup's.
  const SHOT=trackShot(P,G.teams.home.id);
  const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P,G.teams.home.id);
+ // Goals only. The same still that holds the first frame, inserted where the puck clears the blue line,
+ // so dwell (via left()) waits it out and Event mode's timing stays as it was.
+ const homeId=G.teams.home.id;
+ const entry=TRK.goals?trackEntry(P,homeId,G.roster,Number(P.e.own)===homeId?G.teams.home.ab:G.teams.away.ab):null;
+ const HOLD=entry?TRACK_STILL_MS:0;
+ const crossAt=entry?(entry.at-t0)/10/sp*1000:0;
+ const blue=entry?entryBlue(P):null;
  let played=-still;
- const now10=()=>t0+Math.max(0,played)/1000*sp*10;
+ const fileMs=()=>{const p=Math.max(0,played);if(!entry||p<=crossAt)return p;return p<crossAt+HOLD?crossAt:p-HOLD;};
+ const now10=()=>t0+fileMs()/1000*sp*10;
+ const clip=(tGoal-t0)/10*1000/sp;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
   // In Goals the goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
-  stops:trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal),at:now10,
-  left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
-  seek(v){played=(v-t0)/10/sp*1000;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
+  // The blue-line crossing is one, so Prev/Next can land on the check marks.
+  stops:(()=>{const s=trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal);
+   return entry?[...new Set([...s,entry.at])].sort((a,b)=>a-b):s;})(),at:now10,
+  left:()=>Math.max(0,clip+HOLD-played),
+  seek(v){let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
  // One frame of the tracking, and the words and clock that go with it.
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
-  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT}));
+  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT,entry,blue}));
   document.getElementById('rg').classList.add('trk');
-  const say=played<0?FIRST:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
+  const say=played<0?FIRST:entry&&j===entry.j?entry.say:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
   // At an assist the name line says who made it and the league's credit, as long as a label stays up or to the next stop.
   const upTo=a=>Math.min(a.at+TRACK_TAG_TENTHS*2,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
   const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
@@ -2962,7 +2978,7 @@ function trkStart(P,still,free){
   if(moving&&advanced)run.raf=requestAnimationFrame(tick);};
  run.tick=tick;run.paint=paint;TRK.run=run;
  run.raf=requestAnimationFrame(tick);
- return still+(P.before*1000)/sp;}
+ return still+HOLD+(P.before*1000)/sp;}
 // Restart the loop after Play, a seek or a speed change.
 function trkKick(force){const r=TRK.run;if(r&&!r.raf&&(force||playing||r.free)){r.prev=null;r.raf=requestAnimationFrame(r.tick);}}
 /* The frame hook, at the end of every render: end a tracking the reader left, load the
