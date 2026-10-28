@@ -11,7 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { rich, boot } from './helpers/page.js';
+import { rich, boot, app } from './helpers/page.js';
 
 const FX = JSON.parse(readFileSync(new URL('./fixtures/tracked-2026020144-ev202.json', import.meta.url), 'utf8'));
 // Goals by their place on the page's own timeline (what the scrubber counts), via the harness.
@@ -111,6 +111,22 @@ test('Goals: Prev and Next step within a goal\'s tracking, and pause there', asy
   assert.equal(a.$('play').textContent.includes('Pause'), false, 'stepping did not pause');
   // One thing at a time: the note under the rink is this frame's line, or nothing.
   assert.match(a.$('playline').textContent, /^(|Anyone inside the (light|shaded) triangle .*)$/, 'the whole account is under the rink');
+});
+
+test('Goals mode shows the color line with no tap target', async () => {
+  const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
+  await settle(); await settle();
+  assert.equal(a.$('rg').classList.contains('trkgoals'), true, 'not in Goals');
+  const k = a.every(d => d.$('playline').textContent).findIndex(Boolean);
+  assert.ok(k > 0, 'Goals has no color line');
+  a.at(k, () => {});
+  assert.ok(a.$('playline').textContent, 'the color line is missing');
+  assert.match(app, /#rg\.trkgoals \.playline\{cursor:default;pointer-events:none\}/, 'Goals still offers the line as a tap target');
+  assert.equal(a.$('pwrow').hidden && a.$('pwshift').hidden && a.$('pwrun').hidden, true, 'the source note is showing in Goals');
+  assert.equal(a.$('playd').open, false);
+  a.$('playd').open = true;
+  a.at(k, () => {});
+  assert.equal(a.$('playd').open, false, 'Goals reopened the source note');
 });
 
 test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, which holds the puck in the net', async () => {

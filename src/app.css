@@ -2649,7 +2649,11 @@
 /* The color line under the name line. The row stays reserved so an empty note does not move Play. */
 #rg .playd{margin:2px 2px 0;min-height:2.6em;line-height:1.3;text-align:center;font-size:.82rem;color:var(--muted)}
 #rg .playd.none{visibility:hidden}
+#rg .playline{list-style:none;cursor:pointer}
+#rg .playline::-webkit-details-marker{display:none}
+#rg .playline:hover{text-decoration:underline dotted}
 #rg .playd.zoned .playline{color:var(--ink);font-weight:600}
+#rg .playwork{text-align:left;max-width:46rem;margin:6px auto 2px;font-size:.8rem;line-height:1.4;color:var(--ink)}
 
 /* THE TRACKED GOAL (app.js `trkStart`, src/lib/tracked.js). While it plays the play's
    marks dim and their numbers go; in Goals they are not drawn at all, nor the next-play
@@ -2659,6 +2663,10 @@
 #rg.trk .evn,#rg.trk .whn,#rg.trk .zsn,#rg.trk .shotft,#rg.trkgoals .evn,#rg.trkgoals .whn,#rg.trkgoals .zsn,#rg.trkgoals .shotft{display:none}
 #rg.trk #cue,#rg.trknocue #cue,#rg.trkgoals.trk #caption{display:none}
 #rg.trkgoals.trk #events,#rg.trkgoals.trk #lines,#rg.trkgoals.trk #puck,#rg.trkgoals.trk #labels,#rg.trkgoals.trk #draws,#rg.trkgoals.trk #whistles,#rg.trkgoals.trk #netmen{display:none}
+/* Goals does not open the source note. `trkgoals` is the class trkPaint already sets for that mode. */
+#rg.trkgoals .playline{cursor:default;pointer-events:none}
+#rg.trkgoals .playline:hover{text-decoration:none}
+#rg.trkgoals .playwork{display:none}
 #rg #track text{pointer-events:none}
 #rg #track .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
 #rg #track .tag{font-size:2.6px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:.9px}
