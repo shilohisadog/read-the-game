@@ -2927,7 +2927,7 @@ function trkEnd(){
    frame; `free` ("See it tracked") plays whether or not the replay is playing. */
 // The attacking blue line, in the same screen positions the rink paints it.
 function entryBlue(P){
- const x=AX(BLUE_LINE_X*attackDirection(P.e.own,HID),P.e.per),ys=boardsY(x);
+ const x=AX(BLUE_LINE_X*attackDirection(P.e.own,G.teams.home.id),P.e.per),ys=boardsY(x);
  return {x,y1:ys[0],y2:ys[1]};}
 function trkStart(P,still,free){
  trkEnd();
@@ -2938,8 +2938,7 @@ function trkStart(P,still,free){
  const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P,G.teams.home.id);
  // Goals only. The same still that holds the first frame, inserted where the puck clears the blue line,
  // so dwell (via left()) waits it out and Event mode's timing stays as it was.
- const homeId=G.teams.home.id;
- const entry=TRK.goals?trackEntry(P,homeId,G.roster,Number(P.e.own)===homeId?G.teams.home.ab:G.teams.away.ab):null;
+ const entry=TRK.goals?trackEntry(P,G.teams.home.id,G.roster,TEAMAB(P.e.own)):null;
  const HOLD=entry?TRACK_STILL_MS:0;
  const crossAt=entry?(entry.at-t0)/10/sp*1000:0;
  const blue=entry?entryBlue(P):null;

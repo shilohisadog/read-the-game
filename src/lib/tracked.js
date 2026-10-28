@@ -304,6 +304,7 @@ export function trackLaneLine(P, j, tt, shot, homeId) {
 /** "Onside: the puck crossed the blue line before any LAK player did." */
 export const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
 
+/** Feet along the attack, positive toward the net being attacked, or null when `o` has no location. */
 const trackAx = (P, o, dir) => {
   if (!o || o.x == null || o.y == null) return null;
   const f = trackFeet(o);
@@ -324,6 +325,7 @@ export function trackEntry(P, homeId, roster, ab) {
   for (let j = 0; j <= P.k; j++) {
     const ax = axAt(j);
     if (ax == null) { prev = null; continue; }
+    // The last crossing. The puck can leave the zone and come back.
     if (prev != null && prev <= puckClear && ax > puckClear) hit = j;
     prev = ax;
   }
