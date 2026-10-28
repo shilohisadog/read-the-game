@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-v3RD3A5rCBImNe3rlX2/vMeKvxt0AqhP0jRg5GwLDIw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-sSkfQ2RCKjJ8Hxwu0/b5DYn1OGC2d8LSK1jVzO//g9E='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DmN5uXRHYjbsO2rs6wisB7RV8eP3Z+3vccul5UVyDns=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-c6pNng5AlpHO3i8tPVgSj2MBVTmQhy7yyUxcor2W1Co='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -667,6 +667,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg #track .tag{font-size:2.6px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:.9px}
 #rg #track .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
 #rg #track .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
+#rg #track .onside{stroke:var(--blue);stroke-width:1.7;stroke-linecap:round;opacity:.5;pointer-events:none}
+#rg #track .onside.approach{animation:onsideglow 1.4s ease-in-out infinite}
+@keyframes onsideglow{50%{opacity:.18}}
+#rg #track .tck{font-size:2.4px;font-weight:800;stroke:#fff;stroke-width:.45;paint-order:stroke;text-anchor:middle}
 #rg .trkc{display:inline-flex;align-items:center}
 #rg .trkc[hidden]{display:none}
 #rg .trkc span{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--track);margin:0 6px 0 4px}
@@ -3765,6 +3769,8 @@ const TRACK_RELEASE_FT = 30;
 const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
 const TRACK_REACH_FT = 5.5;
 const GOAL_LINE = 89, BLUE = 25;
+const PUCK_R = 0.6;
+const SKATER_R = 1.35;
 
 const TRACK_WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Shot missed the net',
   'blocked-shot': 'Shot blocked', hit: 'Hit', giveaway: 'Gave the puck away',
@@ -3962,6 +3968,46 @@ function trackLaneLine(P, j, tt, shot, homeId) {
   if (shot && shot.lane && tt >= shot.at) return 'Anyone inside the shaded triangle was between the shot and the net.';
   return trackLaneAt(P, j, homeId) ? 'Anyone inside the light triangle stands between the puck and the net.' : '';
 }
+
+const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
+
+const trackAx = (P, o, dir) => {
+  if (!o || o.x == null || o.y == null) return null;
+  const f = trackFeet(o);
+  return P.turn * f.x * dir;
+};
+
+function trackEntry(P, homeId, roster, ab) {
+  if (!P || !P.e || homeId == null) return null;
+  const dir = attackDirection(P.e.own, homeId), own = Number(P.e.own);
+  const axAt = j => trackAx(P, P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'], dir);
+  const puckClear = BLUE_LINE_X + PUCK_R, skaterClear = BLUE_LINE_X + SKATER_R;
+  let prev = null, hit = null;
+  for (let j = 0; j <= P.k; j++) {
+    const ax = axAt(j);
+    if (ax == null) { prev = null; continue; }
+    if (prev != null && prev <= puckClear && ax > puckClear) hit = j;
+    prev = ax;
+  }
+  if (hit == null) return null;
+  const ids = [];
+  for (const o of Object.values(P.frames[hit].onIce || {})) {
+    if (!o.playerId || Number(o.teamId) !== own) continue;
+    const r = roster && roster[o.playerId];
+    if (r && r.pos === 'G') continue;
+    const ax = trackAx(P, o, dir);
+    if (ax == null || ax > skaterClear) return null;
+    ids.push(Number(o.playerId));
+  }
+  if (!ids.length) return null;
+  let from = hit;
+  for (let j = hit - 1; j >= 0; j--) {
+    const ax = axAt(j);
+    if (ax == null || ax <= BLUE_LINE_X - ZONE_BAND_FT || ax > puckClear) break;
+    from = j;
+  }
+  return { j: hit, at: P.frames[hit].timeStamp, from, ids, say: trackEntrySay(ab) };
+}
 function trackFrameAt(P, tt) {
   let j = 0;
   while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
@@ -3973,10 +4019,12 @@ function trackClock(P, j) {
   return `${String(Math.floor(r / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`;
 }
 
-function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null }) {
+function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry = null, blue = null }) {
   const per = P.e.per, at = o => { const p = trackFeet(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
   const F = P.frames[j].onIce, out = [];
+  if (entry && blue && j >= entry.from && j <= entry.j)
+    out.push(`<line class="onside${j < entry.j ? ' approach' : ''}" x1="${blue.x.toFixed(2)}" y1="${blue.y1.toFixed(2)}" x2="${blue.x.toFixed(2)}" y2="${blue.y2.toFixed(2)}"/>`);
   const lane = (cls, L) => `<polygon class="${cls}" points="${[L.apex, ...L.posts].map(q => `${AX(q.x, per).toFixed(2)},${AY(q.y, per).toFixed(2)}`).join(' ')}"/>`;
   if (shot && shot.lane && tt >= shot.at) out.push(lane('tlane', shot));
   else { const L = trackLaneAt(P, j, G.teams.home.id); if (L) out.push(lane('tlane live', L)); }
@@ -3985,15 +4033,17 @@ function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null }) {
     const s = at(o), r = G.roster[o.playerId] || {}, c = col[o.teamId] || '#5b6d7a';
     const gk = r.pos === 'G', star = stars.has(Number(o.playerId)), away = Number(o.teamId) === Number(G.teams.away.id);
     const fill = away ? '#fff' : c, rim = away ? c : (gk ? '#0f1a23' : '#fff'), ink = away ? readableInk(c) : inkOn(c);
-    out.push(`<circle cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${gk ? 1.7 : star ? 1.6 : 1.35}" fill="${fill}" stroke="${rim}" stroke-width="${away ? (star ? .7 : .45) : (star ? .55 : .25)}"/>`
+    out.push(`<circle cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${gk ? 1.7 : star ? 1.6 : SKATER_R}" fill="${fill}" stroke="${rim}" stroke-width="${away ? (star ? .7 : .45) : (star ? .55 : .25)}"/>`
       + `<text class="tn" x="${s.x.toFixed(2)}" y="${s.y.toFixed(2)}" fill="${ink}">${ESC(o.sweaterNumber)}</text>`);
+    if (entry && j === entry.j && entry.ids.includes(Number(o.playerId)))
+      out.push(`<text class="tck" x="${(s.x + 2.2).toFixed(2)}" y="${(s.y - 1.5).toFixed(2)}" fill="${c}">\u2713</text>`);
     if (Number(o.playerId) === Number(P.e.actor))
       out.push(`<text class="tsc" x="${s.x.toFixed(2)}" y="${(s.y - 2.6).toFixed(2)}" fill="${c}">${ESC(r.nm || '')}</text>`);
   }
   const pk = F['1'];
   if (pk) {
     const s = at(pk);
-    out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r=".6"/>`);
+    out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${PUCK_R}"/>`);
     for (const t of tags) {
       if (!(tt >= t.at && tt < t.at + TRACK_TAG_TENTHS)) continue;
       const e = t.e, q = e.x != null ? { x: AX(e.x, per), y: AY(e.y, per) } : s;
@@ -5752,23 +5802,33 @@ const trkReady=e=>{const p=TRK.plans.get(e);return p&&p.value?p.value:null;};
 function trkEnd(){
  if(TRK.run&&TRK.run.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(TRK.run.raf);
  TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');}
+function entryBlue(P){
+ const x=AX(BLUE_LINE_X*attackDirection(P.e.own,G.teams.home.id),P.e.per),ys=boardsY(x);
+ return {x,y1:ys[0],y2:ys[1]};}
 function trkStart(P,still,free){
  trkEnd();
  const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
  const SHOT=trackShot(P,G.teams.home.id);
  const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P,G.teams.home.id);
+ const entry=TRK.goals?trackEntry(P,G.teams.home.id,G.roster,TEAMAB(P.e.own)):null;
+ const HOLD=entry?TRACK_STILL_MS:0;
+ const crossAt=entry?(entry.at-t0)/10/sp*1000:0;
+ const blue=entry?entryBlue(P):null;
  let played=-still;
- const now10=()=>t0+Math.max(0,played)/1000*sp*10;
+ const fileMs=()=>{const p=Math.max(0,played);if(!entry||p<=crossAt)return p;return p<crossAt+HOLD?crossAt:p-HOLD;};
+ const now10=()=>t0+fileMs()/1000*sp*10;
+ const clip=(tGoal-t0)/10*1000/sp;
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
-  stops:trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal),at:now10,
-  left:()=>Math.max(0,-played)+Math.max(0,(tGoal-now10())/10)*1000/sp,
-  seek(v){played=(v-t0)/10/sp*1000;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
+  stops:(()=>{const s=trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal);
+   return entry?[...new Set([...s,entry.at])].sort((a,b)=>a-b):s;})(),at:now10,
+  left:()=>Math.max(0,clip+HOLD-played),
+  seek(v){let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
-  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT}));
+  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT,entry,blue}));
   document.getElementById('rg').classList.add('trk');
-  const say=played<0?FIRST:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
+  const say=played<0?FIRST:entry&&j===entry.j?entry.say:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
   const upTo=a=>Math.min(a.at+TRACK_TAG_TENTHS*2,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
   const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
   const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
@@ -5785,7 +5845,7 @@ function trkStart(P,still,free){
   if(moving&&advanced)run.raf=requestAnimationFrame(tick);};
  run.tick=tick;run.paint=paint;TRK.run=run;
  run.raf=requestAnimationFrame(tick);
- return still+(P.before*1000)/sp;}
+ return still+HOLD+(P.before*1000)/sp;}
 function trkKick(force){const r=TRK.run;if(r&&!r.raf&&(force||playing||r.free)){r.prev=null;r.raf=requestAnimationFrame(r.tick);}}
 function trkFrame(k,how,cur){
  if(!TRK_ON)return;

@@ -10,6 +10,7 @@ import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
   trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
+  trackEntry, trackEntrySay,
 } from '../src/lib/tracked.js';
 import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
 
@@ -273,4 +274,72 @@ test('an unassisted goal has no assists, and a recorded assist the tracking neve
   const ghost = trackPlan(TX.frames, { ...TGOAL, a1: 1, a2: TGOAL.a2 });
   assert.deepEqual(trackAssists(ghost), [], 'a primary assist who never has the puck still got a moment');
   assert.equal(trackHolders(TP).length, TP.k + 1);
+});
+
+/* A clip in league feet, already oriented (turn 1, home attacking +x). */
+const dot = (x, y, id, team) => ({ x: (x + 100) * 12, y: (42.5 - y) * 12, playerId: id || '', teamId: team ?? '', sweaterNumber: '' });
+const clip = rows => {
+  const frames = rows.map((row, i) => {
+    const onIce = { '1': dot(row.puck, row.py || 0) };
+    for (const s of row.sk) onIce[s.id] = dot(s.x, 0, s.id, s.team);
+    return { timeStamp: i * 10, onIce };
+  });
+  return { e: { own: 1, x: 65, y: 0, per: 1, actor: 11 }, frames, k: frames.length - 1, turn: 1 };
+};
+const ROSTER = { 11: { pos: 'C' }, 12: { pos: 'D' }, 31: { pos: 'G' }, 21: { pos: 'C' } };
+const sk = (x, id, team = 1) => ({ x, id, team });
+
+test('the puck clears the blue line before the attacking skaters', () => {
+  const C = clip([
+    { puck: 10, sk: [sk(4, 11), sk(0, 12), sk(-80, 31), sk(40, 21, 2)] },
+    { puck: 22, sk: [sk(8, 11), sk(2, 12), sk(-80, 31), sk(40, 21, 2)] },
+    { puck: 30, sk: [sk(14, 11), sk(6, 12), sk(-80, 31), sk(50, 21, 2)] },
+    { puck: 80, sk: [sk(40, 11), sk(20, 12), sk(-80, 31), sk(60, 21, 2)] },
+    { puck: 92, sk: [sk(70, 11), sk(40, 12), sk(-80, 31), sk(70, 21, 2)] },
+  ]);
+  const en = trackEntry(C, 1, ROSTER, 'LAK');
+  assert.equal(en.j, 2, 'not the frame the puck\'s dot clears the line');
+  assert.equal(en.from, 1, 'the approach does not start in the band before the line');
+  assert.deepEqual(en.ids, [11, 12]);
+  assert.equal(en.say, 'Onside: the puck crossed the blue line before any LAK player did.');
+  assert.doesNotMatch(en.say, /too close/i);
+  // A centre just past the line has not cleared the skater dot.
+  const on = clip([
+    { puck: 24, sk: [sk(25.4, 11)] },
+    { puck: 28, sk: [sk(25.4, 11)] },
+  ]);
+  assert.equal(trackEntry(on, 1, ROSTER, 'LAK').j, 1);
+});
+
+test('a clip that does not show the entry is left blank', () => {
+  const already = clip([
+    { puck: 40, sk: [sk(20, 11)] },
+    { puck: 70, sk: [sk(40, 11)] },
+    { puck: 92, sk: [sk(60, 11)] },
+  ]);
+  assert.equal(trackEntry(already, 1, ROSTER, 'LAK'), null, 'the puck was already in the zone');
+  const ahead = clip([
+    { puck: 10, sk: [sk(40, 11), sk(0, 12)] },
+    { puck: 30, sk: [sk(40, 11), sk(4, 12)] },
+  ]);
+  assert.equal(trackEntry(ahead, 1, ROSTER, 'LAK'), null, 'an attacking skater had already cleared the line');
+  const real = trackEntry(P, G.teams.home.id, G.roster, 'LAK');
+  const late = { ...P, frames: P.frames.slice(real.j), k: P.k - real.j };
+  assert.equal(trackEntry(late, G.teams.home.id, G.roster, 'LAK'), null, 'the clip starts with the puck already across');
+});
+
+test('the real clip shows LAK entering onside, and the checks are only on that frame', () => {
+  const en = trackEntry(P, G.teams.home.id, G.roster, 'LAK');
+  assert.ok(en, 'the Panarin clip shows no entry');
+  assert.equal(en.say, trackEntrySay('LAK'));
+  assert.ok(en.ids.includes(GOAL.actor), 'the scorer is not marked');
+  const gk = Object.values(P.frames[en.j].onIce).find(o => G.roster[o.playerId] && G.roster[o.playerId].pos === 'G' && Number(o.teamId) === Number(GOAL.own));
+  assert.ok(gk && !en.ids.includes(Number(gk.playerId)), 'the goaltender is marked');
+  const opt = { G, AX, AY, col: {}, tags: [], entry: en, blue: { x: 75, y1: 1, y2: 84 } };
+  const at = trackMarkup(P, en.j, en.at, opt);
+  assert.equal([...at.matchAll(/class="tck"/g)].length, en.ids.length);
+  assert.match(at, /class="onside"/);
+  assert.doesNotMatch(trackMarkup(P, en.from, P.frames[en.from].timeStamp, opt), /class="tck"/);
+  assert.match(trackMarkup(P, en.from, P.frames[en.from].timeStamp, opt), /class="onside approach"/);
+  assert.doesNotMatch(trackMarkup(P, en.j, en.at, { G, AX, AY, col: {}, tags: [] }), /class="tck"|class="onside/);
 });

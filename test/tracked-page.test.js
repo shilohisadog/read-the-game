@@ -157,6 +157,65 @@ test('Goals mode says how often shots from that distance go in', async () => {
   assert.match(few.textContent, /under 30/);
 });
 
+test('Goals shows the onside entry, and Event mode shows nothing', async () => {
+  const home = rich.teams.home.id, away = rich.teams.away.id, ab = rich.teams.home.ab;
+  const dot = (x, id, team) => ({ x: (x + 100) * 12, y: (42.5 - 0) * 12, playerId: id || '', teamId: team ?? '', sweaterNumber: '' });
+  const rows = [
+    { puck: 22, sk: [[11, 8], [12, 2], [31, -80], [21, 40, away]] },
+    { puck: 30, sk: [[11, 14], [12, 6], [31, -80], [21, 50, away]] },
+    { puck: 50, sk: [[11, 28], [12, 16], [31, -80], [21, 55, away]] },
+    { puck: 80, sk: [[11, 50], [12, 30], [31, -80], [21, 60, away]] },
+    { puck: 92, sk: [[11, 70], [12, 40], [31, -80], [21, 70, away]] },
+  ];
+  const frames = rows.map((row, i) => {
+    const onIce = { '1': dot(row.puck) };
+    for (const [id, x, team] of row.sk) onIce[id] = dot(x, id, team || home);
+    return { timeStamp: i * 10, onIce };
+  });
+  const game = structuredClone(rich);
+  game.roster[11] = { n: 11, nm: 'One', pos: 'C', tid: home };
+  game.roster[12] = { n: 12, nm: 'Two', pos: 'D', tid: home };
+  game.roster[31] = { n: 31, nm: 'Keep', pos: 'G', tid: home };
+  game.roster[21] = { n: 21, nm: 'Them', pos: 'C', tid: away };
+  const tl = boot(game).timeline;
+  const goals = tl.map((e, k) => ({ e, k })).filter(({ e }) => e && e.type === 'goal' && e.pt !== 'SO');
+  const index = goals.map(({ e, k }) => ({ ev: 1000 + k, per: e.per, clock: e.clock, scorer: e.actor }));
+  const fetch = name => Promise.resolve(name.endsWith('goals.json') ? index : frames);
+
+  const g = boot(game, null, '?replay=goals', null, fetch, MOTION);
+  await settle(); await settle();
+  g.at(0, () => {});
+  g.$('fwd').click(); await settle(); await settle();
+  assert.ok(g.$('rg').classList.contains('trk'), 'Goals did not open the tracking');
+  assert.match(g.$('track').innerHTML, /class="onside approach"/, 'the line does not glow as the puck approaches');
+  assert.doesNotMatch(g.$('playline').textContent, /Onside/);
+  let said = g.$('playline').textContent;
+  for (let n = 0; n < 6 && !/Onside:/.test(said); n++) {
+    g.$('fwd').click(); await settle(); await settle();
+    said = g.$('playline').textContent;
+  }
+  assert.equal(said, `Onside: the puck crossed the blue line before any ${ab} player did.`);
+  assert.equal([...g.$('track').innerHTML.matchAll(/class="tck"/g)].length, 2);
+  assert.doesNotMatch(g.$('track').innerHTML + said, /too close/i);
+
+  const ev = boot(game, null, '?replay=all', null, fetch, MOTION);
+  await settle(); await settle();
+  const first = goals[0];
+  let from = first.k - 1;
+  while (from > 0 && tl[from - 1].type !== 'faceoff' && tl[from].s > first.e.s - 30) from--;
+  ev.at(from, () => {});
+  await settle(); await settle();
+  ev.$('play').click();
+  let held = false;
+  for (let n = 0; n < 40 && +ev.$('scrub').value < first.k; n++) {
+    ev.advance(1); await settle();
+    if (ev.$('rg').classList.contains('trk')) { held = true; break; }
+  }
+  assert.ok(held, 'Event mode never played the tracking');
+  assert.doesNotMatch(ev.$('track').innerHTML, /onside|class="tck"/);
+  assert.doesNotMatch(ev.$('playline').textContent, /Onside/);
+});
+
 test('an empty-net goal in Goals says the net was empty, not a rate', async () => {
   const game = JSON.parse(JSON.stringify(rich));
   const goal = game.events.find(e => e.type === 'goal' && e.x != null);
