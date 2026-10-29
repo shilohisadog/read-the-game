@@ -319,15 +319,24 @@ test('no frame pauses without saying something', () => {
   //
   // THE ASSERTION IS THE BICONDITIONAL, not "long frames are rare". A frame is
   // long if and only if it spoke.
+  // Goals are excluded from the base: Kevin 2026-10-29 gave them a fixed
+  // GOAL_READ_MS that does not scale with gear, so at the default pace a goal
+  // can be shorter than frameMs and must not redefine "ordinary".
   const { rows } = paceOf(160);
-  const base = Math.min(...rows.map(r => r.ms));
-  const long = rows.filter(r => r.ms > base);
+  const nonGoal = rows.filter(r => !r.goal);
+  assert.ok(nonGoal.length > 10, 'the walk had almost no non-goal frames');
+  const base = Math.min(...nonGoal.map(r => r.ms));
+  const long = nonGoal.filter(r => r.ms > base);
   assert.ok(long.length > 0, 'no frame in the walk was ever given extra time');
-  assert.ok(long.length < rows.length, 'every frame was long — there is no base pace left');
-  for (const r of rows) {
+  assert.ok(long.length < nonGoal.length, 'every frame was long — there is no base pace left');
+  for (const r of nonGoal) {
     assert.equal(r.ms > base, r.spoke,
       r.spoke ? `frame ${r.i} carried a caption and got the ordinary ${r.ms}ms`
               : `frame ${r.i} paused for ${r.ms}ms with nothing on screen to explain it`);
+  }
+  for (const r of rows.filter(r => r.goal)) {
+    assert.ok(r.spoke, `goal frame ${r.i} was silent`);
+    assert.equal(r.ms, 4000, `goal frame ${r.i} waited ${r.ms}ms; post-goal read is GOAL_READ_MS`);
   }
 });
 
@@ -382,10 +391,15 @@ test('the caption lasts exactly as long as the frame it describes', () => {
   // ONE NUMBER, READ TWICE. Asserting a literal here would be a second copy of
   // the pace, free to agree with a wrong first copy -- the same reason the
   // preview test above measures the replay instead of restating dwell.
+  //
+  // Located goals speak on the ice, not in the pill (`if(!place(cur))caption`),
+  // so their `dur` is whatever the previous pill left behind. Only frames that
+  // WRITES to the caption are in this check — Kevin 2026-10-29 made goal dwell
+  // a fixed GOAL_READ_MS, which unmasked the stale-dur coincidence.
   const { rows } = paceOf(160);
-  const spoke = rows.filter(r => r.spoke);
-  assert.ok(spoke.length >= 3, `only ${spoke.length} frames spoke in the walk`);
-  for (const r of spoke) {
+  const capped = rows.filter((r, k) => k > 0 && r.wrote > rows[k - 1].wrote);
+  assert.ok(capped.length >= 2, `only ${capped.length} frames wrote a caption in the walk`);
+  for (const r of capped) {
     assert.equal(r.dur, r.ms + 'ms',
       `frame ${r.i} runs ${r.ms}ms and its caption runs ${r.dur} — two clocks again`);
   }
@@ -634,8 +648,10 @@ test('speed is a stepper: two buttons, three paces, all of them reachable', () =
   // The shortest wait the page asks for over a run — the same reading the pace
   // test above takes, so the two cannot disagree about what "faster" means.
   const a = boot();
+  // Min over non-goal frames: goals use a fixed GOAL_READ_MS (2026-10-29) that
+  // would pin Math.min at every gear and hide whether Faster/Slower moved.
   const pace = walk => Math.min(...paceOf(60,
-    d => { for (const id of walk) d.$(id).onclick(); }).rows.map(r => r.ms));
+    d => { for (const id of walk) d.$(id).onclick(); }).rows.filter(r => !r.goal).map(r => r.ms));
   const paces = [pace([]), pace(['faster']), pace(['faster', 'slower']), pace(['slower'])];
   assert.ok(paces[1] < paces[0], 'Faster did not speed the replay up');
   assert.equal(paces[2], paces[0], 'stepping up then down did not return to the default pace');

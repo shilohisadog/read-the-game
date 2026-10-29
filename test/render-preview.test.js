@@ -346,10 +346,10 @@ test('dwell does not collapse to a constant — the whole replay, not the openin
   const seen = new Set(rows.map(r => r.ms));
   assert.ok(seen.size > 1,
     `every wait in the walk was ${rows[0].ms}ms — that is a constant wearing dwell's name`);
-  // AND the two values must be the two the rule produces, not any two: a stray
-  // third tier creeping back in is the thing this replaced.
-  assert.equal(seen.size, 2,
-    `the pace produced ${seen.size} distinct waits (${[...seen].sort((a, b) => a - b).join(', ')}); the rule has two states`);
+  // Base + caption bonus, and (Kevin 2026-10-29) a fixed post-goal read hold that
+  // does not scale with gear. Three is the rule now; a fourth tier is the creep.
+  assert.ok(seen.size <= 3,
+    `the pace produced ${seen.size} distinct waits (${[...seen].sort((a, b) => a - b).join(', ')}); the rule has at most three states`);
 });
 
 test('⭐ the preview begins at the opening faceoff', () => {

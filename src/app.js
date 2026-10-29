@@ -61,6 +61,7 @@ import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
   trackStops, trackFrameAt, trackClock, trackSecs, trackClipSit, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
   trackEntry } from './lib/tracked.js';
+import { GOAL_READ_MS, goalReadLabel } from './lib/goal-read.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
 /* ⭐⭐ THE ARCHIVE DOOR'S MODULES — Kevin's `Is that a lot?` overlay. Both kinds
@@ -2532,7 +2533,13 @@ function cardsFor(id){const cs=LEARNCARDS[id];
 // the replay, read the description and mentally process what's happening."
 const PACE=[7800,5400,3000];let gear=1;
 const CAPTION_BONUS=900;
+// 2026-10-29: fixed post-goal reading pause (Kevin). Same at every gear — reading does not scale.
+// GOAL_READ_MS lives in src/lib/goal-read.js so the number and the countdown copy are tested pure.
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
+/* Post-goal countdown on the ice. `end` is performance.now()+remaining while the
+   hold runs; `frozen` is the remaining ms while Pause holds it; `for` is the
+   goal event the hold belongs to so a resume on another frame cannot inherit it. */
+let GREAD=null,greadTimer=null;
 $('scrub').max=EV.length-1;
 /* THE PLAYHEAD FLOOR IS -1, AND -1 IS A FRAME. Every read of the current event
    in `render` is already guarded, `upto(-1)` already answers `[]`, `drawBoxes`
@@ -2540,7 +2547,7 @@ $('scrub').max=EV.length-1;
    'Pre-game' and `renderWork` already writes ', pre-game' -- so index -1 draws
    the rink, both goaltenders, a 0-0 board and two empty boxes. All of that was
    written and unreachable until this clamp stopped stopping at zero. */
-function set(v,how){i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
+function set(v,how){if(how!=='play')greadClear();i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
 /* THE ENDS ARE STATED BY THE CONTROL, not discovered by pressing it. `set`
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
@@ -2862,14 +2869,53 @@ function sayDist(e){const el=$('playdist');if(!el)return;
  const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
  el.textContent=say;el.hidden=!say;}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
+/* ⭐ POST-GOAL COUNTDOWN — Kevin, 2026-10-29. A faint line under the centre-ice
+   circle names the fixed reading pause so the viewer knows they have time. Pause
+   freezes it; Next/Prev/seek clear it; prefers-reduced-motion keeps the words
+   with no fade. Not shown on the front-door preview (its own GOAL_HOLD_MS). */
+function greadRem(){
+ if(!GREAD)return 0;
+ if(GREAD.frozen!=null)return Math.max(0,GREAD.frozen);
+ return Math.max(0,GREAD.end-performance.now());}
+function greadEl(){return document.getElementById('gread');}
+function greadPaint(){
+ const el=greadEl();if(!el)return;
+ if(PREVIEW||!GREAD){el.textContent='';return;}
+ const ms=greadRem();
+ el.textContent=goalReadLabel(ms);
+ el.classList.toggle('gread-on',ms>0&&!REDUCED);}
+function greadStopKick(){if(greadTimer!=null){clearInterval(greadTimer);greadTimer=null;}}
+function greadKick(){
+ // setInterval, not rAF: the test harness runs rAF synchronously and a paint loop would recurse.
+ greadStopKick();greadPaint();
+ if(!GREAD||GREAD.frozen!=null||PREVIEW||REDUCED)return;
+ if(typeof setInterval!=='function')return;
+ greadTimer=setInterval(()=>{
+  if(!GREAD||GREAD.frozen!=null){greadStopKick();return;}
+  greadPaint();if(greadRem()<=0)greadClear();},200);}
+function greadClear(){
+ greadStopKick();GREAD=null;const el=greadEl();if(el){el.textContent='';el.classList.remove('gread-on');}}
+function greadArm(e){
+ if(PREVIEW||!e||e.type!=='goal')return;
+ if(GREAD&&GREAD.for===e&&greadRem()>0){
+  if(GREAD.frozen!=null){GREAD.end=performance.now()+GREAD.frozen;GREAD.frozen=null;}
+ }else{GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};}
+ greadKick();}
+function greadFreeze(){
+ if(!GREAD||GREAD.frozen!=null)return;
+ GREAD.frozen=greadRem();GREAD.end=0;greadStopKick();greadPaint();}
 function dwell(e){
  // Goals passes through a frame that is not one of its stops (the opening face-off, a frame held for a
  // tracking or a file): it waits for the tracking or the file, never a frame's reading time.
  if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
   const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
+ // A goal's reading pause is fixed (GOAL_READ_MS), not gear-scaled — Kevin, 2026-10-29.
+ // Resume after Pause uses the frozen remainder for this same goal (play reads dwell before re-arming).
+ if(e&&e.type==='goal'){
+  const b=(GREAD&&GREAD.for===e&&GREAD.frozen!=null)?GREAD.frozen:GOAL_READ_MS;return b+trkExtra(e,b);}
  const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
 // The tracked goal may hold this frame while it plays, or (Goals) choose the next one.
-function step(){if(i>=EV.length-1){stop();return;}set(trkNext(i),'play');timer=setTimeout(step,dwell(EV[i]));}
+function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
    the pre-game frame for a full dwell would answer that with 1.8 seconds of empty
    ice. The opening frame is an orientation, not a countdown -- so Play leaves it
@@ -2879,7 +2925,7 @@ function step(){if(i>=EV.length-1){stop();return;}set(trkNext(i),'play');timer=s
    screen until the NEXT render, which at 3600ms is up to three and a half
    seconds of a list that is no longer true. Neither transition produces a frame
    of its own, so both have to say so. */
-function play(){closeLesson();if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));trkKick();}
+function play(){closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trkKick();}
 /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
@@ -2897,7 +2943,7 @@ const PLAY_REST='▶ Play';
    runs on the next frame when playback starts, but pausing produces no new
    frame at all -- so without this the roster would appear only when the reader
    next stepped, which is the opposite of "shown while paused". */
-function stop(){playing=false;syncStep();clearTimeout(timer);sayOnIce(EV[i]);}
+function stop(){playing=false;syncStep();clearTimeout(timer);greadFreeze();sayOnIce(EV[i]);}
 $('play').onclick=()=>playing?stop():play();
 /* ⭐⭐ THE TRACKED GOAL — the league's tracking of the seconds before a goal, over this
    rink (src/lib/tracked.js holds the arithmetic and the words). Kevin, 2026-10-19 → 21,
