@@ -51,7 +51,7 @@ through C.
 | `/game?game=&at=…` | extract, measures; lessons for `?lesson=` | lesson strip text with archive figures (`build_main.py:858`) | **a game and a moment** — summary and "Is that a lot?" scale against the season so far (`app.js:1769`, `2139`) | renderer (`app.js:3015`, `2177`, `2000`); work panel in `work.js` |
 | `/how-we-measure` | measures (`build_index.py:5597`) ✔ | archive span (6 occurrences) | **the method** — arithmetic moves nightly | `methods.js` and renderer (`build_index.py:5320`, `5347`, `5371`) |
 | 7 rule pages + what-you-can-see | nothing | archive rates, rewritten nightly | teaching, but the figures move | Python strings (`LEARN_CARDS`) |
-| `read-the-game.html`, `terrain-3d.html` | nothing | one baked game | unlinked | — |
+| `read-the-game.html` | nothing | one baked game | unlinked | — |
 
 **What that means:** claim wording lives in three places: data documents, pure
 model functions in `src/lib`, and page renderers. Only the first two could be

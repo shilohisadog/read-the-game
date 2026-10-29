@@ -327,11 +327,11 @@ test('THE CSP PINS EVERY INLINE BLOCK, not the first one it finds', () => {
        The skip was commented "only the two hash-pinned pages", which was three
        weeks stale — eleven were pinned — and worse, it was a hole shaped exactly
        like the pages that fell into it. `read-the-game.html` (743 KB, HTTP 200
-       live), `goalie-eye-view.html` and `terrain-3d.html` shipped with NO policy
+       live) and two unlinked prototypes shipped with NO policy
        at all and this loop said nothing, because a page with no CSP had no
        assertion to fail. A page that LOST its policy in a refactor would have
        passed the same way. Found by checking the live site, not by this test.
-       All three are pinned now, so the skip becomes the claim. */
+       The skip becomes the claim: every page that ships is pinned. */
     assert.ok(csp, `${f} ships with no Content-Security-Policy — `
       + 'every page this site deploys carries one, and a page that lost it '
       + 'would otherwise pass this check by having nothing to assert');

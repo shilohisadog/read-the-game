@@ -55,8 +55,6 @@ Everything in this repo is a different way of making that visible.
   > published definitions elsewhere score attempts differently. A reader who
   > looked ours up would conclude we were **wrong** rather than **different**,
   > so the label says what the rule does and borrows nobody's authority.
-- **`terrain-3d.html`** — shot density as terrain. Height is real kernel
-  density: *volume, not expected goals.*
 Three earlier 2D prototypes — `active-play`, `on-the-ice` and `goalie-view` —
 were removed on 2026-09-03 rather than left standing as things a reader would
 reasonably assume were current. They are in the history if you want them, and

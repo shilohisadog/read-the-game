@@ -30,7 +30,7 @@
  * ⭐ IT CHECKS ITSELF ON EVERY STATE: HEAD is rendered twice, and a state that
  * differs from itself is NOT put to the judge — it is listed as one the tool
  * could not compare. ⛔ This was a one-in-five sample until batch 1, where
- * `terrain-3d.html` (a WebGL chart redrawn every animation frame) differed from
+ * a WebGL chart redrawn every animation frame differed from
  * itself on 3 of 3 re-runs, fell outside the sample, and reached the sheet as a
  * question about a page no commit had touched. A sampled self-check is evidence
  * about the states it sampled.
@@ -180,7 +180,7 @@ async function sideContext(browser, { commit, vp, snap, plants, stripCsp, time }
     deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' });
   /* ⛔ `install` ALONE DOES NOT STOP TIME — the fake clock still flows in real
      time between the steps below, so how many animation frames a page ran
-     depended on how long a screenshot took. Found on terrain-3d.html, which turns
+     depended on how long a screenshot took. Found on a page that turned
      a little every frame: 5 renders gave 3 different images and once a different
      angle; paused, 10 of 10 were identical. Paused, the only time that passes is
      the `runFor` below, the same on both sides. */
