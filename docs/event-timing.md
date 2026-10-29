@@ -547,6 +547,10 @@ feel and tune.
   circle read `Tap Play to continue,` / `otherwise the Replay` / `continues in N
   seconds` (singular at 1; capital R in Replay), with a faint **Pause** button
   beside them (real `<button>`, 44px tap target; shaded pill kept — Kevin t78u).
+  Kevin t83u: `#gread` itself carries a soft translucent white panel (matching
+  the pill, ~12px radius, light padding/shadow/blur, `width:auto` hugging the
+  lines + button) so the overlay reads as one card — the pill alone was too
+  faint on the ice. Text halo kept.
   The overlay lives in `.iceslot` with the svg (anchored just under the centre
   circle in viewBox terms: viewBox 200×85, circle bottom ≈ 68%, CSS `top:70%`) so
   it stays on the ice at every width — not on the teaching text under the rink
