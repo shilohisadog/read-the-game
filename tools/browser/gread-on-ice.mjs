@@ -105,3 +105,12 @@ export async function check({ chrome, repo = process.cwd() }) {
     return ok;
   } finally { server.stop(); }
 }
+
+/* Direct entry so the check can run before deploy.yml is wired (workflow-scope). */
+import { findChrome } from './lib.mjs';
+import { fileURLToPath } from 'node:url';
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const chrome = findChrome();
+  const ok = await check({ chrome });
+  process.exit(ok ? 0 : 1);
+}
