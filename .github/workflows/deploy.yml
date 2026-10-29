@@ -283,6 +283,12 @@ jobs:
       - name: what only a stylesheet can settle
         run: node tools/browser/run.mjs stylesheet-settles
 
+      # `tools/browser/gread-on-ice.mjs` — the post-goal countdown must sit on the
+      # ice (inside the svg's box, above #who). A % top against `.rinkbox` once
+      # landed it on the teaching text under the rink (Kevin, 2026-10-29).
+      - name: the post-goal overlay stays on the ice
+        run: node tools/browser/run.mjs gread-on-ice
+
       # `tools/browser/states.mjs` — the states no probe was entering. Each one
       # SEEKS its subject and goes red if it never found it, which is the fault
       # the first version had: it sampled 55% of the scrub, landed on a faceoff,

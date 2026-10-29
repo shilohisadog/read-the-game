@@ -552,7 +552,10 @@ feel and tune.
   it stays on the ice at every width — not on the teaching text under the rink
   (a `.rinkbox` % did that). Horizontal row; `.iceslot{overflow:hidden}` is a
   belt. Copy uses `--muted` plus a light ice text-shadow. Phone play is
-  landscape (portrait shows `.rotate`). Tapping Play ends the hold at once and
+  landscape (portrait shows `.rotate`). The claim is gated by
+  `tools/browser/gread-on-ice.mjs` in `CHECKS` and as the deploy.yml step
+  "the post-goal overlay stays on the ice" (pre-release, after
+  `stylesheet-settles`). Tapping Play ends the hold at once and
   the replay keeps
   going; waiting lets the countdown reach 0 and auto-continue. Overlay Pause
   freezes the hold and the digits — the overlay button then reads **Resume**,

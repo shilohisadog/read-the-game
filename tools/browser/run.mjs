@@ -27,7 +27,7 @@ export const CHECKS = {
   'summary-marks': () => import('./summary-marks.mjs'),
   'one-tap': () => import('./one-tap.mjs'),
   'methods-deeplink': () => import('./methods-deeplink.mjs'),
-  /* gread-on-ice ships as tools/browser/gread-on-ice.mjs; wire into CHECKS+deploy.yml when a token with workflow scope can push the workflow. Run: node tools/browser/gread-on-ice.mjs */
+  'gread-on-ice': () => import('./gread-on-ice.mjs'),
 };
 
 function args(argv) {
