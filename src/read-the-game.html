@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-z3IAmGjEKu3M506gWw/KcKCvFZ7AWAcRp7s901rlKgA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-nPEu0fswsqzEEUd4f8zASTlP9bh2PWiwU3O6qvwMruA='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZVf0FrTtdyUuTnM/EBiCPm/Esx6Mcq4TXuKQvMq7ftU=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-0fEs45kIzMFm/GWwo1+PDqNOEE5wKhgMdxPLwTgdWKs='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -445,6 +445,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
+#rg .gread{font-size:3.4px;font-weight:600;fill:rgba(15,26,35,.42);font-family:system-ui,sans-serif;pointer-events:none}
+#rg .gread.gread-on{animation:greadin .35s ease}
+@keyframes greadin{0%{opacity:0}100%{opacity:1}}
+#rg.preview .gread{display:none!important}
+
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
 #rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
 #rg .fnote:empty{display:none}
@@ -721,7 +726,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 
 <div class="lesson" id="lesson" hidden></div>
 
-<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g></svg>
+<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g><text id="gread" class="gread" x="100" y="62" text-anchor="middle"></text></svg>
   
   <p class="who" id="who" aria-live="polite"></p>
   
@@ -3949,6 +3954,19 @@ function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry = null
 }
 
 
+const GOAL_READ_MS = 4000;
+
+function goalReadLabel(msLeft) {
+  if (!(msLeft > 0)) return '';
+  const n = Math.ceil(msLeft / 1000);
+  return n === 1 ? 'Replay continues in 1 second' : `Replay continues in ${n} seconds`;
+}
+
+function goalReadDwell(trkLeft = 0) {
+  return GOAL_READ_MS + Math.max(0, trkLeft);
+}
+
+
 function goalTicks(events) {
   const n = events.length;
   const out = [];
@@ -5592,8 +5610,9 @@ function cardsFor(id){const cs=LEARNCARDS[id];
 const PACE=[7800,5400,3000];let gear=1;
 const CAPTION_BONUS=900;
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
+let GREAD=null,greadTimer=null;
 $('scrub').max=EV.length-1;
-function set(v,how){i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
+function set(v,how){if(how!=='play')greadClear();i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
 function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;
  if(!playing)$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;}
 function drawGoalTicks(){
@@ -5670,14 +5689,46 @@ function sayPlay(line){const d=$('playd');if(!d)return;
 function sayDist(e){const el=$('playdist');if(!el)return;
  const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
  el.textContent=say;el.hidden=!say;}
+function greadRem(){
+ if(!GREAD)return 0;
+ if(GREAD.frozen!=null)return Math.max(0,GREAD.frozen);
+ return Math.max(0,GREAD.end-performance.now());}
+function greadEl(){return document.getElementById('gread');}
+function greadPaint(){
+ const el=greadEl();if(!el)return;
+ if(PREVIEW||!GREAD){el.textContent='';return;}
+ const ms=greadRem();
+ el.textContent=goalReadLabel(ms);
+ el.classList.toggle('gread-on',ms>0&&!REDUCED);}
+function greadStopKick(){if(greadTimer!=null){clearInterval(greadTimer);greadTimer=null;}}
+function greadKick(){
+ greadStopKick();greadPaint();
+ if(!GREAD||GREAD.frozen!=null||PREVIEW||REDUCED)return;
+ if(typeof setInterval!=='function')return;
+ greadTimer=setInterval(()=>{
+  if(!GREAD||GREAD.frozen!=null){greadStopKick();return;}
+  greadPaint();if(greadRem()<=0)greadClear();},200);}
+function greadClear(){
+ greadStopKick();GREAD=null;const el=greadEl();if(el){el.textContent='';el.classList.remove('gread-on');}}
+function greadArm(e){
+ if(PREVIEW||!e||e.type!=='goal')return;
+ if(GREAD&&GREAD.for===e&&greadRem()>0){
+  if(GREAD.frozen!=null){GREAD.end=performance.now()+GREAD.frozen;GREAD.frozen=null;}
+ }else{GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};}
+ greadKick();}
+function greadFreeze(){
+ if(!GREAD||GREAD.frozen!=null)return;
+ GREAD.frozen=greadRem();GREAD.end=0;greadStopKick();greadPaint();}
 function dwell(e){
  if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
   const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
+ if(e&&e.type==='goal'){
+  const b=(GREAD&&GREAD.for===e&&GREAD.frozen!=null)?GREAD.frozen:GOAL_READ_MS;return b+trkExtra(e,b);}
  const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
-function step(){if(i>=EV.length-1){stop();return;}set(trkNext(i),'play');timer=setTimeout(step,dwell(EV[i]));}
-function play(){closeLesson();if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));trkKick();}
+function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);}
+function play(){closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trkKick();}
 const PLAY_REST='▶ Play';
-function stop(){playing=false;syncStep();clearTimeout(timer);sayOnIce(EV[i]);}
+function stop(){playing=false;syncStep();clearTimeout(timer);greadFreeze();sayOnIce(EV[i]);}
 $('play').onclick=()=>playing?stop():play();
 function trkGet(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>null);}
 function trkRows(){return TRK.rows||(TRK.rows=trkGet('track/'+G.game.id+'/goals.json').then(r=>Array.isArray(r)?r:[]));}

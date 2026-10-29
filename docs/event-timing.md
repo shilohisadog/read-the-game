@@ -507,3 +507,54 @@ a second look.
 - Stoppages are in `SKIP` and never enter `EV`, so the whistle layer has no frame
   of its own and no pacing question.
 - 496 JS + 105 Python tests green at `bb66972`.
+
+
+---
+
+## 12. BUILT 2026-10-29 — a fixed post-goal reading hold
+
+**Kevin, watching a goal replay:** the board, the banner, the caption and the
+notes all update when a goal lands, and the pause after that felt too short to
+take them in. He asked for about **four seconds** after the goal, with a faint
+countdown near centre ice naming the pause, and to try that number because he
+made it up.
+
+### What the clocks were doing
+
+At the locked default gear (`PACE[1] = 5400`), a goal frame already waited
+`frameMs + CAPTION_BONUS = 6300` ms once it was on screen — the same rule as any
+other captioned frame. A tracked clip ends as the puck crosses the line, then
+the replay steps onto that goal frame, so the after-goal read time was that full
+6300 ms (3900 ms at Faster, 8700 ms at Slower). Untracked goals were the same
+number from the moment the goal frame showed.
+
+So the defect was not "the clip ate the goal's dwell to ~1 s". The dwell was
+still gear-scaled reading time, and nothing on the ice told the viewer a pause
+had been granted for reading. Kevin's ask was a **named, fixed** hold he can
+feel and tune.
+
+### The decision
+
+- `GOAL_READ_MS = 4000` in `src/lib/goal-read.js`. Goals use this instead of
+  `frameMs + CAPTION_BONUS`. It does **not** scale with the speed gear — same
+  reason as `CAPTION_BONUS`: the words are the same length at every speed.
+- The hold starts when the goal frame is shown (for a tracked goal, that is
+  right after the clip reaches the goal line). Same rule in Goals and All
+  events.
+- A faint countdown under the centre-ice circle reads `Replay continues in N
+  seconds` (singular at 1). Pause freezes the hold and the digits; Play resumes
+  them; Next / Prev / seek clear them. `prefers-reduced-motion` keeps the words
+  and drops the fade. The front-door preview keeps its own `GOAL_HOLD_MS = 2600`
+  and does not show the countdown.
+- 4000 ms is Kevin's starting guess. The constant is the tuning knob.
+
+### Limits
+
+- Ordinary captioned frames (penalties, slot shots, color notes) still use
+  `frameMs + CAPTION_BONUS` and still scale with gear. Only goals opted out.
+- The pace now has **three** waits at a given gear when a goal is in the walk:
+  base, base+bonus, and `GOAL_READ_MS`. The old "exactly two states" guard was
+  widened on purpose; a fourth tier would still be the creep that guard exists
+  to catch.
+- The preview's last-frame `GOAL_HOLD_MS` is a different mechanism (keep the
+  siren caption from being cut off when the hero loops) and was left alone.
