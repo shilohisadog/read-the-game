@@ -41,7 +41,8 @@ of this repo found rather than one we noticed.
 | **[architecture.md](architecture.md)** | 📐 **reference** — what the system is, the one place its shape breaks, and the decisions that look like oversights. Its sizes are generated and gated. |
 | **[../DOCTRINE.md](../DOCTRINE.md)** | 📐 **reference** — what the site will and will not claim to a reader. The product bar. |
 | **[../CONTRIBUTING.md](../CONTRIBUTING.md)** | 📐 **reference** — what counts as a valid check here. The engineering bar. |
-| **[status.md](status.md)** | 📓 **living** — the build list and the single source of truth for what is built, decided or open. Long, and organised by state rather than date. Its health figures are generated. |
+| **[status.md](status.md)** | 📓 **living** — the build list and the single source of truth for what is built, decided or open. The current pickup section; older entries are in status-archive.md, newest first. Its health figures are generated. |
+| **[status-archive.md](status-archive.md)** | Older build-list entries moved out of status.md, newest first. |
 | **[site-purpose.md](site-purpose.md)** | 🧭 what the site is for and who it is for. The argument the rest is downstream of. |
 
 ## How the data is made
