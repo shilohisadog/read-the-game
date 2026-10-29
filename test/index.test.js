@@ -86,11 +86,6 @@ const UNLISTED = new Map([
    + 'and 35 test files boot it, so it is infrastructure rather than a page the '
    + 'site offers. Its door was the Workshop, which went on 2026-09-17 with the '
    + 'goaltender\'s-eye view. See docs/status.md.'],
-  ['terrain-3d.html',
-   'A prototype the Workshop used to link — shot locations as terrain. It outlived '
-   + 'its door on 2026-09-17 and is kept for the same reason the goalie view was '
-   + 'not: it is the one view of WHERE chances come from, and no decision has been '
-   + 'taken about it. Unlisted, and this is where that is written down.'],
 ]);
 
 /** Every page a reader can actually walk to, starting at the front door. */
@@ -130,7 +125,7 @@ test('no page in src/ ships unlinked', () => {
      CHECK SHIPPED WITH. It collected links from EVERY page in `src/`, including
      the unlisted ones, so an unlisted page still counted as a source of links:
      `workshop.html` was on the ledger, unreachable by any reader, and its own
-     links kept `goalie-eye-view.html` and `terrain-3d.html` looking "linked" for
+     links kept `goalie-eye-view.html` and the terrain page looking "linked" for
      nine days. One page's exemption was silently excusing two more.
      Kevin found it by eye ("we removed the surfacing of the goalie eye view...
      shouldn't they be removed from the source code?"), which is the half a

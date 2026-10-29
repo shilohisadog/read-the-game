@@ -45,20 +45,16 @@ Everything in this repo is a different way of making that visible.
 ### The apps
 
 - **`read-the-game.html`** — the main one. Base view is a plain-language
-  auto-narrated replay. Five optional layers, each with a show-me-the-work
-  panel that accounts for **every** event as counted or excluded-with-a-reason:
-  **＋Control (Corsi)**, **＋Shots from the slot**, **＋Goaltending**,
-  **＋Why play stopped**, **＋Blocked shots**.
+  auto-narrated replay. The picker is **Just events**, then optional layers,
+  each with a show-me-the-work panel that accounts for **every** event as
+  counted or excluded-with-a-reason: **Attempts**, **Slot shots**, **Blocked**,
+  **Goaltending**, **Stoppages**, **Zone starts**, **Who shoots**, **Face-offs**.
 
   > *Not "high-danger".* Ours is a pure location test — inside 33 ft of the net
   > and within ±22 ft of centre, no rush bonus, no shot-quality weighting — and
   > published definitions elsewhere score attempts differently. A reader who
   > looked ours up would conclude we were **wrong** rather than **different**,
   > so the label says what the rule does and borrows nobody's authority.
-- **`goalie-eye-view.html`** — first-person from the crease, plus five other
-  seats in the building. Same real data, the camera just moves.
-- **`terrain-3d.html`** — shot density as terrain. Height is real kernel
-  density: *volume, not expected goals.*
 Three earlier 2D prototypes — `active-play`, `on-the-ice` and `goalie-view` —
 were removed on 2026-09-03 rather than left standing as things a reader would
 reasonably assume were current. They are in the history if you want them, and

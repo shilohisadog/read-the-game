@@ -362,7 +362,7 @@ measured.
    **approval fatigue is how galleries and goldens die.** A 40-image diff gets
    approved unread.
 4. **Browser stages are where test programs go to rot.** Step 3 met WebGL noise
-   on `terrain-3d`; `deploy.yml` records 522s on a cold hostname. *A guard that
+   on a chart redrawn every frame; `deploy.yml` records 522s on a cold hostname. *A guard that
    fires at random is a guard somebody switches off.*
 5. **The zero-dependency promise meets gestures.** `deploy.yml`'s checks use the
    runner's Chrome and no npm package; step 3 used Playwright. A double-click

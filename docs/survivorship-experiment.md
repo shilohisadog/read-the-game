@@ -277,7 +277,7 @@ consequences of the measurements, not rulings.
    inside it could disarm its own detector. It imports from the untouched repo.
 3. **The numbers probe never ran `measure.mjs main()`**, so it missed everything
    the publication step itself computes. `docs/defects/survivorship-2026-09-16/scripts/probe-publish.mjs` was added.
-4. **`terrain-3d` screenshots vary under load** (WebGL timing). A pixel-only
+4. **WebGL screenshots vary under load** (timing). A pixel-only
    change on that page alone is not counted.
 5. **Deleting a test file tripped `doc-paths.test.js`**, since docs cite test
    files by path — a false "another test caught it". That failure is excluded, and

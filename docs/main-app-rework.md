@@ -502,6 +502,5 @@ README recording why, and keeping `build_alive3.py` for the why-popup source.
 
 Outstanding from F1 when this was written: `build_A/B/C/3d.py` (the earlier 2D
 prototypes and the terrain view) retained the bare-path problem and could not run
-from the repo. **`build_A/B/C.py` were removed 2026-09-03** (B8), so only
-`build_3d.py` still carries it
-root. Out of scope for Phase 0, which was the main app.
+from the repo. **`build_A/B/C.py` were removed 2026-09-03** (B8). The terrain
+builder was removed 2026-10-29. Out of scope for Phase 0, which was the main app.

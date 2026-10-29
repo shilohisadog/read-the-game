@@ -91,10 +91,10 @@ test('the walk covers every page in src/, and the game page at every step-3 stat
 });
 
 test('a state that differs from ITSELF is never put to the judge', () => {
-  // Batch 1, 2026-09-17: terrain-3d.html redraws a WebGL chart every animation
-  // frame, differed from itself on 3 of 3 re-runs, and reached the sheet as a
+  // Batch 1, 2026-09-17: a WebGL chart redrawn every animation
+  // frame differed from itself on 3 of 3 re-runs, and reached the sheet as a
   // question about a page no commit had touched.
-  assert.deepEqual(groupItems([r('terrain-3d.html', [1, 1], { px: { changed: 900 }, unstable: true })]), []);
+  assert.deepEqual(groupItems([r('webgl-chart.html', [1, 1], { px: { changed: 900 }, unstable: true })]), []);
 });
 
 test('a page that grew or shrank is aligned by content: what only MOVED is not a change', async () => {
