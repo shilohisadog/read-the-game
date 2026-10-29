@@ -1955,21 +1955,21 @@
    includes who/playdist/lbox; top:66% of that box landed the copy on the text
    under the ice (Kevin screenshot, 2026-10-29). viewBox 200×85, centre circle
    at (100,42.5) r=15 → bottom at 57.5/85 ≈ 68%; top:70% sits just under it,
-   above the boards. Row always (not column): at 390 the ice is ~158px tall and
-   a stacked tap+or+44px button overflows onto #who; a row stays ~44px and fits
-   the band under the circle. Faint but legible on ice (`--muted`). pointer-events
-   only on the button so ice taps still reach the rink. overflow:hidden on the
-   slot is a belt so a future taller copy cannot paint the teaching text. */
+   above the boards. Row: three right-justified lines beside Pause, vertically
+   centred (Kevin t77u / t78u — keep the shaded halo and pill). Faint but
+   legible on ice (`--muted` + ice text-shadow). Phone play is landscape
+   (portrait shows .rotate); verify at 844×390, not 390×844. overflow:hidden on
+   the slot is a belt so a taller copy cannot paint the teaching text. */
 #rg .iceslot{overflow:hidden}
 #rg .gread{position:absolute;left:50%;top:70%;transform:translate(-50%,-20%);z-index:2;
   display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;
-  gap:6px 10px;width:92%;max-width:92%;pointer-events:none;text-align:center;box-sizing:border-box}
+  gap:6px 12px;width:92%;max-width:92%;pointer-events:none;text-align:center;box-sizing:border-box}
 #rg .gread[hidden]{display:none!important}
 #rg .gread.gread-on{animation:greadin .35s ease}
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
 #rg .gread .gread-lines{margin:0;pointer-events:none;text-align:right}
-#rg .gread .gread-tap,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:650;
-  color:var(--muted);line-height:1.2;font-family:system-ui,sans-serif;
+#rg .gread .gread-tap,#rg .gread .gread-mid,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:650;
+  color:var(--muted);line-height:1.25;font-family:system-ui,sans-serif;
   text-shadow:0 0 6px rgba(238,244,248,.9),0 1px 0 rgba(238,244,248,.7)}
 #rg .gread .gread-btn{pointer-events:auto;min-height:44px;min-width:72px;padding:8px 14px;
   border-radius:999px;border:1px solid color-mix(in srgb,var(--muted) 45%,transparent);
@@ -1977,7 +1977,7 @@
   cursor:pointer;font-family:system-ui,sans-serif;backdrop-filter:blur(2px)}
 #rg .gread .gread-btn:focus-visible{outline:2px solid rgba(15,26,35,.45);outline-offset:2px}
 @media (min-width:640px){
- #rg .gread .gread-tap,#rg .gread .gread-or{font-size:.78rem}
+ #rg .gread .gread-tap,#rg .gread .gread-mid,#rg .gread .gread-or{font-size:.78rem}
  #rg .gread .gread-btn{font-size:.78rem;padding:8px 16px}
 }
 #rg.preview .gread{display:none!important}

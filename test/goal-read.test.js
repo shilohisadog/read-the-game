@@ -1,7 +1,7 @@
 /**
  * Post-goal reading hold — the pure bits (src/lib/goal-read.js).
  * Kevin, 2026-10-29: a fixed 20 s after a goal, same at every gear, with a
- * two-line soft-pause countdown (tap Play, or auto-continue). The dwell wiring
+ * three-line soft-pause countdown (tap Play / otherwise the Replay / continues). The dwell wiring
  * and the on-ice element live in app.js; what can be wrong without a browser is
  * checked here, plus a harness walk for tap-to-continue and auto-continue.
  */
@@ -22,21 +22,24 @@ test('leftover tracking on the same frame adds to the hold, never shortens it', 
   assert.equal(goalReadDwell(-50), GOAL_READ_MS, 'a negative leftover is not a credit');
 });
 
-test('the countdown is two lines: tap Play, and or-continues with singular at 1', () => {
+test('the countdown is three lines: tap Play, otherwise the Replay, continues — singular at 1', () => {
   assert.deepEqual(goalReadLines(20000), {
-    tap: 'Tap Play to continue',
-    or: 'or the replay continues in 20 seconds',
+    tap: 'Tap Play to continue,',
+    mid: 'otherwise the Replay',
+    or: 'continues in 20 seconds',
   });
   assert.deepEqual(goalReadLines(20000 - 1), {
-    tap: 'Tap Play to continue',
-    or: 'or the replay continues in 20 seconds',
+    tap: 'Tap Play to continue,',
+    mid: 'otherwise the Replay',
+    or: 'continues in 20 seconds',
   }, 'just under 20 s still reads 20');
-  assert.equal(goalReadLines(1000).or, 'or the replay continues in 1 second');
-  assert.equal(goalReadLines(1).or, 'or the replay continues in 1 second');
+  assert.equal(goalReadLines(1000).or, 'continues in 1 second');
+  assert.equal(goalReadLines(1).or, 'continues in 1 second');
   assert.equal(goalReadLines(0), null, 'done means gone');
   assert.equal(goalReadLines(-10), null);
   assert.equal(goalReadLabel(3000),
-    'Tap Play to continue\nor the replay continues in 3 seconds');
+    'Tap Play to continue,\notherwise the Replay\ncontinues in 3 seconds');
+  assert.match(goalReadLines(5000).mid, /Replay/, 'capital R in Replay');
 });
 
 test('⭐ the hold is the same number at every gear — reading does not scale', () => {
@@ -72,6 +75,8 @@ test('Play continues, overlay Pause freezes, Next clears — wired in app.js', (
     'the overlay Pause button lost its aria-label');
   assert.match(markup, /class="iceslot"[\s\S]*id="gread"[\s\S]*<\/div>\s*<\/div>/,
     '#gread must sit inside .iceslot with the svg so % top is of the ice');
+  assert.match(markup, /id="greadMid"/,
+    'the three-line overlay needs #greadMid');
 });
 
 /** Advance the harness play loop until the pending dwell is a goal hold. */
@@ -93,8 +98,9 @@ test('tapping Play during the hold continues immediately', () => {
   assert.match(a.$('play').textContent, /Play/,
     'during the hold the button must read Play so the overlay matches');
   assert.doesNotMatch(a.$('play').textContent, /Pause/);
-  assert.equal(a.$('greadTap').textContent, 'Tap Play to continue');
-  assert.match(a.$('greadOr').textContent, /or the replay continues in \d+ seconds/);
+  assert.equal(a.$('greadTap').textContent, 'Tap Play to continue,');
+  assert.equal(a.$('greadMid').textContent, 'otherwise the Replay');
+  assert.match(a.$('greadOr').textContent, /continues in \d+ seconds/);
   assert.equal(a.$('greadPause').textContent, 'Pause');
   a.$('play').click();
   assert.ok(+a.$('scrub').value > at, 'Play during the hold did not leave the goal frame');
@@ -129,8 +135,9 @@ test('overlay Pause freezes the hold; Play then resumes it', () => {
   assert.match(a.$('greadPause').getAttribute('aria-label') || '', /Resume/i);
   assert.match(a.$('play').textContent, /Play/,
     'main control still reads Play while the hold is frozen');
-  assert.match(a.$('greadOr').textContent, /or the replay continues in \d+ seconds/,
+  assert.match(a.$('greadOr').textContent, /continues in \d+ seconds/,
     'frozen overlay still names the remaining hold');
+  assert.equal(a.$('greadMid').textContent, 'otherwise the Replay');
   // Play resumes the remaining hold (does not skip past the goal).
   a.$('play').click();
   assert.equal(+a.$('scrub').value, at, 'Resume must not leave the goal yet');

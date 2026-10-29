@@ -2898,8 +2898,9 @@ function greadPaint(){
  const ms=greadRem();
  const lines=goalReadLines(ms);
  if(!lines){el.hidden=true;el.classList.remove('gread-on');return;}
- const tap=$('greadTap'), or=$('greadOr');
+ const tap=$('greadTap'), mid=$('greadMid'), or=$('greadOr');
  if(tap)tap.textContent=lines.tap;
+ if(mid)mid.textContent=lines.mid;
  if(or)or.textContent=lines.or;
  const btn=greadBtn();
  if(btn){
