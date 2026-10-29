@@ -545,11 +545,14 @@ feel and tune.
 - Soft pause: while the hold runs the Play control reads **Play** (so the
   overlay matches the button). Two faint lines under the centre-ice circle read
   `Tap Play to continue` and `or the replay continues in N seconds` (singular at
-  1). Tapping Play ends the hold at once and the replay keeps going; waiting
-  lets the countdown reach 0 and auto-continue. There is no Pause-freeze during
-  the hold — Next / Prev / seek still clear it. `prefers-reduced-motion` keeps
-  the words and drops the fade. The front-door preview keeps its own
-  `GOAL_HOLD_MS = 2600` and does not show the countdown.
+  1), with a faint **Pause** button in the same overlay (real `<button>`, 44px
+  tap target). Tapping Play ends the hold at once and the replay keeps going;
+  waiting lets the countdown reach 0 and auto-continue. Overlay Pause freezes
+  the hold and the digits — the overlay button then reads **Resume**, the main
+  control still reads Play, and either one resumes the remaining time. Next /
+  Prev / seek still clear it. `prefers-reduced-motion` keeps the words and drops
+  the fade. The front-door preview keeps its own `GOAL_HOLD_MS = 2600` and does
+  not show the countdown.
 
 ### Tuning (same day)
 

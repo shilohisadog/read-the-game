@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JJQMBzsxWxqm6Vp1BM9GBhKeSXXcO5ScaFfVP9LNqFo=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-fHvfdWEZNCw1u5LAH3bNdGvW03trqCr4FjJFGFGk3Mk='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XVPghzjprljR3Vz+9auEqEW6hXs66rgPuD/nEw++zXQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-tLnxFV3of8v55GD9hUDz382ElSgEtInAKs9B5TZqnnM='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -446,10 +446,20 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
-#rg .gread{pointer-events:none}
-#rg .gread text{font-size:3.4px;font-weight:600;fill:rgba(15,26,35,.42);font-family:system-ui,sans-serif}
+#rg .gread{position:absolute;left:50%;top:66%;transform:translate(-50%,0);z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:6px;max-width:90%;
+  pointer-events:none;text-align:center}
+#rg .gread[hidden]{display:none!important}
 #rg .gread.gread-on{animation:greadin .35s ease}
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
+#rg .gread .gread-lines{margin:0;pointer-events:none}
+#rg .gread .gread-tap,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:600;
+  color:rgba(15,26,35,.45);line-height:1.25;font-family:system-ui,sans-serif}
+#rg .gread .gread-btn{pointer-events:auto;min-height:44px;min-width:72px;padding:8px 16px;
+  border-radius:999px;border:1px solid rgba(15,26,35,.18);background:rgba(255,255,255,.62);
+  color:rgba(15,26,35,.55);font-size:.78rem;font-weight:600;cursor:pointer;
+  font-family:system-ui,sans-serif;backdrop-filter:blur(2px)}
+#rg .gread .gread-btn:focus-visible{outline:2px solid rgba(15,26,35,.45);outline-offset:2px}
 #rg.preview .gread{display:none!important}
 
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
@@ -728,7 +738,14 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 
 <div class="lesson" id="lesson" hidden></div>
 
-<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g><g id="gread" class="gread"></g></svg>
+<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g></svg>
+<div id="gread" class="gread" hidden>
+  <p class="gread-lines" aria-live="polite">
+    <span id="greadTap" class="gread-tap"></span>
+    <span id="greadOr" class="gread-or"></span>
+  </p>
+  <button type="button" id="greadPause" class="gread-btn" aria-label="Pause the goal reading hold">Pause</button>
+</div>
   
   <p class="who" id="who" aria-live="polite"></p>
   
@@ -5703,36 +5720,55 @@ function sayDist(e){const el=$('playdist');if(!el)return;
  el.textContent=say;el.hidden=!say;}
 function greadRem(){
  if(!GREAD)return 0;
+ if(GREAD.frozen!=null)return Math.max(0,GREAD.frozen);
  return Math.max(0,GREAD.end-performance.now());}
 function greadEl(){return document.getElementById('gread');}
+function greadBtn(){return document.getElementById('greadPause');}
 function greadSyncBtn(){
  if(!playing)return;
  $('play').textContent=(GREAD&&greadRem()>0)?PLAY_REST:'⏸ Pause';}
 function greadPaint(){
  const el=greadEl();if(!el)return;
- if(PREVIEW||!GREAD){put(el,'');el.classList.remove('gread-on');return;}
+ if(PREVIEW||!GREAD){el.hidden=true;el.classList.remove('gread-on');return;}
  const ms=greadRem();
  const lines=goalReadLines(ms);
- if(!lines){put(el,'');el.classList.remove('gread-on');return;}
- put(el,`<text x="100" y="57" text-anchor="middle">${ESC(lines.tap)}</text>`
-  +`<text x="100" y="61.2" text-anchor="middle">${ESC(lines.or)}</text>`);
- el.classList.toggle('gread-on',ms>0&&!REDUCED);
+ if(!lines){el.hidden=true;el.classList.remove('gread-on');return;}
+ const tap=$('greadTap'), or=$('greadOr');
+ if(tap)tap.textContent=lines.tap;
+ if(or)or.textContent=lines.or;
+ const btn=greadBtn();
+ if(btn){
+  const frozen=GREAD.frozen!=null;
+  btn.textContent=frozen?'Resume':'Pause';
+  btn.setAttribute('aria-label',frozen?'Resume the goal reading hold':'Pause the goal reading hold');}
+ el.hidden=false;
+ el.classList.toggle('gread-on',ms>0&&!REDUCED&&GREAD.frozen==null);
  greadSyncBtn();}
 function greadStopKick(){if(greadTimer!=null){clearInterval(greadTimer);greadTimer=null;}}
 function greadKick(){
  greadStopKick();greadPaint();
- if(!GREAD||PREVIEW)return;
+ if(!GREAD||GREAD.frozen!=null||PREVIEW)return;
  if(typeof setInterval!=='function')return;
  greadTimer=setInterval(()=>{
-  if(!GREAD){greadStopKick();return;}
+  if(!GREAD||GREAD.frozen!=null){greadStopKick();return;}
   greadPaint();if(greadRem()<=0)greadClear();},200);}
 function greadClear(){
- greadStopKick();GREAD=null;const el=greadEl();if(el){put(el,'');el.classList.remove('gread-on');}
+ greadStopKick();GREAD=null;const el=greadEl();if(el){el.hidden=true;el.classList.remove('gread-on');}
  greadSyncBtn();}
 function greadArm(e){
  if(PREVIEW||!e||e.type!=='goal')return;
- GREAD={for:e,end:performance.now()+GOAL_READ_MS};
+ if(GREAD&&GREAD.for===e&&GREAD.frozen!=null){
+  GREAD.end=performance.now()+GREAD.frozen;GREAD.frozen=null;
+ }else{GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};}
  greadKick();}
+function greadFreeze(){
+ if(!GREAD||GREAD.frozen!=null)return;
+ GREAD.frozen=greadRem();GREAD.end=0;clearTimeout(timer);greadStopKick();greadPaint();}
+function greadResume(){
+ if(!GREAD||GREAD.frozen==null)return;
+ const left=Math.max(0,GREAD.frozen);
+ GREAD.frozen=null;GREAD.end=performance.now()+left;
+ clearTimeout(timer);timer=setTimeout(step,left);greadKick();}
 function greadSkip(){
  if(!GREAD)return;
  clearTimeout(timer);greadClear();step();}
@@ -5740,14 +5776,22 @@ function dwell(e){
  if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
   const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
  if(e&&e.type==='goal'){
-  return GOAL_READ_MS+trkExtra(e,GOAL_READ_MS);}
+  const b=(GREAD&&GREAD.for===e&&GREAD.frozen!=null)?GREAD.frozen:GOAL_READ_MS;return b+trkExtra(e,b);}
  const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
 function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);}
 function play(){closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trkKick();}
 const PLAY_REST='▶ Play';
 function stop(){playing=false;syncStep();clearTimeout(timer);greadClear();sayOnIce(EV[i]);}
-function togglePlay(){if(playing&&GREAD&&greadRem()>0){greadSkip();return;}playing?stop():play();}
+function togglePlay(){
+ if(GREAD&&greadRem()>0){
+  if(GREAD.frozen!=null){greadResume();return;}
+  if(playing){greadSkip();return;}}
+ playing?stop():play();}
 $('play').onclick=()=>togglePlay();
+if($('greadPause'))$('greadPause').onclick=ev=>{
+ if(ev&&ev.stopPropagation)ev.stopPropagation();
+ if(!GREAD)return;
+ if(GREAD.frozen!=null)greadResume();else greadFreeze();};
 function trkGet(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>null);}
 function trkRows(){return TRK.rows||(TRK.rows=trkGet('track/'+G.game.id+'/goals.json').then(r=>Array.isArray(r)?r:[]));}
 function trkPlan(e){

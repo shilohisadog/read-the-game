@@ -1945,13 +1945,24 @@
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
-/* Post-goal soft hold under the centre-ice circle (Kevin, 2026-10-29). Two faint
-   lines so it names the pause and the tap-to-continue without covering the
-   teaching text or the banner. */
-#rg .gread{pointer-events:none}
-#rg .gread text{font-size:3.4px;font-weight:600;fill:rgba(15,26,35,.42);font-family:system-ui,sans-serif}
+/* Post-goal soft hold under the centre-ice circle (Kevin, 2026-10-29). HTML
+   overlay (not SVG) so the Pause control can be a real <button> with a 44px
+   tap target. Faint copy + faint pill; sits below centre ice, above teaching
+   text. pointer-events only on the button so ice taps still reach the rink. */
+#rg .gread{position:absolute;left:50%;top:66%;transform:translate(-50%,0);z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:6px;max-width:90%;
+  pointer-events:none;text-align:center}
+#rg .gread[hidden]{display:none!important}
 #rg .gread.gread-on{animation:greadin .35s ease}
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
+#rg .gread .gread-lines{margin:0;pointer-events:none}
+#rg .gread .gread-tap,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:600;
+  color:rgba(15,26,35,.45);line-height:1.25;font-family:system-ui,sans-serif}
+#rg .gread .gread-btn{pointer-events:auto;min-height:44px;min-width:72px;padding:8px 16px;
+  border-radius:999px;border:1px solid rgba(15,26,35,.18);background:rgba(255,255,255,.62);
+  color:rgba(15,26,35,.55);font-size:.78rem;font-weight:600;cursor:pointer;
+  font-family:system-ui,sans-serif;backdrop-filter:blur(2px)}
+#rg .gread .gread-btn:focus-visible{outline:2px solid rgba(15,26,35,.45);outline-offset:2px}
 #rg.preview .gread{display:none!important}
 
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
