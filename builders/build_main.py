@@ -308,28 +308,9 @@ __CSS__</style>
        the panel covers `.lbox`, so the button in the box is underneath the thing
        it closes. -->
   <div class="work" id="alotPanel" hidden><button class="wx" id="alotClose" type="button">Hide</button><div id="alotBody"></div></div>
-  <!-- ⭐⭐⭐ THE THIRD OVERLAY, AND IT IS WHERE THE VERDICT CARD WENT. Kevin,
-       2026-10-01, looking at the finished FLA–CAR game: *"seems like the attempts
-       card (after the game goes final) is only one piece of the 'What this game
-       was' puzzle. Can we create a 'game summary' card that overlays the rink
-       (using the 'Is that alot' model) at the end of the game?"* — and then
-       *"The overlay should contain (or be) the What this game was information, so
-       it'll replace the card."*
-
-       ⭐ THE CARD MOVED, IT WAS NOT REBUILT. `<p id="verdict">` is the SAME
-       element, in the same place in the DOM order it always had relative to its
-       own figures, so `sentenceFor`, the dot written through the CSSOM and the
-       live `verdict-dot` deploy gate all keep reading what they already read.
-       Rebuilding the sentence here would have been a second composition of the
-       one thing this project has paid most often for duplicating.
-
-       ⚠️ AND THE ICE IS EMPTY UNDER IT. At the horn the rink carries no puck,
-       no shot and no player — just the `Final` chip — so this overlay covers
-       nothing, which is the argument for opening it there rather than asking.
-       ⚠️ ITS BUTTON IS HIDDEN UNTIL `.ended`, through the SAME CSS rule the card
-       used, because a door labelled *What this game was* mid-replay names the
-       result of a game the reader is still watching. -->
-  <div class="work" id="sumPanel" hidden><button class="wx" id="sumClose" type="button">Hide</button><p class="verdict" id="verdict"></p><div id="sumBody"></div></div>
+  <!-- #sumPanel is the end-of-game summary over the rink. It opens at the horn,
+       when the ice is empty, so the counts do not cover a play still on screen. -->
+  <div class="work" id="sumPanel" hidden><button class="wx" id="sumClose" type="button">Hide</button><div id="sumBody"></div></div>
 </div>
 <!-- ⭐ THE PARKED LAYER MENU IS GONE (2026-09-07). Five `.lrow` toggles, their
      `Off` state spans, the `#zLayersOn` counter and five legend swatches, all
@@ -769,9 +750,7 @@ LIB = ["rink.js", "registry.js", "attribution.js", "layer.js", "strength.js", "b
        "challenge.js",
        # The color line. AFTER stretch.js, challenge.js and the whistle and goaltending layers it reads.
        "shotdist.js", "color.js",
-       # BEFORE sentence.js, which asks it which competition a game is.
-       "competitions.js",
-       "teams.js", "layers/tied.js", "sentence.js",
+       "teams.js", "layers/tied.js",
        # The tracked goal: the league's tracking of the seconds before a goal. AFTER
        # teams.js and esc.js, which it imports; markup only, app.js fetches and draws.
        "tracked.js",
@@ -838,8 +817,8 @@ def _rinkart():
 # STATEMENTS, AND THEY CAN DISAGREE SILENTLY.
 #
 # `LIB` is the list of modules the browser gets; app.js's imports are the list
-# app.js needs. They are not the same fact -- competitions.js is in the bundle
-# because sentence.js asks it questions, and app.js never touches it -- so
+# app.js needs. They are not the same fact -- a module can be in the bundle
+# because another inlined module asks it questions, and app.js never touches it -- so
 # neither list is a cache of the other. But one containment has to hold: a
 # module app.js imports and the bundle omits resolves fine under node, ships a
 # page missing a definition, and fails only in a browser.
@@ -867,13 +846,6 @@ def _lib():
     out = []
     for name in LIB:
         out.append(_inline(name))
-    # THE ONE TABLE, INLINED RATHER THAN FETCHED. gameType -> competition is
-    # reference data of ours, not archive data: it changes when a human names a
-    # new competition, which is a commit, so it belongs in the deployed bytes.
-    # `read-the-game.html` reaches nothing at all and still has to be able to say
-    # what an all-star game is.
-    out.append("/* --- data/competitions.json --- */\n"
-               "const COMPETITIONS = " + P.competitions() + ";")
     out.append("/* --- the learn page's lessons, for ?lesson= --- */\n"
                "const LESSONS = " + json.dumps(_lessons(), separators=(",", ":")) + ";")
     out.append("/* --- which learn cards teach which layer --- */\n"

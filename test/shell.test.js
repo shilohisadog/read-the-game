@@ -19,7 +19,6 @@ import { TEAMS } from '../src/lib/teams.js';
 import { boot } from './helpers/page.js';
 import { createHash } from 'node:crypto';
 import { GAME_LINE, usable, judgeLine } from '../tools/browser/watch-a-game.mjs';
-import { probeHtml } from '../tools/browser/verdict-dot.mjs';
 import { pageDocs } from '../src/lib/page-docs.js';
 
 const SRC = new URL('../src/', import.meta.url);
@@ -606,9 +605,8 @@ const EXTRACT = JSON.parse(
   readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
 
 test('preview asks for nothing it does not show', () => {
-  // measures.json exists to feed the verdict card, and the card is hidden in
-  // preview -- so fetching it would be a request on a homepage for bytes nobody
-  // reads.
+  // measures.json feeds the summary counts, which preview does not draw, so
+  // fetching it would be a request on a homepage for bytes nobody reads.
   const r = run({ search: '?game=2023020204&preview=1',
                   responses: { 'extract/': EXTRACT, 'measures.json': { games: [] } } });
   return r.settle().then(() => {
@@ -637,7 +635,7 @@ test('and without preview it does ask, which is the half that proves the above',
                   responses: { 'extract/': EXTRACT, 'measures.json': { games: [] } } });
   return r.settle().then(() => {
     assert.ok(r.asked.some(u => /measures\.json/.test(u)),
-      'the ordinary page needs the rates for its verdict card');
+      'the ordinary page needs the rates for its summary counts');
   });
 });
 
@@ -772,25 +770,14 @@ test('the deploy gate greps for a game line this page actually renders', () => {
  * The other detector is structural, and this pins the mechanism it depends on:
  * `#rg` must ship hidden, so that "visible" means "reveal() ran".
  */
-test('the probe gate can tell a booted page from an un-booted one', () => {
-  // ⚠️ COMMENTS STRIPPED FIRST, and this check caught itself doing the thing it
-  // exists to prevent: the probe QUOTES the old broken line in its own
-  // explanation, so a raw scan finds `/final/.test(gl` in prose and fails on a
-  // file that is correct. A check that cannot tell code from the words about the
-  // code is not a check about code — the fourth instance in this project.
-  const code = probeHtml('game.html', 1).replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(code, /var booted = rg && !rg\.hidden/,
-    'the verdict probe no longer keys on #rg — if it keys on copy again, the '
-    + 'next wording change fails the deploy on a working site');
-  assert.doesNotMatch(code, /\/final\/\.test\(gl/,
-    'the probe is keyed to the game line stating the result again');
-  // AND THE MECHANISM IT DEPENDS ON: the shell HIDES the app before it fetches and
-  // `reveal()` unhides it, so "visible" means "boot ran" with no prose in the path.
-  // ⚠️ Not in the markup — it is `APP.hidden=true` in the bootstrap, and asserting
+test('the shell hides the app until reveal, so a boot is visible', () => {
+  // The shell HIDES the app before it fetches and `reveal()` unhides it, so
+  // "visible" means "boot ran" with no prose in the path.
+  // Not in the markup — it is `APP.hidden=true` in the bootstrap, and asserting
   // a `hidden` attribute on the built `#rg` failed on a correct page.
   const raw = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
   assert.match(raw, /if\(APP\)APP\.hidden=true;/, 'the shell no longer hides the app before fetching');
-  assert.match(raw, /function reveal\(\)\{[^}]*APP\.hidden=false/, 'nothing unhides the app, so the probe cannot see a boot');
+  assert.match(raw, /function reveal\(\)\{[^}]*APP\.hidden=false/, 'nothing unhides the app, so a boot cannot be seen');
 });
 
 /**

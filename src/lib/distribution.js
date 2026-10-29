@@ -3,8 +3,7 @@
  *
  * SPLIT OUT OF archive.js SO THE GAME PAGE CAN CARRY IT. `archive.js` is about
  * the COLLECTION — base rates, the featured list, team seasons — and the game
- * page inlines none of it: `sentence.js` reads the published `levelCurve`
- * directly rather than importing `rowFor`, and its own comment says so. The
+ * page inlines none of it. The
  * per-game summary needs the same reading for `perGame`, and inlining the whole
  * archive tier to reach four functions would put every aggregation the browser
  * never runs into every game page.
@@ -137,15 +136,14 @@ export function shareAtOrBelow(d, value) {
  * not a number anybody chose. A count inside it is ordinary by construction, and
  * when every count is inside it the answer is that nothing was unusual.
  *
- * ⭐ AND THE FINDING IS A FRACTION, NOT A PERCENTAGE — `levelCurve`'s rule,
- * earned there and load-bearing here for the same reason: "more than 182 of the
+ * ⭐ AND THE FINDING IS A FRACTION, NOT A PERCENTAGE. "more than 182 of the
  * 200 nights" is self-limiting where "91st percentile" is not, and it needs no
  * minimum-`n` guard, which would be another parameter with no source. Early in a
  * season `n` is small and the sentence says so by construction.
  *
  * Returns null when there is nothing to compare against — no distributions, no
- * season, or an empty one. A caller must then say nothing at all, which is the
- * verdict card's standing rule.
+ * season, or an empty one. A caller must then say nothing at all rather than
+ * invent a comparison.
  */
 /**
  * ⭐⭐ WHERE ONE COUNT SITS IN ONE DISTRIBUTION — the whole judgement, once.

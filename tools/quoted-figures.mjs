@@ -47,33 +47,12 @@ const pc = r => `${(r * 100).toFixed(1)}%`;
  */
 export function claims(M) {
   const att = M.baseRates.moreAttemptsLost;
-  const lvl = M.baseRates.moreLevelControlLost;
-  /* ⭐ DERIVED, NOT LOOKED UP. `measures.json` publishes how many games had a
-     level-control edge, never how many did not, so this is a subtraction. */
-  const noEdge = M.measured - lvl.n;
   const mix = M.attemptMix, t = mix.byType;
   /* "Never reach the goalie" is blocked PLUS missed — the two ways an attempt
      ends without the goaltender ever facing it. No field says this. */
   const unreached = (t['blocked-shot'] + t['missed-shot']) / mix.blocked.n;
 
   return [
-    { file: 'sentence.js',
-      what: 'the finding the per-game sentence is built on',
-      find: /\*\*[\d,]+ of [\d,]+ games\*\*/,
-      want: `**${n(lvl.count)} of ${n(lvl.n)} games**` },
-    { file: 'sentence.js',
-      what: 'the two-rate comparison CHENG required in one clause',
-      find: /\d+\.\d+% of games are lost by the team with more attempts, against \d+\.\d+%/,
-      want: `${pc(att.rate)} of games are lost by the team with more attempts, `
-          + `against ${pc(lvl.rate)}` },
-    { file: 'sentence.js',
-      what: 'the games with no control edge at all',
-      find: /[\d,]+ of [\d,]+ games(?= — one in)/,
-      want: `${n(noEdge)} of ${n(M.measured)} games`,
-      /* ⛔ AND THE SUBTRACTION MUST BE POSSIBLE. A measures.json where every game
-         had an edge would make this zero or negative and the sentence nonsense,
-         so it is refused rather than written. */
-      guard: () => noEdge > 0 || 'every measured game had a control edge' },
     { file: 'archive.js',
       what: 'why a blocks-leader win rate is unpublishable',
       find: /leader loses \d+\.\d+%/,

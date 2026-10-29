@@ -615,13 +615,6 @@ jobs:
       - name: the front door's preview fits its frame
         run: node tools/browser/run.mjs preview-fits --site "${{ steps.preview.outputs.url }}"
 
-      # `tools/browser/verdict-dot.mjs` — the unit test reconciling the sentence
-      # with the dot was GREEN while every visitor saw the dot pinned to the left
-      # of its track: the markup was right and the pixels were wrong. This measures
-      # boxes, and its canary is the defect itself (an inline `.vtrack`).
-      - name: the verdict dot lands where the sentence says
-        run: node tools/browser/run.mjs verdict-dot --site "${{ steps.preview.outputs.url }}"
-
       # `tools/browser/watch-a-game.mjs` — the page a link points at, and the only
       # one that fetches a GAME. What it should say is derived from the catalog it
       # reads, never typed in; both the clubs AND the date are checked, because

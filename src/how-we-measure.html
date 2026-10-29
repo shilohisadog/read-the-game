@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-R8f1gfqbBVyyGNd0VyDWTALJrZWuZcq9+cnmdaNOQsw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LPfDnta4+8Gj6v8CfKnUhbqFeC7ujfXpuLiQyx/DAt4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1375,7 +1375,7 @@ const PRINTED = {
           + 'measurement cannot take that apart.' },
   faceoffRun: {
     label: measure('faceoffRun').heading,
-    where: 'The How we counted door of the Face-offs layer, and its row in What this game was.',
+    where: 'The How we counted door of the Face-offs layer, and its row in Whole-game metrics.',
     reads: [
       { is: 'The first shot attempt after a face-off', at: ['census', 'faceoffRun', 'first'], said: ['census', 'faceoffRun'],
         num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },
