@@ -1,6 +1,6 @@
 /**
  * Post-goal reading hold — the pure bits (src/lib/goal-read.js).
- * Kevin, 2026-10-29: a fixed 4 s after a goal, same at every gear, with a
+ * Kevin, 2026-10-29: a fixed 10 s after a goal, same at every gear, with a
  * countdown so the pause is named. The dwell wiring and the on-ice element live
  * in app.js; what can be wrong without a browser is checked here.
  */
@@ -9,8 +9,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { GOAL_READ_MS, goalReadLabel, goalReadDwell } from '../src/lib/goal-read.js';
 
-test('the hold is 4 seconds and does not take a gear argument', () => {
-  assert.equal(GOAL_READ_MS, 4000);
+test('the hold is 10 seconds and does not take a gear argument', () => {
+  assert.equal(GOAL_READ_MS, 10000);
   // A reading pause that scaled with gear would need the gear here. It does not.
   assert.equal(goalReadDwell(), GOAL_READ_MS);
   assert.equal(goalReadDwell(0), GOAL_READ_MS);
@@ -22,8 +22,8 @@ test('leftover tracking on the same frame adds to the hold, never shortens it', 
 });
 
 test('the countdown names whole seconds, and uses the singular at 1', () => {
-  assert.equal(goalReadLabel(4000), 'Replay continues in 4 seconds');
-  assert.equal(goalReadLabel(4000 - 1), 'Replay continues in 4 seconds', 'just under 4 s still reads 4');
+  assert.equal(goalReadLabel(10000), 'Replay continues in 10 seconds');
+  assert.equal(goalReadLabel(10000 - 1), 'Replay continues in 10 seconds', 'just under 10 s still reads 10');
   assert.equal(goalReadLabel(3000), 'Replay continues in 3 seconds');
   assert.equal(goalReadLabel(2000), 'Replay continues in 2 seconds');
   assert.equal(goalReadLabel(1000), 'Replay continues in 1 second');

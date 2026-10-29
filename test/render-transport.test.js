@@ -336,7 +336,7 @@ test('no frame pauses without saying something', () => {
   }
   for (const r of rows.filter(r => r.goal)) {
     assert.ok(r.spoke, `goal frame ${r.i} was silent`);
-    assert.equal(r.ms, 4000, `goal frame ${r.i} waited ${r.ms}ms; post-goal read is GOAL_READ_MS`);
+    assert.equal(r.ms, 10000, `goal frame ${r.i} waited ${r.ms}ms; post-goal read is GOAL_READ_MS`);
   }
 });
 
