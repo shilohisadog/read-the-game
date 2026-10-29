@@ -1959,7 +1959,8 @@
    centred (Kevin t77u / t78u — keep the shaded halo and pill). Faint but
    legible on ice (`--muted` + ice text-shadow). Phone play is landscape
    (portrait shows .rotate); verify at 844×390, not 390×844. overflow:hidden on
-   the slot is a belt so a taller copy cannot paint the teaching text. */
+   the slot is a belt so a taller copy cannot paint the teaching text.
+   Gate: tools/browser/gread-on-ice.mjs via CHECKS + deploy.yml browser job. */
 #rg .iceslot{overflow:hidden}
 #rg .gread{position:absolute;left:50%;top:70%;transform:translate(-50%,-20%);z-index:2;
   display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;
