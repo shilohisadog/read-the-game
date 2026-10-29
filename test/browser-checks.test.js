@@ -816,3 +816,37 @@ test('⛔ and a page that drew nothing is reported, not passed', () => {
   const half = judgeTap(landing([['pop', 300]], ['pointerdown=-1', 'input=110']));
   assert.ok(half.some(m => /only one of them arrived/.test(m)));
 });
+
+/* ------------------------------------------- post-goal overlay on the ice */
+import { judgeGread, readGread, SLACK } from '../tools/browser/gread-on-ice.mjs';
+
+test('⭐ #gread must sit inside the ice, not on the text under it', () => {
+  // The defect Kevin screenshotted: overlay bottom past the ice, overlapping #who.
+  const bad = {
+    g: { top: 420, right: 600, bottom: 520, left: 400 },
+    ice: { top: 120, right: 900, bottom: 400, left: 100 },
+    whoTop: 410,
+    width: 1024,
+  };
+  const badVs = judgeGread(bad);
+  assert.equal(badVs.some(v => !v.ok && /below the ice|reaches into #who/.test(v.why)), true,
+    'an overlay under the rink must fail');
+
+  const good = {
+    g: { top: 320, right: 560, bottom: 390, left: 440 },
+    ice: { top: 120, right: 900, bottom: 400, left: 100 },
+    whoTop: 410,
+    width: 1024,
+  };
+  for (const v of judgeGread(good)) assert.equal(v.ok, true, v.why);
+});
+
+test('the probe line is read back, and a silent probe is not a pass', () => {
+  assert.ok(SLACK >= 1 && SLACK <= 4);
+  const m = readGread('GREAD 320 560 390 440 ICE 120 900 400 100 WHO 410 W 1024');
+  assert.equal(m.width, 1024);
+  assert.equal(m.g.top, 320);
+  assert.equal(m.whoTop, 410);
+  assert.equal(readGread('<title>pending</title>'), null);
+  assert.equal(judgeGread(null)[0].ok, false);
+});

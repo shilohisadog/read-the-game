@@ -2877,7 +2877,9 @@ function sayDist(e){const el=$('playdist');if(!el)return;
    the countdown; the overlay button then reads Resume and the main control still
    reads Play — either one resumes the remaining hold. Waiting auto-continues at
    0. Next/Prev/seek clear it. prefers-reduced-motion keeps the words with no
-   fade. Not shown on the front-door preview (its own GOAL_HOLD_MS). */
+   fade. Not shown on the front-door preview (its own GOAL_HOLD_MS).
+   WHAT+why: `#gread` lives in `.iceslot` with the svg (not loose in `.rinkbox`)
+   so its % top is of the ice — a rinkbox % put it on the text under the rink. */
 function greadRem(){
  if(!GREAD)return 0;
  if(GREAD.frozen!=null)return Math.max(0,GREAD.frozen);

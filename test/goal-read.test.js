@@ -70,6 +70,8 @@ test('Play continues, overlay Pause freezes, Next clears — wired in app.js', (
     'the overlay Pause button is gone from the markup');
   assert.match(markup, /aria-label="Pause the goal reading hold"/,
     'the overlay Pause button lost its aria-label');
+  assert.match(markup, /class="iceslot"[\s\S]*id="gread"[\s\S]*<\/div>\s*<\/div>/,
+    '#gread must sit inside .iceslot with the svg so % top is of the ice');
 });
 
 /** Advance the harness play loop until the pending dwell is a goal hold. */
