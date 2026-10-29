@@ -68,6 +68,8 @@ const GONE = {
   'build_gv.py': "built the goaltender's-eye view, removed 2026-09-17",
   'builders/build_gv.py': 'same',
   'builders/build_3d.py': 'the terrain page builder, removed 2026-10-29 with the page it wrote',
+  'sentence.js': 'the per-game attempts sentence, removed 2026-10-29 with the summary verdict',
+  'src/lib/sentence.js': 'same',
   'tools/figure-bench.py': 'the two-figure design bench, removed 2026-09-17 with the second figure',
   // Removed 2026-09-17 by the row-8 measurement: nothing has imported it since the
   // figure JS moved to src/lib/figures.js, and its docstring still described two

@@ -62,7 +62,6 @@ import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG
   trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
   trackEntry } from './lib/tracked.js';
 import { tiedControl } from './lib/layers/tied.js';
-import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
 /* ⭐⭐ THE ARCHIVE DOOR'S MODULES — Kevin's `Is that a lot?` overlay. Both kinds
    of figure the site prints, and the two renderers `how-we-measure.html` uses.
@@ -244,7 +243,6 @@ const NEWCOMER=(()=>{try{
   if(day!==today){visits++;localStorage.setItem('rtg.seen',today+'|'+visits);}
   return visits<=NEWCOMER_DAYS;
  }catch(e){return true;}})();
-let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
 /* ⏹ FOR TWO HOURS ON 2026-09-18 THIS PAINTED THE MARK BY THE OFFENDING CLUB, and
    Kevin sent it back from the live site: *"the ice also shows CAR Iced the puck and
@@ -3319,10 +3317,6 @@ setGear(gear);
    is two chances to drift. `PLAY_REST` is the same arrangement for the same
    reason and `test/render-notes.test.js` checks the markup copy against it;
    this one is checked the same way.
-   ⚠️ THE PREVIEW CARD STILL SAYS `WHAT THIS GAME WAS`. That is a different
-   surface and a different claim — a VERDICT about the game, not these counts —
-   and renaming it was not asked for. Said here because the two used to be one
-   phrase and a future reader will wonder whether the split was an accident.
    ⭐ `Whole-game metrics` SINCE 2026-10-12. Kevin: *"'Game metrics' ... is rather
    ambiguous ... something that indicates these are the metrics for the whole
    game."* The door is open from the first frame, so a label without "whole"
@@ -3510,8 +3504,8 @@ const WHEN=formatDate(G.game&&G.game.date)||'';
    Found by CHENG, and the incoherence is the argument: the fix is not new
    doctrine, it is the doctrine already applied one element to its left.
    NOTHING IS HIDDEN. The scoreboard fills in as the game plays -- from 0-0, the
-   same reason the counter starts at zero -- and the verdict card states the
-   result at the horn, where it happens. A replay of a game whose ending is on
+   same reason the counter starts at zero -- and the score arrives on the board
+   as the goals do, where it happens. A replay of a game whose ending is on
    the title bar is a recap; the ending arriving when it arrived is a game. */
 /* ⭐⭐⭐ AND THIS LINE IS THE PAGE'S HEADING AND ITS TAB TITLE — 2026-09-29.
    Every one of the 4,551 game pages used to carry the same <h1> ("Learn to read
@@ -3543,90 +3537,6 @@ function closeLesson(){const box=$('lesson');if(box)box.hidden=true;}
   +' <button type="button" class="lclose" id="lclose">Close</button></p>';
  box.hidden=false;
  $('lclose').addEventListener('click',closeLesson);})();
-// THE PER-GAME SENTENCE. A summary of a FINISHED game, so it sits with the game
-// line at the foot rather than beside the scoreboard, which counts up as the
-// replay plays. It discloses nothing the page has not already said -- #gl states
-// the result on first paint.
-//
-// The two clauses are written into SEPARATE ELEMENTS. That is not layout: it is
-// what makes it impossible for a later edit to join the game's number to the
-// archive's rate with a "so" or a "which means", and the reason that matters is
-// mechanical rather than stylistic -- see src/lib/sentence.js.
-(function verdict(){
- const all=corsi.reduce(G.events,{...CTX,evenOnly:false});
- const lvl=tiedControl.reduce(G.events,CTX);
- const q=G.quoted;
- const V=sentenceFor({homeAb:HAB,awayAb:AAB,homeId:HID,awayId:AID,
-   diff:lvl.diff, attempts:all.t, levelCounts:lvl.t,
-   // The LEAGUE'S OWN LINE when we hold it, which is what the archive's rows were
-   // built from. Falling back to our own count keeps a game with no quoted
-   // boxscore readable rather than blank.
-   score:q?{h:q.home.score,a:q.away.score}:{h:finalH,a:finalA},
-   // THE SAME PREDICATE THE COUNTS USE, and not `per===5`: period five is a
-   // shootout in the regular season and a THIRD OVERTIME in the playoffs.
-   shootout:G.events.some(inShootout),
-   gameId:(G.game&&G.game.id)||0,
-   // The one table, inlined by the builder from data/competitions.json --
-   // so an all-star or Olympic game says WHICH competition it is rather
-   // than only what it is not.
-   names:COMPETITIONS,
-   curve:(RATES&&RATES.levelCurve)||null,
-   // undefined = never asked for (the inlined page, which reaches nothing);
-   // null = asked for and did not arrive. Two different true sentences.
-   noCurveReason:RATES===undefined
-     ?'this page carries a single game and never asks for the archive'
-     :undefined});
- const p=[`<span class="vk">What this game was</span>`,
-          `<span class="lead">${V.lead}</span>`];
- if(V.rate)p.push(`<span class="rate">${V.rate}</span>`);
- if(V.absent)p.push(`<span class="rate">${V.absent}</span>`);
- // THE RATE, DRAWN AS WELL AS SAID. Only when there IS one: an absent
- // comparison gets its sentence and no picture, because a track with no dot on
- // it would be a chart of nothing.
- let pct=null;
- if(V.rate&&V.row&&V.row.n){
-  pct=V.row.count/V.row.n*100;
-  p.push(`<span class="vscale"><span class="vtrack"><span class="vhalf"></span>`
-   + `<span class="vpt${pct>50?' hi':''}" id="vpt"></span></span>`
-   /* ⭐⭐ ONE VERB ON BOTH ENDS, so the axis is a scale of ONE THING and a reader
-      never flips frames halfway along it. It read `0% — that team always won`
-      against `always lost — 100%`: two outcomes on one rail, which is why moving
-      right felt like it should mean something good. Kevin, 2026-10-01: *"I would
-      think 100% would be a team always winning."* The axis measures losing —
-      because the sentence it belongs to does, and the dot must sit where the
-      sentence says — so both ends now say losing, and the WIN count that makes
-      the comparison fair moved into the prose above, where it belongs. */
-   + `<span class="vends"><span>0% — never lost</span>`
-   + `<span>always lost — 100%</span></span></span>`);}
- /* ⛔⛔ AND THE SENTENCE ABOUT THE SEASON IS GONE FROM THIS CARD — Kevin,
-    2026-10-02: *"take the text off of the metric, I think the scales fix the
-    visualization issue and the text just adds clutter."*
-
-    WHAT STOOD HERE. One line naming the single most unusual of the six lenses,
-    or — far more often — *"Every count in this game sat inside the middle half of
-    the season"*, printed directly above six rows that each say where that lens
-    sat, each now drawing its own scale. The line was written when this card was
-    the ONLY answer to *was that a lot*; `#sumPanel` answers it six times over,
-    and a summary of a picture that is already on the screen is not a summary.
-
-    ⭐ IT IS A DELETION AND NOT A HIDE, which is why `mostUnusual` and
-    `judgeable` left `distribution.js` with it. They had exactly one caller
-    between them, and a reducer kept alive by its own unit tests is the shape
-    `workshop-inventory` is about: code that ships, is tested, and is reachable
-    from nothing a reader can do. `git show` on this commit restores all of it.
-
-    ⚠️ WHAT WENT WITH IT, so the trade is on the record rather than discovered
-    later: this card no longer RANKS the six. The scales show how far each count
-    sits from its band, which is the comparison the sentence was making in prose
-    — but the panel never says "this one is the furthest", and nothing else does
-    either. Kevin's call, made looking at the rendered card. */
- $('verdict').innerHTML=p.join('');
- // THE ONE POSITION HERE THAT IS GENUINELY CONTINUOUS, and the only one that
- // cannot become a class. Written through the CSSOM, which no policy restricts;
- // as a `style` attribute this page's own CSP refused it and the dot sat at 0%
- // on every game in the archive. It must come AFTER innerHTML -- the element
- // does not exist until then.
- if(pct!==null)$('vpt').style.left=pct.toFixed(1)+'%';})();
 /**
  * WHERE TO GO NEXT, AND IT IS ABOUT THIS GAME.
  *

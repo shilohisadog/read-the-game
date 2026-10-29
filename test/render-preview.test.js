@@ -7,18 +7,12 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { TEAMS, colourOf } from '../src/lib/teams.js';
-import { whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { NOT_A_PLAY } from '../src/lib/layer.js';
 import { ATTEMPT_TYPES } from '../src/lib/attribution.js';
 import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf , pickLayer, HERO_GAME } from './helpers/page.js';
-import { measureGame } from '../builders/measure.mjs';
-import { perGame } from '../src/lib/archive.js';
-import { danger } from '../src/lib/layers/danger.js';
-import { blocked } from '../src/lib/layers/blocked.js';
-import { goaltending } from '../src/lib/layers/goaltending.js';
 
 test('the game page offers a way onward, and it is about THIS game', () => {
   // THE DEFECT THIS EXISTS FOR: game.html shipped with zero href attributes. It
@@ -86,76 +80,6 @@ test('the game page offers a way onward, and it is about THIS game', () => {
   assert.equal(v['--away'], colourOf(away));
   assert.equal(v['--home'], colourOf(home));
   assert.notEqual(colourOf(away), colourOf(home), 'this fixture cannot tell the two apart');
-});
-
-test('the game summary is a card, and its rate is DRAWN as well as said', () => {
-  // Kevin: the summary is the best thing on the page and nobody can find it. It
-  // was a small centred paragraph in muted type between the ledger and the
-  // footer. And "Of the games where a team led that count by 12 or more, it lost
-  // 243 of 708" is a true sentence a reader has to do arithmetic on to feel — so
-  // it gets one dot on a 0–100 track with 50% marked, the same idiom the
-  // homepage uses, rather than a second visual language for the same kind of
-  // number.
-  // The reference game's level-control differential, and a curve row for it. The
-  // shell fetches this; the inlined page never does, so it is supplied here.
-  // The row's k is the game's own level edge, read from the record, never typed.
-  const edge = Math.abs(measureGame(rich).level);
-  const CURVE = [{ k: edge, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 }];
-  const a = boot(rich, { levelCurve: CURVE });
-  const v = a.$('verdict').innerHTML;
-  assert.match(v, /class="vk">What this game was</, 'the card does not say what it is');
-  assert.match(v, /class="lead"/);
-
-  assert.match(v, /class="vpt[^"]*" id="vpt"/, 'the rate is stated but never drawn');
-  // AND ITS POSITION COMES THROUGH THE CSSOM, not a style attribute the page's
-  // own CSP refuses. Written as an attribute, this dot sat at the far left of
-  // its track on every game in the archive while this test read the number it
-  // was supposed to have. The markup was right and the pixels were wrong, which
-  // is the only reason a defect that obvious survived — so the assertion now
-  // reads the property the browser actually applies.
-  const left = a.$('vpt').style.left;
-  assert.ok(left, 'the dot was never positioned');
-  // THE DOT IS THE FRACTION IN THE SENTENCE. Read both out of the page and
-  // reconcile them, so a dot that drifts from its own prose fails here.
-  /* ⚠️ `lost`, NOT `it lost` — the sentence names both outcomes since 2026-10-01
-     and the word before `lost` is now a number. The clause itself was kept intact
-     precisely so this read, and the live gate's, move by one word and no further. */
-  const frac = v.match(/lost ([\d,]+) of ([\d,]+)/);
-  assert.ok(frac, 'the fraction left the sentence');
-  const num = k => +frac[k].replace(/,/g, '');
-  assert.equal(left, (num(1) / num(2) * 100).toFixed(1) + '%',
-    'the dot sits somewhere the sentence does not say');
-  assert.match(v, /class="vhalf"/, '50% is not marked, which is the whole point of the track');
-
-  // NO CONNECTING LINE — one point cannot have one, and the rule that forbids it
-  // on the homepage is the same rule here.
-  for (const tag of ['line', 'path', 'polyline'])
-    assert.doesNotMatch(v, new RegExp(`<${tag}\\b`), `the card drew a <${tag}>`);
-});
-
-test('a game with no comparison gets no picture of one', () => {
-  // The absent branch: a preseason game keeps its own numbers, is told why there
-  // is no rate, and must not be given a track with nothing on it.
-  const g = JSON.parse(JSON.stringify(rich));
-  g.game = { ...(g.game || {}), id: 2023010001 };          // preseason
-  const v = boot(g).$('verdict').innerHTML;
-  assert.match(v, /not a regular-season or playoff game \(preseason\)/);
-  assert.doesNotMatch(v, /class="vtrack"/, 'an empty track was drawn anyway');
-  assert.match(v, /class="vk">What this game was</, 'and the card still says what it is');
-});
-
-test('⭐ the competition table reaches the card in the BUILT page, not just the lib', () => {
-  // END TO END, and it is the only thing that can see this. `sentence.js` is
-  // handed the table by app.js from a `const COMPETITIONS` the BUILDER inlines
-  // from data/competitions.json — three files, two languages, one seam. A unit
-  // test passing NAMES by hand proves the function works and says nothing about
-  // whether the page ever hands it over: with the inlining removed, the lib
-  // tests all stay green and every visitor reads "game type 4".
-  const g = JSON.parse(JSON.stringify(rich));
-  g.game = { ...(g.game || {}), id: 2024040001 };          // an all-star game
-  const v = boot(g).$('verdict').innerHTML;
-  assert.match(v, /\(all-star\)/, 'the built page fell back to the raw type');
-  assert.doesNotMatch(v, /game type/, 'the table did not reach the page');
 });
 
 test('PREVIEW hides everything but the game, and plays by itself', () => {
@@ -226,7 +150,7 @@ test('the preview is hidden by CSS, not by deleting the app', () => {
   // extend. `.layers`, `.figpick`, `.hint` and `.foot` were each named here; the
   // next block added below the rink would have had to be added here too, and the
   // preview is exactly the surface where nobody would notice it was not.
-  for (const cls of ['.transport', '.zone', '.verdict', '.nextup', '.newcomer',
+  for (const cls of ['.transport', '.zone', '.nextup', '.newcomer',
                      // Added when Kevin found the rink cropped: these are real
                      // height in a box sized for a rink, and neither is part of
                      // a five-second taste.
@@ -612,51 +536,6 @@ test('the homepage gives a narrow frame the extra height its rink needs', () => 
    really protecting, that the figure compared is the CHIP'S OWN count and not a
    second way of counting, has moved to the panel that now carries the answer; see
    `#sumPanel` in test/overlay-archive-door.test.js. */
-
-/**
- * ⛔ THE CARD MAKES NO CLAIM ABOUT THE SEASON AT ALL — and that is now the rule
- * rather than a state it falls into when it has nothing to compare against.
- *
- * ⏭ Until 2026-10-02 this card ended with one sentence placing the game's most
- * unusual count in its season, and three tests here pinned it: one reconciling
- * the figure, one forcing both its branches, one pinning the reference class.
- * Kevin had it removed — *"take the text off of the metric, I think the scales fix
- * the visualization issue and the text just adds clutter"* — because `#sumPanel`
- * draws all six lenses with a scale each directly below it.
- *
- * ⭐ SO THIS IS NOT THE OLD TEST WITH ITS CASES DELETED. A check that only ever
- * boots a page with nothing to compare against would pass forever whatever the
- * card did, which is this repo's most expensive shape. The card is offered REAL
- * distributions built from the fixture extracts — the input that used to make the
- * sentence appear — and must still say nothing about the season.
- *
- * ⚠️ AND THE REST OF THE CARD MUST SURVIVE. Deleting the paragraph is not
- * deleting the verdict: a change that silenced the whole card would satisfy every
- * refusal above and lose the sentence the card exists for.
- */
-test('the card says nothing about the season, even when it has one to use', () => {
-  const dir = new URL('./fixtures/extracts/', import.meta.url);
-  const recs = readdirSync(dir).filter(f => f.endsWith('.json'))
-    .map(f => measureGame(JSON.parse(readFileSync(new URL(f, dir), 'utf8'))));
-  const dists = perGame(recs);
-  const y = String(rich.game.id).slice(0, 4);
-  assert.ok(dists[y], `the fixture corpus holds no ${y} game, so this test offers the card nothing`);
-
-  /* Every shape that used to change what the card printed: a measured season of
-     its own, a season with a later one behind it, and nothing at all. */
-  for (const [what, rates] of [
-    ['its own measured season', { levelCurve: [{ k: 12, n: 708, count: 243 }], perGame: dists }],
-    ['a FINISHED own season', { perGame: { ...dists, [String(+y + 1)]: dists[y] } }],
-    ['no distributions', undefined],
-    ['an empty perGame', { perGame: {} }],
-  ]) {
-    const v = boot(rich, rates).$('verdict').innerHTML;
-    assert.doesNotMatch(v, /class="rate season"/, `${what}: the season paragraph is back on the card`);
-    assert.doesNotMatch(v, /middle half/, `${what}: the card is placing the game in its season again`);
-    assert.match(v, /class="vk">What this game was</, `${what}: the card itself went missing`);
-    assert.match(v, /class="lead"/, `${what}: the verdict lost the sentence it exists for`);
-  }
-});
 
 /* ────────────────────────────────────────────────────────────────────────────
    WHAT THE NUMBER COUNTS — the preview card's club rows, 2026-10-03.

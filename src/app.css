@@ -384,7 +384,7 @@
 #rg.preview .pressplay,
 #rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .zone,#rg.preview .disclose,
 #rg.preview .figpick,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
-#rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
+#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
 #rg.preview .legend,#rg.preview .goalies,
 /* THE PENALTY BOX AND THE ENDS NOTE ARE GAME-VIEW CHROME, and the box had to be
    hidden here for a second reason that is worth writing down: `.rinkbox` becomes
@@ -1766,25 +1766,6 @@
 #rg .board{align-items:start}
 #rg .mid{align-self:center}
 #rg .foot{font-size:.82rem;color:var(--ink);font-weight:650;margin:0;text-align:left}
-/* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
-   It was a small centred paragraph in muted type, sitting between the ledger and
-   the footer -- the one sentence on the page that says what the game WAS, styled
-   like a caption. It is a card now, and it stays at the BOTTOM: it names the
-   result, and the same afternoon we stopped the page opening on the final
-   whistle would be a poor time to move the outcome above the rink. */
-/* THE CARD IS THE LAST FRAME'S CONTENT, so it is absent until the replay
-   reaches the last frame.
-   IT USED TO SIT NEXT-TO-LAST ON THE PAGE -- 1,156px below the rink on a phone,
-   screen 2.18 of 2.99 -- and the objection to moving it up was that the page
-   would read result-first against its own "watch first" headline. CHENG:
-   position on the PAGE and position in TIME are different axes, and the audit
-   was conflating them. The card is not a metric, it is the CONCLUSION, and there
-   is no conclusion in the first period. Absent until there is one kills the
-   spoiler objection and the result-first objection together, and it is the same
-   move as making first paint the opening faceoff rather than the final score. */
-#rg .verdict{display:none}
-#rg.ended .verdict{display:block;max-width:56ch;margin:0 auto;
- font-size:.95rem;line-height:1.55}
 /* ⭐⭐⭐ THE DOOR THAT NAMES THE RESULT IS HIDDEN UNTIL THERE IS ONE, through the
    SAME `.ended` class the card above uses, and that is the point rather than a
    coincidence. A button reading "What this game was" is a spoiler on a replay the
@@ -1804,17 +1785,6 @@
    hidden until a layer is chosen (`#rg .lbox.empty .lxw`), so a reader on
    `Just events` had no route to the summary at all. It now lives in the sidebar
    beside `Copy a link to this moment`; see `.sumrow` below. */
-/* INSIDE THE OVERLAY THE CARD KEEPS ITS TYPE AND DROPS ITS CHROME. `.work`
-   already draws a white panel with a border and a shadow; a bordered card inside
-   a bordered panel is two frames around one thing. The figures, the kicker and
-   the dot are untouched — only the box around them goes. */
-/* ⛔ AND THE TWO HALVES SHARE ONE LEFT EDGE. The card carries `max-width:56ch`
-   with `margin:0 auto` — right for a card centred in the page flow, and in a
-   panel it CENTRED the sentence over left-aligned rows, so the verdict began
-   160px to the right of the heading under it. Looked at, not reasoned about:
-   both halves are left-aligned at the panel's padding and both keep the 56ch
-   measure, because the reason for 56ch is reading length and that did not move. */
-#rg #sumPanel .verdict{padding:0;border:0;background:none;box-shadow:none;margin:0}
 /* ⭐⭐ TWO COLUMNS OF ROWS, THE PROSE STILL AT 56ch — Kevin, 2026-10-12: *"the
    amount of white space on the summary card. Does it make any sense to surface
    the metrics in a two column format?"* Measured at 1440x900 before changing it:
@@ -1936,37 +1906,6 @@
  font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer}
 #rg .srecap:hover{border-color:var(--ink)}
 #rg .srows b{color:var(--ink);font-weight:700}
-#rg .verdict .vk{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
- color:var(--muted);font-weight:700;margin-bottom:8px}
-#rg .verdict .lead{color:var(--ink);font-size:1.02rem}#rg .verdict b{font-weight:700}
-#rg .verdict .rate{display:block;margin-top:9px;font-size:.85rem;color:var(--muted)}
-/* THE REFERENCE CLASS, DRAWN. "Of the games where a team led that count by 12 or
-   more, it lost 243 of 708" is a true sentence a reader has to do arithmetic on
-   to feel (Kevin asked for a visual, not more words). One dot on a 0-100 track
-   with 50% marked -- the same idiom the homepage uses for the three base rates,
-   so the site has ONE way of showing a rate rather than two.
-   The two conditions carry over: no connecting line (there is nothing to connect
-   -- it is a single point), and the fraction stays printed beside it. */
-/* `display:block` ON BOTH, AND ITS ABSENCE WAS THE DEFECT. The card is a <p>,
-   so every part of it has to be a <span> -- and a span is inline, which means it
-   ignores `height` and takes its width from its CONTENT. `.vtrack`'s two
-   children are both absolutely positioned, so it had no content, so it was
-   14px of nothing 0px wide. `left:39.3%` of zero is zero: the dot sat hard
-   against the left edge of an invisible track on every game in the archive.
-   `.vk` and `.rate` above carry the same declaration; these two were simply
-   forgotten, and nothing in the node suite has a stylesheet to notice with. */
-#rg .vscale{display:block;margin:11px 0 2px}
-#rg .vtrack{display:block;position:relative;height:14px;border-radius:7px;background:#e6edf3}
-#rg .vhalf{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted);opacity:.55}
-#rg .vpt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
- border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3);background:#1f7a4d}
-#rg .vpt.hi{background:#b3341f}
-/* Same order of sacrifice as the homepage: these end labels wrap and shrink
-   before anything else, and the card's fraction lives in the SENTENCE above the
-   track, where it is prose and wraps like prose. */
-#rg .vends{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;
- font-size:.7rem;color:var(--muted);margin-top:4px}
-#rg .verdict .rate{overflow-wrap:break-word}
 #rg text{font-family:ui-monospace,Menlo,monospace}
 @media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
 

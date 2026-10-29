@@ -257,7 +257,7 @@ const PRINTED = {
           + 'measurement cannot take that apart.' },
   faceoffRun: {
     label: measure('faceoffRun').heading,
-    where: 'The How we counted door of the Face-offs layer, and its row in What this game was.',
+    where: 'The How we counted door of the Face-offs layer, and its row in Whole-game metrics.',
     reads: [
       { is: 'The first shot attempt after a face-off', at: ['census', 'faceoffRun', 'first'], said: ['census', 'faceoffRun'],
         num: 'w', den: 'n', out: 'winnerShare', as: 'ratio', unit: '%' },

@@ -16,7 +16,6 @@ export const CHECKS = {
   'watch-a-game': () => import('./watch-a-game.mjs'),
   'phone-fit': () => import('./phone-fit.mjs'),
   'preview-fits': () => import('./preview-fits.mjs'),
-  'verdict-dot': () => import('./verdict-dot.mjs'),
   'csp-refusal': () => import('./csp-refusal.mjs'),
   // Local checks: they read the built pages in `src/`, before anything is deployed.
   'pages-csp': () => import('./pages-csp.mjs'),

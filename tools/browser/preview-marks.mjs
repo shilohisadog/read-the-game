@@ -22,7 +22,7 @@
  * The printed figure, the printed axis ends and the mark's position are all read
  * off the RENDERED page by separate paths, and the arithmetic that must hold
  * between them is done here. Nothing compares the renderer with itself — the
- * trap `verdict-dot` was written for, one surface over.
+ * trap of a check that compared a renderer with itself, one surface over.
  *
  * ⚠️ AND NOTHING ANYWHERE LOOKED AT THIS CHART UNTIL TODAY. `grep trackFor test/
  * tools/` returned nothing: 1,600 tests, fourteen browser probes, and the one

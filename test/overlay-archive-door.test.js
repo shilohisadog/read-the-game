@@ -632,11 +632,6 @@ test('the summary opens at the horn, and returns unless the reader turns it down
   toEnd();
   assert.equal(a.$('sumPanel').hidden, false, 'the horn did not open the summary');
 
-  /* ⭐ IT IS THE VERDICT CARD, NOT A SECOND COMPOSITION OF IT. The same element,
-     so `sentenceFor`, the dot and the live deploy gate all keep their reader. */
-  assert.ok(a.$('verdict').innerHTML.includes('What this game was'),
-    'the summary panel does not carry the card');
-
   /* AND EVERY LENS IS NAMED, which is the whole of Kevin's "only one piece": the
      card nominates one and `mostUnusual` discards the rest. Counted off the
      SELECTOR, so a seventh layer cannot be added and silently skipped here. */
