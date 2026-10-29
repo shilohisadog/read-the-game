@@ -131,7 +131,7 @@ __CSS__</style>
      it plays and pauses. `$('ice')` rather than a `.rinkbox>svg` selector --
      every other element this app binds is reached by id, and the one query
      that was not is the one the unit harness refused to model. -->
-<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g><text id="gread" class="gread" x="100" y="62" text-anchor="middle"></text></svg>
+<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g><g id="gread" class="gread"></g></svg>
   <!-- ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING. Kevin, 2026-09-07,
        looking at a giveaway: "the (vertical) distance between '#79 Hart gave the
        puck away' and the rink, there are many pixels between the event(s)".

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-S/vf3JXbZbG74439NFq/Zb1rOeh64rRJO1dnBBXKDFc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-0fEs45kIzMFm/GWwo1+PDqNOEE5wKhgMdxPLwTgdWKs='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JJQMBzsxWxqm6Vp1BM9GBhKeSXXcO5ScaFfVP9LNqFo=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-fHvfdWEZNCw1u5LAH3bNdGvW03trqCr4FjJFGFGk3Mk='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -446,7 +446,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
-#rg .gread{font-size:3.4px;font-weight:600;fill:rgba(15,26,35,.42);font-family:system-ui,sans-serif;pointer-events:none}
+#rg .gread{pointer-events:none}
+#rg .gread text{font-size:3.4px;font-weight:600;fill:rgba(15,26,35,.42);font-family:system-ui,sans-serif}
 #rg .gread.gread-on{animation:greadin .35s ease}
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
 #rg.preview .gread{display:none!important}
@@ -727,7 +728,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 
 <div class="lesson" id="lesson" hidden></div>
 
-<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g><text id="gread" class="gread" x="100" y="62" text-anchor="middle"></text></svg>
+<div class="rinkbox"><svg id="ice" viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="track"></g><g id="labels"></g><g id="noplace"></g><g id="gread" class="gread"></g></svg>
   
   <p class="who" id="who" aria-live="polite"></p>
   
@@ -3955,12 +3956,22 @@ function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry = null
 }
 
 
-const GOAL_READ_MS = 10000; 
+const GOAL_READ_MS = 20000; 
+
+function goalReadLines(msLeft) {
+  if (!(msLeft > 0)) return null;
+  const n = Math.ceil(msLeft / 1000);
+  return {
+    tap: 'Tap Play to continue',
+    or: n === 1
+      ? 'or the replay continues in 1 second'
+      : `or the replay continues in ${n} seconds`,
+  };
+}
 
 function goalReadLabel(msLeft) {
-  if (!(msLeft > 0)) return '';
-  const n = Math.ceil(msLeft / 1000);
-  return n === 1 ? 'Replay continues in 1 second' : `Replay continues in ${n} seconds`;
+  const L = goalReadLines(msLeft);
+  return L ? `${L.tap}\n${L.or}` : '';
 }
 
 function goalReadDwell(trkLeft = 0) {
@@ -5692,45 +5703,51 @@ function sayDist(e){const el=$('playdist');if(!el)return;
  el.textContent=say;el.hidden=!say;}
 function greadRem(){
  if(!GREAD)return 0;
- if(GREAD.frozen!=null)return Math.max(0,GREAD.frozen);
  return Math.max(0,GREAD.end-performance.now());}
 function greadEl(){return document.getElementById('gread');}
+function greadSyncBtn(){
+ if(!playing)return;
+ $('play').textContent=(GREAD&&greadRem()>0)?PLAY_REST:'⏸ Pause';}
 function greadPaint(){
  const el=greadEl();if(!el)return;
- if(PREVIEW||!GREAD){el.textContent='';return;}
+ if(PREVIEW||!GREAD){put(el,'');el.classList.remove('gread-on');return;}
  const ms=greadRem();
- el.textContent=goalReadLabel(ms);
- el.classList.toggle('gread-on',ms>0&&!REDUCED);}
+ const lines=goalReadLines(ms);
+ if(!lines){put(el,'');el.classList.remove('gread-on');return;}
+ put(el,`<text x="100" y="57" text-anchor="middle">${ESC(lines.tap)}</text>`
+  +`<text x="100" y="61.2" text-anchor="middle">${ESC(lines.or)}</text>`);
+ el.classList.toggle('gread-on',ms>0&&!REDUCED);
+ greadSyncBtn();}
 function greadStopKick(){if(greadTimer!=null){clearInterval(greadTimer);greadTimer=null;}}
 function greadKick(){
  greadStopKick();greadPaint();
- if(!GREAD||GREAD.frozen!=null||PREVIEW||REDUCED)return;
+ if(!GREAD||PREVIEW)return;
  if(typeof setInterval!=='function')return;
  greadTimer=setInterval(()=>{
-  if(!GREAD||GREAD.frozen!=null){greadStopKick();return;}
+  if(!GREAD){greadStopKick();return;}
   greadPaint();if(greadRem()<=0)greadClear();},200);}
 function greadClear(){
- greadStopKick();GREAD=null;const el=greadEl();if(el){el.textContent='';el.classList.remove('gread-on');}}
+ greadStopKick();GREAD=null;const el=greadEl();if(el){put(el,'');el.classList.remove('gread-on');}
+ greadSyncBtn();}
 function greadArm(e){
  if(PREVIEW||!e||e.type!=='goal')return;
- if(GREAD&&GREAD.for===e&&greadRem()>0){
-  if(GREAD.frozen!=null){GREAD.end=performance.now()+GREAD.frozen;GREAD.frozen=null;}
- }else{GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};}
+ GREAD={for:e,end:performance.now()+GOAL_READ_MS};
  greadKick();}
-function greadFreeze(){
- if(!GREAD||GREAD.frozen!=null)return;
- GREAD.frozen=greadRem();GREAD.end=0;greadStopKick();greadPaint();}
+function greadSkip(){
+ if(!GREAD)return;
+ clearTimeout(timer);greadClear();step();}
 function dwell(e){
  if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
   const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
  if(e&&e.type==='goal'){
-  const b=(GREAD&&GREAD.for===e&&GREAD.frozen!=null)?GREAD.frozen:GOAL_READ_MS;return b+trkExtra(e,b);}
+  return GOAL_READ_MS+trkExtra(e,GOAL_READ_MS);}
  const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
 function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);}
 function play(){closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trkKick();}
 const PLAY_REST='▶ Play';
-function stop(){playing=false;syncStep();clearTimeout(timer);greadFreeze();sayOnIce(EV[i]);}
-$('play').onclick=()=>playing?stop():play();
+function stop(){playing=false;syncStep();clearTimeout(timer);greadClear();sayOnIce(EV[i]);}
+function togglePlay(){if(playing&&GREAD&&greadRem()>0){greadSkip();return;}playing?stop():play();}
+$('play').onclick=()=>togglePlay();
 function trkGet(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>null);}
 function trkRows(){return TRK.rows||(TRK.rows=trkGet('track/'+G.game.id+'/goals.json').then(r=>Array.isArray(r)?r:[]));}
 function trkPlan(e){
@@ -5914,7 +5931,7 @@ if(!PREVIEW){
    doorOpened=false; 
    preI=i;
    if(workOpen)return;
-   playing?stop():play();});
+   togglePlay();});
   ice.addEventListener('dblclick',ev=>{
    if(doorOpened){doorOpened=false;return;} 
    if(workOpen)return;

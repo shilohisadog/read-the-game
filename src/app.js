@@ -61,7 +61,7 @@ import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
   trackStops, trackFrameAt, trackClock, trackSecs, trackClipSit, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
   trackEntry } from './lib/tracked.js';
-import { GOAL_READ_MS, goalReadLabel } from './lib/goal-read.js';
+import { GOAL_READ_MS, goalReadLines } from './lib/goal-read.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
 /* ⭐⭐ THE ARCHIVE DOOR'S MODULES — Kevin's `Is that a lot?` overlay. Both kinds
@@ -2536,9 +2536,9 @@ const CAPTION_BONUS=900;
 // 2026-10-29: fixed post-goal reading pause (Kevin). Same at every gear — reading does not scale.
 // GOAL_READ_MS lives in src/lib/goal-read.js so the number and the countdown copy are tested pure.
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
-/* Post-goal countdown on the ice. `end` is performance.now()+remaining while the
-   hold runs; `frozen` is the remaining ms while Pause holds it; `for` is the
-   goal event the hold belongs to so a resume on another frame cannot inherit it. */
+/* Post-goal soft hold on the ice. `end` is performance.now()+remaining while the
+   hold runs; `for` is the goal event the hold belongs to so a resume on another
+   frame cannot inherit it. No freeze: Play continues at once, waiting auto-continues. */
 let GREAD=null,greadTimer=null;
 $('scrub').max=EV.length-1;
 /* THE PLAYHEAD FLOOR IS -1, AND -1 IS A FRAME. Every read of the current event
@@ -2869,50 +2869,63 @@ function sayDist(e){const el=$('playdist');if(!el)return;
  const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
  el.textContent=say;el.hidden=!say;}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
-/* ⭐ POST-GOAL COUNTDOWN — Kevin, 2026-10-29. A faint line under the centre-ice
-   circle names the fixed reading pause so the viewer knows they have time. Pause
-   freezes it; Next/Prev/seek clear it; prefers-reduced-motion keeps the words
-   with no fade. Not shown on the front-door preview (its own GOAL_HOLD_MS). */
+/* ⭐ POST-GOAL SOFT HOLD — Kevin, 2026-10-29. Two faint lines under the centre-ice
+   circle name a fixed reading pause and invite Play to continue early. While the
+   hold runs the Play control reads Play (so the overlay matches the button);
+   tapping it ends the hold at once and the replay keeps going; waiting lets the
+   countdown reach 0 and auto-continue. Next/Prev/seek clear it. No freeze —
+   there is nothing to Pause during the hold. prefers-reduced-motion keeps the
+   words with no fade. Not shown on the front-door preview (its own GOAL_HOLD_MS). */
 function greadRem(){
  if(!GREAD)return 0;
- if(GREAD.frozen!=null)return Math.max(0,GREAD.frozen);
  return Math.max(0,GREAD.end-performance.now());}
 function greadEl(){return document.getElementById('gread');}
+/* While a hold is armed the transport is still "playing" (the dwell timer will
+   auto-continue), but the button must read Play so "Tap Play to continue" matches
+   what the viewer sees. After the hold ends the same flag keeps the Pause label. */
+function greadSyncBtn(){
+ if(!playing)return;
+ $('play').textContent=(GREAD&&greadRem()>0)?PLAY_REST:'⏸ Pause';}
 function greadPaint(){
  const el=greadEl();if(!el)return;
- if(PREVIEW||!GREAD){el.textContent='';return;}
+ if(PREVIEW||!GREAD){put(el,'');el.classList.remove('gread-on');return;}
  const ms=greadRem();
- el.textContent=goalReadLabel(ms);
- el.classList.toggle('gread-on',ms>0&&!REDUCED);}
+ const lines=goalReadLines(ms);
+ if(!lines){put(el,'');el.classList.remove('gread-on');return;}
+ /* Two <text> lines inside the group — SVG ignores \n in a single text node. */
+ put(el,`<text x="100" y="57" text-anchor="middle">${ESC(lines.tap)}</text>`
+  +`<text x="100" y="61.2" text-anchor="middle">${ESC(lines.or)}</text>`);
+ el.classList.toggle('gread-on',ms>0&&!REDUCED);
+ greadSyncBtn();}
 function greadStopKick(){if(greadTimer!=null){clearInterval(greadTimer);greadTimer=null;}}
 function greadKick(){
  // setInterval, not rAF: the test harness runs rAF synchronously and a paint loop would recurse.
+ // Tick under reduced motion too — only the fade class is skipped in greadPaint.
  greadStopKick();greadPaint();
- if(!GREAD||GREAD.frozen!=null||PREVIEW||REDUCED)return;
+ if(!GREAD||PREVIEW)return;
  if(typeof setInterval!=='function')return;
  greadTimer=setInterval(()=>{
-  if(!GREAD||GREAD.frozen!=null){greadStopKick();return;}
+  if(!GREAD){greadStopKick();return;}
   greadPaint();if(greadRem()<=0)greadClear();},200);}
 function greadClear(){
- greadStopKick();GREAD=null;const el=greadEl();if(el){el.textContent='';el.classList.remove('gread-on');}}
+ greadStopKick();GREAD=null;const el=greadEl();if(el){put(el,'');el.classList.remove('gread-on');}
+ greadSyncBtn();}
 function greadArm(e){
  if(PREVIEW||!e||e.type!=='goal')return;
- if(GREAD&&GREAD.for===e&&greadRem()>0){
-  if(GREAD.frozen!=null){GREAD.end=performance.now()+GREAD.frozen;GREAD.frozen=null;}
- }else{GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};}
+ GREAD={for:e,end:performance.now()+GOAL_READ_MS};
  greadKick();}
-function greadFreeze(){
- if(!GREAD||GREAD.frozen!=null)return;
- GREAD.frozen=greadRem();GREAD.end=0;greadStopKick();greadPaint();}
+/* End the hold at once and keep playing — the soft-pause "Play" action. */
+function greadSkip(){
+ if(!GREAD)return;
+ clearTimeout(timer);greadClear();step();}
 function dwell(e){
  // Goals passes through a frame that is not one of its stops (the opening face-off, a frame held for a
  // tracking or a file): it waits for the tracking or the file, never a frame's reading time.
  if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
   const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
  // A goal's reading pause is fixed (GOAL_READ_MS), not gear-scaled — Kevin, 2026-10-29.
- // Resume after Pause uses the frozen remainder for this same goal (play reads dwell before re-arming).
  if(e&&e.type==='goal'){
-  const b=(GREAD&&GREAD.for===e&&GREAD.frozen!=null)?GREAD.frozen:GOAL_READ_MS;return b+trkExtra(e,b);}
+  return GOAL_READ_MS+trkExtra(e,GOAL_READ_MS);}
  const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
 // The tracked goal may hold this frame while it plays, or (Goals) choose the next one.
 function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);}
@@ -2943,8 +2956,11 @@ const PLAY_REST='▶ Play';
    runs on the next frame when playback starts, but pausing produces no new
    frame at all -- so without this the roster would appear only when the reader
    next stepped, which is the opposite of "shown while paused". */
-function stop(){playing=false;syncStep();clearTimeout(timer);greadFreeze();sayOnIce(EV[i]);}
-$('play').onclick=()=>playing?stop():play();
+function stop(){playing=false;syncStep();clearTimeout(timer);greadClear();sayOnIce(EV[i]);}
+/* Soft hold: while a post-goal countdown is running the button already reads Play,
+   and pressing it means "continue now" rather than Pause. Same handler for the ice tap. */
+function togglePlay(){if(playing&&GREAD&&greadRem()>0){greadSkip();return;}playing?stop():play();}
+$('play').onclick=()=>togglePlay();
 /* ⭐⭐ THE TRACKED GOAL — the league's tracking of the seconds before a goal, over this
    rink (src/lib/tracked.js holds the arithmetic and the words). Kevin, 2026-10-19 → 21,
    built on the lab first. In All events, Play shows a goal's ~10 tracked seconds at the
@@ -3250,7 +3266,7 @@ if(!PREVIEW){
    doorOpened=false;                       // this press reached the ice, so no door took it
    preI=i;
    if(workOpen)return;
-   playing?stop():play();});
+   togglePlay();});
   ice.addEventListener('dblclick',ev=>{
    if(doorOpened){doorOpened=false;return;} // the gesture began on a door -- see doorDidOpen
    if(workOpen)return;

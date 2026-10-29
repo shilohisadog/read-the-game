@@ -1945,9 +1945,11 @@
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
-/* Post-goal countdown under the centre-ice circle (Kevin, 2026-10-29). Faint on
-   purpose so it names the pause without covering the teaching text or the banner. */
-#rg .gread{font-size:3.4px;font-weight:600;fill:rgba(15,26,35,.42);font-family:system-ui,sans-serif;pointer-events:none}
+/* Post-goal soft hold under the centre-ice circle (Kevin, 2026-10-29). Two faint
+   lines so it names the pause and the tap-to-continue without covering the
+   teaching text or the banner. */
+#rg .gread{pointer-events:none}
+#rg .gread text{font-size:3.4px;font-weight:600;fill:rgba(15,26,35,.42);font-family:system-ui,sans-serif}
 #rg .gread.gread-on{animation:greadin .35s ease}
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
 #rg.preview .gread{display:none!important}

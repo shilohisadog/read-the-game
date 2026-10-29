@@ -517,8 +517,8 @@ a second look.
 notes all update when a goal lands, and the pause after that felt too short to
 take them in. He asked for about **four seconds** after the goal, with a faint
 countdown near centre ice naming the pause, and to try that number because he
-made it up. Watching the 4 s hold live the same day, he raised it to **ten
-seconds** (see Tuning below).
+made it up. Watching live the same day he raised it twice — **ten**, then
+**twenty** seconds — and asked for tap-to-continue (see Tuning below).
 
 ### What the clocks were doing
 
@@ -536,24 +536,27 @@ feel and tune.
 
 ### The decision
 
-- `GOAL_READ_MS = 10000` in `src/lib/goal-read.js`. Goals use this instead of
+- `GOAL_READ_MS = 20000` in `src/lib/goal-read.js`. Goals use this instead of
   `frameMs + CAPTION_BONUS`. It does **not** scale with the speed gear — same
   reason as `CAPTION_BONUS`: the words are the same length at every speed.
 - The hold starts when the goal frame is shown (for a tracked goal, that is
   right after the clip reaches the goal line). Same rule in Goals and All
   events.
-- A faint countdown under the centre-ice circle reads `Replay continues in N
-  seconds` (singular at 1). Pause freezes the hold and the digits; Play resumes
-  them; Next / Prev / seek clear them. `prefers-reduced-motion` keeps the words
-  and drops the fade. The front-door preview keeps its own `GOAL_HOLD_MS = 2600`
-  and does not show the countdown.
+- Soft pause: while the hold runs the Play control reads **Play** (so the
+  overlay matches the button). Two faint lines under the centre-ice circle read
+  `Tap Play to continue` and `or the replay continues in N seconds` (singular at
+  1). Tapping Play ends the hold at once and the replay keeps going; waiting
+  lets the countdown reach 0 and auto-continue. There is no Pause-freeze during
+  the hold — Next / Prev / seek still clear it. `prefers-reduced-motion` keeps
+  the words and drops the fade. The front-door preview keeps its own
+  `GOAL_HOLD_MS = 2600` and does not show the countdown.
 
 ### Tuning (same day)
 
-The first ship used **4000 ms**, Kevin's round starting guess. Watching it live
-on a tracked goal he said it **definitely** needed to be longer — four seconds
-was too short to read the goal frame. Raised to **10000 ms** the same day, again
-by feel. The constant remains the tuning knob and may move again.
+Tried **4000 ms**, then **10000 ms**, both by feel after Kevin watched live;
+each was still too short to read the goal frame. Raised to **20000 ms** and
+added tap-to-continue so readers set their own pace without needing another
+raise. The constant remains the tuning knob and may move again.
 
 ### Limits
 
