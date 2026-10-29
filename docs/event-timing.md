@@ -517,7 +517,8 @@ a second look.
 notes all update when a goal lands, and the pause after that felt too short to
 take them in. He asked for about **four seconds** after the goal, with a faint
 countdown near centre ice naming the pause, and to try that number because he
-made it up.
+made it up. Watching the 4 s hold live the same day, he raised it to **ten
+seconds** (see Tuning below).
 
 ### What the clocks were doing
 
@@ -535,7 +536,7 @@ feel and tune.
 
 ### The decision
 
-- `GOAL_READ_MS = 4000` in `src/lib/goal-read.js`. Goals use this instead of
+- `GOAL_READ_MS = 10000` in `src/lib/goal-read.js`. Goals use this instead of
   `frameMs + CAPTION_BONUS`. It does **not** scale with the speed gear — same
   reason as `CAPTION_BONUS`: the words are the same length at every speed.
 - The hold starts when the goal frame is shown (for a tracked goal, that is
@@ -546,7 +547,13 @@ feel and tune.
   them; Next / Prev / seek clear them. `prefers-reduced-motion` keeps the words
   and drops the fade. The front-door preview keeps its own `GOAL_HOLD_MS = 2600`
   and does not show the countdown.
-- 4000 ms is Kevin's starting guess. The constant is the tuning knob.
+
+### Tuning (same day)
+
+The first ship used **4000 ms**, Kevin's round starting guess. Watching it live
+on a tracked goal he said it **definitely** needed to be longer — four seconds
+was too short to read the goal frame. Raised to **10000 ms** the same day, again
+by feel. The constant remains the tuning knob and may move again.
 
 ### Limits
 

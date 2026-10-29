@@ -40,7 +40,7 @@ Older build-list entries, newest first: [docs/status-archive.md](status-archive.
 Everything here is live on readthegame.co and was checked in a real browser; gates, deploy and derive green.
 
 ### Live now
-- **2026-10-29** (Kevin): after a goal, the replay holds a fixed 4 s (`GOAL_READ_MS`) at every speed so the board and notes can be read, with a faint centre-ice countdown ("Replay continues in N seconds"). Pause freezes it; Next clears it. Preview `GOAL_HOLD_MS` unchanged.
+- **2026-10-29** (Kevin): after a goal, the replay holds a fixed 10 s (`GOAL_READ_MS`, raised from 4 s after he watched it live) at every speed so the board and notes can be read, with a faint centre-ice countdown ("Replay continues in N seconds"). Pause freezes it; Next clears it. Preview `GOAL_HOLD_MS` unchanged.
 - **2026-10-29**: tracked goals now count the penalty box down on the clip clock; a power play ends on screen when its penalty does (first logic change to CC's design: box.js stays a non-strength model; the badge only drops a recorded power play, never adds one).
 - **2026-10-29**: the summary card no longer opens with the attempts verdict; the per-team counts below already show attempts.
 - **2026-10-29**: the build list was split into status.md + status-archive.md, and the README now matches the layer picker. `terrain-3d.html` and its builder were removed, and the `lab` branch was deleted.
