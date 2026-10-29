@@ -546,13 +546,19 @@ feel and tune.
   overlay matches the button). Two faint lines under the centre-ice circle read
   `Tap Play to continue` and `or the replay continues in N seconds` (singular at
   1), with a faint **Pause** button in the same overlay (real `<button>`, 44px
-  tap target). Tapping Play ends the hold at once and the replay keeps going;
-  waiting lets the countdown reach 0 and auto-continue. Overlay Pause freezes
-  the hold and the digits — the overlay button then reads **Resume**, the main
-  control still reads Play, and either one resumes the remaining time. Next /
-  Prev / seek still clear it. `prefers-reduced-motion` keeps the words and drops
-  the fade. The front-door preview keeps its own `GOAL_HOLD_MS = 2600` and does
-  not show the countdown.
+  tap target). The overlay lives in `.iceslot` with the svg (anchored just under
+  the centre circle in viewBox terms: viewBox 200×85, circle bottom ≈ 68%, CSS
+  `top:70%`) so it stays on the ice at every width — not on the teaching text
+  under the rink (a `.rinkbox` % did that). Always a horizontal row so a ~158px
+  phone ice still fits; `.iceslot{overflow:hidden}` is a belt. Copy uses
+  `--muted` plus a light ice text-shadow so it stays legible. Tapping Play ends
+  the hold at once and the replay keeps
+  going; waiting lets the countdown reach 0 and auto-continue. Overlay Pause
+  freezes the hold and the digits — the overlay button then reads **Resume**,
+  the main control still reads Play, and either one resumes the remaining time.
+  Next / Prev / seek still clear it. `prefers-reduced-motion` keeps the words
+  and drops the fade. The front-door preview keeps its own
+  `GOAL_HOLD_MS = 2600` and does not show the countdown.
 
 ### Tuning (same day)
 

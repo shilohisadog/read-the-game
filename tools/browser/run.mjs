@@ -27,6 +27,7 @@ export const CHECKS = {
   'summary-marks': () => import('./summary-marks.mjs'),
   'one-tap': () => import('./one-tap.mjs'),
   'methods-deeplink': () => import('./methods-deeplink.mjs'),
+  'gread-on-ice': () => import('./gread-on-ice.mjs'),
 };
 
 function args(argv) {

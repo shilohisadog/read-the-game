@@ -294,6 +294,8 @@
 @media (prefers-reduced-motion:reduce){#rg .pressplay{animation:none}}
 #rg .pressplay:hover,#rg .pressplay:focus-visible{background:rgba(15,26,35,.92)}
 #rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:var(--rinkpad);box-shadow:0 6px 22px rgba(16,32,45,.08)}
+/* iceslot wraps ONLY the svg so % tops are of the ice, not who/playdist/lbox under it. */
+#rg .iceslot{position:relative;display:block;width:100%}
 /* THE PENALTY BOX, AND IT IS OUTSIDE THE viewBox ON PURPOSE. Put inside it, the
    rink would shrink to make room -- and the rink is 136px tall on a 390px phone
    against 373px on a laptop, measured, so the band would cost most where there
@@ -701,7 +703,8 @@
    43px of a 146px rink -- the ice letterboxed and visibly shrank, which is the
    thing the band was never allowed to do. Inline, the label sits beside the
    boxes and the whole band is one row. Measured both ways. */
-#rg.preview .rinkbox svg{width:100%;height:auto;flex:1 1 auto;min-height:0}
+#rg.preview .rinkbox .iceslot{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column}
+#rg.preview .rinkbox .iceslot svg{width:100%;height:auto;flex:1 1 auto;min-height:0}
 /* AND THE SCOREBOARD HAS TO SHRINK WITH THE FRAME, which is the half the flex
    column could not fix on its own. Measured in a real browser at two widths:
 
@@ -1151,10 +1154,11 @@
    `test/park.test.js` is now the instrument for it.
 
    ⭐ AND MOVING IT IS ITSELF A CONTAINER CHANGE, so `.rinkbox` gets the same
-   enumeration the row did not (CHENG). It now holds, in order: the <svg>, the
-   Press Play button, the parked penalty row, the parked attempt counters, and
-   this pill -- last, so it paints over the ice. Nothing is nested inside the
-   pill, and `test/park.test.js` is what will notice if that stops being true.
+   enumeration the row did not (CHENG). It now holds, in order: `.iceslot` (svg
+   + the post-goal `#gread` overlay), the Press Play button, the parked penalty
+   row, the parked attempt counters, and this pill -- last, so it paints over
+   the ice. Nothing is nested inside the pill, and `test/park.test.js` is what
+   will notice if that stops being true.
 
    ⚠️ AND WHEN FURNITURE RETURNS UNDER THE ICE -- the fixed-height metrics box is
    the next build -- THIS HAS TO MOVE WITH IT, back to `bottom:calc(100% + 6px)`
@@ -1947,22 +1951,35 @@
 
 /* Post-goal soft hold under the centre-ice circle (Kevin, 2026-10-29). HTML
    overlay (not SVG) so the Pause control can be a real <button> with a 44px
-   tap target. Faint copy + faint pill; sits below centre ice, above teaching
-   text. pointer-events only on the button so ice taps still reach the rink. */
-#rg .gread{position:absolute;left:50%;top:66%;transform:translate(-50%,0);z-index:2;
-  display:flex;flex-direction:column;align-items:center;gap:6px;max-width:90%;
-  pointer-events:none;text-align:center}
+   tap target. Anchored to `.iceslot` (svg only) — NOT `.rinkbox`, whose height
+   includes who/playdist/lbox; top:66% of that box landed the copy on the text
+   under the ice (Kevin screenshot, 2026-10-29). viewBox 200×85, centre circle
+   at (100,42.5) r=15 → bottom at 57.5/85 ≈ 68%; top:70% sits just under it,
+   above the boards. Row always (not column): at 390 the ice is ~158px tall and
+   a stacked tap+or+44px button overflows onto #who; a row stays ~44px and fits
+   the band under the circle. Faint but legible on ice (`--muted`). pointer-events
+   only on the button so ice taps still reach the rink. overflow:hidden on the
+   slot is a belt so a future taller copy cannot paint the teaching text. */
+#rg .iceslot{overflow:hidden}
+#rg .gread{position:absolute;left:50%;top:70%;transform:translate(-50%,-20%);z-index:2;
+  display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;
+  gap:6px 10px;width:92%;max-width:92%;pointer-events:none;text-align:center;box-sizing:border-box}
 #rg .gread[hidden]{display:none!important}
 #rg .gread.gread-on{animation:greadin .35s ease}
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
-#rg .gread .gread-lines{margin:0;pointer-events:none}
-#rg .gread .gread-tap,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:600;
-  color:rgba(15,26,35,.45);line-height:1.25;font-family:system-ui,sans-serif}
-#rg .gread .gread-btn{pointer-events:auto;min-height:44px;min-width:72px;padding:8px 16px;
-  border-radius:999px;border:1px solid rgba(15,26,35,.18);background:rgba(255,255,255,.62);
-  color:rgba(15,26,35,.55);font-size:.78rem;font-weight:600;cursor:pointer;
-  font-family:system-ui,sans-serif;backdrop-filter:blur(2px)}
+#rg .gread .gread-lines{margin:0;pointer-events:none;text-align:right}
+#rg .gread .gread-tap,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:650;
+  color:var(--muted);line-height:1.2;font-family:system-ui,sans-serif;
+  text-shadow:0 0 6px rgba(238,244,248,.9),0 1px 0 rgba(238,244,248,.7)}
+#rg .gread .gread-btn{pointer-events:auto;min-height:44px;min-width:72px;padding:8px 14px;
+  border-radius:999px;border:1px solid color-mix(in srgb,var(--muted) 45%,transparent);
+  background:rgba(255,255,255,.72);color:var(--muted);font-size:.72rem;font-weight:650;
+  cursor:pointer;font-family:system-ui,sans-serif;backdrop-filter:blur(2px)}
 #rg .gread .gread-btn:focus-visible{outline:2px solid rgba(15,26,35,.45);outline-offset:2px}
+@media (min-width:640px){
+ #rg .gread .gread-tap,#rg .gread .gread-or{font-size:.78rem}
+ #rg .gread .gread-btn{font-size:.78rem;padding:8px 16px}
+}
 #rg.preview .gread{display:none!important}
 
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}

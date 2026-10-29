@@ -431,15 +431,14 @@ test('the preview fits the rink to its box instead of trusting the box', () => {
   // The default rule is `height:auto`, which is exactly what cannot be bounded.
   // THE BOUNDING MECHANISM CHANGED WHEN THE PENALTY BAND ARRIVED, and the
   // PROPERTY did not. `height:100%` bounded the svg against the rink box while
-  // the svg was its only child. It is not any more: `.rinkbox` is now a flex
-  // COLUMN holding the ice and the band, and `height:100%` there makes the svg
-  // demand the whole box and push the band out of it. `flex:1 1 auto` with
-  // `min-height:0` bounds it against what is LEFT, which is the same guarantee
-  // over a container that now has two children. Verified in a browser: 343x141
-  // at 390px, 884x389 at 1100px, whole rink drawn, nothing cropped.
-  assert.match(app, /#rg\.preview \.rinkbox svg\{[^}]*flex:1 1 auto/,
+  // the svg was its only child. It is not any more: `.rinkbox` is a flex COLUMN
+  // (ice slot + chrome), and `height:100%` on the svg would push siblings out.
+  // The svg lives in `.iceslot`; `flex:1 1 auto` + `min-height:0` on that slot
+  // (and the svg) bounds the ice against what is LEFT. Verified in a browser:
+  // 343x141 at 390px, 884x389 at 1100px, whole rink drawn, nothing cropped.
+  assert.match(app, /#rg\.preview \.rinkbox \.iceslot svg\{[^}]*flex:1 1 auto/,
     'the preview rink is still free to grow past its container');
-  assert.match(app, /#rg\.preview \.rinkbox svg\{[^}]*min-height:0/,
+  assert.match(app, /#rg\.preview \.rinkbox \.iceslot svg\{[^}]*min-height:0/,
     'and a flex child without min-height:0 refuses to shrink');
   assert.match(app, /#rg\.preview \.rinkbox\{[^}]*min-height:0/,
     'a flex child without min-height:0 refuses to shrink, which is the crop');
