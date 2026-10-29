@@ -552,7 +552,7 @@ feel and tune.
   lines + button) so the overlay reads as one card — the pill alone was too
   faint on the ice. Text halo kept.
   The overlay lives in `.iceslot` with the svg (anchored just under the centre
-  circle in viewBox terms: viewBox 200×85, circle bottom ≈ 68%, CSS `top:70%`) so
+  circle in viewBox terms: viewBox 200×85, circle bottom ≈ 68%, CSS `top:66%` + translate −35%) so
   it stays on the ice at every width — not on the teaching text under the rink
   (a `.rinkbox` % did that). Horizontal row; `.iceslot{overflow:hidden}` is a
   belt. Copy uses `--muted` plus a light ice text-shadow. Phone play is

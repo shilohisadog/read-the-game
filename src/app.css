@@ -1954,7 +1954,7 @@
    tap target. Anchored to `.iceslot` (svg only) — NOT `.rinkbox`, whose height
    includes who/playdist/lbox; top:66% of that box landed the copy on the text
    under the ice (Kevin screenshot, 2026-10-29). viewBox 200×85, centre circle
-   at (100,42.5) r=15 → bottom at 57.5/85 ≈ 68%; top:70% sits just under it,
+   at (100,42.5) r=15 → bottom at 57.5/85 ≈ 68%; top:66% / translate -35% sits under it,
    above the boards. Row: three right-justified lines beside Pause, vertically
    centred (Kevin t77u / t78u — keep the text halo and Pause pill). Kevin t83u:
    a visible soft panel on `#gread` itself (translucent white matching the pill,
@@ -1965,7 +1965,7 @@
    belt so a taller copy cannot paint the teaching text.
    Gate: tools/browser/gread-on-ice.mjs via CHECKS + deploy.yml browser job. */
 #rg .iceslot{overflow:hidden}
-#rg .gread{position:absolute;left:50%;top:70%;transform:translate(-50%,-20%);z-index:2;
+#rg .gread{position:absolute;left:50%;top:66%;transform:translate(-50%,-35%);z-index:2;
   display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;
   gap:6px 12px;width:auto;max-width:92%;padding:6px 12px;box-sizing:border-box;
   border-radius:12px;background:rgba(255,255,255,.72);box-shadow:0 1px 6px rgba(15,26,35,.12);
@@ -1975,7 +1975,7 @@
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
 #rg .gread .gread-lines{margin:0;pointer-events:none;text-align:right}
 #rg .gread .gread-tap,#rg .gread .gread-mid,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:650;
-  color:var(--muted);line-height:1.25;font-family:system-ui,sans-serif;
+  color:var(--muted);line-height:1.25;font-family:system-ui,sans-serif;white-space:nowrap;
   text-shadow:0 0 6px rgba(238,244,248,.9),0 1px 0 rgba(238,244,248,.7)}
 #rg .gread .gread-btn{pointer-events:auto;min-height:44px;min-width:72px;padding:8px 14px;
   border-radius:999px;border:1px solid color-mix(in srgb,var(--muted) 45%,transparent);
