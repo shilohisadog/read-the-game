@@ -2944,7 +2944,7 @@ function trkStart(P,still,free){
  const fileMs=()=>{const p=Math.max(0,played);if(!entry||p<=crossAt)return p;return p<crossAt+HOLD?crossAt:p-HOLD;};
  const now10=()=>t0+fileMs()/1000*sp*10;
  const clip=(tGoal-t0)/10*1000/sp;
- // Hold-frame sit: the last recorded strength before the clip (box/pill start from it).
+ // The strength recorded on the last event before the clip; the badge starts from it.
  const holdSit=sitAt(EV[trackHoldFrame(EV,EV.indexOf(P.e),P)]);
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,holdSit,boxAt:null,
   // In Goals the goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
@@ -2964,13 +2964,13 @@ function trkStart(P,still,free){
   const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
   const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
   $('clk').textContent=trackClock(P,j);
-  // Box and PP badge follow the clip clock; only redraw when the displayed second changes.
+  // The box and the power-play badge follow the clip clock; redrawn only when its second changes.
   const secs=trackSecs(P,j);
   if(secs!==run.boxAt){
    run.boxAt=secs;
-   // endedHere only on the goal frame — mid-clip would leak a coming goal.
+   // A penalty ended by the goal shows only on the goal frame, so the clip never forecasts it.
    drawBoxes(secs,j>=P.k?P.e:null);
-   // Drop a recorded PP once the short side's box is empty; never invent strength (box.js is not a model).
+   // A recorded power play ends when its penalty does; nothing else changes (box.js is not a strength model).
    drawPill({sit:trackClipSit(run.holdSit,secs,PBOX,CTX)});
   }
   return j;};

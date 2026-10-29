@@ -353,7 +353,7 @@ test('trackSecs matches the goal\'s own s at the goal line, and counts back with
 });
 
 test('⭐ a tracked clip drops the box and the PP once the minor has expired between events', () => {
-  /* Couturier, PHI at WSH 2026-10-28, ev482: Hutson\'s holding at 2:13 of P2 expires at
+  /* Couturier, PHI at WSH 2026-10-28, ev482: Hutson's holding at 2:13 of P2 expires at
      4:13; the clip opens at 4:27 with no event in between, so the hold frame still
      carries the PP sit. The box and badge must follow the clip clock. */
   const HOME = 15, AWAY = 4; // WSH home, PHI away — ids only matter as a pair
@@ -375,4 +375,10 @@ test('⭐ a tracked clip drops the box and the PP once the minor has expired bet
   // Never invent a PP the hold frame did not record.
   assert.equal(trackClipSit('1551', clipInside, box, ctx), '1551');
   assert.equal(trackClipSit('1560', clipAfter, box, ctx), '1560', 'an empty-net sit is left alone');
+  // A misconduct still in the box does not hold the power play up.
+  const mis = stints([...events.slice(0, 1),
+    { type: 'penalty', s: penAt, per: 2, own: HOME, actor: 92, min: 10, sev: 'MIS', pen: 'misconduct', sit: '1551' },
+    ...events.slice(1)], ctx);
+  assert.equal(occupants(mis, clipAfter, HOME).length, 1, 'fixture: the misconduct is still being served');
+  assert.equal(trackClipSit(holdSit, clipAfter, mis, ctx), null, 'a misconduct alone keeps no power play');
 });

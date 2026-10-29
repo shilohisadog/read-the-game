@@ -355,10 +355,11 @@ export function trackFrameAt(P, tt) {
   while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
   return j;
 }
-/** Remaining period seconds at frame `j`, counted back from the goal's own clock. */
+/** Seconds left in the period on the goal's own clock. */
+const goalRem = P => { const [m, s] = String(P.e.rem || '0:0').split(':').map(Number); return m * 60 + s; };
+/** Seconds left in the period at frame `j`, counted back from the goal's own clock. */
 export function trackRem(P, j) {
-  const [m, s] = String(P.e.rem || '0:0').split(':').map(Number);
-  return Math.max(0, Math.floor(m * 60 + s + (P.frames[P.k].timeStamp - P.frames[j].timeStamp) / 10));
+  return Math.max(0, Math.floor(goalRem(P) + (P.frames[P.k].timeStamp - P.frames[j].timeStamp) / 10));
 }
 /** The scoreboard clock at frame `j`. */
 export function trackClock(P, j) {
@@ -367,16 +368,17 @@ export function trackClock(P, j) {
 }
 /** Elapsed game seconds at frame `j` — the same instant trackClock shows, for the box. */
 export function trackSecs(P, j) {
-  const [m, s] = String(P.e.rem || '0:0').split(':').map(Number);
-  return P.e.s + (m * 60 + s) - trackRem(P, j);
+  return P.e.s + goalRem(P) - trackRem(P, j);
 }
-/** Sit to show during a tracked clip: the hold event's code, or null once the short
- *  side's box is empty on `secs`. box.js is occupancy, not a strength model — drop only. */
+/** The strength code to show during a tracked clip: the last recorded one, or null (no
+ *  badge) once the short-handed team's box is empty. Only ever drops a power play, because
+ *  box.js records who is in the box, not strength. */
 export function trackClipSit(holdSit, secs, box, ctx) {
   const b = standing(holdSit, ctx);
   if (!b || b.kind !== POWER_PLAY) return holdSit;
   const shortId = b.id === ctx.homeId ? ctx.awayId : ctx.homeId;
-  return occupants(box, secs, shortId).length ? holdSit : null;
+  // A misconduct does not shorten the team (box.js), so only other seats keep the power play.
+  return occupants(box, secs, shortId).some(o => o.sev !== 'MIS') ? holdSit : null;
 }
 
 /**
