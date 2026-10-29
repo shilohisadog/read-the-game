@@ -46,6 +46,17 @@
  * A MAJOR IS NEVER ENDED BY A GOAL (rule 20.4), which is why `sev` is consulted
  * rather than duration. The first version of this released any penalty and would
  * have emptied the box on a fighting major.
+ *
+ * THE TRACKED GOAL READS THIS BOX ON ITS OWN CLOCK (2026-10-29). Kevin found it on
+ * PHI at WSH, `?game=2026020199`, Couturier's goal at 4:36 of the second: Hutson's
+ * holding minor (2:13) ran out at 4:13, the clip opened at 4:27, and the board still
+ * showed him with 0:21 left and a PHI power play. The clip had taken over only the
+ * clock; the box and the badge stayed on the last event before it, a takeaway at
+ * 3:52. Between events there is no recorded strength, so `trackClipSit` (tracked.js)
+ * may only DROP a recorded power play once the short side has nobody serving
+ * time in the box, never add or change one. That keeps this file what it says it is: who is
+ * sitting, not a strength model. A misconduct does not count, for the reason given
+ * on ENDS_ON_GOAL below: a substitute takes the ice.
  */
 
 /**

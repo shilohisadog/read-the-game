@@ -59,7 +59,7 @@ import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG_TENTHS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
-  trackStops, trackFrameAt, trackClock, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
+  trackStops, trackFrameAt, trackClock, trackSecs, trackClipSit, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
   trackEntry } from './lib/tracked.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -2944,7 +2944,9 @@ function trkStart(P,still,free){
  const fileMs=()=>{const p=Math.max(0,played);if(!entry||p<=crossAt)return p;return p<crossAt+HOLD?crossAt:p-HOLD;};
  const now10=()=>t0+fileMs()/1000*sp*10;
  const clip=(tGoal-t0)/10*1000/sp;
- const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,
+ // The strength recorded on the last event before the clip; the badge starts from it.
+ const holdSit=sitAt(EV[trackHoldFrame(EV,EV.indexOf(P.e),P)]);
+ const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,holdSit,boxAt:null,
   // In Goals the goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
   // The blue-line crossing is one, so Prev/Next can land on the check marks.
   stops:(()=>{const s=trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal);
@@ -2962,6 +2964,15 @@ function trkStart(P,still,free){
   const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
   const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
   $('clk').textContent=trackClock(P,j);
+  // The box and the power-play badge follow the clip clock; redrawn only when its second changes.
+  const secs=trackSecs(P,j);
+  if(secs!==run.boxAt){
+   run.boxAt=secs;
+   // A penalty ended by the goal shows only on the goal frame, so the clip never forecasts it.
+   drawBoxes(secs,j>=P.k?P.e:null);
+   // A recorded power play ends when its penalty does; nothing else changes (box.js is not a strength model).
+   drawPill({sit:trackClipSit(run.holdSit,secs,PBOX,CTX)});
+  }
   return j;};
  const tick=now=>{
   if(TRK.run!==run)return;
