@@ -16,6 +16,7 @@
 import { inkOn, readableInk } from './teams.js';
 import { ESC } from './esc.js';
 import { standing, EMPTY_NET, POWER_PLAY, PENALTY_SHOT } from './strength.js';
+import { occupants } from './box.js';
 import { NET_X, GOAL_POST_Y, BLUE_LINE_X, ZONE_BAND_FT, attackDirection, distanceToNet } from './rink.js';
 
 /** Replay speeds for the tracking: [factor, button label, words for the line]. */
@@ -354,11 +355,28 @@ export function trackFrameAt(P, tt) {
   while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
   return j;
 }
-/** The scoreboard clock at frame `j`, counted back from the goal's own clock. */
-export function trackClock(P, j) {
+/** Remaining period seconds at frame `j`, counted back from the goal's own clock. */
+export function trackRem(P, j) {
   const [m, s] = String(P.e.rem || '0:0').split(':').map(Number);
-  const r = Math.max(0, Math.floor(m * 60 + s + (P.frames[P.k].timeStamp - P.frames[j].timeStamp) / 10));
+  return Math.max(0, Math.floor(m * 60 + s + (P.frames[P.k].timeStamp - P.frames[j].timeStamp) / 10));
+}
+/** The scoreboard clock at frame `j`. */
+export function trackClock(P, j) {
+  const r = trackRem(P, j);
   return `${String(Math.floor(r / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`;
+}
+/** Elapsed game seconds at frame `j` — the same instant trackClock shows, for the box. */
+export function trackSecs(P, j) {
+  const [m, s] = String(P.e.rem || '0:0').split(':').map(Number);
+  return P.e.s + (m * 60 + s) - trackRem(P, j);
+}
+/** Sit to show during a tracked clip: the hold event's code, or null once the short
+ *  side's box is empty on `secs`. box.js is occupancy, not a strength model — drop only. */
+export function trackClipSit(holdSit, secs, box, ctx) {
+  const b = standing(holdSit, ctx);
+  if (!b || b.kind !== POWER_PLAY) return holdSit;
+  const shortId = b.id === ctx.homeId ? ctx.awayId : ctx.homeId;
+  return occupants(box, secs, shortId).length ? holdSit : null;
 }
 
 /**

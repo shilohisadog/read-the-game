@@ -8,10 +8,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
-  trackTags, trackStops, trackFrameAt, trackClock, trackFeet, trackGoalAhead, trackGoals,
+  trackTags, trackStops, trackFrameAt, trackClock, trackRem, trackSecs, trackClipSit, trackFeet, trackGoalAhead, trackGoals,
   trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
   trackEntry, trackEntrySay,
 } from '../src/lib/tracked.js';
+import { stints, occupants } from '../src/lib/box.js';
 import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
 
 const FX = JSON.parse(readFileSync(new URL('./fixtures/tracked-2026020144-ev202.json', import.meta.url), 'utf8'));
@@ -342,4 +343,36 @@ test('the real clip shows LAK entering onside, and the checks are only on that f
   assert.doesNotMatch(trackMarkup(P, en.from, P.frames[en.from].timeStamp, opt), /class="tck"/);
   assert.match(trackMarkup(P, en.from, P.frames[en.from].timeStamp, opt), /class="onside approach"/);
   assert.doesNotMatch(trackMarkup(P, en.j, en.at, { G, AX, AY, col: {}, tags: [] }), /class="tck"|class="onside/);
+});
+
+test('trackSecs matches the goal\'s own s at the goal line, and counts back with the clock', () => {
+  assert.equal(trackSecs(P, P.k), GOAL.s, 'at the goal line the box clock is the goal\'s s');
+  assert.equal(trackRem(P, P.k), 2);
+  assert.equal(trackRem(P, 0), 11);
+  assert.equal(trackSecs(P, 0), GOAL.s - 9, 'nine seconds earlier on both clocks');
+});
+
+test('⭐ a tracked clip drops the box and the PP once the minor has expired between events', () => {
+  /* Couturier, PHI at WSH 2026-10-28, ev482: Hutson\'s holding at 2:13 of P2 expires at
+     4:13; the clip opens at 4:27 with no event in between, so the hold frame still
+     carries the PP sit. The box and badge must follow the clip clock. */
+  const HOME = 15, AWAY = 4; // WSH home, PHI away — ids only matter as a pair
+  const ctx = { homeId: HOME, awayId: AWAY, homeAb: 'WSH', awayAb: 'PHI' };
+  const penAt = 1200 + 2 * 60 + 13;   // 2:13 of P2
+  const clipAfter = 1200 + 4 * 60 + 27; // 4:27 — after expiry
+  const clipInside = 1200 + 4 * 60;     // 4:00 — still inside the minor
+  const events = [
+    { type: 'penalty', s: penAt, per: 2, own: HOME, actor: 91, min: 2, sev: 'MIN', pen: 'holding', sit: '1551' },
+    { type: 'takeaway', s: 1200 + 3 * 60 + 52, per: 2, own: AWAY, sit: '1541' }, // PHI PP
+    { type: 'goal', s: 1200 + 4 * 60 + 36, per: 2, own: AWAY, sit: '1551', rem: '15:24' },
+  ];
+  const box = stints(events, ctx);
+  const holdSit = '1541';
+  assert.equal(occupants(box, clipInside, HOME).length, 1, 'fixture: still in the box at 4:00');
+  assert.equal(occupants(box, clipAfter, HOME).length, 0, 'fixture: out by 4:27');
+  assert.equal(trackClipSit(holdSit, clipInside, box, ctx), holdSit, 'PP stays while the minor is live');
+  assert.equal(trackClipSit(holdSit, clipAfter, box, ctx), null, 'PP drops once the box is empty');
+  // Never invent a PP the hold frame did not record.
+  assert.equal(trackClipSit('1551', clipInside, box, ctx), '1551');
+  assert.equal(trackClipSit('1560', clipAfter, box, ctx), '1560', 'an empty-net sit is left alone');
 });
