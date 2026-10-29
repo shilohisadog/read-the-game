@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9UPOipbT7k/qUsAmB13ngeZftgQAU2U3YdoAbN7RMWA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-oL0NDG2uorzpy6H3D/H04uNXFs6F9ela5sEZBDKQhuk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9UPOipbT7k/qUsAmB13ngeZftgQAU2U3YdoAbN7RMWA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-LXpdyeuFRCeRWbAGhOu3wze90iVKEZuwcGU09YErTyI='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -448,7 +448,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
 #rg .iceslot{overflow:hidden}
-#rg .gread{position:absolute;left:50%;top:70%;transform:translate(-50%,-20%);z-index:2;
+#rg .gread{position:absolute;left:50%;top:66%;transform:translate(-50%,-35%);z-index:2;
   display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;
   gap:6px 12px;width:auto;max-width:92%;padding:6px 12px;box-sizing:border-box;
   border-radius:12px;background:rgba(255,255,255,.72);box-shadow:0 1px 6px rgba(15,26,35,.12);
@@ -458,7 +458,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 @keyframes greadin{0%{opacity:0}100%{opacity:1}}
 #rg .gread .gread-lines{margin:0;pointer-events:none;text-align:right}
 #rg .gread .gread-tap,#rg .gread .gread-mid,#rg .gread .gread-or{display:block;font-size:.72rem;font-weight:650;
-  color:var(--muted);line-height:1.25;font-family:system-ui,sans-serif;
+  color:var(--muted);line-height:1.25;font-family:system-ui,sans-serif;white-space:nowrap;
   text-shadow:0 0 6px rgba(238,244,248,.9),0 1px 0 rgba(238,244,248,.7)}
 #rg .gread .gread-btn{pointer-events:auto;min-height:44px;min-width:72px;padding:8px 14px;
   border-radius:999px;border:1px solid color-mix(in srgb,var(--muted) 45%,transparent);
