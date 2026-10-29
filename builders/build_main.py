@@ -135,6 +135,7 @@ __CSS__</style>
 <div id="gread" class="gread" hidden>
   <p class="gread-lines" aria-live="polite">
     <span id="greadTap" class="gread-tap"></span>
+    <span id="greadMid" class="gread-mid"></span>
     <span id="greadOr" class="gread-or"></span>
   </p>
   <button type="button" id="greadPause" class="gread-btn" aria-label="Pause the goal reading hold">Pause</button>

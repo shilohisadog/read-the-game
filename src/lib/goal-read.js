@@ -9,19 +9,23 @@
  * at every speed, with a faint countdown at centre ice. Tuned the same day:
  * 4 s → 10 s → 20 s after he watched each live; 10 s was still too short. The
  * hold is now a soft pause: the Play control reads Play, tapping it continues
- * at once, and otherwise the replay continues when the countdown reaches 0 —
+ * at once, and otherwise the Replay continues when the countdown reaches 0 —
  * so readers set their own pace.
  *
  * CAPTION_BONUS stays for every other captioned frame. Goals use this instead:
  * one number, not gear-scaled, so Faster does not rush the read and Slower does
  * not pad it.
+ *
+ * Overlay copy (Kevin, 2026-10-29 t77u): three right-justified lines of about
+ * equal length, capital R in Replay — "Tap Play to continue," / "otherwise the
+ * Replay" / "continues in N seconds" (singular at 1).
  */
 
 /** Fixed post-goal reading pause, ms. Does not scale with the speed gear. */
 export const GOAL_READ_MS = 20000; // 2026-10-29: 10 s was still too short; 20 s plus tap-to-continue so readers set their own pace
 
 /**
- * Countdown copy for the hold. Two faint lines under centre ice.
+ * Countdown copy for the hold. Three faint lines under centre ice.
  * `msLeft` is milliseconds still to wait; at or below zero there is nothing to
  * say. Whole seconds, ceil, so 20000 → "20 seconds" and (0, 1000] → "1 second".
  */
@@ -29,17 +33,18 @@ export function goalReadLines(msLeft) {
   if (!(msLeft > 0)) return null;
   const n = Math.ceil(msLeft / 1000);
   return {
-    tap: 'Tap Play to continue',
+    tap: 'Tap Play to continue,',
+    mid: 'otherwise the Replay',
     or: n === 1
-      ? 'or the replay continues in 1 second'
-      : `or the replay continues in ${n} seconds`,
+      ? 'continues in 1 second'
+      : `continues in ${n} seconds`,
   };
 }
 
-/** Joined form of `goalReadLines` (newline between the two lines). */
+/** Joined form of `goalReadLines` (newline between the three lines). */
 export function goalReadLabel(msLeft) {
   const L = goalReadLines(msLeft);
-  return L ? `${L.tap}\n${L.or}` : '';
+  return L ? `${L.tap}\n${L.mid}\n${L.or}` : '';
 }
 
 /**

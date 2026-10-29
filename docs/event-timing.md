@@ -543,16 +543,17 @@ feel and tune.
   right after the clip reaches the goal line). Same rule in Goals and All
   events.
 - Soft pause: while the hold runs the Play control reads **Play** (so the
-  overlay matches the button). Two faint lines under the centre-ice circle read
-  `Tap Play to continue` and `or the replay continues in N seconds` (singular at
-  1), with a faint **Pause** button in the same overlay (real `<button>`, 44px
-  tap target). The overlay lives in `.iceslot` with the svg (anchored just under
-  the centre circle in viewBox terms: viewBox 200×85, circle bottom ≈ 68%, CSS
-  `top:70%`) so it stays on the ice at every width — not on the teaching text
-  under the rink (a `.rinkbox` % did that). Always a horizontal row so a ~158px
-  phone ice still fits; `.iceslot{overflow:hidden}` is a belt. Copy uses
-  `--muted` plus a light ice text-shadow so it stays legible. Tapping Play ends
-  the hold at once and the replay keeps
+  overlay matches the button). Three right-justified lines under the centre-ice
+  circle read `Tap Play to continue,` / `otherwise the Replay` / `continues in N
+  seconds` (singular at 1; capital R in Replay), with a faint **Pause** button
+  beside them (real `<button>`, 44px tap target; shaded pill kept — Kevin t78u).
+  The overlay lives in `.iceslot` with the svg (anchored just under the centre
+  circle in viewBox terms: viewBox 200×85, circle bottom ≈ 68%, CSS `top:70%`) so
+  it stays on the ice at every width — not on the teaching text under the rink
+  (a `.rinkbox` % did that). Horizontal row; `.iceslot{overflow:hidden}` is a
+  belt. Copy uses `--muted` plus a light ice text-shadow. Phone play is
+  landscape (portrait shows `.rotate`). Tapping Play ends the hold at once and
+  the replay keeps
   going; waiting lets the countdown reach 0 and auto-continue. Overlay Pause
   freezes the hold and the digits — the overlay button then reads **Resume**,
   the main control still reads Play, and either one resumes the remaining time.

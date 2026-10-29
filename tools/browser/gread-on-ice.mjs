@@ -7,8 +7,10 @@
  * `.iceslot` (svg only). This check is the instrument that claim needs: a fake
  * document has no layout, so it cannot see the defect.
  *
- * Two widths (1024 and 390). At each, `#gread` is revealed with its hold copy
- * and its bounding box must lie inside the svg's — and must not reach `#who`.
+ * Two sizes: desktop 1024×800 and phone landscape 844×390 (portrait phones
+ * show `.rotate` and hide the rink — Kevin, 2026-10-29). At each, `#gread` is
+ * revealed with its hold copy and its bounding box must lie inside the svg's —
+ * and must not reach `#who`.
  */
 import { copyFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -73,8 +75,10 @@ setTimeout(function () {
   if (rg) rg.classList.add('showanyway');
   g.removeAttribute('hidden');
   var tap = d.getElementById('greadTap'), or = d.getElementById('greadOr');
-  if (tap) tap.textContent = 'Tap Play to continue';
-  if (or) or.textContent = 'or the replay continues in 3 seconds';
+  if (tap) tap.textContent = 'Tap Play to continue,';
+  var mid = d.getElementById('greadMid');
+  if (mid) mid.textContent = 'otherwise the Replay';
+  if (or) or.textContent = 'continues in 3 seconds';
   var btn = d.getElementById('greadPause');
   if (btn) btn.textContent = 'Pause';
   void g.offsetHeight;
@@ -89,7 +93,7 @@ export async function check({ chrome, repo = process.cwd() }) {
   const dir = mkdtempSync('/tmp/rtg-gread-');
   copyFileSync(join(repo, 'src/read-the-game.html'), join(dir, 'app.html'));
   const server = await serve(dir);
-  const widths = [[1024, 800], [390, 844]];
+  const widths = [[1024, 800], [844, 390]];
   try {
     let ok = true;
     for (const [w, h] of widths) {
@@ -101,7 +105,7 @@ export async function check({ chrome, repo = process.cwd() }) {
         + `ice ${m.ice.left},${m.ice.top}→${m.ice.right},${m.ice.bottom} who@${m.whoTop}`);
       for (const v of judgeGread(m)) if (!v.ok) { fail(v.why); ok = false; }
     }
-    if (ok) say('#gread sits on the ice at 1024 and 390');
+    if (ok) say('#gread sits on the ice at 1024 and 844×390');
     return ok;
   } finally { server.stop(); }
 }
