@@ -1907,7 +1907,7 @@ function renderSum(){
     phrase; the door is now open from the first frame, and "every count in this
     game" over a replay in its second period reads as every count SO FAR. The
     figures did not change — the moment they can be read did. */
- h.textContent='Every count in the whole game ';
+ h.textContent='Every event count in the whole game ';
  const sub=document.createElement('span');
  sub.className='wsub';
  h.appendChild(sub);
