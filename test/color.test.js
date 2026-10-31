@@ -4,7 +4,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { colorNotes } from '../src/lib/color.js';
+import { colorNotes, stayRetell } from '../src/lib/color.js';
 
 const HOME = 1, AWAY = 2;
 const roster = {
@@ -158,4 +158,20 @@ test('the first run of a period counts from the period’s start, and no archive
     ev('hit', 10, 40, { own: HOME, actor: 11 }), ev('hit', 75, -40, { own: AWAY, actor: 21 })]);
   assert.deepEqual(notesOf(g, rates), [[3, '3 events and 1:15 of play since the period began.']]);
   assert.deepEqual(notesOf(g, null), []);
+});
+
+test('a recount after the puck left replaces the stay, or removes it when the new run is short', () => {
+  const ctx2 = { awayAb: 'AWY', homeAb: 'HOM' };
+  const lead = 'A wrist shot from 42 feet. That puts HOM ahead, 1–0. The puck had stayed in the AWY end for 3 events in a row before it went in.';
+  assert.equal(stayRetell(lead, null, ctx2, 'a'), 'A wrist shot from 42 feet. That puts HOM ahead, 1–0.');
+  const again = { end: 'a', marks: 4, att: { a: 0, h: 3 } };
+  assert.equal(stayRetell(lead, again, ctx2, 'a'),
+    'A wrist shot from 42 feet. That puts HOM ahead, 1–0. The puck had stayed in the AWY end for 4 events in a row before it went in.');
+  assert.equal(stayRetell(lead, again, ctx2, 'h'),
+    'A wrist shot from 42 feet. That puts HOM ahead, 1–0.', 'a stay in the other end is not how this goal went in');
+  const live = 'The puck has stayed in the HOM end for 4 events in a row; in that time AWY has 2 shot attempts.';
+  assert.equal(stayRetell(live, null, ctx2, null), '');
+  assert.equal(stayRetell(live, { end: 'h', marks: 3, att: { a: 1, h: 0 } }, ctx2, null),
+    'The puck has stayed in the HOM end for 3 events in a row; in that time AWY has 1 shot attempt.');
+  assert.equal(stayRetell('That puts HOM ahead, 1–0.', null, ctx2, 'a'), 'That puts HOM ahead, 1–0.');
 });

@@ -349,6 +349,25 @@ export function trackEntry(P, homeId, roster, ab) {
   }
   return { j: hit, at: P.frames[hit].timeStamp, from, ids, say: trackEntrySay(ab) };
 }
+
+/**
+ * The elapsed game second the puck was last outside the scoring end, or null when every
+ * located frame of the clip is inside it. The zone count resets here: the puck left, and
+ * the play-by-play has no event at the crossing. Missing frames are skipped, not treated
+ * as an exit. The same blue line as a recorded mark (`BLUE_LINE_X`), not the puck's radius.
+ */
+export function trackOutside(P, homeId) {
+  if (!P || !P.e || homeId == null || P.e.s == null) return null;
+  const dir = attackDirection(P.e.own, homeId);
+  let last = null;
+  for (let j = 0; j <= P.k; j++) {
+    const ax = trackAx(P, P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'], dir);
+    if (ax == null) continue;
+    if (ax <= BLUE_LINE_X) last = j;
+  }
+  if (last == null) return null;
+  return P.e.s - (P.frames[P.k].timeStamp - P.frames[last].timeStamp) / 10;
+}
 /** The frame shown at file time `tt` (tenths), never past the goal line. */
 export function trackFrameAt(P, tt) {
   let j = 0;

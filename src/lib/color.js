@@ -45,6 +45,45 @@ const PERIOD_DONE = ['', 'After one period', 'After two periods', 'After three p
 const ORD = k => `${k}${k % 100 >= 11 && k % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][k % 10] || 'th'}`;
 const clockOf = t => (t < 60 ? `${t} seconds` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
 const countOf = (k, one) => `${k} ${one}${k === 1 ? '' : 's'}`;
+
+/**
+ * The zone-stretch sentence. `had` is the goal's past tense, appended to the score;
+ * `has` is the live sentence and carries the attempts recorded during the run.
+ * `run` is null when the stretch is under ZONE_RUN, and the sentence is then absent.
+ */
+export function stayWords(run, ctx, form) {
+  if (!run) return '';
+  const A = ctx.awayAb, H = ctx.homeAb;
+  if (form === 'had') {
+    if (run.end === 'n') return '';
+    return ` The puck had stayed in the ${run.end === 'h' ? H : A} end for ${run.marks} events in a row before it went in.`;
+  }
+  if (run.end === 'n') return `The puck has stayed in the neutral zone for ${run.marks} events in a row.`;
+  const atk = run.end === 'h' ? 'a' : 'h', name = { a: A, h: H };
+  const n = run.att[atk];
+  return `The puck has stayed in the ${name[run.end]} end for ${run.marks} events in a row; in that time ${name[atk]} has `
+    + `${n ? countOf(n, 'shot attempt') : 'no shot attempts'}${run.att[run.end] ? ` and ${name[run.end]} ${run.att[run.end]}` : ''}.`;
+}
+
+const STAY_HAD = / The puck had stayed in the \S+ end for \d+ events in a row before it went in\./;
+const STAY_HAS = /The puck has stayed in the .+? for \d+ events in a row(?:; in that time [^.]+)?\./;
+
+/**
+ * The note as first written counts recorded marks. Once tracking shows the puck left the scoring end,
+ * `run` is the recount from the return, and this puts that count in the sentence — or takes the
+ * sentence out when the recount is under a stretch. A note that never claimed a stay is left alone.
+ * `attacked` is the end the goal was scored in ('h' or 'a'); the past-tense sentence names that end only.
+ */
+export function stayRetell(line, run, ctx, attacked) {
+  if (STAY_HAD.test(line)) {
+    const clause = run && run.end === attacked ? stayWords(run, ctx, 'had') : '';
+    return line.replace(STAY_HAD, clause).replace(/ {2,}/g, ' ').trim();
+  }
+  if (STAY_HAS.test(line)) {
+    return line.replace(STAY_HAS, run ? stayWords(run, ctx, 'has') : '').replace(/ {2,}/g, ' ').trim();
+  }
+  return line;
+}
 // Restarts the caption pill already explains; the color line adds only what it does not.
 const PILL_SAYS = new Set(['icing', 'offside']);
 
@@ -143,8 +182,7 @@ export function colorNotes(game, ctx, rates) {
       const s = score[shooter], o = score[other(shooter)], t = ab(shooter);
       say = s === o ? `That ties the game, ${s}–${o}.` : s - o === 1 ? `That puts ${t} ahead, ${s}–${o}.`
         : s > o ? `${t} now leads ${s}–${o}.` : `${t} pulls within ${o - s}, ${s}–${o}.`;
-      if (run && run.end === (shooter === aid ? 'h' : 'a'))
-        say += ` The puck had stayed in the ${ab(other(shooter))} end for ${run.marks} events in a row before it went in.`;
+      if (run && run.end === (shooter === aid ? 'h' : 'a')) say += stayWords(run, ctx, 'had');
       if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     // 2. A penalty: what follows, said only as far as the record shows it.
@@ -203,14 +241,7 @@ export function colorNotes(game, ctx, rates) {
       break;
     }
     // 7. A zone stretch: the puck staying in one end, and the attempts in that time.
-    if (!say && run) {
-      if (run.end === 'n') say = `The puck has stayed in the neutral zone for ${run.marks} events in a row.`;
-      else {
-        const atk = run.end === 'h' ? 'a' : 'h', name = { a: A, h: H };
-        say = `The puck has stayed in the ${name[run.end]} end for ${run.marks} events in a row; in that time ${name[atk]} has `
-          + `${run.att[atk] ? countOf(run.att[atk], 'shot attempt') : 'no shot attempts'}${run.att[run.end] ? ` and ${name[run.end]} ${run.att[run.end]}` : ''}.`;
-      }
-    }
+    if (!say && run) say = stayWords(run, ctx, 'has');
     const lead = shotLead(e, shooter, ctx.homeId);
     if (lead) say = say ? `${lead} ${say}` : lead;
     if (say) notes.set(n, say);

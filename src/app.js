@@ -31,7 +31,7 @@ import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
-import { colorNotes } from './lib/color.js';
+import { colorNotes, stayRetell } from './lib/color.js';
 import { goalLine } from './lib/shotdist.js';
 import { challenges, challengeSay, reviewName, reviewSay } from './lib/challenge.js';
 import { whyMarkup } from './lib/why.js';
@@ -60,7 +60,7 @@ import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG_TENTHS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
   trackStops, trackFrameAt, trackClock, trackSecs, trackClipSit, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
-  trackEntry } from './lib/tracked.js';
+  trackEntry, trackOutside } from './lib/tracked.js';
 import { GOAL_READ_MS, goalReadLines } from './lib/goal-read.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -314,14 +314,30 @@ const PLAYS=plays(G.events);
 // the archive (src/lib/color.js). Computed once; RATES may be null.
 const COLOR=colorNotes(G,CTX,RATES);
 /* WHAT A FRAME SHOWS OF ITS PLAY: the marks since the faceoff (`from`), those of
-   a live zone stretch emphasised (`zoneFrom`), and the color note for the frame. */
+   a live zone stretch emphasised (`zoneFrom`), and the color note for the frame.
+   The note was counted from recorded marks. When a goal's tracking has arrived
+   and the puck left the scoring end, the stretch recounts from the return. */
+function stayBack(k){
+ const e=EV[k];if(!e||e.s==null)return null;
+ let best=null;
+ const take=idx=>{const g=EV[idx];if(!g||g.type!=='goal'||g.pt==='SO')return;
+  const P=trkReady(g);if(!P)return;
+  const at=trackOutside(P,HID);if(at==null||!(e.s>at))return;
+  const shooter=corsiTeam(g,CTX.roster);if(shooter==null)return;
+  if(!best||at>best.at)best={at,end:shooter===AID?'h':'a'};};
+ if(e.type==='goal')take(k);
+ const ahead=trackGoalAhead(EV,k);if(ahead>=0)take(ahead);
+ return best;}
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);
  let line=COLOR.get(n)||'';
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP)line=soSay();
  if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX,RATES&&RATES.census&&RATES.census.reviews&&{...RATES.census.reviews,games:RATES.census.games});
  if(!p)return {from:k,line};
- const run=liveRun(zoneRuns(G.events,p,n,CTX));
+ const left=stayBack(k);
+ const run=liveRun(zoneRuns(G.events,p,n,CTX,left));
+ if(left){const shooter=cur.type==='goal'?corsiTeam(cur,CTX.roster):null;
+  line=stayRetell(line,run,CTX,shooter==null?null:shooter===AID?'h':'a');}
  return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}
 /* ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — Kevin, watching a replay event
    by event: "I was wondering why don't we say when the penalty expires."
@@ -990,6 +1006,21 @@ function drawBoard(cur,L){
  document.getElementById('rg').classList.toggle('atfinal',!!f);
  $('aSc').textContent=f?f.as:L.as;$('hSc').textContent=f?f.hs:L.hs;
  $('per').textContent=f?f.label:periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';}
+let RENDER_HOW='';
+function drawEvents(i,how,PLAY){
+ const evs=EV.slice(0,i+1),cur=EV[i],moment=how==='play'||how==='jump';
+ put($('events'),eventMarks(
+  {evs,i,cur,moment,from:PLAY.from,zoneFrom:PLAY.zoneFrom},
+  {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
+  {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
+  {place,tk,isHD}));}
+/* The zone sentence is drawn before the tracking file arrives. When the file lands on the
+   frame still showing, recount and redraw the line and the marks. A running clip owns the line. */
+function refreshStay(){
+ if(TRK.run)return;
+ const PLAY=playOf(i);
+ drawEvents(i,RENDER_HOW,PLAY);
+ sayPlay(PREVIEW?'':PLAY.line);}
 function render(i,how){
  /* ⭐⭐ A MOMENT IS A PLAY OR A JUMP — AND THE COUNTER FLASH BELOW IS DELIBERATELY
     NOT. The two conditions differ by one word and the difference is a claim about
@@ -1002,11 +1033,10 @@ function render(i,how){
     ⚠️ The two conditions have been mistaken for a copy of each other before. They
     are not; simplifying one into the other silently re-introduces a defect that
     only shows on a shared link. */
+ RENDER_HOW=how;
  const moment=how==='play'||how==='jump';
- // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
- // `lens(i)` reduces the FULL stream up to the same moment. Two different
- // slices on purpose: the ice shows plays, the ledger accounts for everything.
- const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i],PLAY=playOf(i);
+ // `lens(i)` reduces the FULL stream up to the same moment. The ice shows plays.
+ const L=lens(i),cur=EV[i],PLAY=playOf(i);
  const PER=cur?cur.per:1;     // pre-game shows the first period's arrangement
  drawRink(PER);
  // null before the first play: both boxes empty. `cur` goes in as well because
@@ -1020,11 +1050,7 @@ function render(i,how){
     its colour, which way the rink faces, the slot layer, the motion preference and
     the trails mode. All of it was invisible while the loop sat here reaching for
     whatever it liked. Grouped into four so the list is a shape. */
- put($('events'),eventMarks(
-  {evs,i,cur,moment,from:PLAY.from,zoneFrom:PLAY.zoneFrom},
-  {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
-  {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
-  {place,tk,isHD}));
+ drawEvents(i,how,PLAY);
  drawCue(i);
  if(zoneOn){const sl=upto(i);drawZoneStarts(zonestart.reduce(sl,CTX),sl);}
  // CLEARED WHEN OFF, or nine rings outlive the chip that drew them.
@@ -3106,10 +3132,12 @@ function trkFrame(k,how,cur){
  // The next-play cue points at the next RECORDED event; where the tracking takes over,
  // that is not where it starts. Asked again when the file arrives, often during this pause.
  trkNoCue(k,g);
- if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i===k)trkNoCue(k,g);});
+ if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i!==k)return;trkNoCue(k,g);refreshStay();});
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
+  const had=!!trkReady(cur);
   const p=trkPlan(cur);
   p.then(P=>{if(i!==k)return;
+   if(P&&!had)refreshStay();
    if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
    if(P&&(!playing||REDUCED)&&(REDUCED||!TRK.goals)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
    if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))

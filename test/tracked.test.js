@@ -10,7 +10,7 @@ import {
   trackPlan, trackRow, trackWindow, trackRecorded, trackStrength, trackWho, trackSay, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackRem, trackSecs, trackClipSit, trackFeet, trackGoalAhead, trackGoals,
   trackHoldFrame, trackMarkup, trackPlace, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneSay, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
-  trackEntry, trackEntrySay,
+  trackEntry, trackEntrySay, trackOutside,
 } from '../src/lib/tracked.js';
 import { stints, occupants } from '../src/lib/box.js';
 import { GOAL_POST_Y, NET_X } from '../src/lib/rink.js';
@@ -381,4 +381,21 @@ test('⭐ a tracked clip drops the box and the PP once the minor has expired bet
     ...events.slice(1)], ctx);
   assert.equal(occupants(mis, clipAfter, HOME).length, 1, 'fixture: the misconduct is still being served');
   assert.equal(trackClipSit(holdSit, clipAfter, mis, ctx), null, 'a misconduct alone keeps no power play');
+});
+
+test('the second the puck was last outside the scoring end, or null when it never left', () => {
+  const home = 7;
+  // League units: feet = x/12 - 100. ax 40 and 90 are inside the end; ax 10 is not.
+  const puck = ax => ({ x: (ax + 100) * 12, y: 510 });
+  const frame = (ts, ax) => ({ timeStamp: ts, onIce: ax == null ? {} : { '1': puck(ax) } });
+  const plan = (axs, s = 40) => {
+    const frames = axs.map((ax, j) => frame(j * 10, ax));
+    return { e: { s, own: home }, k: frames.length - 1, turn: 1, frames };
+  };
+  assert.equal(trackOutside(plan([40, 50, 60, 90]), home), null);
+  // Outside at file-second 1 of a clip that ends at file-second 3: 2 seconds before a goal at 40s.
+  assert.equal(trackOutside(plan([40, 10, 50, 90]), home), 38);
+  assert.equal(trackOutside(plan([10, 10, 40, 90]), home), 38, 'already outside at the start of the clip is still an exit');
+  assert.equal(trackOutside(plan([40, null, 50, 90]), home), null, 'a frame with no puck is not an exit');
+  assert.equal(trackOutside(null, home), null);
 });

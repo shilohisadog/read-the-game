@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-D85IsynEt7Al/VmlSYPsDs7LJ0Hsn8dlTgA6f1pTKlw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-LXpdyeuFRCeRWbAGhOu3wze90iVKEZuwcGU09YErTyI='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XLrXHyGg3+S7CAMFCoYdwa3G22+/GmT1V/p/ziABLas=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-LXpdyeuFRCeRWbAGhOu3wze90iVKEZuwcGU09YErTyI='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -2050,14 +2050,15 @@ const markable = e => framed(e) && e.x != null && e.pt !== 'SO';
 const ZONE_RUN = 3;
 const zoneAtX = x => (x < -BLUE_LINE_X ? 'h' : x > BLUE_LINE_X ? 'a' : 'n');
 
-function zoneRuns(events, play, upto, ctx) {
+function zoneRuns(events, play, upto, ctx, left = null) {
   const runs = [];
   let cur = null;
   for (let n = play.from; n <= Math.min(upto, play.to); n++) {
     const e = events[n];
     if (!markable(e)) continue;
     const end = zoneAtX(e.x);
-    if (!cur || cur.end !== end) { cur = { end, from: n, marks: 0, s0: e.s, secs: 0, att: { a: 0, h: 0 }, onGoal: { a: 0, h: 0 } }; runs.push(cur); }
+    const broke = left && cur && cur.end === left.end && e.s > left.at && cur.s0 <= left.at;
+    if (!cur || cur.end !== end || broke) { cur = { end, from: n, marks: 0, s0: e.s, secs: 0, att: { a: 0, h: 0 }, onGoal: { a: 0, h: 0 } }; runs.push(cur); }
     cur.marks++;
     cur.secs = e.s - cur.s0;
     const team = corsiTeam(e, ctx.roster);
@@ -3377,6 +3378,34 @@ const PERIOD_DONE = ['', 'After one period', 'After two periods', 'After three p
 const ORD = k => `${k}${k % 100 >= 11 && k % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][k % 10] || 'th'}`;
 const clockOf = t => (t < 60 ? `${t} seconds` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
 const countOf = (k, one) => `${k} ${one}${k === 1 ? '' : 's'}`;
+
+function stayWords(run, ctx, form) {
+  if (!run) return '';
+  const A = ctx.awayAb, H = ctx.homeAb;
+  if (form === 'had') {
+    if (run.end === 'n') return '';
+    return ` The puck had stayed in the ${run.end === 'h' ? H : A} end for ${run.marks} events in a row before it went in.`;
+  }
+  if (run.end === 'n') return `The puck has stayed in the neutral zone for ${run.marks} events in a row.`;
+  const atk = run.end === 'h' ? 'a' : 'h', name = { a: A, h: H };
+  const n = run.att[atk];
+  return `The puck has stayed in the ${name[run.end]} end for ${run.marks} events in a row; in that time ${name[atk]} has `
+    + `${n ? countOf(n, 'shot attempt') : 'no shot attempts'}${run.att[run.end] ? ` and ${name[run.end]} ${run.att[run.end]}` : ''}.`;
+}
+
+const STAY_HAD = / The puck had stayed in the \S+ end for \d+ events in a row before it went in\./;
+const STAY_HAS = /The puck has stayed in the .+? for \d+ events in a row(?:; in that time [^.]+)?\./;
+
+function stayRetell(line, run, ctx, attacked) {
+  if (STAY_HAD.test(line)) {
+    const clause = run && run.end === attacked ? stayWords(run, ctx, 'had') : '';
+    return line.replace(STAY_HAD, clause).replace(/ {2,}/g, ' ').trim();
+  }
+  if (STAY_HAS.test(line)) {
+    return line.replace(STAY_HAS, run ? stayWords(run, ctx, 'has') : '').replace(/ {2,}/g, ' ').trim();
+  }
+  return line;
+}
 const PILL_SAYS = new Set(['icing', 'offside']);
 
 function skatersOn(game, e, tid) {
@@ -3460,8 +3489,7 @@ function colorNotes(game, ctx, rates) {
       const s = score[shooter], o = score[other(shooter)], t = ab(shooter);
       say = s === o ? `That ties the game, ${s}–${o}.` : s - o === 1 ? `That puts ${t} ahead, ${s}–${o}.`
         : s > o ? `${t} now leads ${s}–${o}.` : `${t} pulls within ${o - s}, ${s}–${o}.`;
-      if (run && run.end === (shooter === aid ? 'h' : 'a'))
-        say += ` The puck had stayed in the ${ab(other(shooter))} end for ${run.marks} events in a row before it went in.`;
+      if (run && run.end === (shooter === aid ? 'h' : 'a')) say += stayWords(run, ctx, 'had');
       if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     if (!say && e.type === 'penalty' && e.own != null) {
@@ -3512,14 +3540,7 @@ function colorNotes(game, ctx, rates) {
       say = `Every ${ab(tid)} skater on the ice has been out longer than a typical shift (about ${SHIFT} seconds): ${secsSpan(on.map(x => x.on))}.`;
       break;
     }
-    if (!say && run) {
-      if (run.end === 'n') say = `The puck has stayed in the neutral zone for ${run.marks} events in a row.`;
-      else {
-        const atk = run.end === 'h' ? 'a' : 'h', name = { a: A, h: H };
-        say = `The puck has stayed in the ${name[run.end]} end for ${run.marks} events in a row; in that time ${name[atk]} has `
-          + `${run.att[atk] ? countOf(run.att[atk], 'shot attempt') : 'no shot attempts'}${run.att[run.end] ? ` and ${name[run.end]} ${run.att[run.end]}` : ''}.`;
-      }
-    }
+    if (!say && run) say = stayWords(run, ctx, 'has');
     const lead = shotLead(e, shooter, ctx.homeId);
     if (lead) say = say ? `${lead} ${say}` : lead;
     if (say) notes.set(n, say);
@@ -3921,6 +3942,19 @@ function trackEntry(P, homeId, roster, ab) {
     from = j;
   }
   return { j: hit, at: P.frames[hit].timeStamp, from, ids, say: trackEntrySay(ab) };
+}
+
+function trackOutside(P, homeId) {
+  if (!P || !P.e || homeId == null || P.e.s == null) return null;
+  const dir = attackDirection(P.e.own, homeId);
+  let last = null;
+  for (let j = 0; j <= P.k; j++) {
+    const ax = trackAx(P, P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'], dir);
+    if (ax == null) continue;
+    if (ax <= BLUE_LINE_X) last = j;
+  }
+  if (last == null) return null;
+  return P.e.s - (P.frames[P.k].timeStamp - P.frames[last].timeStamp) / 10;
 }
 function trackFrameAt(P, tt) {
   let j = 0;
@@ -5059,13 +5093,27 @@ const MODE=()=>levelOnly?'score tied, 5-on-5, regulation'
 const PBOX=stints(G.events,CTX);
 const PLAYS=plays(G.events);
 const COLOR=colorNotes(G,CTX,RATES);
+function stayBack(k){
+ const e=EV[k];if(!e||e.s==null)return null;
+ let best=null;
+ const take=idx=>{const g=EV[idx];if(!g||g.type!=='goal'||g.pt==='SO')return;
+  const P=trkReady(g);if(!P)return;
+  const at=trackOutside(P,HID);if(at==null||!(e.s>at))return;
+  const shooter=corsiTeam(g,CTX.roster);if(shooter==null)return;
+  if(!best||at>best.at)best={at,end:shooter===AID?'h':'a'};};
+ if(e.type==='goal')take(k);
+ const ahead=trackGoalAhead(EV,k);if(ahead>=0)take(ahead);
+ return best;}
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);
  let line=COLOR.get(n)||'';
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP)line=soSay();
  if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX,RATES&&RATES.census&&RATES.census.reviews&&{...RATES.census.reviews,games:RATES.census.games});
  if(!p)return {from:k,line};
- const run=liveRun(zoneRuns(G.events,p,n,CTX));
+ const left=stayBack(k);
+ const run=liveRun(zoneRuns(G.events,p,n,CTX,left));
+ if(left){const shooter=cur.type==='goal'?corsiTeam(cur,CTX.roster):null;
+  line=stayRetell(line,run,CTX,shooter==null?null:shooter===AID?'h':'a');}
  return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}
 const ENDED=new Map(powerPlayOver(EV,PBOX,CTX).map(k=>[EV[k.sayAt],k]));
 const ICING=new Map(icingRestarts(G.events,CTX).map(r=>[r.event,r]));
@@ -5221,19 +5269,29 @@ function drawBoard(cur,L){
  document.getElementById('rg').classList.toggle('atfinal',!!f);
  $('aSc').textContent=f?f.as:L.as;$('hSc').textContent=f?f.hs:L.hs;
  $('per').textContent=f?f.label:periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';}
+let RENDER_HOW='';
+function drawEvents(i,how,PLAY){
+ const evs=EV.slice(0,i+1),cur=EV[i],moment=how==='play'||how==='jump';
+ put($('events'),eventMarks(
+  {evs,i,cur,moment,from:PLAY.from,zoneFrom:PLAY.zoneFrom},
+  {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
+  {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
+  {place,tk,isHD}));}
+function refreshStay(){
+ if(TRK.run)return;
+ const PLAY=playOf(i);
+ drawEvents(i,RENDER_HOW,PLAY);
+ sayPlay(PREVIEW?'':PLAY.line);}
 function render(i,how){
+ RENDER_HOW=how;
  const moment=how==='play'||how==='jump';
- const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i],PLAY=playOf(i);
+ const L=lens(i),cur=EV[i],PLAY=playOf(i);
  const PER=cur?cur.per:1; 
  drawRink(PER);
  drawBoxes(cur?cur.s:null,cur);
  drawEndsNote(cur,i);
  drawClip(i);
- put($('events'),eventMarks(
-  {evs,i,cur,moment,from:PLAY.from,zoneFrom:PLAY.zoneFrom},
-  {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
-  {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
-  {place,tk,isHD}));
+ drawEvents(i,how,PLAY);
  drawCue(i);
  if(zoneOn){const sl=upto(i);drawZoneStarts(zonestart.reduce(sl,CTX),sl);}
  else put($('draws'),'');
@@ -5883,10 +5941,12 @@ function trkFrame(k,how,cur){
  if(TRK.goals&&REVIEW_STOP.has(k)){const w=$('who');w.textContent=reviewWho(REVIEW_STOP.get(k));w.className='who plain';}
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP){const w=$('who');w.textContent=SO_WHO;w.className='who plain';}
  trkNoCue(k,g);
- if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i===k)trkNoCue(k,g);});
+ if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i!==k)return;trkNoCue(k,g);refreshStay();});
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
+  const had=!!trkReady(cur);
   const p=trkPlan(cur);
   p.then(P=>{if(i!==k)return;
+   if(P&&!had)refreshStay();
    if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
    if(P&&(!playing||REDUCED)&&(REDUCED||!TRK.goals)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
    if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))

@@ -12,7 +12,9 @@
  *
  * What it refuses to say: who had the puck (`own` means a different team per
  * event type, see transition.js) and where the puck was between two events.
- * It counts events and says where they were recorded.
+ * It counts events and says where they were recorded. A caller that has seen
+ * the puck leave (`left`, from a goal's tracking) may pass that second in;
+ * this file does not discover the crossing on its own.
  */
 import { BLUE_LINE_X } from './rink.js';
 import { corsiTeam } from './attribution.js';
@@ -55,15 +57,21 @@ export const markable = e => framed(e) && e.x != null && e.pt !== 'SO';
 export const ZONE_RUN = 3;
 const zoneAtX = x => (x < -BLUE_LINE_X ? 'h' : x > BLUE_LINE_X ? 'a' : 'n');
 
-/** The play's zone stretches up to event `upto`, oldest first: `{end, from, marks, secs, att, onGoal}`. */
-export function zoneRuns(events, play, upto, ctx) {
+/**
+ * The play's zone stretches up to event `upto`, oldest first: `{end, from, marks, secs, att, onGoal}`.
+ * `left` is `{at, end}` when a goal's tracking has shown the puck outside `end` at elapsed second `at`,
+ * or null. A mark in that end after `at` starts a new run: the stay broke when the puck left, and no
+ * recorded event marks the crossing. Other ends are untouched — `left` is one end, not every zone.
+ */
+export function zoneRuns(events, play, upto, ctx, left = null) {
   const runs = [];
   let cur = null;
   for (let n = play.from; n <= Math.min(upto, play.to); n++) {
     const e = events[n];
     if (!markable(e)) continue;
     const end = zoneAtX(e.x);
-    if (!cur || cur.end !== end) { cur = { end, from: n, marks: 0, s0: e.s, secs: 0, att: { a: 0, h: 0 }, onGoal: { a: 0, h: 0 } }; runs.push(cur); }
+    const broke = left && cur && cur.end === left.end && e.s > left.at && cur.s0 <= left.at;
+    if (!cur || cur.end !== end || broke) { cur = { end, from: n, marks: 0, s0: e.s, secs: 0, att: { a: 0, h: 0 }, onGoal: { a: 0, h: 0 } }; runs.push(cur); }
     cur.marks++;
     cur.secs = e.s - cur.s0;
     const team = corsiTeam(e, ctx.roster);

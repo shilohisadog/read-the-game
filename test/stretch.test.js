@@ -49,3 +49,16 @@ test('zone stretches: events in a row in one zone, inside one play', () => {
   assert.deepEqual(zoneRuns(GAME, B, B.to, ctx).map(r => r.end), ['h'], 'play B never leaves the HOM end');
 });
 
+test('a stay in one end restarts after the puck has left it', () => {
+  const [A] = plays(GAME);
+  // The three AWY-end marks are at 12s, 20s and 31s. The puck was outside that end at 25s.
+  const cut = zoneRuns(GAME, A, A.to, ctx, { at: 25, end: 'a' });
+  assert.deepEqual(cut.map(r => [r.end, r.marks]), [['n', 1], ['a', 2], ['a', 1]]);
+  assert.equal(liveRun(cut), null, 'the mark after the return is a new run, and one mark is not a stretch');
+  const other = zoneRuns(GAME, A, A.to, ctx, { at: 25, end: 'h' });
+  assert.deepEqual(other.map(r => [r.end, r.marks]), [['n', 1], ['a', 3]], 'leaving the other end does not break this one');
+  const early = zoneRuns(GAME, A, 3, ctx, { at: 25, end: 'a' });
+  assert.equal(liveRun(early), null);
+  assert.equal(early.filter(r => r.end === 'a').reduce((s, r) => s + r.marks, 0), 2, 'a frame still before the exit keeps its marks');
+});
+
