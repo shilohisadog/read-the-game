@@ -530,7 +530,7 @@ test('the hero takes an older game to get a goal, and the kicker says which rule
     'the qualifying game must not also be the newest, or this proves nothing');
   const r = run({ docs: { ...ALL, 'catalog.json': cat } });
   return r.settle().then(() => {
-    assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
+    assert.equal(r.ids.herogo.href, 'game.html?game=2023020100&replay=goals',
       'the hero ignored the game whose replay reaches a goal');
     assert.match(r.ids.herokick.textContent, /up to its first goal/,
       'the kicker still describes the rule that did not run');
@@ -543,7 +543,7 @@ test('and with no loop anywhere it falls back to the newest, and says THAT', () 
   // one that opens quietly, so the fallback is the behaviour, not an error.
   const r = run({ docs: ALL });
   return r.settle().then(() => {
-    assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID);
+    assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID + '&replay=goals');
     assert.match(r.ids.herokick.textContent, /most recent game/,
       'the kicker promised a goal the fallback has no loop to reach');
   });
@@ -558,7 +558,7 @@ test('a loop inside the window beats a NEWER loop outside it', () => {
   assert.equal(NEWEST_ID, 2023020200, 'the seed changed; this pairing needs the newest game to be 2023020200');
   const r = run({ docs: { ...ALL, 'catalog.json': cat } });
   return r.settle().then(() => {
-    assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
+    assert.equal(r.ids.herogo.href, 'game.html?game=2023020100&replay=goals',
       'a newer loop outside the window displaced the one inside it');
   });
 });
@@ -578,7 +578,7 @@ test('⭐ with nothing in the window, a loop OUTSIDE it beats a game with none �
       g.id === 2023020100 ? { ...g, hl } : g) };
     const r = run({ docs: { ...ALL, 'catalog.json': cat } });
     return r.settle().then(() => {
-      assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
+      assert.equal(r.ids.herogo.href, 'game.html?game=2023020100&replay=goals',
         `a loop of ${hl} plays lost to a game with no loop at all`);
       assert.match(r.ids.herokick.textContent, /up to its first goal/,
         `with a loop of ${hl} plays the kicker did not say it runs to a goal`);
@@ -600,7 +600,7 @@ test('the hero is chosen on the loop alone — an attempts figure changes nothin
   return Promise.all([{}, { ha: 0 }, { ha: 2 }].map(extra => {
     const r = run({ docs: { ...ALL, 'catalog.json': seed(extra) } });
     return r.settle().then(() => {
-      assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
+      assert.equal(r.ids.herogo.href, 'game.html?game=2023020100&replay=goals',
         `a loop inside the window was rejected with ${JSON.stringify(extra)} — a counter rule is back`);
     });
   }));
@@ -633,7 +633,7 @@ test('the hero rectangle opens the same game its button does', () => {
       `the overlay is a <${hit.tag}> — only an anchor navigates`);
     assert.equal(hit.href, r.ids.herogo.href,
       'the rectangle and the button offer different games');
-    // AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `Read the whole game` sits
+    // AND IT IS AN AFFORDANCE, NOT A SECOND LINK. The Goals button sits
     // directly under it with the same destination, so a keyboard or screen
     // reader user meeting this as well would meet one offer twice with nothing
     // to tell the two apart — the duplicate-funnel defect in accessible clothing.
@@ -1150,7 +1150,7 @@ test('the front door leads with the most recent game, and it PLAYS', () => {
       'the hero line is stating a score again');
     assert.match(r.ids.herokick.textContent, /February 9, 2024/,
       'the provenance line lost the date the headline gave up');
-    assert.equal(r.ids.herogo.href, 'game.html?game=2023020200');
+    assert.equal(r.ids.herogo.href, 'game.html?game=2023020200&replay=goals');
 
     // THE FRAME IS THE REAL RENDERER, not a recording — and it is built in
     // script, so its id comes from the catalog and it never loads for a visitor

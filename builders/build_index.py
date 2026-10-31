@@ -256,7 +256,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 
    ⚠️ AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `aria-hidden` and `tabindex=-1`
    keep it out of the tab order and out of the accessibility tree, because
-   `Read the whole game` sits directly beneath it with the same destination --
+   the button under the frame sits with the same destination --
    a keyboard user would otherwise meet the same link twice with nothing to tell
    them apart, which is a duplicate-funnel defect wearing accessibility clothes.
    The frame itself already carried `tabindex=-1` for the same reason. */
@@ -284,7 +284,8 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 @media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
- font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
+ font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem;line-height:1.3;
+ max-width:100%}
 .herogo:hover,.herogo:focus{background:var(--blue)}
 
 /* ------------------------------------------------------------- THE DAILY BLOCK
@@ -833,7 +834,7 @@ the league tracked each one, so for those we also draw the puck and every skater
          also means it never loads for a visitor who does not reach it. -->
     <div class="heroframe" id="heroframe"></div>
     <p class="heroline" id="heroline"></p>
-    <a class="herogo" id="herogo" href="game.html">Read the whole game &rarr;</a>
+    <a class="herogo" id="herogo" href="game.html">&#9654; Replay every goal from this game</a>
     <!-- ⭐ THE ONE ELEMENT ON THIS PAGE WHOSE CONTENT IS A FUNCTION OF THE DATE.
          docs/front-door.md §3 stated it as an invariant rather than a taste:
          before this, nothing above the fold changed from one morning to the
@@ -1220,7 +1221,10 @@ __HELPERS__
        carries the chosen game's id, and a visitor who never gets a game must
        not be handed a link to `game.html` with nothing after it. */
     var hit = el('a', 'herohit');
-    hit.href = 'game.html?game=' + g.id;
+    /* PROTO (2026-10-31): both doors open Goals mode of this game.
+       Kevin: clearer doorway than packing more replay chrome into the slim
+       preview; never say Watch — Replay/Read only. Button text below matches. */
+    hit.href = 'game.html?game=' + g.id + '&replay=goals';
     hit.setAttribute('aria-hidden', 'true');
     hit.setAttribute('tabindex', '-1');
     $('heroframe').appendChild(hit);
@@ -1237,7 +1241,7 @@ __HELPERS__
        appears where it was asked for, not where a game was chosen for you. */
     $('heroline').textContent = nameOf(g.a) + ' at ' + nameOf(g.h);
 
-    $('herogo').href = 'game.html?game=' + g.id;
+    $('herogo').href = 'game.html?game=' + g.id + '&replay=goals';
 
     /* THERE IS NO SECOND LINK TO THIS GAME, and that is the fix rather than an
        omission. A separate "New to hockey? Start with the game at the top"
