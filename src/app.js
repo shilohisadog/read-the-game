@@ -3233,7 +3233,7 @@ function trkUrl(k,v){if(typeof history==='undefined')return;
 function trkMode(on){
  if(on===TRK.goals)return;
  if(playing)stop();
- TRK.hold=null;trkEnd();TRK.goals=on;trkUrl('replay',on?'goals':(TRK_PLAIN?'all':null));trkPaint();drawNewcomer();set(i,'');}
+ TRK.hold=null;trkEnd();if(on)layersOff();TRK.goals=on;trkUrl('replay',on?'goals':(TRK_PLAIN?'all':null));trkPaint();drawNewcomer();set(i,'');}
 // A new speed restarts the goal being tracked at that speed, so the hold matches what plays.
 function trkSpeed(v){
  if(v===TRK.speed)return;
@@ -4767,6 +4767,11 @@ function pick(want){
  if(picking)return; picking=true;
  for(const [id,get,set] of PICKS){const on=id===want; if(get()!==on)set(on);}
  picking=false; syncPick(); ack(want);}
+// Goals hides the picker, so it opens with every layer off. No `ack`: nobody pressed a chip.
+function layersOff(){
+ if(picking)return; picking=true;
+ for(const [,get,set] of PICKS)if(get())set(false);
+ picking=false; syncPick();}
 /**
  * ⭐ THE CHIP CONFIRMS ITS OWN PRESS, and it exists because of a distance.
  *

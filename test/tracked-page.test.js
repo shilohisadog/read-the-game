@@ -66,6 +66,19 @@ test('⭐ a plain visit opens in Goals; a link to a moment, or replay=all, opens
   assert.ok(plain.a.$('trkAll').getAttribute('aria-pressed') === 'true');
 });
 
+test('switching to Goals turns every layer off, since Goals hides the picker', async () => {
+  const a = boot(rich, null, '?replay=all', null, served(), MOTION);
+  await settle(); await settle();
+  const chip = l => a.$$('#rg .pk').find(b => b.dataset.l === l);
+  chip('whistle').click();
+  assert.equal(chip('whistle').getAttribute('aria-checked'), 'true', 'the layer did not turn on in All events');
+  assert.equal(a.$('lbox').classList.contains('empty'), false, 'the layer box is empty with a layer on');
+  a.$('trkGoals').click();
+  assert.equal(chip('none').getAttribute('aria-checked'), 'true', 'Goals kept a layer on');
+  assert.equal(chip('whistle').getAttribute('aria-checked'), 'false', 'the layer stayed on in Goals');
+  assert.ok(a.$('lbox').classList.contains('empty'), 'the layer box still holds a count');
+});
+
 test('a plain visit to a game with no tracked goals stays in All events', async () => {
   const a = boot(rich, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null), MOTION);
   await settle(); await settle();
