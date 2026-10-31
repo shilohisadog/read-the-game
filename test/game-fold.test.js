@@ -42,19 +42,29 @@ function sideChildren(html) {
   return out;
 }
 
-test('⭐ the side column holds exactly what §3 rules movable', () => {
-  // Derived from the built page, in order, so a block added to the wrapper by
-  // hand shows up here rather than shipping unexamined.
-  /* ⭐ `sumrow` JOINED ON 2026-10-04, which is what this ledger is for — it did
-     show up here rather than shipping unexamined. Kevin: *"I'd rather have a
-     separate button, in the sidebar, so a viewer doesn't have to enable a layer
-     to get to it."* The summary's door had lived in `.lxws` under the rink, and
-     `#rg .lbox.empty .lxw{visibility:hidden}` hides that row until a layer is
-     chosen — so a reader on `Just events`, the default, had no route to it at
-     all. It belongs in this column by §3's own test: it acts on the WHOLE GAME
-     rather than on the playhead, exactly like `sharerow` directly above it. */
-  assert.deepEqual(sideChildren(page),
-    ['newcomer', 'pickrow', 'lcap', 'zone zcue', 'zone znext', 'sharerow', 'sumrow']);
+test('⭐ the side column is the All events instrument, and only that', () => {
+  // The layer list. The newcomer note, Other games, the copy link and the
+  // whole-game door left this box so they stay in the rink's column when Goals
+  // hides it (docs/goals-page-spec.md).
+  assert.deepEqual(sideChildren(page), ['pickrow', 'lcap', 'zone zcue']);
+});
+
+test('⭐ those four sit after the transport and before the instrument', () => {
+  const markup = page.replace(/<!--[\s\S]*?-->/g, '');
+  const transport = markup.indexOf('class="transport"');
+  const side = markup.indexOf('<div class="side">');
+  const clip = markup.indexOf('id="clipbox"');
+  assert.ok(transport > -1 && side > transport && clip > side,
+    'transport, instrument, and clip are out of order');
+  let at = transport;
+  for (const id of ['id="newcomer"', 'id="nextup"', 'id="share"', 'id="sum"']) {
+    const k = markup.indexOf(id);
+    assert.ok(k > at && k < side, `${id} is not between the transport and the instrument`);
+    at = k;
+  }
+  const inside = markup.slice(side, markup.indexOf('\n</div>', side));
+  for (const id of ['id="newcomer"', 'id="nextup"', 'id="share"', 'id="sum"'])
+    assert.ok(!inside.includes(id), `${id} is back inside the instrument`);
 });
 
 test('⛔ …and the transport is NOT in it — CHENG\'s second clause', () => {
@@ -140,6 +150,25 @@ test('⭐ …and the query hides nothing, so both widths render the same element
   const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(twoColumnQuery(bare).block, /display\s*:\s*none/,
     'the two-column query hides an element — the widths no longer render the same page');
+});
+
+test('⭐ Goals hides the instrument without touching the two-column query', () => {
+  /* The wide query must keep hiding nothing: All events at 1360 is the same
+     page as the phone, placed differently. Goals removes the instrument with a
+     rule that lives OUTSIDE that query, and widens the rink only when the
+     window is also tall enough that the landscape-phone grid is not in force. */
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const q = twoColumnQuery(bare);
+  assert.match(q.before, /#rg\.trkgoals:not\(\.preview\) \.side,#rg\.trkgoals:not\(\.preview\) #walkspd\{display:none\}/,
+    'Goals does not hide the layer list and the event-walk speed');
+  assert.doesNotMatch(q.block, /trkgoals/,
+    'the two-column query itself changed for Goals — All events would no longer be today\'s rink');
+  const wide = /@media \(min-width:1360px\) and \(min-height:501px\)\{([\s\S]*?)\n\}/.exec(bare);
+  assert.ok(wide, 'Goals on a wide screen has no one-column query');
+  assert.match(wide[1], /#rg\.trkgoals:not\(\.preview\) \.wrap\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(wide[1], /#rg\.trkgoals:not\(\.preview\) \.wrap > \*\{grid-column:1\}/);
+  assert.match(bare, /@media \(orientation:landscape\) and \(max-height:500px\)\{[\s\S]*grid-template-columns:minmax\(0,230px\) minmax\(0,1fr\)/,
+    'the landscape phone grid moved');
 });
 
 test('⛔ the picker still defaults to Just events — CHENG\'s condition on q2', () => {

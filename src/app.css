@@ -486,6 +486,10 @@
    one DOM, one set of handlers, one state, reflowed. The novice test is on a
    phone, and the phone gets the layout it had. */
 #rg .side{display:contents}
+/* Goals is the page. The instrument (the layer list) is All events only, at
+   every width, and the event-walk speed goes with it. The preview does not
+   take this grid. */
+#rg.trkgoals:not(.preview) .side,#rg.trkgoals:not(.preview) #walkspd{display:none}
 /* ⛔ 1360, NOT 1180 — AND THE 1180 SHIPPED ON 2026-09-09 WAS A DEFECT OF MINE.
    The comment below has always said "1360 is the smallest width at which nothing
    regresses", and then the QUERY fired at 1180, so between those two widths the
@@ -551,6 +555,13 @@
     that this 340px column wants, and the single-row override sits in a window
     that ends at 1359 -- so the side column inherits the wrapped shape rather than
     restating it. See `#rg .pickrow` for why it is a grid at all. */
+}
+/* Goals on a wide screen is one column. The rink takes the 340px and the gap;
+   the wrap stays 1360. min-height 501 keeps a landscape phone on its own grid:
+   a full-width ice there gets taller in proportion and pushes Play off. */
+@media (min-width:1360px) and (min-height:501px){
+ #rg.trkgoals:not(.preview) .wrap{grid-template-columns:minmax(0,1fr)}
+ #rg.trkgoals:not(.preview) .wrap > *{grid-column:1}
 }
 /* ⭐⭐ THE LANDSCAPE PHONE — THE LAPTOP'S TWO COLUMNS, FOR THE OPPOSITE REASON.
    Kevin, 2026-09-13: "can we replicate the laptop approach on mobile, with the

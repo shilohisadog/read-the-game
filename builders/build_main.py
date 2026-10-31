@@ -367,7 +367,7 @@ __CSS__</style>
   <div class="grp trkc" id="trkMode" role="group" aria-label="What the replay plays" hidden><span>Replay</span><button type="button" class="spd" id="trkAll">All events</button><button type="button" class="spd" id="trkGoals">Goals</button></div>
   <div class="grp trkc" id="trkSpeed" role="group" aria-label="Speed of the tracked goal" hidden><span>Speed</span><button type="button" class="spd" id="trkQ">&frac14;</button><button type="button" class="spd" id="trkH">&frac12;</button><button type="button" class="spd" id="trkR">Real time</button></div>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
-  <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
+  <div class="grp" id="walkspd" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <div class="scrubwrap"><input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"><div class="gticks" id="gticks" role="group" aria-label="Goals in this game"></div></div><p class="gtickcap" id="gtickcap" hidden></p></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
      the learn-page doors -- `deeplink.js::format` even says in its own docstring
@@ -377,46 +377,30 @@ __CSS__</style>
      UNDER THE SCRUBBER, NOT IN THE BUTTON ROW. CHENG: a control in the transport
      group reads as another transport control. This sits with the thing that SETS
      the moment, and the confirmation names the moment it copied. -->
-<!-- ⭐⭐ THE SIDE COLUMN — one element, present at EVERY width.
-     docs/game-page-fold.md §10. Two independent vertical stacks need a container
-     each: a grid column cannot hold one, because every item in column 2 sits in
-     a row shared with column 1 — measured, and the CSS-only version moved the
-     picker FURTHER below the fold.
-     ⛔ AND IT IS `display:contents` BELOW 1180, so the phone renders exactly as
-     if this element were not here: the children flow in the parent as direct
-     children, in this position. That is what keeps one DOM, one set of handlers
-     and one state, reflowed — CHENG's condition on the divergence — rather than
-     two markup paths that can disagree.
-     WHAT IS IN IT is what §3 rules movable: content AND enabled state invariant
-     under playhead movement. `.transport` is NOT here — `◀ Prev`/`Next ▶` are
-     disabled at the ends of the game, which is the playhead. -->
-<div class="side">
-<!-- ⭐ THE FIRST-VISIT BLOCK LEADS THE COLUMN, and this is the half that fixes
-     the PHONE. It is 268px of a 390px fold and it sat above the board, so the
-     rink did not begin until 0.73 screens and the play button it names was
-     off-screen on arrival. Beside the controls it describes, it costs the ice
-     nothing — and CHENG's ruling is the argument: "a newcomer's instruction that
-     sits next to what it describes is more useful than one that pushes the
-     described thing off-screen."
+<!-- ⭐ THE RINK'S COLUMN, BOTH MODES. These four sit after the transport so they
+     stay under it when All events opens the layer instrument beside the ice.
+     They are siblings of that instrument, not children: hiding the instrument
+     must not move them. -->
+<!-- ⭐ THE FIRST-VISIT BLOCK FOLLOWS THE TRANSPORT. It is 268px of a 390px fold
+     and it sat above the board, so the rink did not begin until 0.73 screens and
+     the play button it names was off-screen on arrival. After the controls it
+     describes, it costs the ice nothing — and CHENG's ruling is the argument:
+     "a newcomer's instruction that sits next to what it describes is more useful
+     than one that pushes the described thing off-screen."
      ⚠️ ON A PHONE THIS IS A REAL CHANGE OF READING ORDER: the instruction now
      comes after the rink rather than before it. Kevin, 2026-09-09, releasing the
      phone-untouched commitment: "improvements to both UX experiences is a good
      thing, even when considering past guidance (which was based on previous UX
      situation)." -->
 <div class="newcomer" id="newcomer"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">__CHIP_CORSI__</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">__CHIP_SLOT__</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">__CHIP_BLOCKED__</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">__CHIP_GOALTENDING__</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">__CHIP_WHISTLE__</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">__CHIP_ZONESTART__</span><span class="pkn" id="n_zonestart">0</span></button><button class="pk" id="pkShooters" data-l="shooters" role="radio" aria-checked="false"><span class="pkl">__CHIP_SHOOTERS__</span><span class="pkn" id="n_shooters">0</span></button><button class="pk" id="pkFaceoffs" data-l="faceoffs" role="radio" aria-checked="false"><span class="pkl">__CHIP_FACEOFFS__</span><span class="pkn" id="n_faceoffs">0</span></button></div>
-<p class="lcap" id="lcap"></p>
-<details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
-<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
-<span class="fnote" id="nCue"></span></div>
-</details>
 <details class="zone znext"><summary class="zh">Other games</summary>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
-<!-- ⭐⭐⭐ THE SUMMARY'S OWN DOOR, IN THE SIDEBAR — Kevin, 2026-10-04: *"I think I'd
+<!-- ⭐⭐⭐ THE SUMMARY'S OWN DOOR, WITH THE RINK — Kevin, 2026-10-04: *"I think I'd
      rather have a separate button, in the sidebar, so a viewer doesn't have to
-     enable a layer to get to it."*
+     enable a layer to get to it."* It has since left the layer column too, so
+     it stays put when Goals hides that column.
 
      ⛔ AND HIS PREMISE WAS RIGHT WHERE MY MEASUREMENT WAS WRONG. The button lived
      in `.lxws` under the rink, and `#rg .lbox.empty .lxw{visibility:hidden}` hides
@@ -431,6 +415,19 @@ __CSS__</style>
      are ABOUT the ledger beside them; this one is about the whole game and was
      never about the layer. -->
 <div class="sumrow"><button class="share sumdoor" id="sum" type="button" aria-expanded="false" aria-controls="sumPanel">Whole-game metrics</button></div>
+<!-- ⭐⭐ THE ALL-EVENTS INSTRUMENT — the layer list, and only that.
+     docs/game-page-fold.md §10, split by docs/goals-page-spec.md. One element,
+     present at every width, `display:contents` below 1360 so the phone renders
+     as if it were not here. Goals hides the whole box (`#rg.trkgoals .side`).
+     `.transport` is NOT here — `◀ Prev`/`Next ▶` are disabled at the ends of
+     the game, which is the playhead. -->
+<div class="side">
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">__CHIP_CORSI__</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">__CHIP_SLOT__</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">__CHIP_BLOCKED__</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">__CHIP_GOALTENDING__</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">__CHIP_WHISTLE__</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">__CHIP_ZONESTART__</span><span class="pkn" id="n_zonestart">0</span></button><button class="pk" id="pkShooters" data-l="shooters" role="radio" aria-checked="false"><span class="pkl">__CHIP_SHOOTERS__</span><span class="pkn" id="n_shooters">0</span></button><button class="pk" id="pkFaceoffs" data-l="faceoffs" role="radio" aria-checked="false"><span class="pkl">__CHIP_FACEOFFS__</span><span class="pkn" id="n_faceoffs">0</span></button></div>
+<p class="lcap" id="lcap"></p>
+<details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
+<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
+<span class="fnote" id="nCue"></span></div>
+</details>
 </div>
 <!-- ⏭ THE VERDICT CARD USED TO SIT HERE, after the transport and before the
      video, and the note it carried argued it out of `.rinkbox` because a card
