@@ -1,0 +1,18 @@
+---
+description: Keep agent context small; do not rediscover the repo.
+alwaysApply: true
+---
+
+# Cheap context
+
+Pickup list is `docs/status.md` §0.00 only. Do not read the rest of that file, `docs/status-archive.md`, `ClaudeCode-memory-documents/`, or the design record unless the user names a file.
+
+A named-file fix: read those files and the failing test. Do not spawn explore or generalPurpose subagents. Do not grep the repo for TODO/FIXME. Do not open CONTRIBUTING.md, DOCTRINE.md, or MEMORY.md unless the task is about those bars.
+
+`src/*.html` is generated. Edit `builders/` and `src/lib/`. Read a built HTML file only to extract a script a page test already runs.
+
+Never quote archive or suite counts from memory. Run `node builders/health.mjs` if a count is required.
+
+Do not use browser or computer-use tools unless the task is verifying a user-visible change.
+
+Do not call GetDynamicTools for Cursor built-ins already in the prompt (Task, TodoWrite, and the rest of the cursor namespace).

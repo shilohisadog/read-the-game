@@ -1,0 +1,16 @@
+---
+description: Run the smallest check; keep TAP and CI watchers out of chat.
+alwaysApply: true
+---
+
+# Cheap verification
+
+Run the failing test file. Add `TZ=Etc/GMT-14` and `TZ=Etc/GMT+12` when the bug is a day-boundary flake. Do not run `npm run gates` in chat unless the user asks.
+
+Redirect large command output to a file. Report pass/fail and the first failing name. Do not paste TAP, clock-sweep logs, or `gh run watch` TUI into the transcript.
+
+After a push: `gh run list --commit <sha>`. Give the run URLs and stop. Do not `gh run watch`. Do not poll CI across turns. If a background check is needed, print conclusion only.
+
+Never watch "the latest run". Find the run by this commit SHA. If it is missing, dispatch; do not assume GitHub started it.
+
+`tools/clock-sweep.sh` stays in gates. Do not remove a zone from the sweep to make a test green.
