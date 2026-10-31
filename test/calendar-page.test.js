@@ -452,9 +452,11 @@ const localToday = () => { const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
 test('⭐ a scheduled date is an outlined door with its count, and today says Tonight', async () => {
-  const today = localToday(), month = today.slice(0, 7);
-  const later = `${month}-${today.slice(8) === '28' ? '27' : '28'}`;
-  const games = [row(2025020001, `${month}-01`)];
+  const today = localToday(), month = today.slice(0, 7), day = today.slice(8);
+  // A held cell is not outlined, so pinning the archive row to the 1st fails when today is the 1st.
+  const held = `${month}-${day === '01' ? '02' : '01'}`;
+  const later = `${month}-${day === '28' ? '27' : '28'}`;
+  const games = [row(2025020001, held)];
   const sched = { 'schedule.json': { upcoming: [
     { id: 9, date: today, away: 'BUF', home: 'TOR', startTimeUTC: `${today}T23:00:00Z`, gameType: 2 },
     { id: 10, date: today, away: 'PIT', home: 'MTL', startTimeUTC: `${today}T23:00:00Z`, gameType: 2 },
@@ -468,7 +470,7 @@ test('⭐ a scheduled date is an outlined door with its count, and today says To
   const other = sch.find(c => c.href === `?date=${later}`);
   assert.ok(other && !walk(other).some(x => x.textContent === 'Tonight'), 'only today says Tonight');
   assert.match(textOf(ids.main), /An outlined date has games the league has scheduled/);
-  assert.ok(withClass(ids.main, 'cell').some(c => c.href === `?date=${month}-01` && !/sched/.test(c.className)),
+  assert.ok(withClass(ids.main, 'cell').some(c => c.href === `?date=${held}` && !/sched/.test(c.className)),
     'a held date is still a plain cell');
 });
 
