@@ -216,12 +216,12 @@ let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
    Off on the front door's hero, and wherever no fetcher was handed in. */
 const TRK_ON=!PREVIEW&&typeof DOC==='function';
 const TRK_Q=new URLSearchParams(location.search);
-/* GOALS IS THE DEFAULT ON A PLAIN VISIT (Kevin, 2026-10-26): a game link that names no moment and no summary.
-   A link to a moment (every lesson door, every shared moment) opens in All events, as it always has, unless it
-   says `replay=goals`; `replay=all` asks for All events. A game with no tracked goals falls back (trkControl). */
+/* A GAME WITH TRACKED GOALS IS GOALS ONLY; ONE WITHOUT IS THE EVENT WALK ONLY (Kevin, 2026-10-31). There is
+   no switch between them. A plain visit starts in Goals and falls back when the index lists nothing; a link to
+   a moment (every lesson door) starts in the event walk and becomes Goals when it does (trkControl). */
 const TRK_PLAIN=!LINK.at&&!LINK.summary;
 const TRK={rows:null,plans:new Map(),run:null,hold:null,offered:false,
-  goals:TRK_ON&&(TRK_Q.get('replay')==='goals'||(TRK_Q.get('replay')==null&&TRK_PLAIN)),
+  goals:TRK_ON&&TRK_PLAIN,
   speed:TRACK_SPEEDS.some(x=>x[0]===Number(TRK_Q.get('speed')))?Number(TRK_Q.get('speed')):TRACK_SPEED};
 /* WHETHER THIS IS A FIRST VISIT — a fact the page has never had, and the reason
    230 words of teaching copy were either permanent furniture or absent.
@@ -3220,29 +3220,30 @@ function trkOpen(g,where){
    the game is known to have tracked goals. The selected one is purple, like "Replay". */
 function trkControl(){
  if(!TRK.offered){TRK.offered=true;
-  trkRows().then(rows=>{TRK.shown=rows.length>0;if(!TRK.shown&&TRK.goals){TRK.goals=false;drawNewcomer();}trkPaint();});}
+  trkRows().then(rows=>{TRK.shown=rows.length>0;
+   if(!TRK.shown&&TRK.goals){TRK.goals=false;drawNewcomer();}
+   else if(TRK.shown&&!TRK.goals)trkGoalsOn();
+   trkPaint();});}
  trkPaint();}
 function trkPaint(){
- $('trkMode').hidden=!TRK.shown;$('trkSpeed').hidden=!TRK.shown;
- $('trkAll').setAttribute('aria-pressed',String(!TRK.goals));$('trkGoals').setAttribute('aria-pressed',String(TRK.goals));
+ $('trkSpeed').hidden=!TRK.shown;
  for(const [v,id] of [[0.25,'trkQ'],[0.5,'trkH'],[1,'trkR']])$(id).setAttribute('aria-pressed',String(TRK.speed===v));
  document.getElementById('rg').classList.toggle('trkgoals',TRK.goals);}
 function trkUrl(k,v){if(typeof history==='undefined')return;
  const u=new URL(location.href);if(v==null)u.searchParams.delete(k);else u.searchParams.set(k,v);
  history.replaceState(history.state,'',u);}
-function trkMode(on){
- if(on===TRK.goals)return;
+// A link to a moment on a tracked game: the same frame, now in Goals, which hides the layers.
+function trkGoalsOn(){
  if(playing)stop();
- TRK.hold=null;trkEnd();if(on)layersOff();TRK.goals=on;trkUrl('replay',on?'goals':(TRK_PLAIN?'all':null));trkPaint();drawNewcomer();set(i,'');}
+ TRK.hold=null;trkEnd();layersOff();TRK.goals=true;trkPaint();drawNewcomer();set(i,RENDER_HOW);}
 // A new speed restarts the goal being tracked at that speed, so the hold matches what plays.
 function trkSpeed(v){
  if(v===TRK.speed)return;
  TRK.speed=v;trkUrl('speed',v===TRACK_SPEED?null:String(v));trkPaint();
  const h=TRK.hold;
  if(TRK.run&&h&&!h.wait&&playing){stop();TRK.hold={...h,ms:trkStart(h.P,TRK.goals?TRACK_STILL_MS:0,false)};play();}}
-$('trkMode').hidden=true;$('trkSpeed').hidden=true;      // until the game is known to have tracked goals
+$('trkSpeed').hidden=true;      // until the game is known to have tracked goals
 if(TRK_ON){
- $('trkAll').onclick=()=>trkMode(false);$('trkGoals').onclick=()=>trkMode(true);
  $('trkQ').onclick=()=>trkSpeed(0.25);$('trkH').onclick=()=>trkSpeed(0.5);$('trkR').onclick=()=>trkSpeed(1);}
 /* THE OVERLAY IS THE BUTTON. It calls `play()` directly rather than synthesising a
    click on `#play`, because a forwarded click is a second path to the same state
@@ -4767,7 +4768,7 @@ function pick(want){
  if(picking)return; picking=true;
  for(const [id,get,set] of PICKS){const on=id===want; if(get()!==on)set(on);}
  picking=false; syncPick(); ack(want);}
-// Goals hides the picker, so it opens with every layer off. No `ack`: nobody pressed a chip.
+// Goals hides the picker, so a link's layers are turned off. No `ack`: nobody pressed a chip.
 function layersOff(){
  if(picking)return; picking=true;
  for(const [,get,set] of PICKS)if(get())set(false);
@@ -5470,10 +5471,9 @@ function shareUrl(){
     than a second kind of link: nothing is added to a share taken over the ice. */
  // The edition: this link's own, else the newest saved one, so the shared comparisons stay that night's.
  const ed=LINK.asof||(typeof NEWEST_EDITION==='string'?NEWEST_EDITION:null);
- // The tracked goal's mode when not the default, and its speed always on a game that has one.
+ // The tracked goal's speed, always on a game that has one.
  return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'')
-         // A pre-game link names no moment, so it would open in Goals: say All events when that is what was showing.
-         +(TRK.shown&&TRK.goals?'&replay=goals':TRK.shown&&n==null?'&replay=all':'')+(TRK.shown?'&speed='+TRK.speed:'')
+         +(TRK.shown?'&speed='+TRK.speed:'')
          +(sumOpen?'&summary=1':'')+(ed?'&asof='+ed:'');}
 
 const shareBtn=$('share'),shareSaid=$('sharesaid');
@@ -5496,7 +5496,7 @@ if(shareBtn)shareBtn.onclick=()=>{
     does, never what we meant it to do. */
  const qs=new URLSearchParams(q),sp=TRACK_SPEEDS.find(x=>x[0]===Number(qs.get('speed')));
  const also=(back.summary?', with the summary showing':'')
-  +(qs.get('replay')==='goals'?', in Goals mode':sp?', tracked goals':'')
+  +(sp?', tracked goals':'')
   +(sp?(sp[0]===1?' in real time':` at ${sp[1]} speed`):'');
  const done=ok=>{shareSaid.innerHTML=ok
    ?`Copied — it opens at ${where}${also}.`

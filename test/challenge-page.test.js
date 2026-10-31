@@ -62,17 +62,18 @@ test('on that stop the name line says it, and the line under the rink says how',
     new RegExp(`^${ab[HOME]} scored, but ${ab[AWAY]} challenged that ${ab[HOME]} was offside prior to the goal\\. The review determined`));
 });
 
-test('⭐ Goals: a goal that stood says so on its own frame; All events says it on the penalty after', async () => {
+test('⭐ Goals: a goal that stood says so on its own frame; the event walk says it on the penalty after', async () => {
   const g = boot(G, null, '?replay=goals', null, served);
   await settle(); await settle();
   g.at(STOOD, () => {}); await settle();
   assert.equal(+g.$('scrub').value, STOOD);
   assert.match(g.$('playline').textContent,
     new RegExp(`${ab[AWAY]} scored, and ${ab[HOME]} challenged that a ${ab[AWAY]} player interfered with the goaltender\\. The review concluded the goal stands, and ${ab[HOME]} takes a two-minute penalty for losing the challenge\\.`));
-  const all = boot(G, null, '?replay=all', null, served);
+  // The event walk is a game with no tracked goals.
+  const all = boot(G, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null));
   await settle(); await settle();
   all.at(STOOD, () => {}); await settle();
-  assert.doesNotMatch(all.$('playline').textContent, /challenged/, 'All events says it twice');
+  assert.doesNotMatch(all.$('playline').textContent, /challenged/, 'the event walk says it twice');
   all.at(STOOD + 1, () => {}); await settle();
   assert.match(all.$('playline').textContent, /The review concluded the goal stands/);
 });

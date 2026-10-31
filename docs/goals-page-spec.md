@@ -1,6 +1,6 @@
 # Goals page — layout spec
 
-One replay page. Goals is the page. All events is an instrument that opens inside it. Do not add a second page, and do not rewrite the replay.
+One replay page. A game with tracked goals is Goals only; a game without is the event walk (All events) only. There is no switch between them (Kevin, 2026-10-31: they are two replay approaches, and a switch presents them as one). Do not add a second page, and do not rewrite the replay.
 
 The class that already means Goals is `#rg.trkgoals` (`trkPaint` in `src/app.js`). A game with no tracked goals never gets that class, and All events stays the page.
 
@@ -44,11 +44,11 @@ In Goals, hide the instrument so that column is the controls and not a scrolling
 
 ## Transport
 
-The Goals / All events switch stays. It is how All events opens.
+There is no Goals / All events switch.
 
-- Goals shows Play, that switch, the tracking speed (¼ / ½ / real time), previous, next, and the scrubber.
-- Slower and Faster belong to the event walk. Show them in All events. Hide them in Goals.
-- Lesson links and shared moments that ask for every event (`replay=all`, or a link to a moment) still open All events, with the instrument column present on a wide screen.
+- Goals shows Play, the tracking speed (¼ / ½ / real time), previous, next, and the scrubber.
+- Slower and Faster belong to the event walk. They show only on a game with no tracked goals.
+- A link to a moment on a tracked game opens Goals at that moment, with any layer it names turned off; `replay=` is ignored. Lesson links all point at games with no tracking, so they open the event walk as before.
 
 ## Leave alone
 
@@ -61,4 +61,4 @@ The Goals / All events switch stays. It is how All events opens.
 
 Update any test that assumes the layer picker, Other games, the copy link, and whole-game metrics are one column.
 
-In a browser, on a tracked game: Goals at a wide window has no layer column and a wider rink; All events brings the column back and the rink narrows; Other games, Copy link, and Whole-game metrics stay put across the switch. On a landscape phone in Goals, the layer list is gone and the rink is still beside the controls.
+In a browser, on a tracked game: Goals at a wide window has no layer column and a wider rink, and no Replay switch. On a game with no tracked goals the layer column is present. On a landscape phone in Goals, the layer list is gone and the rink is still beside the controls.

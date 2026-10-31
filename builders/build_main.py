@@ -364,7 +364,6 @@ __CSS__</style>
 <p class="icenote" id="iceNote"></p>
 
 <div class="transport"><button class="play" id="play">▶ Play</button>
-  <div class="grp trkc" id="trkMode" role="group" aria-label="What the replay plays" hidden><span>Replay</span><button type="button" class="spd" id="trkAll">All events</button><button type="button" class="spd" id="trkGoals">Goals</button></div>
   <div class="grp trkc" id="trkSpeed" role="group" aria-label="Speed of the tracked goal" hidden><span>Speed</span><button type="button" class="spd" id="trkQ">&frac14;</button><button type="button" class="spd" id="trkH">&frac12;</button><button type="button" class="spd" id="trkR">Real time</button></div>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" id="walkspd" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>

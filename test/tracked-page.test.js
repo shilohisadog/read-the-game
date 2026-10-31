@@ -30,12 +30,11 @@ function served(asked = []) {
     return Promise.reject(new Error('not served: ' + name));
   };
 }
-const shown = a => !a.$('trkMode').hidden && !a.$('trkSpeed').hidden;
+const shown = a => !a.$('trkSpeed').hidden;
 
 test('with no fetcher there are no tracking controls and nothing is asked for', async () => {
   const a = boot();
   await settle();
-  assert.equal(a.$('trkMode').hidden, true);
   assert.equal(a.$('trkSpeed').hidden, true);
 });
 
@@ -45,38 +44,38 @@ test('a game whose index lists no goals offers no controls', async () => {
   assert.equal(shown(a), false, 'controls for a game with nothing tracked');
 });
 
-test('⭐ a plain visit opens in Goals; a link to a moment, or replay=all, opens in All events', async () => {
-  const mode = async q => { const a = boot(rich, null, q, null, served(), MOTION); await settle(); await settle();
-    assert.ok(shown(a), 'the controls stayed hidden');
-    return { goals: a.$('trkGoals').getAttribute('aria-pressed') === 'true', all: a.$('trkAll').getAttribute('aria-pressed') === 'true',
-      cls: a.$('rg').classList.contains('trkgoals'), q: a.$('trkQ').getAttribute('aria-pressed'), a }; };
-  const plain = await mode('');
-  assert.ok(plain.goals && !plain.all && plain.cls, 'a plain visit is not in Goals');
-  assert.equal(plain.q, 'true', '¼ is not the speed');
-  assert.match(plain.a.$('newcomer').innerHTML, /watch this game's goals/, 'the greeting describes All events in Goals');
-  const at = TL[40], moment = await mode(`?at=${at.per}-${at.rem}`);
-  assert.ok(moment.all && !moment.goals, 'a link to a moment did not open in All events');
-  const all = await mode('?replay=all');
-  assert.ok(all.all && !all.goals, 'replay=all did not open in All events');
-  assert.match(all.a.$('newcomer').innerHTML, /every event/, 'the greeting describes Goals in All events');
-  const goalsAt = await mode(`?at=${at.per}-${at.rem}&replay=goals`);
-  assert.ok(goalsAt.goals, 'replay=goals on a moment link was ignored');
-  // Choosing All events on a plain visit is written into the address, so a reload keeps it.
-  plain.a.$('trkAll').click();
-  assert.ok(plain.a.$('trkAll').getAttribute('aria-pressed') === 'true');
+test('⭐ a game with tracked goals is Goals only: a plain visit, a link to a moment and replay=all all open it', async () => {
+  const goals = async q => { const a = boot(rich, null, q, null, served(), MOTION); await settle(); await settle();
+    assert.ok(shown(a), 'the speed control stayed hidden');
+    return { on: a.$('rg').classList.contains('trkgoals'), a }; };
+  const plain = await goals('');
+  assert.ok(plain.on, 'a plain visit is not in Goals');
+  assert.equal(plain.a.$('trkQ').getAttribute('aria-pressed'), 'true', '¼ is not the speed');
+  assert.match(plain.a.$('newcomer').innerHTML, /watch this game's goals/);
+  assert.doesNotMatch(app, /id="trk(All|Goals|Mode)"/, 'there is still a switch to All events');
+  const at = TL[40], moment = await goals(`?at=${at.per}-${at.rem}`);
+  assert.ok(moment.on, 'a link to a moment stayed in the event walk');
+  assert.equal(+moment.a.$('scrub').value, 40, 'Goals moved the linked moment');
+  assert.ok((await goals('?replay=all')).on, 'replay=all still opens the event walk');
 });
 
-test('switching to Goals turns every layer off, since Goals hides the picker', async () => {
-  const a = boot(rich, null, '?replay=all', null, served(), MOTION);
+test('a link that carries a layer opens a tracked game in Goals with every layer off', async () => {
+  const at = TL[40];
+  const a = boot(rich, null, `?at=${at.per}-${at.rem}&layer=whistle`, null, served(), MOTION);
   await settle(); await settle();
   const chip = l => a.$$('#rg .pk').find(b => b.dataset.l === l);
-  chip('whistle').click();
-  assert.equal(chip('whistle').getAttribute('aria-checked'), 'true', 'the layer did not turn on in All events');
-  assert.equal(a.$('lbox').classList.contains('empty'), false, 'the layer box is empty with a layer on');
-  a.$('trkGoals').click();
-  assert.equal(chip('none').getAttribute('aria-checked'), 'true', 'Goals kept a layer on');
+  assert.ok(a.$('rg').classList.contains('trkgoals'), 'the tracked game is not in Goals');
+  assert.equal(chip('none').getAttribute('aria-checked'), 'true', 'Goals kept the linked layer on');
   assert.equal(chip('whistle').getAttribute('aria-checked'), 'false', 'the layer stayed on in Goals');
   assert.ok(a.$('lbox').classList.contains('empty'), 'the layer box still holds a count');
+});
+
+test('a link that carries a layer to a game with no tracked goals keeps it', async () => {
+  const at = TL[40];
+  const a = boot(rich, null, `?at=${at.per}-${at.rem}&layer=whistle`, null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null), MOTION);
+  await settle(); await settle();
+  assert.equal(a.$('rg').classList.contains('trkgoals'), false);
+  assert.equal(a.$$('#rg .pk').find(b => b.dataset.l === 'whistle').getAttribute('aria-checked'), 'true', 'the lesson link lost its layer');
 });
 
 test('a plain visit to a game with no tracked goals stays in All events', async () => {
@@ -170,7 +169,7 @@ test('Goals mode says how often shots from that distance go in', async () => {
   assert.match(few.textContent, /under 30/);
 });
 
-test('Goals shows the onside entry, and Event mode shows nothing', async () => {
+test('Goals shows the onside entry', async () => {
   const home = rich.teams.home.id, away = rich.teams.away.id, ab = rich.teams.home.ab;
   const dot = (x, id, team) => ({ x: (x + 100) * 12, y: (42.5 - 0) * 12, playerId: id || '', teamId: team ?? '', sweaterNumber: '' });
   const rows = [
@@ -210,23 +209,6 @@ test('Goals shows the onside entry, and Event mode shows nothing', async () => {
   assert.equal(said, `Onside: the puck crossed the blue line before any ${ab} player did.`);
   assert.equal([...g.$('track').innerHTML.matchAll(/class="tck"/g)].length, 2);
   assert.doesNotMatch(g.$('track').innerHTML + said, /too close/i);
-
-  const ev = boot(game, null, '?replay=all', null, fetch, MOTION);
-  await settle(); await settle();
-  const first = goals[0];
-  let from = first.k - 1;
-  while (from > 0 && tl[from - 1].type !== 'faceoff' && tl[from].s > first.e.s - 30) from--;
-  ev.at(from, () => {});
-  await settle(); await settle();
-  ev.$('play').click();
-  let held = false;
-  for (let n = 0; n < 40 && +ev.$('scrub').value < first.k; n++) {
-    ev.advance(1); await settle();
-    if (ev.$('rg').classList.contains('trk')) { held = true; break; }
-  }
-  assert.ok(held, 'Event mode never played the tracking');
-  assert.doesNotMatch(ev.$('track').innerHTML, /onside|class="tck"/);
-  assert.doesNotMatch(ev.$('playline').textContent, /Onside/);
 });
 
 test('an empty-net goal in Goals says the net was empty, not a rate', async () => {
@@ -277,27 +259,6 @@ test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, whic
   assert.ok(g2, 'the reference game needs three goals for this walk');
 });
 
-test('All events: a tracked goal holds the frame before it while its tracking plays', async () => {
-  const a = boot(rich, null, '', null, served(), MOTION);
-  await settle(); await settle();
-  const { e, k } = GOALS[0];
-  // Start a few frames before the goal, in the same stretch of play, and let the file load.
-  let from = k - 1;
-  while (from > 0 && TL[from - 1].type !== 'faceoff' && TL[from].s > e.s - 30) from--;
-  a.at(from, () => {});
-  await settle(); await settle();
-  a.$('play').click();
-  let held = false;
-  for (let n = 0; n < 40 && +a.$('scrub').value < k; n++) {
-    a.advance(1); await settle();
-    if (a.$('rg').classList.contains('trk')) { held = true; break; }
-  }
-  assert.ok(held, 'no frame was held for the tracking');
-  assert.ok(+a.$('scrub').value < k);
-  a.advance(1);
-  assert.equal(+a.$('scrub').value, k, 'the tracking did not hand over to the goal frame');
-});
-
 test('under reduced motion Goals goes goal frame to goal frame, and offers the tracking instead', async () => {
   const a = boot(rich, null, '?replay=goals', null, served());
   await settle(); await settle();
@@ -309,25 +270,24 @@ test('under reduced motion Goals goes goal frame to goal frame, and offers the t
   assert.match(a.$('who').innerHTML, /See it tracked/, 'the tracking is not offered');
 });
 
-test('⭐ a copied link carries the replay mode and the speed, and the confirmation says so', async () => {
-  const a = boot(rich, null, '?replay=all', null, served(), MOTION);
+test('⭐ a copied link carries the speed, not a mode, and the confirmation says so', async () => {
+  const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
   await settle(); await settle();
   a.at(GOALS[0].k, () => {});
   a.$('share').onclick(); await settle();
   let q = new URLSearchParams(a.copied.split('?')[1]);
-  assert.equal(q.get('replay'), null, 'a link to a moment opens in All events without saying so');
+  assert.equal(q.get('replay'), null, 'the link names a mode, and there is only one');
   assert.equal(q.get('speed'), '0.25', 'a game with tracked goals always carries its speed');
   assert.match(a.$('sharesaid').innerHTML, /, tracked goals at ¼ speed\./);
-  a.$('trkGoals').click(); a.$('trkH').click(); await settle();
+  a.$('trkH').click(); await settle();
   a.$('share').onclick(); await settle();
   q = new URLSearchParams(a.copied.split('?')[1]);
-  assert.equal(q.get('replay'), 'goals');
   assert.equal(q.get('speed'), '0.5');
-  assert.match(a.$('sharesaid').innerHTML, /in Goals mode at ½ speed/);
+  assert.match(a.$('sharesaid').innerHTML, /tracked goals at ½ speed/);
   // And the link opens that way.
   const b = boot(rich, null, '?' + q.toString(), null, served(), MOTION);
   await settle(); await settle();
-  assert.equal(b.$('trkGoals').getAttribute('aria-pressed'), 'true');
+  assert.ok(b.$('rg').classList.contains('trkgoals'));
   assert.equal(b.$('trkH').getAttribute('aria-pressed'), 'true');
 });
 
@@ -374,13 +334,6 @@ test('⭐ in Goals the scrubber goes where it is tapped, the very start and end 
     a.$('scrub').onchange({ target: { value: String(k) } }); await settle();
     assert.equal(+a.$('scrub').value, k, `a tap at ${k} moved to ${a.$('scrub').value}`);
   }
-});
-
-test('a pre-game link copied in All events says so, since a link with no moment opens in Goals', async () => {
-  const a = boot(rich, null, '?replay=all', null, served(), MOTION);
-  await settle(); await settle();
-  a.$('share').onclick(); await settle();
-  assert.equal(new URLSearchParams(a.copied.split('?')[1]).get('replay'), 'all');
 });
 
 test('⭐ Goals: Next steps onto each assist, and the name line gives the league\'s credit', async () => {
@@ -454,10 +407,10 @@ test('⭐ Goals: a game settled by a shootout stops on its first attempt and say
     + 'CAR won the shootout 1–0, and the team that wins a shootout is credited with one goal on the final score.');
   a.$('play').click(); a.advance(1); await settle();
   assert.equal(+a.$('scrub').value, tl.length - 1, 'Play did not go from the shootout to the horn');
-  const all = boot(game, null, '?replay=all', null, fetch);
+  const all = boot(game, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null));
   await settle(); await settle();
   all.at(so, () => {}); await settle();
-  assert.doesNotMatch(all.$('playline').textContent + all.$('who').textContent, /overtime ended without a goal/i, 'All events took the Goals stop\'s words');
+  assert.doesNotMatch(all.$('playline').textContent + all.$('who').textContent, /overtime ended without a goal/i, 'the event walk took the Goals stop\'s words');
 });
 
 test('a playoff game whose fifth period is overtime has no shootout stop', async () => {
