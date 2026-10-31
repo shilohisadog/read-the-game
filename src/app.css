@@ -490,6 +490,8 @@
    every width, and the event-walk speed goes with it. The preview does not
    take this grid. */
 #rg.trkgoals:not(.preview) .side,#rg.trkgoals:not(.preview) #walkspd{display:none}
+/* Its empty ledger says "Choose under Layers", and Goals hides the layers. */
+#rg.trkgoals:not(.preview) .lbox.empty{display:none}
 /* ⛔ 1360, NOT 1180 — AND THE 1180 SHIPPED ON 2026-09-09 WAS A DEFECT OF MINE.
    The comment below has always said "1360 is the smallest width at which nothing
    regresses", and then the QUERY fired at 1180, so between those two widths the

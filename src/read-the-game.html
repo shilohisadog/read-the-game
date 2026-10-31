@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XLrXHyGg3+S7CAMFCoYdwa3G22+/GmT1V/p/ziABLas=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-sr7k2iLAYDpKsodGSbpGkXVtzN19B+L3QP3YUWkcCRk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XLrXHyGg3+S7CAMFCoYdwa3G22+/GmT1V/p/ziABLas=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-3HFLr066Csp6Zejnb6Jw8xU6DEeXZohgPBvju4t8SBo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -129,6 +129,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg.preview .sumrow{display:none!important}
 #rg .side{display:contents}
 #rg.trkgoals:not(.preview) .side,#rg.trkgoals:not(.preview) #walkspd{display:none}
+#rg.trkgoals:not(.preview) .lbox.empty{display:none}
 @media (min-width:1360px){
  #rg .wrap{max-width:1360px;display:grid;
   grid-template-columns:340px minmax(0,1fr);column-gap:28px;align-items:start;
