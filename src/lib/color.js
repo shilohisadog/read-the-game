@@ -103,6 +103,46 @@ function skatersOn(game, e, tid) {
   return [...seen.entries()].map(([p, s]) => ({ p, on: e.s - s }));
 }
 
+/* What came just before a goal, each said only when it applies. The cut-offs are ours:
+   a save this many seconds before with no whistle between, a face-off this recent, a shift this long. */
+export const REBOUND_S = 3, OFF_DRAW_S = 10, LONG_SHIFT_S = 60;
+
+/** " Markstrom had stopped a CBJ shot 2 seconds before, and play went on: a second chance, called a "rebound"." */
+function reboundSay(ev, n, shooter, ctx, ab) {
+  const e = ev[n];
+  for (let k = n - 1; k >= 0 && ev[k].per === e.per && e.s - ev[k].s <= REBOUND_S; k--) {
+    const x = ev[k];
+    if (x.type === 'faceoff' || x.type === 'stoppage' || x.type === 'period-start') return '';
+    if (x.type !== 'shot-on-goal' || corsiTeam(x, ctx.roster) !== shooter) continue;
+    const g = (ctx.roster[x.goalie] || {}).nm, secs = e.s - x.s;
+    const when = secs === 0 ? 'the same second' : `${countOf(secs, 'second')} before`;
+    return ` ${g || 'The goalie'} had stopped a ${ab(shooter)} shot ${when}, and play went on: a second chance, called a "rebound".`;
+  }
+  return '';
+}
+
+/** " It came 6 seconds after the face-off, which DAL won." */
+function drawSay(ev, n, ab) {
+  const e = ev[n];
+  for (let k = n - 1; k >= 0 && ev[k].per === e.per; k--) {
+    const x = ev[k];
+    if (x.type !== 'faceoff') continue;
+    const secs = e.s - x.s;
+    if (secs > OFF_DRAW_S || x.own == null) return '';
+    return ` It came ${secs === 0 ? 'the same second as' : countOf(secs, 'second') + ' after'} the face-off, which ${ab(x.own)} won.`;
+  }
+  return '';
+}
+
+/** " 2 of the CBJ skaters had been on the ice over a minute (62 to 75 seconds each); a typical shift is about 48 seconds." */
+function longShiftSay(game, e, tid, ab, SHIFT) {
+  const long = skatersOn(game, e, tid).map(x => x.on).filter(t => t > LONG_SHIFT_S);
+  if (!long.length || !SHIFT) return '';
+  const who = long.length === 1 ? `1 ${ab(tid)} skater had` : `${long.length} of the ${ab(tid)} skaters had`;
+  const secs = long.length === 1 ? `${long[0]} seconds` : secsSpan(long);
+  return ` ${who} been on the ice over a minute (${secs}); a typical shift is about ${SHIFT} seconds.`;
+}
+
 const secsSpan = xs => {
   const lo = Math.min(...xs), hi = Math.max(...xs);
   return lo === hi ? `${lo} seconds each` : `${lo} to ${hi} seconds each`;
@@ -228,6 +268,7 @@ export function colorNotes(game, ctx, rates) {
       say = s === o ? `That ties the game, ${s}–${o}.` : s - o === 1 ? `That puts ${t} ahead, ${s}–${o}.`
         : s > o ? `${t} now leads ${s}–${o}.` : `${t} pulls within ${o - s}, ${s}–${o}.`;
       if (run && run.end === (shooter === aid ? 'h' : 'a')) say += stayWords(run, ctx, 'had');
+      say += reboundSay(ev, n, shooter, ctx, ab) + drawSay(ev, n, ab) + longShiftSay(game, e, other(shooter), ab, SHIFT);
       if (STRENGTH.has(n)) say += ' ' + STRENGTH.get(n);
       if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;

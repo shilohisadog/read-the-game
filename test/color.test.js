@@ -220,3 +220,33 @@ test('a recount after the puck left replaces the stay, or removes it when the ne
     'The puck has stayed in the HOM end for 3 events in a row; in that time AWY has 1 shot attempt.');
   assert.equal(stayRetell('That puts HOM ahead, 1–0.', null, ctx2, 'a'), 'That puts HOM ahead, 1–0.');
 });
+
+/* What came just before a goal (Kevin, 2026-11-01): a save with play going on, a face-off, long shifts.
+   Measured over 1,395 tracked goals of 2026-27: about 10%, 9% and 19% (of goals with shift records). */
+const lastNote = g => notesOf(g).at(-1)[1];
+
+test('a goal soon after a save, with no whistle between, says it was a second chance', () => {
+  const at = (shotS, extra = [], by = 12) => game([ev('faceoff', 0, 69, { own: AWAY, actor: 20 }),
+    ev('shot-on-goal', shotS, 70, { actor: by, goalie: 29 }), ...extra, ev('goal', 22, 80, { own: HOME, actor: 10 })]);
+  assert.match(lastNote(at(20)), / AwayG had stopped a HOM shot 2 seconds before, and play went on: a second chance, called a "rebound"\.$/);
+  assert.match(lastNote(at(19)), /stopped a HOM shot 3 seconds before/, 'the cut-off is inclusive');
+  assert.doesNotMatch(lastNote(at(18)), /rebound/, 'four seconds is past the cut-off');
+  assert.doesNotMatch(lastNote(at(20, [ev('stoppage', 21, null), ev('faceoff', 21, 69, { own: HOME, actor: 10 })])), /rebound/,
+    'a whistle between the save and the goal');
+  assert.doesNotMatch(lastNote(at(20, [], 22)), /rebound/, 'the save was of the other team’s shot');
+});
+
+test('a goal soon after a face-off says so, and who won it', () => {
+  const at = (s, own) => game([ev('faceoff', 0, 69, { own, actor: own === HOME ? 10 : 20 }), ev('goal', s, 80, { own: HOME, actor: 10 })]);
+  assert.match(lastNote(at(6, AWAY)), / It came 6 seconds after the face-off, which AWY won\.$/);
+  assert.match(lastNote(at(10, HOME)), /It came 10 seconds after the face-off, which HOM won\./);
+  assert.doesNotMatch(lastNote(at(11, HOME)), /face-off/);
+});
+
+test('a goal against skaters out over a minute gives their seconds and the typical shift, never "tired"', () => {
+  const at = s => game([ev('faceoff', 0, 0, { own: AWAY, actor: 20 }), ev('goal', s, 80, { own: HOME, actor: 10 })],
+    [...shiftsFor([20, 21], AWAY, 0, 200), ...shiftsFor([22, 23, 24], AWAY, s - 30, 200), ...shiftsFor([10, 11, 12, 13, 14], HOME, 0, 200)]);
+  assert.match(lastNote(at(70)), / 2 of the AWY skaters had been on the ice over a minute \(70 seconds each\); a typical shift is about 48 seconds\.$/);
+  assert.doesNotMatch(lastNote(at(60)), /over a minute/, 'sixty seconds is not over a minute');
+  assert.doesNotMatch(lastNote(at(70)), /HOM skaters|tired/i, 'the scoring team’s shifts, or a judgement');
+});
