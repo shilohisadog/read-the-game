@@ -273,8 +273,33 @@ test('a bench minor gets a seat, and the condition is the severity', () => {
   assert.doesNotMatch(src, /if \(e\.type === 'penalty' && e\.min && e\.actor != null/,
     'the old actor-only admission test is back, and bench minors are dropped again');
 
-  // And the page says what it is rather than showing a placeholder.
-  assert.match(DRAW, /s\.player==null\?'Bench'/, 'an unnamed server renders as an em-dash, not as a bench minor');
+});
+
+test('the seat names who sits in it: a goalie\u2019s or a bench penalty is served by a skater', () => {
+  /* 2026020225: Greaves (CBJ's goalie) took delay of game and Fantilli served it. The seat
+     said Greaves. Three penalties written into the reference game, each a minute apart. */
+  const G = structuredClone(rich), E = G.events, AWAY = G.teams.away.id;
+  const of = pos => +Object.entries(rich.roster).find(([, p]) => p.tid === AWAY && p.pos === pos)[0];
+  const goalie = of('G'), skater = of('C');
+  const clear = e => !E.some(x => x.type === 'penalty' && x.s > e.s - 130 && x.s <= e.s + 130);
+  const k = E.findIndex(e => e.type === 'faceoff' && e.s > 100 && clear(e));
+  const base = { ...E[k] };
+  const pen = (extra) => ({ ...base, type: 'penalty', own: AWAY, min: 2, sev: 'MIN', pen: 'delaying-game-puck-over-glass', ...extra });
+  E.splice(k, 0, pen({ actor: goalie, srv: skater }));
+  const a = boot(G, {});
+  const at = a.timeline.findIndex(e => e && e.type === 'penalty' && e.actor === goalie);
+  a.at(at, () => {});
+  const seat = a.$('penA').innerHTML;
+  assert.match(seat, new RegExp(`>${rich.roster[skater].nm} for ${rich.roster[goalie].nm}<`), `the seat reads ${seat}`);
+  assert.match(a.$('playline').textContent,
+    new RegExp(`^${rich.roster[goalie].nm} takes a penalty\\. A goalie does not go to the penalty box, so a teammate serves it: ${rich.roster[skater].nm} sits there for 2 minutes\\.`));
+
+  const bench = srv => { const g = structuredClone(rich);
+    g.events.splice(k, 0, pen({ actor: null, sev: 'BEN', pen: 'too-many-men-on-the-ice', ...(srv ? { srv } : {}) }));
+    const b = boot(g, {}); b.at(b.timeline.findIndex(e => e && e.type === 'penalty' && e.sev === 'BEN' && e.s === base.s), () => {});
+    return b.$('penA').innerHTML; };
+  assert.match(bench(skater), new RegExp(`>${rich.roster[skater].nm} for the bench<`));
+  assert.match(bench(null), />Bench</, 'a bench minor with no server named is not called a bench minor');
 });
 
 /**

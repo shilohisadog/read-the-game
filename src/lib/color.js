@@ -176,10 +176,15 @@ export function goalStrengths(game, ctx, rates) {
     const sat = inBox(short).filter(b => { const k = offset.findIndex(o => key(o) === key(b));
       if (k < 0) return true; offset.splice(k, 1); gone.add(key(b)); return false; });
     if (sat.length !== Math.abs(edge[shooter] - edge[opp]) || sat.some(b => gone.has(key(b)))) sat.length = 0;
-    const name = b => (ctx.roster[b.player] || {}).nm || `a ${ab(short)} player`;
+    // The box holds its server: a goalie's or a bench penalty is served by a skater, and the sentence names both.
+    const nm = id => (ctx.roster[id] || {}).nm;
+    const name = b => nm(b.server) || `a ${ab(short)} player`;
     const why = b => { const p = penName(b.pen); return p.charAt(0).toLowerCase() + p.slice(1); };
-    const box = sat.length === 1 ? `, because ${name(sat[0])} was in the penalty box for ${why(sat[0])}`
-      : sat.length > 1 ? `, because ${sat.map(b => `${name(b)} (${why(b)})`).join(' and ')} were in the penalty box` : '';
+    const whose = b => (b.player == null ? 'a bench penalty' : b.server !== b.player && nm(b.player) ? `${nm(b.player)}\u2019s penalty` : null);
+    const one = b => (whose(b) ? `${name(b)} was in the penalty box, serving ${whose(b)} for ${why(b)}`
+      : `${name(b)} was in the penalty box for ${why(b)}`);
+    const box = sat.length === 1 ? `, because ${one(sat[0])}`
+      : sat.length > 1 ? `, because ${sat.map(b => `${name(b)} (${whose(b) ? whose(b) + ', ' : ''}${why(b)})`).join(' and ')} were in the penalty box` : '';
     const pulled = (shooter === ctx.awayId ? e.sit[0] : e.sit[3]) === '0' ? ' (its goalie was off for an extra skater)' : '';
     const head = `${ab(shooter)} had ${on[shooter]} skaters to ${ab(opp)}'s ${on[opp]}${pulled}${box}`;
     out.set(n, up ? `${head}: a "power play".` + (pp ? ` ${measuredOver}, about 1 power play in ${pp} ended in a goal.` : '')
@@ -274,9 +279,14 @@ export function colorNotes(game, ctx, rates) {
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     // 2. A penalty: what follows, said only as far as the record shows it.
     if (!say && e.type === 'penalty' && e.own != null) {
-      const who = (ctx.roster[e.actor] || {}).nm;
-      say = `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${countOf(e.min || 2, 'minute')}.`
-        + strengthAfter(n, 'until then');
+      const who = (ctx.roster[e.actor] || {}).nm, srv = e.srv != null && e.srv !== e.actor ? (ctx.roster[e.srv] || {}).nm : null;
+      const mins = countOf(e.min || 2, 'minute');
+      // A goalie or a bench penalty is served by a skater; the record names him (`srv`).
+      say = !srv ? `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${mins}.`
+        : e.actor == null ? `${ab(e.own)} takes a bench penalty, so a skater serves it: ${srv} sits in the penalty box for ${mins}.`
+        : (ctx.roster[e.actor] || {}).pos === 'G' ? `${who} takes a penalty. A goalie does not go to the penalty box, so a teammate serves it: ${srv} sits there for ${mins}.`
+        : `${who} takes a penalty, and ${srv} serves it: he sits in the penalty box for ${mins}.`;
+      say += strengthAfter(n, 'until then');
     }
     // 3. A restart: what the pill does not already say.
     if (!say && e.type === 'faceoff' && icing.has(e)) {

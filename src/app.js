@@ -724,6 +724,11 @@ function mmss(sec){const m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).
    the infraction rather than joining it -- the infraction has been on screen for
    the whole penalty, and `Delay of game — illegal play by the goaltender` plus a
    clause is 66 characters against a two-line budget. */
+// Who sits in the seat: the server, and whose penalty when that is someone else (a goalie's, or the bench's).
+function seatName(s,p){
+ if(!p)return s.player==null?'Bench':'—';
+ if(s.player==null)return p.nm+' for the bench';
+ return s.server!==s.player&&R[s.player]?p.nm+' for '+R[s.player].nm:p.nm;}
 function endedHere(tm,cur){
   if(!cur||cur.type!=='goal')return null;
   return PBOX.find(s=>s.team===tm&&s.endedBy==='goal'&&s.end===cur.s)||null;}
@@ -732,14 +737,14 @@ function drawBoxes(secs,cur){
    const el=$(id);if(!el)continue;
    const men=secs==null?[]:occupants(PBOX,secs,tm);
    const rows=men.slice(0,SEATS).map(s=>{
-     const p=s.player==null?null:R[s.player];
+     const p=s.server==null?null:R[s.server];
      /* ⭐ A BENCH MINOR IS NAMED AS ONE, not as an em-dash. `sev: 'BEN'` -- ten
         too-many-men, two unsuccessful challenges and one bench unsportsmanlike
         in 40 games -- has no committing player in the feed, and a placeholder
         would read as "we lost his name" rather than "the league did not record
         one, because there is not one". The seat is real either way: the team is
         short two minutes and somebody serves it. */
-     const who=s.player==null?'Bench':(p?p.nm:'—');
+     const who=seatName(s,p);
      // The assessed clock, never the served one -- see above.
      const left=Math.max(0,(s.start+s.min*60)-secs);
      return `<span class="pen${s.player==null?' pbench':''}"><span class="pw">${ESC(who)}</span>`
@@ -759,8 +764,8 @@ function drawBoxes(secs,cur){
       and it is the OTHER team by construction, never `tm`. */
    const done=endedHere(tm,cur);
    const gone=done?(()=>{
-     const p=done.player==null?null:R[done.player];
-     const who=done.player==null?'Bench':(p?p.nm:'—');
+     const p=done.server==null?null:R[done.server];
+     const who=seatName(done,p);
      const left=Math.max(0,(done.start+done.min*60)-done.end);
      return `<span class="pen pout"><span class="pw">${ESC(who)}</span>`
            +`<span class="pf">${ESC(tm===AID?HAB:AAB)} scored — penalty ends</span>`

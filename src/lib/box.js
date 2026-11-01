@@ -107,7 +107,7 @@ const ENDS_ON_GOAL = new Set(['MIN', 'BEN']);
  *
  * @param {Array} events  the game's events, in play order
  * @param {{homeId:number, awayId:number}} ctx
- * @returns {Array<{player, team, start, end, min, sev, pen, endedBy}>}
+ * @returns {Array<{player, server, team, start, end, min, sev, pen, endedBy}>}
  *   `start`/`end` are elapsed seconds; `endedBy` is 'time' or 'goal'.
  */
 export function stints(events, ctx) {
@@ -135,7 +135,8 @@ export function stints(events, ctx) {
       // `sev: 'PS'` and no `min`, and it belongs on the ice, not in here.
       if (e.sev && NOT_BOX.has(e.sev)) continue;
       all.push({
-        player: e.actor ?? null, team: e.own, start: e.s, end: e.s + e.min * 60,
+        // `server` is who sits in the box: the league's `srv` (a goalie's or a bench penalty), else the taker.
+        player: e.actor ?? null, server: e.srv ?? e.actor ?? null, team: e.own, start: e.s, end: e.s + e.min * 60,
         min: e.min, sev: e.sev || null, pen: e.pen || null, endedBy: 'time',
       });
       continue;

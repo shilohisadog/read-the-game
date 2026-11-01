@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7dWj2m7xgyy62824IapbYv3KtUzGXN0knMW3aeqZ1Fg=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WU/11bGgNRLrSsS8WDsk+D8X7ukCYnb88X9/5TVXvto=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -1467,7 +1467,7 @@ function stints(events, ctx) {
         && (e.actor != null || e.sev === 'BEN')) {
       if (e.sev && NOT_BOX.has(e.sev)) continue;
       all.push({
-        player: e.actor ?? null, team: e.own, start: e.s, end: e.s + e.min * 60,
+        player: e.actor ?? null, server: e.srv ?? e.actor ?? null, team: e.own, start: e.s, end: e.s + e.min * 60,
         min: e.min, sev: e.sev || null, pen: e.pen || null, endedBy: 'time',
       });
       continue;
@@ -3502,10 +3502,14 @@ function goalStrengths(game, ctx, rates) {
     const sat = inBox(short).filter(b => { const k = offset.findIndex(o => key(o) === key(b));
       if (k < 0) return true; offset.splice(k, 1); gone.add(key(b)); return false; });
     if (sat.length !== Math.abs(edge[shooter] - edge[opp]) || sat.some(b => gone.has(key(b)))) sat.length = 0;
-    const name = b => (ctx.roster[b.player] || {}).nm || `a ${ab(short)} player`;
+    const nm = id => (ctx.roster[id] || {}).nm;
+    const name = b => nm(b.server) || `a ${ab(short)} player`;
     const why = b => { const p = penName(b.pen); return p.charAt(0).toLowerCase() + p.slice(1); };
-    const box = sat.length === 1 ? `, because ${name(sat[0])} was in the penalty box for ${why(sat[0])}`
-      : sat.length > 1 ? `, because ${sat.map(b => `${name(b)} (${why(b)})`).join(' and ')} were in the penalty box` : '';
+    const whose = b => (b.player == null ? 'a bench penalty' : b.server !== b.player && nm(b.player) ? `${nm(b.player)}\u2019s penalty` : null);
+    const one = b => (whose(b) ? `${name(b)} was in the penalty box, serving ${whose(b)} for ${why(b)}`
+      : `${name(b)} was in the penalty box for ${why(b)}`);
+    const box = sat.length === 1 ? `, because ${one(sat[0])}`
+      : sat.length > 1 ? `, because ${sat.map(b => `${name(b)} (${whose(b) ? whose(b) + ', ' : ''}${why(b)})`).join(' and ')} were in the penalty box` : '';
     const pulled = (shooter === ctx.awayId ? e.sit[0] : e.sit[3]) === '0' ? ' (its goalie was off for an extra skater)' : '';
     const head = `${ab(shooter)} had ${on[shooter]} skaters to ${ab(opp)}'s ${on[opp]}${pulled}${box}`;
     out.set(n, up ? `${head}: a "power play".` + (pp ? ` ${measuredOver}, about 1 power play in ${pp} ended in a goal.` : '')
@@ -3586,9 +3590,13 @@ function colorNotes(game, ctx, rates) {
       if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     if (!say && e.type === 'penalty' && e.own != null) {
-      const who = (ctx.roster[e.actor] || {}).nm;
-      say = `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${countOf(e.min || 2, 'minute')}.`
-        + strengthAfter(n, 'until then');
+      const who = (ctx.roster[e.actor] || {}).nm, srv = e.srv != null && e.srv !== e.actor ? (ctx.roster[e.srv] || {}).nm : null;
+      const mins = countOf(e.min || 2, 'minute');
+      say = !srv ? `${who ? who + ' sits' : 'A player sits'} in the penalty box for ${mins}.`
+        : e.actor == null ? `${ab(e.own)} takes a bench penalty, so a skater serves it: ${srv} sits in the penalty box for ${mins}.`
+        : (ctx.roster[e.actor] || {}).pos === 'G' ? `${who} takes a penalty. A goalie does not go to the penalty box, so a teammate serves it: ${srv} sits there for ${mins}.`
+        : `${who} takes a penalty, and ${srv} serves it: he sits in the penalty box for ${mins}.`;
+      say += strengthAfter(n, 'until then');
     }
     if (!say && e.type === 'faceoff' && icing.has(e)) {
       const off = icing.get(e).offender, tid = off === A ? aid : off === H ? hid : null;
@@ -5248,6 +5256,10 @@ function flashNet(scorer){
  net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
 const SEATS = 2;
 function mmss(sec){const m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,'0')}`;}
+function seatName(s,p){
+ if(!p)return s.player==null?'Bench':'—';
+ if(s.player==null)return p.nm+' for the bench';
+ return s.server!==s.player&&R[s.player]?p.nm+' for '+R[s.player].nm:p.nm;}
 function endedHere(tm,cur){
   if(!cur||cur.type!=='goal')return null;
   return PBOX.find(s=>s.team===tm&&s.endedBy==='goal'&&s.end===cur.s)||null;}
@@ -5256,8 +5268,8 @@ function drawBoxes(secs,cur){
    const el=$(id);if(!el)continue;
    const men=secs==null?[]:occupants(PBOX,secs,tm);
    const rows=men.slice(0,SEATS).map(s=>{
-     const p=s.player==null?null:R[s.player];
-     const who=s.player==null?'Bench':(p?p.nm:'—');
+     const p=s.server==null?null:R[s.server];
+     const who=seatName(s,p);
      const left=Math.max(0,(s.start+s.min*60)-secs);
      return `<span class="pen${s.player==null?' pbench':''}"><span class="pw">${ESC(who)}</span>`
            +`<span class="pf">${ESC(penName(s.pen))}</span>`
@@ -5266,8 +5278,8 @@ function drawBoxes(secs,cur){
      ? `<span class="pen pmore">+${men.length-SEATS} more in the box</span>`:'';
    const done=endedHere(tm,cur);
    const gone=done?(()=>{
-     const p=done.player==null?null:R[done.player];
-     const who=done.player==null?'Bench':(p?p.nm:'—');
+     const p=done.server==null?null:R[done.server];
+     const who=seatName(done,p);
      const left=Math.max(0,(done.start+done.min*60)-done.end);
      return `<span class="pen pout"><span class="pw">${ESC(who)}</span>`
            +`<span class="pf">${ESC(tm===AID?HAB:AAB)} scored — penalty ends</span>`

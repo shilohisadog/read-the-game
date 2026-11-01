@@ -250,3 +250,20 @@ test('a goal against skaters out over a minute gives their seconds and the typic
   assert.doesNotMatch(lastNote(at(60)), /over a minute/, 'sixty seconds is not over a minute');
   assert.doesNotMatch(lastNote(at(70)), /HOM skaters|tired/i, 'the scoring team’s shifts, or a judgement');
 });
+
+test('the power-play sentence names who sat in the box: a goalie’s penalty is served by a skater', () => {
+  /* 2026020225: Greaves (CBJ's goalie) took delay of game, Fantilli served it, and DAL scored on the
+     power play. The sentence said "because Greaves was in the penalty box". */
+  const g = (actor, srv, sev = 'MIN') => game([ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
+    ev('penalty', 30, 10, { own: AWAY, actor, srv, pen: 'delaying-game-puck-over-glass', sev, min: 2 }),
+    ev('faceoff', 30, 0, { own: HOME, actor: 10, sit: '1451' }),
+    ev('goal', 60, 60, { own: HOME, actor: 10, sit: '1451' })]);
+  assert.match(lastNote(g(29, 21)), /, because Away21 was in the penalty box, serving AwayG’s penalty for delay of game/);
+  assert.doesNotMatch(lastNote(g(29, 21)), /AwayG was in the penalty box/);
+  assert.match(lastNote(g(null, 21, 'BEN')), /, because Away21 was in the penalty box, serving a bench penalty for delay of game/);
+  assert.match(lastNote(g(22, undefined)), /, because Away22 was in the penalty box for delay of game/, 'a skater who serves his own');
+  assert.equal(notesOf(g(29, 21))[0][1].split(' AWY plays')[0],
+    'AwayG takes a penalty. A goalie does not go to the penalty box, so a teammate serves it: Away21 sits there for 2 minutes.');
+  assert.equal(notesOf(g(null, 21, 'BEN'))[0][1].split(' AWY plays')[0],
+    'AWY takes a bench penalty, so a skater serves it: Away21 sits in the penalty box for 2 minutes.');
+});
