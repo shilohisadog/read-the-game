@@ -1175,7 +1175,20 @@ test('the kicker names the tracked goal only when our own frame says it will pla
   assert.match(r.ids.herokick.textContent, /its first goal, as the league tracked it$/);
 });
 
-test('the hero carries no figures: the kicker, the two clubs and the button', async () => {
+test('⭐ the front door prints what the hero\'s goal was scored at, only from our own frame', async () => {
+  const front = pageDocs(CATALOG, INDEX)['front.json'];
+  const r = run({ docs: { ...ALL, 'front.json': { ...front, hero: { ...front.hero, toGoal: true } } } });
+  await r.settle();
+  const says = 'TOR had 5 skaters to MTL\'s 4: a "power play".';
+  r.post({ rtg: 'goal', game: NEWEST_ID, says }, { origin: 'https://evil.example' });
+  r.post({ rtg: 'goal', game: NEWEST_ID + 1, says });
+  assert.ok(!r.ids.herosay || r.ids.herosay.hidden !== false, 'a message not from our frame, or about another game, was printed');
+  r.post({ rtg: 'goal', game: NEWEST_ID, says });
+  assert.equal(r.ids.herosay.textContent, says);
+  assert.equal(r.ids.herosay.hidden, false);
+});
+
+test('the hero carries no attempts lede: the kicker, the two clubs, the goal\'s strength and the button', async () => {
   const r = run({ docs: ALL });
   await r.settle();
   assert.ok(!r.ids.herosub && !r.ids.herorel, 'the attempts lede is back under the hero');
@@ -1527,7 +1540,7 @@ test('no recent.json and no schedule.json: the block stays hidden, page intact',
 });
 
 test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires', () => {
-  /* `.daily:not([hidden]){grid-column:1;grid-row:4}` places it in the card's
+  /* `.daily:not([hidden]){grid-column:1;grid-row:5}` places it in the card's
      last row — the slack the frame leaves in column one. That rule is a claim
      about ANCESTRY: move `#daily` out to be a sibling of the card and the
      selector still matches, the declarations still parse, and the block silently
@@ -1546,7 +1559,7 @@ test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires'
     depth += 1;
   }
   assert.ok(ok, '#daily is not inside #hero — the grid rule places it nowhere');
-  assert.match(html, /\.daily:not\(\[hidden\]\)\{[^}]*grid-row:4/,
+  assert.match(html, /\.daily:not\(\[hidden\]\)\{[^}]*grid-row:5/,
     'the rule that consumes the placement is gone');
 });
 

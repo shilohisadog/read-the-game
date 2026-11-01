@@ -51,6 +51,51 @@ test('a penalty says "power play" only when the record shows one side a skater s
     'with no archive, the base rate is left out rather than guessed');
 });
 
+/* Away short is `1451` (away goalie, 4 away skaters, 5 home, home goalie); home short is `1541`. */
+const ppGame = (sit, pens, goalOwn = HOME) => game([ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
+  ...pens.map(([own, actor, pen, sev = 'MIN', min = 2, at = 30]) => ev('penalty', at, 10, { own, actor, pen, sev, min })),
+  ev('faceoff', 30, 0, { own: HOME, actor: 10, sit }),
+  ev('goal', 60, goalOwn === HOME ? 60 : -60, { own: goalOwn, actor: goalOwn === HOME ? 10 : 20, sit })]);
+const goalNote = g => notesOf(g, { ...RATES, census: { ...RATES.census, whistles: { ...RATES.census.whistles, shGoals: 600 } } }).at(-1)[1];
+
+test('⭐ a power-play goal says so in skaters, who was in the box and for what, and how often that pays', () => {
+  assert.match(goalNote(ppGame('1451', [[AWAY, 21, 'tripping']])),
+    / HOM had 5 skaters to AWY's 4, because Away21 was in the penalty box for tripping: a "power play"\. Across the 4,345 games we have measured, about 1 power play in 5 ended in a goal\.$/);
+});
+
+test('a goal scored a skater short says that, with its own rate', () => {
+  // 24,991 power plays over 600 goals by the team short: 1 in 42.
+  assert.match(goalNote(ppGame('1541', [[HOME, 11, 'hooking']])),
+    / HOM had 4 skaters to AWY's 5, because Home11 was in the penalty box for hooking: a goal scored "shorthanded"\. Across the 4,345 games we have measured, about 1 power play in 42 ended in a goal for the team with fewer skaters\.$/);
+});
+
+test('a misconduct leaves nobody short, so it is not named as the reason', () => {
+  assert.match(goalNote(ppGame('1451', [[AWAY, 21, 'tripping'], [AWAY, 22, 'misconduct', 'MIS', 10]])),
+    /because Away21 was in the penalty box for tripping: a "power play"/);
+});
+
+test('penalties offset at the same second against the other side are not the reason either', () => {
+  assert.match(goalNote(ppGame('1451', [[AWAY, 21, 'tripping', 'MIN', 2, 20], [AWAY, 22, 'roughing'], [HOME, 11, 'roughing']])),
+    /, because Away21 was in the penalty box for tripping: a "power play"/);
+});
+
+test('⭐ and when the record cannot say WHICH penalty an offset cancelled, nobody is named', () => {
+  // Two away minors and one home minor at one second: the league does not say which away one it cancels.
+  const say = goalNote(ppGame('1451', [[AWAY, 21, 'tripping'], [AWAY, 22, 'roughing'], [HOME, 11, 'roughing']]));
+  assert.match(say, / HOM had 5 skaters to AWY's 4: a "power play"\./);
+  assert.doesNotMatch(say, /because/);
+});
+
+test('when the box does not account for the gap, the goal gives the skaters and names nobody', () => {
+  const say = goalNote(ppGame('1451', [[AWAY, 21, 'tripping'], [AWAY, 22, 'hooking']]));
+  assert.match(say, / HOM had 5 skaters to AWY's 4: a "power play"\./);
+  assert.doesNotMatch(say, /because/);
+});
+
+test('an even-strength goal says nothing about skaters', () => {
+  assert.doesNotMatch(goalNote(ppGame('1551', [])), /skaters|power play/);
+});
+
 test('after an icing: who may not change, how long they have been out, and the fresh skaters opposite', () => {
   const g = game([ev('faceoff', 0, 0, { own: HOME, actor: 10 }),
     ev('stoppage', 30, null, { rsn: 'icing' }),

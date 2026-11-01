@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ROowdPBX4ie2oxEtfpwzBcW0iWfia7gK5gyl3qURpnU=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-3HFLr066Csp6Zejnb6Jw8xU6DEeXZohgPBvju4t8SBo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fwE8OBGCqvAseD8em2eJ5E0p3xUddkaEw57HsZ7A+Iw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-3HFLr066Csp6Zejnb6Jw8xU6DEeXZohgPBvju4t8SBo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -1439,6 +1439,15 @@ function windows(events, ctx) {
     }
   });
   return out;
+}
+
+function penaltyEdge(code, ctx) {
+  if (typeof code !== 'string' || !/^[01][0-9][0-9][01]$/.test(code)) return null;
+  const aG = code[0] === '1', hG = code[3] === '1';
+  if (!aG && !hG) return null;
+  const a = +code[1] - (aG ? 0 : 1), h = +code[2] - (hG ? 0 : 1);
+  if (a < 3 || h < 3 || a > 5 || h > 5) return null;
+  return { [ctx.awayId]: a, [ctx.homeId]: h };
 }
 
 
@@ -3364,6 +3373,9 @@ function goalLine(e, ctx, doc) {
 
 
 
+
+
+
 const SHOT_WORDS = {
   wrist: 'A wrist shot', snap: 'A snap shot', slap: 'A slapshot', backhand: 'A backhand',
   'tip-in': 'A tipped shot', deflected: 'A deflected shot', 'wrap-around': 'A wraparound',
@@ -3431,6 +3443,38 @@ const secsSpan = xs => {
   return lo === hi ? `${lo} seconds each` : `${lo} to ${hi} seconds each`;
 };
 
+function goalStrengths(game, ctx, rates) {
+  const ev = game.events || [], out = new Map();
+  const ab = id => (id === ctx.homeId ? ctx.homeAb : id === ctx.awayId ? ctx.awayAb : '');
+  const other = id => (id === ctx.homeId ? ctx.awayId : ctx.homeId);
+  const census = (rates && rates.census) || {}, w = census.whistles || {};
+  const measuredOver = census.games ? `Across the ${census.games.toLocaleString('en-US')} games we have measured` : 'Across the games we have measured';
+  const pp = w.ppGoals ? Math.round(w.ppChances / w.ppGoals) : null, shp = w.shGoals ? Math.round(w.ppChances / w.shGoals) : null;
+  const BOX = stints(ev, ctx);
+  ev.forEach((e, n) => {
+    if (e.type !== 'goal' || inShootout(e)) return;
+    const shooter = corsiTeam(e, ctx.roster), edge = shooter && penaltyEdge(e.sit, ctx), opp = other(shooter);
+    if (!edge || edge[shooter] === edge[opp]) return;
+    const up = edge[shooter] > edge[opp], short = up ? opp : shooter;
+    const on = { [ctx.awayId]: +e.sit[1], [ctx.homeId]: +e.sit[2] };
+    const inBox = t => BOX.filter(b => b.team === t && b.sev !== 'MIS' && b.start < e.s && b.end >= e.s);
+    const offset = inBox(other(short)), gone = new Set(), key = b => b.start + '/' + b.min;
+    const sat = inBox(short).filter(b => { const k = offset.findIndex(o => key(o) === key(b));
+      if (k < 0) return true; offset.splice(k, 1); gone.add(key(b)); return false; });
+    if (sat.length !== Math.abs(edge[shooter] - edge[opp]) || sat.some(b => gone.has(key(b)))) sat.length = 0;
+    const name = b => (ctx.roster[b.player] || {}).nm || `a ${ab(short)} player`;
+    const why = b => { const p = penName(b.pen); return p.charAt(0).toLowerCase() + p.slice(1); };
+    const box = sat.length === 1 ? `, because ${name(sat[0])} was in the penalty box for ${why(sat[0])}`
+      : sat.length > 1 ? `, because ${sat.map(b => `${name(b)} (${why(b)})`).join(' and ')} were in the penalty box` : '';
+    const pulled = (shooter === ctx.awayId ? e.sit[0] : e.sit[3]) === '0' ? ' (its goalie was off for an extra skater)' : '';
+    const head = `${ab(shooter)} had ${on[shooter]} skaters to ${ab(opp)}'s ${on[opp]}${pulled}${box}`;
+    out.set(n, up ? `${head}: a "power play".` + (pp ? ` ${measuredOver}, about 1 power play in ${pp} ended in a goal.` : '')
+      : `${head}: a goal scored "shorthanded".`
+        + (shp ? ` ${measuredOver}, about 1 power play in ${shp} ended in a goal for the team with fewer skaters.` : ''));
+  });
+  return out;
+}
+
 function colorNotes(game, ctx, rates) {
   const ev = game.events || [];
   const ab = id => (id === ctx.homeId ? ctx.homeAb : id === ctx.awayId ? ctx.awayAb : '');
@@ -3448,6 +3492,7 @@ function colorNotes(game, ctx, rates) {
   const PLAYS = plays(ev);
   const REVIEWS = challenges(ev, ctx), REVIEWED = new Set(REVIEWS.map(r => ev[r.at]));
   const reviewAt = new Map(REVIEWS.filter(r => r.target != null).map(r => [r.target, r]));
+  const STRENGTH = goalStrengths(game, ctx, rates);
   const strengthAfter = (n, until, scoped = false) => {
     const next = ev.slice(n + 1).find(x => x.sit && x.type !== 'penalty');
     const sit = next && next.sit;
@@ -3496,6 +3541,7 @@ function colorNotes(game, ctx, rates) {
       say = s === o ? `That ties the game, ${s}–${o}.` : s - o === 1 ? `That puts ${t} ahead, ${s}–${o}.`
         : s > o ? `${t} now leads ${s}–${o}.` : `${t} pulls within ${o - s}, ${s}–${o}.`;
       if (run && run.end === (shooter === aid ? 'h' : 'a')) say += stayWords(run, ctx, 'had');
+      if (STRENGTH.has(n)) say += ' ' + STRENGTH.get(n);
       if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     if (!say && e.type === 'penalty' && e.own != null) {
@@ -6647,6 +6693,8 @@ if(PREVIEW){
  const WINDOW=GOAL>=0?GOAL:BUDGETED;
  const GP=GOAL>=0&&typeof DOC==='function'?trkPlan(EV[GOAL]):null;
  if(GP&&window.parent!==window)GP.then(P=>{if(P)window.parent.postMessage({rtg:'tracked',game:(G.game&&G.game.id)||0},location.origin);});
+ const SAYS=GOAL>=0&&goalStrengths(G,CTX,RATES).get(G.events.indexOf(EV[GOAL]));
+ if(SAYS&&window.parent!==window)window.parent.postMessage({rtg:'goal',game:(G.game&&G.game.id)||0,says:SAYS},location.origin);
  const GOAL_HOLD_MS=2600;
  const walk=()=>{let k=START;
   const tick=()=>{

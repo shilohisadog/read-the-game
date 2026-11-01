@@ -22,6 +22,9 @@ import { isHighDangerEvent } from './layers/goaltending.js';
 import { WHY, icingRestarts } from './layers/whistle.js';
 import { liveRun, markable, playAt, plays, zoneRuns } from './stretch.js';
 import { shotFeet } from './shotdist.js';
+import { penaltyEdge } from './strength.js';
+import { stints } from './box.js';
+import { penName } from './penalties.js';
 
 /* The league's `shotType` (SCHEMA 7, `st`), in plain words; an unknown value reads "A shot". */
 export const SHOT_WORDS = {
@@ -106,6 +109,47 @@ const secsSpan = xs => {
 };
 
 /**
+ * The strength each goal was scored at, in skaters, and who was in the box for it (Kevin, 2026-11-01):
+ * a sentence per power-play or shorthanded goal, keyed by event index. A power play by the league's rule
+ * (`penaltyEdge`, as the census counts it); the rates are the census's, and drop out with no archive.
+ */
+export function goalStrengths(game, ctx, rates) {
+  const ev = game.events || [], out = new Map();
+  const ab = id => (id === ctx.homeId ? ctx.homeAb : id === ctx.awayId ? ctx.awayAb : '');
+  const other = id => (id === ctx.homeId ? ctx.awayId : ctx.homeId);
+  const census = (rates && rates.census) || {}, w = census.whistles || {};
+  const measuredOver = census.games ? `Across the ${census.games.toLocaleString('en-US')} games we have measured` : 'Across the games we have measured';
+  const pp = w.ppGoals ? Math.round(w.ppChances / w.ppGoals) : null, shp = w.shGoals ? Math.round(w.ppChances / w.shGoals) : null;
+  const BOX = stints(ev, ctx);
+  ev.forEach((e, n) => {
+    if (e.type !== 'goal' || inShootout(e)) return;
+    const shooter = corsiTeam(e, ctx.roster), edge = shooter && penaltyEdge(e.sit, ctx), opp = other(shooter);
+    if (!edge || edge[shooter] === edge[opp]) return;
+    const up = edge[shooter] > edge[opp], short = up ? opp : shooter;
+    const on = { [ctx.awayId]: +e.sit[1], [ctx.homeId]: +e.sit[2] };
+    /* Who made the difference: the box at the goal (its end inclusive, since the goal ends a minor at its own
+       second), less misconducts, which leave nobody short, and less penalties offset by one called at the
+       same second for as long against the other side. Named only when that leaves exactly the skater gap.
+       Which of two such penalties an offset cancels is not in the record, so a choice between them names nobody. */
+    const inBox = t => BOX.filter(b => b.team === t && b.sev !== 'MIS' && b.start < e.s && b.end >= e.s);
+    const offset = inBox(other(short)), gone = new Set(), key = b => b.start + '/' + b.min;
+    const sat = inBox(short).filter(b => { const k = offset.findIndex(o => key(o) === key(b));
+      if (k < 0) return true; offset.splice(k, 1); gone.add(key(b)); return false; });
+    if (sat.length !== Math.abs(edge[shooter] - edge[opp]) || sat.some(b => gone.has(key(b)))) sat.length = 0;
+    const name = b => (ctx.roster[b.player] || {}).nm || `a ${ab(short)} player`;
+    const why = b => { const p = penName(b.pen); return p.charAt(0).toLowerCase() + p.slice(1); };
+    const box = sat.length === 1 ? `, because ${name(sat[0])} was in the penalty box for ${why(sat[0])}`
+      : sat.length > 1 ? `, because ${sat.map(b => `${name(b)} (${why(b)})`).join(' and ')} were in the penalty box` : '';
+    const pulled = (shooter === ctx.awayId ? e.sit[0] : e.sit[3]) === '0' ? ' (its goalie was off for an extra skater)' : '';
+    const head = `${ab(shooter)} had ${on[shooter]} skaters to ${ab(opp)}'s ${on[opp]}${pulled}${box}`;
+    out.set(n, up ? `${head}: a "power play".` + (pp ? ` ${measuredOver}, about 1 power play in ${pp} ended in a goal.` : '')
+      : `${head}: a goal scored "shorthanded".`
+        + (shp ? ` ${measuredOver}, about 1 power play in ${shp} ended in a goal for the team with fewer skaters.` : ''));
+  });
+  return out;
+}
+
+/**
  * Every note in the game, keyed by event index in `game.events`.
  *   ctx   {roster, homeId, awayId, homeAb, awayAb}
  *   rates measures.json, or null: notes needing a base rate then drop that clause
@@ -132,6 +176,7 @@ export function colorNotes(game, ctx, rates) {
   const reviewAt = new Map(REVIEWS.filter(r => r.target != null).map(r => [r.target, r]));
   // What a penalty leaves on the ice, from the next situation code the record carries.
   // `scoped`: the note has already named the games measured, so the rate says "In those games".
+  const STRENGTH = goalStrengths(game, ctx, rates);
   const strengthAfter = (n, until, scoped = false) => {
     const next = ev.slice(n + 1).find(x => x.sit && x.type !== 'penalty');
     const sit = next && next.sit;
@@ -183,6 +228,7 @@ export function colorNotes(game, ctx, rates) {
       say = s === o ? `That ties the game, ${s}–${o}.` : s - o === 1 ? `That puts ${t} ahead, ${s}–${o}.`
         : s > o ? `${t} now leads ${s}–${o}.` : `${t} pulls within ${o - s}, ${s}–${o}.`;
       if (run && run.end === (shooter === aid ? 'h' : 'a')) say += stayWords(run, ctx, 'had');
+      if (STRENGTH.has(n)) say += ' ' + STRENGTH.get(n);
       if (review && review.onGoal) say += ` ${challengeSay(review, ab, score, ctx)}`;
     } else if (e.type === 'goal' && shooter) score[shooter]++;
     // 2. A penalty: what follows, said only as far as the record shows it.

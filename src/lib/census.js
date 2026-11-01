@@ -54,7 +54,7 @@
  * confirm or refute, not as findings.
  */
 import { corsi } from './layers/corsi.js';
-import { situation, EVEN, POWER_PLAY, EMPTY_NET } from './strength.js';
+import { situation, EVEN, POWER_PLAY, EMPTY_NET, penaltyEdge } from './strength.js';
 import { attackDirection, attackZone } from './rink.js';
 import { plays, markable } from './stretch.js';
 import { challenges } from './challenge.js';
@@ -95,19 +95,8 @@ const SHOOTER_GROUP = { C: 'F', L: 'F', R: 'F', D: 'D', G: 'G' };
 const OUTCOME = { 'blocked-shot': 'blocked', 'shot-on-goal': 'onGoal',
                   'missed-shot': 'missed', goal: 'goal' };
 
-/**
- * Each side's skaters with a pulled goalie's extra attacker discounted, keyed by
- * team id — the advantage a PENALTY gives, which is what the league's power play
- * is. Null for a code that is not a skater count (penalty shot, both nets empty).
- */
-export function penaltyEdge(code, ctx) {
-  if (typeof code !== 'string' || !/^[01][0-9][0-9][01]$/.test(code)) return null;
-  const aG = code[0] === '1', hG = code[3] === '1';
-  if (!aG && !hG) return null;
-  const a = +code[1] - (aG ? 0 : 1), h = +code[2] - (hG ? 0 : 1);
-  if (a < 3 || h < 3 || a > 5 || h > 5) return null;
-  return { [ctx.awayId]: a, [ctx.homeId]: h };
-}
+// `penaltyEdge` lives in strength.js, which the browser bundle carries; re-exported for the census's callers.
+export { penaltyEdge };
 
 /** Penalty minutes per box penalty, and the opportunities each gives. */
 const OPPORTUNITIES = { 2: 1, 4: 2, 5: 1 };

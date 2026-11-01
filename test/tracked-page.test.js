@@ -317,6 +317,23 @@ test('⭐ the front door\'s hero loops its first goal as Goals plays it: the tra
   assert.ok(trk() && !rest());
 });
 
+test('⭐ the hero tells the front door what its goal was scored at, the archive\'s rate included', async () => {
+  const g = structuredClone(rich), k = g.events.findIndex(e => e.type === 'goal' && e.pt !== 'SO'), goal = g.events[k];
+  const away = Object.entries(rich.roster).find(([, p]) => p.tid === rich.teams.away.id && p.pos !== 'G');
+  goal.sit = '1451';                                       // home scores with an away skater in the box
+  g.events.splice(k, 0, { ...goal, type: 'penalty', own: rich.teams.away.id, actor: +away[0], pen: 'tripping', sev: 'MIN', min: 2, s: goal.s - 1, sit: '1551' });
+  const rates = { census: { games: 4418, whistles: { ppGoals: 5275, ppChances: 24991 } } };
+  const a = boot(g, rates, '?preview=1', null, served(), MOTION);
+  await settle(); await settle();
+  const m = a.posted.map(p => p.msg).find(m => m.rtg === 'goal');
+  assert.ok(m && m.game === rich.game.id, 'the front door is not told');
+  assert.equal(m.says, `${rich.teams.home.ab} had 5 skaters to ${rich.teams.away.ab}'s 4, because ${away[1].nm} was in the penalty box for tripping: a "power play". Across the 4,418 games we have measured, about 1 power play in 5 ended in a goal.`);
+  // The paired half: an even-strength first goal says nothing.
+  const b = boot(rich, rates, '?preview=1', null, served(), MOTION);
+  await settle(); await settle();
+  assert.ok(!b.posted.some(p => p.msg.rtg === 'goal'));
+});
+
 test('a hero whose first goal has no tracking file loops as before, and says nothing to the front door', async () => {
   const a = boot(rich, null, '?preview=1', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null), MOTION);
   await settle(); await settle();

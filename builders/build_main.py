@@ -1086,14 +1086,10 @@ function lessonGame(id){
   // the sentence says the comparison is missing -- which is the same branch a
   // preseason game takes, and is stated rather than left as a gap.
   .then(function(g){
-    // A PREVIEW ASKS FOR NOTHING IT DOES NOT SHOW. The verdict card is hidden in
-    // preview, and measures.json exists only to feed it, so fetching it would be
-    // a request on a homepage for bytes nobody reads.
-    if(LINK0.preview){reveal();draw(g,null);return null;}
-    // A dated link reads that night's measurements.
+    // A dated link reads that night's measurements; the preview needs them too, for its goal's power-play rate.
     return doc('measures.json')
       .catch(function(){return null;})
-      .then(function(rates){reveal();draw(g,rates);newestEdition();});})
+      .then(function(rates){reveal();draw(g,rates);if(!LINK0.preview)newestEdition();});})
   .catch(function(e){
     // A true sentence about a broken situation beats a spinner that never ends.
     // AND THE APP GOES BACK AWAY. `reveal()` may already have run and `boot()`

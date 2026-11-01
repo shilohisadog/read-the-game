@@ -31,7 +31,7 @@ import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
-import { colorNotes, stayRetell } from './lib/color.js';
+import { colorNotes, goalStrengths, stayRetell } from './lib/color.js';
 import { goalLine } from './lib/shotdist.js';
 import { challenges, challengeSay, reviewName, reviewSay } from './lib/challenge.js';
 import { whyMarkup } from './lib/why.js';
@@ -5592,6 +5592,9 @@ if(PREVIEW){
  const GP=GOAL>=0&&typeof DOC==='function'?trkPlan(EV[GOAL]):null;
  // The front door's headline says so only once the file is here.
  if(GP&&window.parent!==window)GP.then(P=>{if(P)window.parent.postMessage({rtg:'tracked',game:(G.game&&G.game.id)||0},location.origin);});
+ // And what the goal was scored at, in skaters, which the front door prints under the clubs.
+ const SAYS=GOAL>=0&&goalStrengths(G,CTX,RATES).get(G.events.indexOf(EV[GOAL]));
+ if(SAYS&&window.parent!==window)window.parent.postMessage({rtg:'goal',game:(G.game&&G.game.id)||0,says:SAYS},location.origin);
  // The goal frame outlasts its siren caption (`@keyframes cap`, src/app.css; a test reads both).
  const GOAL_HOLD_MS=2600;
  const walk=()=>{let k=START;

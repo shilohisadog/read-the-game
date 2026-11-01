@@ -460,8 +460,8 @@ test('boot() CANNOT RUN INSIDE THE HIDDEN SUBTREE', () => {
   const outside = bootstrap.replace(codeOnly(body), '');
   assert.ok(!/\bboot\(/.test(outside),
     'the bootstrap calls boot() directly somewhere, bypassing the order guard');
-  assert.match(outside, /draw\(g,\s*null\)/, 'the preview path must go through draw()');
-  assert.match(outside, /draw\(g,\s*rates\)/, 'and so must the ordinary path');
+  // The preview takes the ordinary path since 2026-11-01: its goal line prints a rate.
+  assert.match(outside, /draw\(g,\s*rates\)/, 'the bootstrap must reach the renderer through draw()');
 });
 
 test('and `hidden` is actually wired to display, not left to the UA sheet', () => {
@@ -604,18 +604,16 @@ test('the deploy gate cannot pass on a blank expectation', () => {
 const EXTRACT = JSON.parse(
   readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
 
-test('preview asks for nothing it does not show', () => {
-  // measures.json feeds the summary counts, which preview does not draw, so
-  // fetching it would be a request on a homepage for bytes nobody reads.
+test('preview asks for the rates its goal line prints, and nothing it does not show', () => {
+  // measures.json carries the power-play rate the hero's goal sentence prints (2026-11-01);
+  // the editions list feeds the share confirmation, which the preview has no share for.
   const r = run({ search: '?game=2023020204&preview=1',
                   responses: { 'extract/': EXTRACT, 'measures.json': { games: [] } } });
   return r.settle().then(() => {
     assert.ok(r.asked.some(u => /extract\//.test(u)), 'the game itself must still be fetched');
-    assert.deepEqual(r.asked.filter(u => /measures\.json/.test(u)), [],
-      'preview fetched the archive-wide measurement it does not render');
-    // PAIRED, so the assertion above cannot be satisfied by the bootstrap
-    // falling over before it got that far -- which is exactly how this test
-    // would pass while telling us nothing.
+    assert.ok(r.asked.some(u => /measures\.json/.test(u)), 'preview did not fetch the rate its goal line prints');
+    assert.deepEqual(r.asked.filter(u => /editions\//.test(u)), [], 'preview fetched the editions list it has no share for');
+    // PAIRED, so the assertions above cannot be satisfied by the bootstrap falling over first.
     assert.deepEqual(r.said.filter(s => /could not be loaded/.test(s)), []);
   });
 });
@@ -630,12 +628,13 @@ test('⭐ the framed preview posts nothing until it has a tracked goal to play',
   });
 });
 
-test('and without preview it does ask, which is the half that proves the above', () => {
+test('and without preview it asks for the editions too, which is the half that proves the above', () => {
   const r = run({ search: '?game=2023020204',
                   responses: { 'extract/': EXTRACT, 'measures.json': { games: [] } } });
   return r.settle().then(() => {
     assert.ok(r.asked.some(u => /measures\.json/.test(u)),
       'the ordinary page needs the rates for its summary counts');
+    assert.ok(r.asked.some(u => /editions\//.test(u)), 'the ordinary page did not ask for the editions list');
   });
 });
 
