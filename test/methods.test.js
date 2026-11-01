@@ -22,6 +22,7 @@
  * every figure and still pass a coverage check.
  */
 import test from 'node:test';
+import { distanceSentence } from '../src/lib/shotdist.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { methods, keysOf, anchorOf, anchorFor, explains, EXPLAINED, EXPLAINED_ROWS,
@@ -54,6 +55,14 @@ const MEASURES = {
       population: 'NHL regular season and playoffs',
       what: 'of the unblocked shot attempts whose location the feed records, this '
           + 'many were taken from inside the slot' } },
+  shotDistance: { bandFt: 5, minN: 30, games: 4418,
+    bands: [{ from: 0, to: 5, goals: 1010, n: 3788, rate: 0.2666314677930306 },
+            { from: 5, to: 10, goals: 5636, n: 44689, rate: 0.12611604645438476 },
+            { from: 185, to: 190, goals: 1, n: 12, rate: 0.08333333333333333 }],
+    what: 'Counted in 5-foot bands over every situation, with no split by shot type. A blocked '
+        + 'shot is left out because the feed records where it was stopped, not where it was taken. '
+        + 'Shots at an empty net are left out because they inflate long-range rates and mislead a '
+        + 'newcomer. A band with fewer than 30 attempts is not quoted. n counts attempts, not games.' },
   census: { games: 4192,
     assists: {"goals": 26766, "none": 1710, "noneShare": 0.06388702084734364, "one": 4818, "oneShare": 0.18000448329970858, "two": 20238, "twoShare": 0.7561084958529478, "what": "goals across the archive by how many assists the league credited them with: two, one or none (n counts GOALS; shootout goals are left out, since the league credits them with no assists)."},
     faceoffRun: {"first": {"n": 194092, "w": 119392, "winnerShare": 0.615}, "later": {"n": 122653, "w": 63571, "winnerShare": 0.518}, "loserShot": 114332, "runs": 245260, "second": {"n": 122634, "w": 66733, "winnerShare": 0.544}, "third": {"n": 76504, "w": 40285, "winnerShare": 0.527}, "what": "the shot attempts in the run of play a face-off opens, until the next whistle: for the 1st, 2nd, 3rd and later attempt, how many the team that won the face-off took (w) out of all (n); and how many runs saw a shot attempt at all, by the winner, and by the loser (n counts FACE-OFFS)", "winnerShot": 143666, "withShot": 194092},
@@ -949,6 +958,19 @@ test('⛔ every printed figure reaches the page with its work, its source and it
      for this one. MUTATION: use `fig` in `readLine` and this fires. */
   assert.ok(all.includes('0.77 attempts per face-off'), 'a rate under 1 was printed as a percentage');
   assert.ok(!all.includes('76.5'), 'a rate under 1 was multiplied by a hundred');
+});
+
+test('⭐ the goal line\u2019s door lands on a line with the same two numbers, and a thin band is not listed', async () => {
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const sec = walk(page.ids.hm).find(n => n.id === anchorOf('shotDistance'));
+  const said = walk(sec).map(n => n.textContent).filter(Boolean).join(' ');
+  assert.ok(said.includes('5,636 ÷ 44,689 = 12.6%'), 'the 5 to 10 foot band is not printed with its sum');
+  assert.ok(said.includes('5 to 10 feet out'));
+  assert.ok(!said.includes('185 to 190'), 'a band under the floor is listed, though the replay never quotes it');
+  // Two paths: the replay's sentence from shotdist.js, the line from printed.js.
+  const line = distanceSentence(7, MEASURES.shotDistance);
+  for (const n of line.match(/[\d,]{4,}/g)) assert.ok(said.includes(n), `the replay says ${n} and its door does not`);
 });
 
 test('⛔⛔ one published sentence is printed once on the page, and the second links to it', async () => {

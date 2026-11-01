@@ -103,27 +103,35 @@ export function shotDistance(rows) {
            leftOut: { n: leftN, goals: leftGoals }, what: POLICY };
 }
 
-/** The sentence under a located goal, or '' when there is nothing to say. */
-export function distanceSentence(ft, doc) {
-  if (ft == null || !doc || !doc.bands) return '';
-  const width = doc.bandFt || BAND_FT;
-  const floor = doc.minN || MIN_BAND_N;
-  const from = bandFrom(ft, width);
-  const b = doc.bands.find(x => x.from === from) || { goals: 0, n: 0, rate: null };
-  const span = `${from}–${from + width}`;
-  const n = b.n.toLocaleString('en-US');
-  if (b.n < floor) {
-    return `Shots from ${span} feet are too few to quote (n = ${n}; a band under ${floor} is not quoted).`;
-  }
-  const pct = (b.rate * 100).toFixed(1);
-  return `Shots from ${span} feet go in about ${pct}% of the time (n = ${n}), `
-    + `in ${width}-foot bands, every situation, blocked shots and empty nets left out.`;
+/** The band `ft` falls in, or null when nothing is published. */
+function bandOf(ft, doc) {
+  if (ft == null || !doc || !doc.bands) return null;
+  const width = doc.bandFt || BAND_FT, from = bandFrom(ft, width);
+  return doc.bands.find(x => x.from === from) || { from, to: from + width, goals: 0, n: 0, rate: null };
 }
 
-/** The line under a goal in Goals. An empty net is a sentence, not a rate. */
-export function goalLine(e, ctx, doc) {
-  if (!e || e.type !== 'goal') return '';
-  const shooter = corsiTeam(e, ctx.roster);
-  if (atEmptyNet(e, shooter, ctx)) return 'The net was empty, so there\u2019s no goalie to beat.';
-  return distanceSentence(shotFeet(e, shooter, ctx.homeId), doc);
+/** True when the band holds enough shots to quote. */
+const quotable = (b, doc) => !!b && b.n >= (doc.minN || MIN_BAND_N);
+
+/** The sentence under a located goal, or '' when there is nothing to say. */
+export function distanceSentence(ft, doc) {
+  const b = bandOf(ft, doc);
+  if (!b) return '';
+  const span = `${b.from} to ${b.to} feet out`, n = b.n.toLocaleString('en-US');
+  if (!quotable(b, doc)) return `Too few shots from ${span} to say how often they go in: ${n} counted.`;
+  if (!b.goals) return `None of the ${n} shots from ${span} has gone in.`;
+  return `About 1 in ${Math.round(b.n / b.goals)} shots from ${span} goes in: `
+    + `${b.goals.toLocaleString('en-US')} of ${n}.`;
 }
+
+/** The line under a goal in Goals, and whether it quotes a published band. An empty net is a sentence, not a rate. */
+export function goalRead(e, ctx, doc) {
+  if (!e || e.type !== 'goal') return { say: '', quoted: false };
+  const shooter = corsiTeam(e, ctx.roster);
+  if (atEmptyNet(e, shooter, ctx)) return { say: 'The net was empty, so there’s no goalie to beat.', quoted: false };
+  const ft = shotFeet(e, shooter, ctx.homeId);
+  return { say: distanceSentence(ft, doc), quoted: quotable(bandOf(ft, doc), doc || {}) };
+}
+
+/** The line under a goal in Goals. */
+export const goalLine = (e, ctx, doc) => goalRead(e, ctx, doc).say;

@@ -67,7 +67,7 @@ test('Event mode does not show the distance line', () => {
   assert.ok(k > 0, 'the fixture has no located goal');
   a.at(k, () => {});
   assert.equal(a.$('playdist').hidden, true, 'Event mode showed the distance line');
-  assert.equal(a.$('playdist').textContent, '');
+  assert.equal(a.$('playdistSay').textContent, '');
 });
 
 test('"where these notes come from" closes when the frame changes', () => {

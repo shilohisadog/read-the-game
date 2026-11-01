@@ -9,7 +9,7 @@ import { corsiTeam } from '../src/lib/attribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { rich } from './helpers/page.js';
 import {
-  BAND_FT, MIN_BAND_N, atEmptyNet, bandFrom, countBands, distanceSentence, goalLine, shotDistance,
+  BAND_FT, MIN_BAND_N, atEmptyNet, bandFrom, countBands, distanceSentence, goalLine, goalRead, shotDistance,
 } from '../src/lib/shotdist.js';
 
 const ctx = {
@@ -48,12 +48,13 @@ test('the sentence quotes the rate, and refuses a band under the floor', () => {
       { from: 170, to: 175, goals: 1, n: 4, rate: 0.25 },
     ],
   };
-  assert.equal(distanceSentence(13, doc),
-    'Shots from 10–15 feet go in about 12.0% of the time (n = 100), '
-    + 'in 5-foot bands, every situation, blocked shots and empty nets left out.');
-  assert.match(distanceSentence(172, doc), /too few to quote/);
-  assert.match(distanceSentence(172, doc), /under 30/);
+  assert.equal(distanceSentence(13, doc), 'About 1 in 8 shots from 10 to 15 feet out goes in: 12 of 100.');
+  assert.equal(distanceSentence(172, doc), 'Too few shots from 170 to 175 feet out to say how often they go in: 4 counted.');
   assert.equal(distanceSentence(13, null), '');
+  const none = { ...doc, bands: [{ from: 10, to: 15, goals: 0, n: 45, rate: 0 }] };
+  assert.equal(distanceSentence(13, none), 'None of the 45 shots from 10 to 15 feet out has gone in.');
+  assert.doesNotMatch(distanceSentence(13, doc) + distanceSentence(172, doc), /\bn =|%|band|situation/,
+    'statistics speak under the rink; the working is on the methods page');
 });
 
 test('archive rows sum, and a record without bands does not invent a zero', () => {
@@ -103,6 +104,7 @@ test('an empty-net goal says the net was empty, not a rate', () => {
   const line = goalLine(e, ctx, doc);
   assert.equal(line, 'The net was empty, so there\u2019s no goalie to beat.');
   assert.doesNotMatch(line, /%/);
+  assert.equal(goalRead(e, ctx, doc).quoted, false, 'an empty net quotes no band, so it has no door');
 });
 
 test('the published bands leave empty nets out of the slot measure\u2019s attempts', () => {

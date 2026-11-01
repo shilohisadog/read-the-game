@@ -87,6 +87,24 @@ const PRINTED = {
           + 'shot from the slot is partly the reward for something that already '
           + 'went right, so this cannot tell you that the same shot moved '
           + 'twenty feet in would go in three times as often.' },
+  // One line per published band the replay can quote; `each` expands in printed().
+  shotDistance: {
+    label: measure('shotDistance').heading,
+    where: 'The line under each goal when the replay plays goals only.',
+    reads: [
+      { each: ['shotDistance', 'bands'], floor: ['shotDistance', 'minN'], said: ['shotDistance'],
+        label: b => `${b.from} to ${b.to} feet out`,
+        num: 'goals', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'It says how hard the goal just scored was. A goal from the edge of the crease '
+       + 'is an ordinary one; a goal from the blue line is rare. Each goal is read against '
+       + 'every shot the league recorded from about the same distance.',
+    caveat: 'Distance is all it knows. A rebound into an open net and a shot into the '
+          + 'goalie’s chest from the same spot are the same shot here, and so are a '
+          + 'slap shot and a deflection. The spot is where the league’s scorer marked '
+          + 'the shot, by hand, not a measurement. And blocked shots are left out, so this '
+          + 'is how often a shot that got past the shooters in front of it goes in, not how '
+          + 'often a shot is worth taking.' },
   // Who shoots (ruling 5): the archive's share of attempts taken by defencemen.
   dmenAttempts: {
     label: measure('dmen').heading,
@@ -346,6 +364,16 @@ function at(measures, path) {
   return path.reduce((o, k) => (o == null ? null : o[k]), measures);
 }
 
+/** A read over a published list becomes one read per element at or above `floor`; a missing list stays one read, reported missing. */
+function expand(measures, r) {
+  if (!r.each) return [r];
+  const list = at(measures, r.each);
+  if (!Array.isArray(list)) return [{ ...r, at: r.each }];
+  const floor = (r.floor && at(measures, r.floor)) || 0;
+  return list.flatMap((el, i) => (el && el[r.den] >= floor
+    ? [{ ...r, at: [...r.each, i], is: r.label(el) }] : []));
+}
+
 /**
  * ⭐ THE TABLE ITSELF IS EXPORTED SO THE GATE CAN LOOK AT IT, and that is not a
  * convenience. `printed()` builds its result field by field, so an entry that
@@ -386,7 +414,7 @@ export function printed(measures) {
     const e = PRINTED[key];
     const anchor = anchorOf(key);
     const groups = [], missing = [];
-    e.reads.forEach(r => {
+    e.reads.flatMap(r => expand(measures, r)).forEach(r => {
       const o = at(measures, r.at);
       const from = (r.said || r.at).join('.');
       const sentence = at(measures, r.said || r.at);

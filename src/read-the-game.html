@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UQouhD6uhD+jMhc8XGuC19IWe9Q33yJ4M5LHR+bI7z8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-cm7FGl38rnjUQReMQGXPkrstIloUaRnPxWFw+XDL8/E=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -770,7 +770,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <span id="pwshift" hidden>A typical shift is the middle of every
   shift we hold.</span><span id="pwrun" hidden></span></p></details>
   
-  <p class="playdist" id="playdist" hidden></p>
+  <p class="playdist" id="playdist" hidden><span id="playdistSay"></span> <a id="playdistDoor" hidden>How we counted</a></p>
   
   
   <div class="oiwrap" id="oiWrap"><button class="oibtn" id="onIceBtn" type="button"
@@ -1101,6 +1101,12 @@ const MEASURES = [
     counts: 'attempts by how they ended', of: 'all attempts', credit: 'none', unit: 'share',
     strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
     keys: { league: 'attempts', derivation: 'attempts' } },
+  { id: 'shotDistance', name: 'how often a shot from a given distance goes in',
+    heading: 'How often a shot from a given distance goes in',
+    says: 'Of every shot taken from about this far out, how many went in.',
+    counts: 'goals', of: 'unblocked shots with a recorded location, by distance band, empty nets left out',
+    credit: 'none', unit: 'share', strength: 'all', score: 'any', scopes: ['archive'],
+    typical: 'league figure', witness: null, keys: { printed: 'shotDistance' } },
   { id: 'pace', name: 'shot attempts in an hour', heading: 'How many shot attempts a team takes in an hour',
     says: 'Attempts per 60 minutes, at even strength, on the power play and short-handed.',
     counts: 'attempts in the situation', of: 'minutes in the situation', credit: 'none',
@@ -3335,28 +3341,33 @@ function shotDistance(rows) {
            leftOut: { n: leftN, goals: leftGoals }, what: POLICY };
 }
 
-function distanceSentence(ft, doc) {
-  if (ft == null || !doc || !doc.bands) return '';
-  const width = doc.bandFt || BAND_FT;
-  const floor = doc.minN || MIN_BAND_N;
-  const from = bandFrom(ft, width);
-  const b = doc.bands.find(x => x.from === from) || { goals: 0, n: 0, rate: null };
-  const span = `${from}–${from + width}`;
-  const n = b.n.toLocaleString('en-US');
-  if (b.n < floor) {
-    return `Shots from ${span} feet are too few to quote (n = ${n}; a band under ${floor} is not quoted).`;
-  }
-  const pct = (b.rate * 100).toFixed(1);
-  return `Shots from ${span} feet go in about ${pct}% of the time (n = ${n}), `
-    + `in ${width}-foot bands, every situation, blocked shots and empty nets left out.`;
+function bandOf(ft, doc) {
+  if (ft == null || !doc || !doc.bands) return null;
+  const width = doc.bandFt || BAND_FT, from = bandFrom(ft, width);
+  return doc.bands.find(x => x.from === from) || { from, to: from + width, goals: 0, n: 0, rate: null };
 }
 
-function goalLine(e, ctx, doc) {
-  if (!e || e.type !== 'goal') return '';
-  const shooter = corsiTeam(e, ctx.roster);
-  if (atEmptyNet(e, shooter, ctx)) return 'The net was empty, so there\u2019s no goalie to beat.';
-  return distanceSentence(shotFeet(e, shooter, ctx.homeId), doc);
+const quotable = (b, doc) => !!b && b.n >= (doc.minN || MIN_BAND_N);
+
+function distanceSentence(ft, doc) {
+  const b = bandOf(ft, doc);
+  if (!b) return '';
+  const span = `${b.from} to ${b.to} feet out`, n = b.n.toLocaleString('en-US');
+  if (!quotable(b, doc)) return `Too few shots from ${span} to say how often they go in: ${n} counted.`;
+  if (!b.goals) return `None of the ${n} shots from ${span} has gone in.`;
+  return `About 1 in ${Math.round(b.n / b.goals)} shots from ${span} goes in: `
+    + `${b.goals.toLocaleString('en-US')} of ${n}.`;
 }
+
+function goalRead(e, ctx, doc) {
+  if (!e || e.type !== 'goal') return { say: '', quoted: false };
+  const shooter = corsiTeam(e, ctx.roster);
+  if (atEmptyNet(e, shooter, ctx)) return { say: 'The net was empty, so there’s no goalie to beat.', quoted: false };
+  const ft = shotFeet(e, shooter, ctx.homeId);
+  return { say: distanceSentence(ft, doc), quoted: quotable(bandOf(ft, doc), doc || {}) };
+}
+
+const goalLine = (e, ctx, doc) => goalRead(e, ctx, doc).say;
 
 
 
@@ -3748,7 +3759,7 @@ const TRACK_LANE_FT = 20;
 const TRACK_RELEASE_FT = 30;
 const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
 const TRACK_REACH_FT = 5.5;
-const GOAL_LINE = 89, BLUE = 25;
+const GOAL_LINE = 89;
 const PUCK_R = 0.6;
 const SKATER_R = 1.35;
 
@@ -3800,58 +3811,11 @@ function trackWindow(P, EV) {
     .filter(e => e.per === P.e.per && e.s >= P.e.s - P.before && TRACK_WORDS[e.type]);
 }
 
-function trackPlace(e, G) {
-  if (e.x == null) return '';
-  const end = e.x < 0 ? G.teams.home.ab : G.teams.away.ab;
-  if (Math.abs(e.x) > GOAL_LINE) return ` behind the ${end} net`;
-  if (Math.abs(e.x) > BLUE) return ` in the ${end} end`;
-  return ' in the middle of the ice';
-}
-
 const abOf = (G, tid) => (tid === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
-const named = (G, id) => { const p = G.roster[id]; return p ? `#${p.n} ${p.nm} (${abOf(G, p.tid)})` : null; };
-
-function trackRecorded(P, G, win) {
-  const said = win.map(e => {
-    const a = named(G, e.actor), at = trackPlace(e, G);
-    if (!a) return null;
-    switch (e.type) {
-      case 'hit': return `a hit by ${a}${at}`;
-      case 'giveaway': return `${a} gave the puck away${at}`;
-      case 'takeaway': return `${a} took the puck away${at}`;
-      case 'shot-on-goal': return `a shot by ${a} that the goaltender stopped`;
-      case 'missed-shot': return `a shot by ${a} that missed the net`;
-      case 'blocked-shot': { const b = named(G, e.blk); return b ? `a shot by ${a}, blocked by ${b}` : `a shot by ${a} that was blocked`; }
-      case 'faceoff': return `a face-off${at}, won by ${a}`;
-      default: return null;
-    }
-  }).filter(Boolean);
-  const secs = Math.round(P.before);
-  if (!said.length) return ` The league recorded nothing else in these ${secs} seconds: watch the puck.`;
-  return ` Recorded by the league in these ${secs} seconds: ${said.join('; then ')}.`;
-}
-
-function trackStrength(e, G) {
-  const home = G.teams.home, away = G.teams.away;
-  const s = standing(e && e.sit, {
-    homeId: home.id, awayId: away.id, homeAb: home.ab, awayAb: away.ab,
-  });
-  if (!s || s.kind === PENALTY_SHOT) return '';
-  if (s.kind === EMPTY_NET) return ` ${s.ab} has pulled its goaltender: the net is empty.`;
-  if (s.kind !== POWER_PLAY) return '';
-  const us = abOf(G, e.own), them = abOf(G, e.own === home.id ? away.id : home.id);
-  if (s.id === e.own) return ` ${us} has a power play: ${s.own} skaters to ${them}’s ${s.opp}.`;
-  return ` ${us} is short-handed: ${s.opp} skaters to ${them}’s ${s.own}.`;
-}
 
 function trackWho(P, G) {
   const p = G.roster[P.e.actor] || {};
   return `Tracked · goal by #${p.n || ''} ${p.nm || ''} (${abOf(G, P.e.own)})`;
-}
-function trackSay(P, G, win, speed) {
-  const w = (TRACK_SPEEDS.find(x => x[0] === speed) || TRACK_SPEEDS[0])[2];
-  return `The last ${Math.round(P.before)} seconds before the goal: every player and the puck as the league tracked them, `
-    + `10 times a second, ${w}.${trackStrength(P.e, G)}${trackRecorded(P, G, win)}`;
 }
 const trackFirst = P => `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
 
@@ -3933,17 +3897,6 @@ function trackLaneAt(P, j, homeId) {
   if (!(p.x * dir > BLUE_LINE_X) || !(Math.round(distanceToNet(p.x, p.y, dir)) > TRACK_LANE_FT)) return null;
   return { apex: p, posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
 }
-function trackLaneSay(P, G, shot) {
-  const home = G.teams.home, away = G.teams.away, end = Number(P.e.own) === Number(home.id) ? away.ab : home.ab;
-  let live = false;
-  for (let j = 0; j <= P.k && !live; j++) live = !!trackLaneAt(P, j, home.id);
-  const held = !!(shot && shot.lane);
-  if (live) return ` The light triangle runs from the puck to the posts while the puck is in the ${end} end, more than `
-    + `${TRACK_LANE_FT} feet from the net: anyone inside it stands between the puck and the net.`
-    + (held ? ' At the shot it darkens and holds where the shot was taken.' : '');
-  return held ? ' The shaded triangle runs from the puck to the posts at the moment of the shot: '
-    + 'anyone inside it was between the shot and the net.' : '';
-}
 function trackLaneLine(P, j, tt, shot, homeId) {
   if (shot && shot.lane && tt >= shot.at) return 'Anyone inside the shaded triangle was between the shot and the net.';
   return trackLaneAt(P, j, homeId) ? 'Anyone inside the light triangle stands between the puck and the net.' : '';
@@ -3961,7 +3914,7 @@ function trackEntry(P, homeId, roster, ab) {
   if (!P || !P.e || homeId == null) return null;
   const dir = attackDirection(P.e.own, homeId), own = Number(P.e.own);
   const axAt = j => trackAx(P, P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'], dir);
-  const puckClear = BLUE_LINE_X + PUCK_R, skaterClear = BLUE_LINE_X + SKATER_R;
+  const puckClear = BLUE_LINE_X + PUCK_R, skaterClear = BLUE_LINE_X;
   let prev = null, hit = null;
   for (let j = 0; j <= P.k; j++) {
     const ax = axAt(j);
@@ -4195,6 +4148,23 @@ const PRINTED = {
           + 'shot from the slot is partly the reward for something that already '
           + 'went right, so this cannot tell you that the same shot moved '
           + 'twenty feet in would go in three times as often.' },
+  shotDistance: {
+    label: measure('shotDistance').heading,
+    where: 'The line under each goal when the replay plays goals only.',
+    reads: [
+      { each: ['shotDistance', 'bands'], floor: ['shotDistance', 'minN'], said: ['shotDistance'],
+        label: b => `${b.from} to ${b.to} feet out`,
+        num: 'goals', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'It says how hard the goal just scored was. A goal from the edge of the crease '
+       + 'is an ordinary one; a goal from the blue line is rare. Each goal is read against '
+       + 'every shot the league recorded from about the same distance.',
+    caveat: 'Distance is all it knows. A rebound into an open net and a shot into the '
+          + 'goalie’s chest from the same spot are the same shot here, and so are a '
+          + 'slap shot and a deflection. The spot is where the league’s scorer marked '
+          + 'the shot, by hand, not a measurement. And blocked shots are left out, so this '
+          + 'is how often a shot that got past the shooters in front of it goes in, not how '
+          + 'often a shot is worth taking.' },
   dmenAttempts: {
     label: measure('dmen').heading,
     where: 'The Is that a lot? panel of the Who shoots layer.',
@@ -4356,6 +4326,15 @@ function at(measures, path) {
   return path.reduce((o, k) => (o == null ? null : o[k]), measures);
 }
 
+function expand(measures, r) {
+  if (!r.each) return [r];
+  const list = at(measures, r.each);
+  if (!Array.isArray(list)) return [{ ...r, at: r.each }];
+  const floor = (r.floor && at(measures, r.floor)) || 0;
+  return list.flatMap((el, i) => (el && el[r.den] >= floor
+    ? [{ ...r, at: [...r.each, i], is: r.label(el) }] : []));
+}
+
 { PRINTED };
 
 const PRINTED_KEYS = Object.keys(PRINTED);
@@ -4366,7 +4345,7 @@ function printed(measures) {
     const e = PRINTED[key];
     const anchor = anchorOf(key);
     const groups = [], missing = [];
-    e.reads.forEach(r => {
+    e.reads.flatMap(r => expand(measures, r)).forEach(r => {
       const o = at(measures, r.at);
       const from = (r.said || r.at).join('.');
       const sentence = at(measures, r.said || r.at);
@@ -5822,8 +5801,9 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  for(const [id,re] of PWX){const x=$(id);if(x)x.hidden=TRK.goals||!re.test(line);}
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 function sayDist(e){const el=$('playdist');if(!el)return;
- const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
- el.textContent=say;el.hidden=!say;}
+ const r=TRK.goals?goalRead(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):{say:'',quoted:false};
+ $('playdistSay').textContent=r.say;el.hidden=!r.say;
+ const door=$('playdistDoor');door.hidden=!r.quoted;door.href=METHODS+'#'+anchorOf('shotDistance');}
 function greadRem(){return GREAD?Math.max(0,GREAD.end-performance.now()):0;}
 function greadEl(){return document.getElementById('gread');}
 function greadPaint(){

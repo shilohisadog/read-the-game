@@ -32,7 +32,8 @@ import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
 import { colorNotes, goalStrengths, stayRetell } from './lib/color.js';
-import { goalLine } from './lib/shotdist.js';
+import { goalRead } from './lib/shotdist.js';
+import { anchorOf } from './lib/anchors.js';
 import { challenges, challengeSay, reviewName, reviewSay } from './lib/challenge.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
@@ -2892,8 +2893,10 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 // The distance rate under the caption. Goals only: Event mode already carries the source note there.
 function sayDist(e){const el=$('playdist');if(!el)return;
- const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
- el.textContent=say;el.hidden=!say;}
+ const r=TRK.goals?goalRead(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):{say:'',quoted:false};
+ $('playdistSay').textContent=r.say;el.hidden=!r.say;
+ // A quoted band opens to its working on the methods page.
+ const door=$('playdistDoor');door.hidden=!r.quoted;door.href=METHODS+'#'+anchorOf('shotDistance');}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
 /* POST-GOAL HOLD: a countdown under centre ice while a goal waits GOAL_READ_MS. The main
    button reads Pause throughout; Pause stays on the goal with no limit, and Play then moves on.

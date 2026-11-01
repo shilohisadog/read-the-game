@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LPfDnta4+8Gj6v8CfKnUhbqFeC7ujfXpuLiQyx/DAt4=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-2nFnGk185KP/XXyfogmdBYtVdLrww/HzG+s7ltKe6eI=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+HrrTmwdfC6qJo48XEecI2n/Wq+OCVvmniraaj1+hAQ=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-2nFnGk185KP/XXyfogmdBYtVdLrww/HzG+s7ltKe6eI=' 'sha256-VAmJ74xphd3kSzXeNytArXN3m8F7UV8V6PhZieWdmt4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -846,6 +846,12 @@ const MEASURES = [
     counts: 'attempts by how they ended', of: 'all attempts', credit: 'none', unit: 'share',
     strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
     keys: { league: 'attempts', derivation: 'attempts' } },
+  { id: 'shotDistance', name: 'how often a shot from a given distance goes in',
+    heading: 'How often a shot from a given distance goes in',
+    says: 'Of every shot taken from about this far out, how many went in.',
+    counts: 'goals', of: 'unblocked shots with a recorded location, by distance band, empty nets left out',
+    credit: 'none', unit: 'share', strength: 'all', score: 'any', scopes: ['archive'],
+    typical: 'league figure', witness: null, keys: { printed: 'shotDistance' } },
   { id: 'pace', name: 'shot attempts in an hour', heading: 'How many shot attempts a team takes in an hour',
     says: 'Attempts per 60 minutes, at even strength, on the power play and short-handed.',
     counts: 'attempts in the situation', of: 'minutes in the situation', credit: 'none',
@@ -1276,6 +1282,23 @@ const PRINTED = {
           + 'shot from the slot is partly the reward for something that already '
           + 'went right, so this cannot tell you that the same shot moved '
           + 'twenty feet in would go in three times as often.' },
+  shotDistance: {
+    label: measure('shotDistance').heading,
+    where: 'The line under each goal when the replay plays goals only.',
+    reads: [
+      { each: ['shotDistance', 'bands'], floor: ['shotDistance', 'minN'], said: ['shotDistance'],
+        label: b => `${b.from} to ${b.to} feet out`,
+        num: 'goals', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'It says how hard the goal just scored was. A goal from the edge of the crease '
+       + 'is an ordinary one; a goal from the blue line is rare. Each goal is read against '
+       + 'every shot the league recorded from about the same distance.',
+    caveat: 'Distance is all it knows. A rebound into an open net and a shot into the '
+          + 'goalie’s chest from the same spot are the same shot here, and so are a '
+          + 'slap shot and a deflection. The spot is where the league’s scorer marked '
+          + 'the shot, by hand, not a measurement. And blocked shots are left out, so this '
+          + 'is how often a shot that got past the shooters in front of it goes in, not how '
+          + 'often a shot is worth taking.' },
   dmenAttempts: {
     label: measure('dmen').heading,
     where: 'The Is that a lot? panel of the Who shoots layer.',
@@ -1437,6 +1460,15 @@ function at(measures, path) {
   return path.reduce((o, k) => (o == null ? null : o[k]), measures);
 }
 
+function expand(measures, r) {
+  if (!r.each) return [r];
+  const list = at(measures, r.each);
+  if (!Array.isArray(list)) return [{ ...r, at: r.each }];
+  const floor = (r.floor && at(measures, r.floor)) || 0;
+  return list.flatMap((el, i) => (el && el[r.den] >= floor
+    ? [{ ...r, at: [...r.each, i], is: r.label(el) }] : []));
+}
+
 { PRINTED };
 
 const PRINTED_KEYS = Object.keys(PRINTED);
@@ -1447,7 +1479,7 @@ function printed(measures) {
     const e = PRINTED[key];
     const anchor = anchorOf(key);
     const groups = [], missing = [];
-    e.reads.forEach(r => {
+    e.reads.flatMap(r => expand(measures, r)).forEach(r => {
       const o = at(measures, r.at);
       const from = (r.said || r.at).join('.');
       const sentence = at(measures, r.said || r.at);

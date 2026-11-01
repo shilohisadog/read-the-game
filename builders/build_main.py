@@ -179,7 +179,7 @@ __CSS__</style>
   <span id="pwshift" hidden>A typical shift is the middle of every
   shift we hold.</span><span id="pwrun" hidden></span></p></details>
   <!-- How often shots from this distance go in. Goals only; Event mode keeps the source note. -->
-  <p class="playdist" id="playdist" hidden></p>
+  <p class="playdist" id="playdist" hidden><span id="playdistSay"></span> <a id="playdistDoor" hidden>How we counted</a></p>
   <!-- ⭐⭐ WHO IS ON THE ICE, AND IT IS A LIST BECAUSE THAT IS WHAT WE KNOW.
        Kevin, 2026-09-10: *"we don't surface players on the ice at all; should we
        have a toggle... only clickable when not playing?"* — then, on the obvious

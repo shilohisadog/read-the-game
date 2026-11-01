@@ -15,7 +15,7 @@
  */
 import { inkOn, readableInk } from './teams.js';
 import { ESC } from './esc.js';
-import { standing, EMPTY_NET, POWER_PLAY, PENALTY_SHOT } from './strength.js';
+import { standing, POWER_PLAY } from './strength.js';
 import { occupants } from './box.js';
 import { NET_X, GOAL_POST_Y, BLUE_LINE_X, ZONE_BAND_FT, attackDirection, distanceToNet } from './rink.js';
 
@@ -47,11 +47,11 @@ export const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
    OUR choice. Over 367 goals (60 games, 2026-10-27) it finds the primary assist with the puck on 319 of 344
    assisted goals, and the next teammate to hold it is one the league did not credit on 11 of those 319. */
 export const TRACK_REACH_FT = 5.5;
-/** The goal line and the blue lines, feet from centre ice. */
-const GOAL_LINE = 89, BLUE = 25;
+/** The goal line, feet from centre ice. */
+const GOAL_LINE = 89;
 /** Radius of the puck dot. The tracked point is its centre, so the dot has not fully crossed a line until the centre is this far past it. */
 export const PUCK_R = 0.6;
-/** Radius of a skater dot. Same reason as PUCK_R: a dot still touching the line has not crossed. */
+/** Radius of a skater dot, as drawn. */
 export const SKATER_R = 1.35;
 
 /** Each recorded event's label on the ice, in plain English. */
@@ -114,66 +114,12 @@ export function trackWindow(P, EV) {
     .filter(e => e.per === P.e.per && e.s >= P.e.s - P.before && TRACK_WORDS[e.type]);
 }
 
-/* Where an event happened, in words: behind a net, in a team's end, or the middle of
-   the ice. Our extract has the home team defending -x in every period. */
-export function trackPlace(e, G) {
-  if (e.x == null) return '';
-  const end = e.x < 0 ? G.teams.home.ab : G.teams.away.ab;
-  if (Math.abs(e.x) > GOAL_LINE) return ` behind the ${end} net`;
-  if (Math.abs(e.x) > BLUE) return ` in the ${end} end`;
-  return ' in the middle of the ice';
-}
-
 const abOf = (G, tid) => (tid === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
-const named = (G, id) => { const p = G.roster[id]; return p ? `#${p.n} ${p.nm} (${abOf(G, p.tid)})` : null; };
-
-/** " Recorded by the league in these 9 seconds: a hit by #14 Laferriere (LAK) behind the WSH net." */
-export function trackRecorded(P, G, win) {
-  const said = win.map(e => {
-    const a = named(G, e.actor), at = trackPlace(e, G);
-    if (!a) return null;
-    switch (e.type) {
-      case 'hit': return `a hit by ${a}${at}`;
-      case 'giveaway': return `${a} gave the puck away${at}`;
-      case 'takeaway': return `${a} took the puck away${at}`;
-      case 'shot-on-goal': return `a shot by ${a} that the goaltender stopped`;
-      case 'missed-shot': return `a shot by ${a} that missed the net`;
-      case 'blocked-shot': { const b = named(G, e.blk); return b ? `a shot by ${a}, blocked by ${b}` : `a shot by ${a} that was blocked`; }
-      case 'faceoff': return `a face-off${at}, won by ${a}`;
-      default: return null;
-    }
-  }).filter(Boolean);
-  const secs = Math.round(P.before);
-  if (!said.length) return ` The league recorded nothing else in these ${secs} seconds: watch the puck.`;
-  return ` Recorded by the league in these ${secs} seconds: ${said.join('; then ')}.`;
-}
-
-/** " WSH has a power play: 5 skaters to LAK’s 4." or "" at even strength.
- *  Read by standing(), the same decoder as the scoreboard, so the club that
- *  pulled its goalie is named for that — 6-on-5 at an empty net is not a power play. */
-export function trackStrength(e, G) {
-  const home = G.teams.home, away = G.teams.away;
-  const s = standing(e && e.sit, {
-    homeId: home.id, awayId: away.id, homeAb: home.ab, awayAb: away.ab,
-  });
-  if (!s || s.kind === PENALTY_SHOT) return '';
-  if (s.kind === EMPTY_NET) return ` ${s.ab} has pulled its goaltender: the net is empty.`;
-  if (s.kind !== POWER_PLAY) return '';
-  const us = abOf(G, e.own), them = abOf(G, e.own === home.id ? away.id : home.id);
-  if (s.id === e.own) return ` ${us} has a power play: ${s.own} skaters to ${them}’s ${s.opp}.`;
-  return ` ${us} is short-handed: ${s.opp} skaters to ${them}’s ${s.own}.`;
-}
 
 /** The name line: "Tracked · goal by #9 Kempe (LAK)". */
 export function trackWho(P, G) {
   const p = G.roster[P.e.actor] || {};
   return `Tracked · goal by #${p.n || ''} ${p.nm || ''} (${abOf(G, P.e.own)})`;
-}
-/** The line under the rink while the tracking plays. */
-export function trackSay(P, G, win, speed) {
-  const w = (TRACK_SPEEDS.find(x => x[0] === speed) || TRACK_SPEEDS[0])[2];
-  return `The last ${Math.round(P.before)} seconds before the goal: every player and the puck as the league tracked them, `
-    + `10 times a second, ${w}.${trackStrength(P.e, G)}${trackRecorded(P, G, win)}`;
 }
 /** The line while the first frame is held still. */
 export const trackFirst = P => `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
@@ -284,18 +230,6 @@ export function trackLaneAt(P, j, homeId) {
   if (!(p.x * dir > BLUE_LINE_X) || !(Math.round(distanceToNet(p.x, p.y, dir)) > TRACK_LANE_FT)) return null;
   return { apex: p, posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
 }
-/** The line's words for the lanes this goal shows: the light one while it follows the puck, the held one from the shot. */
-export function trackLaneSay(P, G, shot) {
-  const home = G.teams.home, away = G.teams.away, end = Number(P.e.own) === Number(home.id) ? away.ab : home.ab;
-  let live = false;
-  for (let j = 0; j <= P.k && !live; j++) live = !!trackLaneAt(P, j, home.id);
-  const held = !!(shot && shot.lane);
-  if (live) return ` The light triangle runs from the puck to the posts while the puck is in the ${end} end, more than `
-    + `${TRACK_LANE_FT} feet from the net: anyone inside it stands between the puck and the net.`
-    + (held ? ' At the shot it darkens and holds where the shot was taken.' : '');
-  return held ? ' The shaded triangle runs from the puck to the posts at the moment of the shot: '
-    + 'anyone inside it was between the shot and the net.' : '';
-}
 /** The note while frame `j` plays: the triangle's one-line reading while one is drawn, else "". */
 export function trackLaneLine(P, j, tt, shot, homeId) {
   if (shot && shot.lane && tt >= shot.at) return 'Anyone inside the shaded triangle was between the shot and the net.';
@@ -321,7 +255,8 @@ export function trackEntry(P, homeId, roster, ab) {
   if (!P || !P.e || homeId == null) return null;
   const dir = attackDirection(P.e.own, homeId), own = Number(P.e.own);
   const axAt = j => trackAx(P, P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'], dir);
-  const puckClear = BLUE_LINE_X + PUCK_R, skaterClear = BLUE_LINE_X + SKATER_R;
+  // A skater counts as across once his tracked centre passes the line: the point cannot say where his skates are.
+  const puckClear = BLUE_LINE_X + PUCK_R, skaterClear = BLUE_LINE_X;
   let prev = null, hit = null;
   for (let j = 0; j <= P.k; j++) {
     const ax = axAt(j);

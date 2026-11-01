@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xMsOjPnU+ot9fNW3Oqdn2p+b1suEAzCOxp2DJ+9jNiE=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-2nFnGk185KP/XXyfogmdBYtVdLrww/HzG+s7ltKe6eI=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pGbsQxjYiVUyakDQL8WlpZ0+wdgXsJmnzwjnmBW6r0U=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-2nFnGk185KP/XXyfogmdBYtVdLrww/HzG+s7ltKe6eI=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -726,6 +726,12 @@ const MEASURES = [
     counts: 'attempts by how they ended', of: 'all attempts', credit: 'none', unit: 'share',
     strength: 'all', score: 'any', scopes: ['archive'], typical: 'league figure', witness: null,
     keys: { league: 'attempts', derivation: 'attempts' } },
+  { id: 'shotDistance', name: 'how often a shot from a given distance goes in',
+    heading: 'How often a shot from a given distance goes in',
+    says: 'Of every shot taken from about this far out, how many went in.',
+    counts: 'goals', of: 'unblocked shots with a recorded location, by distance band, empty nets left out',
+    credit: 'none', unit: 'share', strength: 'all', score: 'any', scopes: ['archive'],
+    typical: 'league figure', witness: null, keys: { printed: 'shotDistance' } },
   { id: 'pace', name: 'shot attempts in an hour', heading: 'How many shot attempts a team takes in an hour',
     says: 'Attempts per 60 minutes, at even strength, on the power play and short-handed.',
     counts: 'attempts in the situation', of: 'minutes in the situation', credit: 'none',

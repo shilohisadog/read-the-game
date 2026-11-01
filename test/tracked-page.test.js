@@ -159,14 +159,16 @@ test('Goals mode says how often shots from that distance go in', async () => {
     await settle(); await settle();
     const k = a.timeline.findIndex(e => e && e.type === 'goal' && e.x != null);
     a.at(k, () => {});
-    return a.$('playdist');
+    return a;
   };
-  const line = await show(quoted);
-  assert.equal(line.hidden, false);
-  assert.equal(line.textContent, distanceSentence(ft, quoted));
+  const a = await show(quoted);
+  assert.equal(a.$('playdist').hidden, false);
+  assert.equal(a.$('playdistSay').textContent, distanceSentence(ft, quoted));
+  assert.equal(a.$('playdistDoor').hidden, false, 'a quoted rate has no door to its working');
+  assert.match(a.$('playdistDoor').href, /\/how-we-measure\.html#m-shotDistance$/);
   const few = await show(thin);
-  assert.match(few.textContent, /too few to quote/);
-  assert.match(few.textContent, /under 30/);
+  assert.match(few.$('playdistSay').textContent, /^Too few shots/);
+  assert.equal(few.$('playdistDoor').hidden, true, 'a band too thin to quote opened a door to a line the page does not print');
 });
 
 test('Goals shows the onside entry', async () => {
@@ -221,8 +223,8 @@ test('an empty-net goal in Goals says the net was empty, not a rate', async () =
   await settle(); await settle();
   const k = a.timeline.findIndex(e => e && e.type === 'goal' && e.x != null);
   a.at(k, () => {});
-  assert.equal(a.$('playdist').textContent, 'The net was empty, so there\u2019s no goalie to beat.');
-  assert.doesNotMatch(a.$('playdist').textContent, /%/);
+  assert.equal(a.$('playdistSay').textContent, 'The net was empty, so there\u2019s no goalie to beat.');
+  assert.equal(a.$('playdistDoor').hidden, true);
 });
 
 test('⭐ Goals: one goal is one stop: Next goes from the shot to the goal, which holds the puck in the net', async () => {
