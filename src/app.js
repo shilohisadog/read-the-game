@@ -5535,22 +5535,26 @@ if(PREVIEW){
  if(GP&&window.parent!==window)GP.then(P=>{if(P)window.parent.postMessage({rtg:'tracked',game:(G.game&&G.game.id)||0},location.origin);});
  // And what the goal was scored at, in skaters, which the front door prints under the clubs.
  const SAYS=GOAL>=0&&goalStrengths(G,CTX,RATES).get(G.events.indexOf(EV[GOAL]));
- if(SAYS&&window.parent!==window)window.parent.postMessage({rtg:'goal',game:(G.game&&G.game.id)||0,says:SAYS},location.origin);
+ // `on` while the goal frame is up, so the front door shows the sentence with the goal, as the replay does.
+ let saidOn=null;
+ const heroSay=on=>{if(!SAYS||window.parent===window||saidOn===on)return;saidOn=on;
+  window.parent.postMessage({rtg:'goal',game:(G.game&&G.game.id)||0,says:SAYS,on},location.origin);};
+ heroSay(false);
  // The goal frame outlasts its siren caption (`@keyframes cap`, src/app.css; a test reads both).
  const GOAL_HOLD_MS=2600;
  const walk=()=>{let k=START;
   const tick=()=>{
    const shown=EV[k],last=k>=WINDOW,
     wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
-   set(k,k>0?'play':'');
+   set(k,k>0?'play':'');heroSay(last&&GOAL>=0);
    if(last){k=START;}else{k++;}
    setTimeout(tick,wait);};
   tick();};
  const goals=P=>{const j=trackHoldFrame(EV,GOAL,P,START);
-  const go=()=>{trkRestClear();set(j,'');
-   setTimeout(()=>{trkEnd();set(GOAL,'play');trkRest(GOAL,P);setTimeout(go,GOAL_HOLD_MS);},trkStart(P,TRACK_STILL_MS,true));};
+  const go=()=>{trkRestClear();set(j,'');heroSay(false);
+   setTimeout(()=>{trkEnd();set(GOAL,'play');heroSay(true);trkRest(GOAL,P);setTimeout(go,GOAL_HOLD_MS);},trkStart(P,TRACK_STILL_MS,true));};
   go();};
- if(REDUCED){set(WINDOW,'');if(GP)GP.then(P=>{if(P)trkRest(GOAL,P);});}
+ if(REDUCED){set(WINDOW,'');heroSay(WINDOW===GOAL);if(GP)GP.then(P=>{if(P)trkRest(GOAL,P);});}
  else if(GP){set(START,'');GP.then(P=>P?goals(P):walk(),walk);}
  else walk();}
 }

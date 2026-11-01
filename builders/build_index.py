@@ -283,7 +283,9 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    rather than a tighter one. Measured at 390 and 1100, not reasoned. */
 @media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
-.herosay{margin:0 0 12px;font-size:.95rem;line-height:1.45;max-width:46ch;color:var(--ink)}
+.herosay{margin:-4px 0 13px;font-size:.95rem;line-height:1.45;color:var(--ink);text-align:center;transition:opacity .3s}
+/* The space stays once a goal has a sentence; only the words come and go, so nothing below jumps each loop. */
+.herosay.off{opacity:0}
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
@@ -479,13 +481,15 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
     grid-template-columns:minmax(320px,400px) minmax(0,1fr);
     /* The last row is the slack: without it the frame's height is spread across
        the text rows. `1fr` underneath sends the surplus to the bottom of the card. */
-    grid-template-rows:repeat(4,min-content) 1fr;
+    grid-template-rows:repeat(3,min-content) 1fr;
     column-gap:clamp(20px,2.4vw,34px);
     align-items:start;
   }
   /* THE FRAME SPANS THE CARD'S WHOLE HEIGHT so the rink is as tall as the card,
      rather than as tall as whichever sentence happens to be longest. */
-  .hero:not([hidden]) .heroframe{grid-column:2;grid-row:1/-1;margin:0}
+  .hero:not([hidden]) .herorink{grid-column:2;grid-row:1/-1}
+  .hero:not([hidden]) .heroframe{margin:0}
+  .hero:not([hidden]) .herosay{margin:10px 0 0}
   .hero:not([hidden]) .herokick{grid-column:1;grid-row:1}
   .hero:not([hidden]) .heroline{grid-column:1;grid-row:2}
   /* `justify-self:start` because a grid item stretches by default and the button
@@ -493,8 +497,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
      background does not, so the click target and the thing that looks clickable
      stop being the same rectangle. That is the hit-target defect of 2026-09-08
      waiting to happen in a third place. */
-  .hero:not([hidden]) .herosay{grid-column:1;grid-row:3}
-  .hero:not([hidden]) .herogo{grid-column:1;grid-row:4;justify-self:start;margin-top:4px}
+  .hero:not([hidden]) .herogo{grid-column:1;grid-row:3;justify-self:start;margin-top:4px}
   /* ⭐ THE LAST ROW IS THE SLACK, AND THIS IS WHAT IT WAS BEING SAVED FOR. The
      text rows are `min-content` and the frame spans the card, so column one runs
      out of sentences about two thirds of the way down -- measured at 1900,
@@ -505,7 +508,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
      under the button with the surplus beneath. Without it the row's height is
      the slack and the block sits at its top edge, which reads as a paragraph
      that lost its place rather than as the foot of the card. */
-  .daily:not([hidden]){grid-column:1;grid-row:5;align-self:end;width:100%}
+  .daily:not([hidden]){grid-column:1;grid-row:4;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
@@ -833,10 +836,12 @@ the league tracked each one, so for those we also draw the puck and every skater
          changes, and every mark still traces to a recorded event. The frame is
          created in script AFTER the catalog says which game is newest, which
          also means it never loads for a visitor who does not reach it. -->
-    <div class="heroframe" id="heroframe"></div>
+    <div class="herorink">
+      <div class="heroframe" id="heroframe"></div>
+      <!-- What the goal was scored at, under the rink as on the replay; shown while the goal frame is up. -->
+      <p class="herosay" id="herosay" hidden></p>
+    </div>
     <p class="heroline" id="heroline"></p>
-    <!-- What the hero's goal was scored at, from the frame; only a power-play or shorthanded goal has a sentence. -->
-    <p class="herosay" id="herosay" hidden></p>
     <a class="herogo" id="herogo" href="game.html">Read the whole game &rarr;</a>
     <!-- ⭐ THE ONE ELEMENT ON THIS PAGE WHOSE CONTENT IS A FUNCTION OF THE DATE.
          docs/front-door.md §3 stated it as an invariant rather than a taste:
@@ -1217,7 +1222,8 @@ __HELPERS__
       // The frame found the goal's tracking file and will play it.
       // What the goal was scored at, as the frame's color line says it.
       if (m.rtg === 'goal' && pick.toGoal && typeof m.says === 'string' && m.says) {
-        $('herosay').textContent = m.says; $('herosay').hidden = false; }
+        $('herosay').textContent = m.says; $('herosay').hidden = false;
+        $('herosay').className = 'herosay' + (m.on === false ? ' off' : ''); }
       if (m.rtg === 'tracked' && pick.toGoal)
         $('herokick').textContent = when(g.d) + ' \u00b7 its first goal, as the league tracked it';
     });

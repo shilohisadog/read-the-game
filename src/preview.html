@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pGbsQxjYiVUyakDQL8WlpZ0+wdgXsJmnzwjnmBW6r0U=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-2nFnGk185KP/XXyfogmdBYtVdLrww/HzG+s7ltKe6eI=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pGbsQxjYiVUyakDQL8WlpZ0+wdgXsJmnzwjnmBW6r0U=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-Y7oHoVW73P4zvv339V7ZRbH+n4UXvr87s+sjxyJZWIs=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -114,7 +114,8 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .heroframe:hover{border-color:var(--blue)}
 @media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
-.herosay{margin:0 0 12px;font-size:.95rem;line-height:1.45;max-width:46ch;color:var(--ink)}
+.herosay{margin:-4px 0 13px;font-size:.95rem;line-height:1.45;color:var(--ink);text-align:center;transition:opacity .3s}
+.herosay.off{opacity:0}
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
@@ -177,16 +178,17 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
   .hero:not([hidden]){
     display:grid;
     grid-template-columns:minmax(320px,400px) minmax(0,1fr);
-    grid-template-rows:repeat(4,min-content) 1fr;
+    grid-template-rows:repeat(3,min-content) 1fr;
     column-gap:clamp(20px,2.4vw,34px);
     align-items:start;
   }
-  .hero:not([hidden]) .heroframe{grid-column:2;grid-row:1/-1;margin:0}
+  .hero:not([hidden]) .herorink{grid-column:2;grid-row:1/-1}
+  .hero:not([hidden]) .heroframe{margin:0}
+  .hero:not([hidden]) .herosay{margin:10px 0 0}
   .hero:not([hidden]) .herokick{grid-column:1;grid-row:1}
   .hero:not([hidden]) .heroline{grid-column:1;grid-row:2}
-  .hero:not([hidden]) .herosay{grid-column:1;grid-row:3}
-  .hero:not([hidden]) .herogo{grid-column:1;grid-row:4;justify-self:start;margin-top:4px}
-  .daily:not([hidden]){grid-column:1;grid-row:5;align-self:end;width:100%}
+  .hero:not([hidden]) .herogo{grid-column:1;grid-row:3;justify-self:start;margin-top:4px}
+  .daily:not([hidden]){grid-column:1;grid-row:4;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}

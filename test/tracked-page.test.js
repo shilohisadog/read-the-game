@@ -330,6 +330,14 @@ test('⭐ the hero tells the front door what its goal was scored at, the archive
   const m = a.posted.map(p => p.msg).find(m => m.rtg === 'goal');
   assert.ok(m && m.game === rich.game.id, 'the front door is not told');
   assert.equal(m.says, `${rich.teams.home.ab} had 5 skaters to ${rich.teams.away.ab}'s 4, because ${away[1].nm} was in the penalty box for tripping: a "power play". Across the 4,418 games we have measured, about 1 power play in 5 ended in a goal.`);
+  // Shown with the goal, as the replay shows it: off through the tracking, on at the goal frame, off as the loop goes round.
+  const on = () => a.posted.map(p => p.msg).filter(m => m.rtg === 'goal').at(-1).on;
+  assert.equal(on(), false, 'the sentence is up before its goal');
+  a.advance(1); await settle();
+  assert.equal(a.$('rg').classList.contains('trkrest'), true, 'not at the goal frame');
+  assert.equal(on(), true, 'the sentence does not come up with its goal');
+  a.advance(1); await settle();
+  assert.equal(on(), false, 'the sentence stays up as the loop goes back');
   // The paired half: an even-strength first goal says nothing.
   const b = boot(rich, rates, '?preview=1', null, served(), MOTION);
   await settle(); await settle();

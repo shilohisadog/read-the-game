@@ -1183,9 +1183,19 @@ test('⭐ the front door prints what the hero\'s goal was scored at, only from o
   r.post({ rtg: 'goal', game: NEWEST_ID, says }, { origin: 'https://evil.example' });
   r.post({ rtg: 'goal', game: NEWEST_ID + 1, says });
   assert.ok(!r.ids.herosay || r.ids.herosay.hidden !== false, 'a message not from our frame, or about another game, was printed');
-  r.post({ rtg: 'goal', game: NEWEST_ID, says });
+  r.post({ rtg: 'goal', game: NEWEST_ID, says, on: false });
   assert.equal(r.ids.herosay.textContent, says);
-  assert.equal(r.ids.herosay.hidden, false);
+  assert.equal(r.ids.herosay.hidden, false, 'the space is not held while the goal is off screen');
+  assert.match(r.ids.herosay.className, /\boff\b/, 'the sentence shows before its goal does');
+  r.post({ rtg: 'goal', game: NEWEST_ID, says, on: true });
+  assert.doesNotMatch(r.ids.herosay.className, /\boff\b/, 'the sentence does not show with its goal');
+});
+
+test('the goal sentence sits under the rink, in the block that holds the frame', () => {
+  const rink = html.slice(html.indexOf('<div class="herorink">'), html.indexOf('id="heroline"'));
+  assert.match(rink, /id="heroframe"[\s\S]*id="herosay"/, 'the sentence is not directly under the frame');
+  assert.match(html, /\.hero:not\(\[hidden\]\) \.herorink\{grid-column:2;grid-row:1\/-1\}/,
+    'the block holding the rink does not take the rink\u2019s column');
 });
 
 test('the hero carries no attempts lede: the kicker, the two clubs, the goal\'s strength and the button', async () => {
@@ -1540,7 +1550,7 @@ test('no recent.json and no schedule.json: the block stays hidden, page intact',
 });
 
 test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires', () => {
-  /* `.daily:not([hidden]){grid-column:1;grid-row:5}` places it in the card's
+  /* `.daily:not([hidden]){grid-column:1;grid-row:…}` places it in the card's
      last row — the slack the frame leaves in column one. That rule is a claim
      about ANCESTRY: move `#daily` out to be a sibling of the card and the
      selector still matches, the declarations still parse, and the block silently
@@ -1559,8 +1569,11 @@ test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires'
     depth += 1;
   }
   assert.ok(ok, '#daily is not inside #hero — the grid rule places it nowhere');
-  assert.match(html, /\.daily:not\(\[hidden\]\)\{[^}]*grid-row:5/,
-    'the rule that consumes the placement is gone');
+  // The slack row is the one after the min-content rows, read from the template rather than typed.
+  const rows = +/grid-template-rows:repeat\((\d+),min-content\) 1fr/.exec(html)?.[1];
+  assert.ok(rows > 0, 'the hero grid has no slack row');
+  assert.match(html, new RegExp(`\\.daily:not\\(\\[hidden\\]\\)\\{[^}]*grid-row:${rows + 1};`),
+    'the rule that consumes the placement is gone, or places it outside the slack row');
 });
 
 
