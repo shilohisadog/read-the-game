@@ -163,11 +163,11 @@ test('Goals mode says how often shots from that distance go in', async () => {
   };
   const a = await show(quoted);
   assert.equal(a.$('playdist').hidden, false);
-  assert.equal(a.$('playdistSay').textContent, distanceSentence(ft, quoted));
+  assert.ok(a.$('playdistSay').textContent.endsWith(distanceSentence(ft, quoted)), a.$('playdistSay').textContent);
   assert.equal(a.$('playdistDoor').hidden, false, 'a quoted rate has no door to its working');
   assert.match(a.$('playdistDoor').href, /\/how-we-measure\.html#m-shotDistance$/);
   const few = await show(thin);
-  assert.match(few.$('playdistSay').textContent, /^Too few shots/);
+  assert.match(few.$('playdistSay').textContent, /(^|\. )Too few shots/);
   assert.equal(few.$('playdistDoor').hidden, true, 'a band too thin to quote opened a door to a line the page does not print');
 });
 
@@ -213,6 +213,20 @@ test('Goals shows the onside entry', async () => {
   assert.doesNotMatch(g.$('track').innerHTML + said, /too close/i);
 });
 
+test('⭐ Goals says how long the puck took from the shot to the goal line, ahead of the rate', async () => {
+  const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
+  await settle(); await settle();
+  a.$('play').click();
+  for (let n = 0; n < 40 && !a.$('rg').classList.contains('trkrest'); n++) { a.advance(1); await settle(); }
+  assert.ok(a.$('rg').classList.contains('trkrest'), 'Goals never reached its first goal frame');
+  assert.match(a.$('playdistSay').textContent, /^The puck reached the goal line about (a tenth of a second|\d\.\d seconds) after the shot\./);
+  // The event walk has no tracking on screen, so it says nothing of the kind.
+  const all = boot(rich, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null));
+  await settle(); await settle();
+  all.at(GOALS[0].k, () => {}); await settle();
+  assert.doesNotMatch(all.$('playdistSay').textContent, /goal line/);
+});
+
 test('an empty-net goal in Goals says the net was empty, not a rate', async () => {
   const game = JSON.parse(JSON.stringify(rich));
   const goal = game.events.find(e => e.type === 'goal' && e.x != null);
@@ -223,7 +237,7 @@ test('an empty-net goal in Goals says the net was empty, not a rate', async () =
   await settle(); await settle();
   const k = a.timeline.findIndex(e => e && e.type === 'goal' && e.x != null);
   a.at(k, () => {});
-  assert.equal(a.$('playdistSay').textContent, 'The net was empty, so there\u2019s no goalie to beat.');
+  assert.ok(a.$('playdistSay').textContent.endsWith('The net was empty, so there\u2019s no goalie to beat.'));
   assert.equal(a.$('playdistDoor').hidden, true);
 });
 
@@ -336,12 +350,15 @@ test('⭐ the hero tells the front door what its goal was scored at, the archive
   a.advance(1); await settle();
   assert.equal(a.$('rg').classList.contains('trkrest'), true, 'not at the goal frame');
   assert.equal(on(), true, 'the sentence does not come up with its goal');
+  assert.ok(a.wait >= 10000, `the goal frame moves on after ${a.wait} ms, before its sentence can be read`);
   a.advance(1); await settle();
   assert.equal(on(), false, 'the sentence stays up as the loop goes back');
   // The paired half: an even-strength first goal says nothing.
   const b = boot(rich, rates, '?preview=1', null, served(), MOTION);
   await settle(); await settle();
   assert.ok(!b.posted.some(p => p.msg.rtg === 'goal'));
+  b.advance(1); await settle();
+  assert.ok(b.$('rg').classList.contains('trkrest') && b.wait < 10000, 'a goal with nothing to read holds as long as one with a sentence');
 });
 
 test('a hero whose first goal has no tracking file loops as before, and says nothing to the front door', async () => {

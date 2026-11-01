@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WtJwybefrobWSPrNINyYJDszE820dVAOx/LUJMiUiKw=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-g70mKmaJqih9pyBQeG5onK87tMUdzJLtgMrisXjBYZg=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3854,6 +3854,12 @@ function trackShot(P, homeId) {
   return { j, at: P.frames[j].timeStamp, apex, ft, lane,
     posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
 }
+const trackFlight = (P, S) => (P && S ? P.k - S.j : null);
+function trackFlightSay(tenths) {
+  if (tenths == null || tenths < 1) return '';
+  const t = tenths === 1 ? 'about a tenth of a second' : `about ${(tenths / 10).toFixed(1)} seconds`;
+  return `The puck reached the goal line ${t} after the shot.`;
+}
 function trackHolders(P) {
   const out = [];
   for (let j = 0; j <= P.k; j++) {
@@ -5813,7 +5819,9 @@ function sayPlay(line){const d=$('playd');if(!d)return;
  d.classList.toggle('zoned',/^The puck has stayed/.test(line));}
 function sayDist(e){const el=$('playdist');if(!el)return;
  const r=TRK.goals?goalRead(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):{say:'',quoted:false};
- $('playdistSay').textContent=r.say;el.hidden=!r.say;
+ const P=TRK.goals&&e&&e.type==='goal'?trkReady(e):null,fly=P?trackFlightSay(trackFlight(P,trackShot(P,HID))):'';
+ const say=[fly,r.say].filter(Boolean).join(' ');
+ $('playdistSay').textContent=say;el.hidden=!say;
  const door=$('playdistDoor');door.hidden=!r.quoted;door.href=METHODS+'#'+anchorOf('shotDistance');}
 function greadRem(){return GREAD?Math.max(0,GREAD.end-performance.now()):0;}
 function greadEl(){return document.getElementById('gread');}
@@ -6632,17 +6640,18 @@ if(PREVIEW){
   window.parent.postMessage({rtg:'goal',game:(G.game&&G.game.id)||0,says:SAYS,on},location.origin);};
  heroSay(false);
  const GOAL_HOLD_MS=2600;
+ const SAY_HOLD_MS=10000,HOLD=SAYS?SAY_HOLD_MS:GOAL_HOLD_MS;
  const walk=()=>{let k=START;
   const tick=()=>{
    const shown=EV[k],last=k>=WINDOW,
-    wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
+    wait=last?(GOAL>=0?HOLD:1500):dwell(shown);
    set(k,k>0?'play':'');heroSay(last&&GOAL>=0);
    if(last){k=START;}else{k++;}
    setTimeout(tick,wait);};
   tick();};
  const goals=P=>{const j=trackHoldFrame(EV,GOAL,P,START);
   const go=()=>{trkRestClear();set(j,'');heroSay(false);
-   setTimeout(()=>{trkEnd();set(GOAL,'play');heroSay(true);trkRest(GOAL,P);setTimeout(go,GOAL_HOLD_MS);},trkStart(P,TRACK_STILL_MS,true));};
+   setTimeout(()=>{trkEnd();set(GOAL,'play');heroSay(true);trkRest(GOAL,P);setTimeout(go,HOLD);},trkStart(P,TRACK_STILL_MS,true));};
   go();};
  if(REDUCED){set(WINDOW,'');heroSay(WINDOW===GOAL);if(GP)GP.then(P=>{if(P)trkRest(GOAL,P);});}
  else if(GP){set(START,'');GP.then(P=>P?goals(P):walk(),walk);}

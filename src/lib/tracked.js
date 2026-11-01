@@ -171,6 +171,14 @@ export function trackShot(P, homeId) {
   return { j, at: P.frames[j].timeStamp, apex, ft, lane,
     posts: [{ x: NET_X * dir, y: -GOAL_POST_Y }, { x: NET_X * dir, y: GOAL_POST_Y }] };
 }
+/** Tenths of a second from the shot (`trackShot`) to the goal line, or null. */
+export const trackFlight = (P, S) => (P && S ? P.k - S.j : null);
+/** "The puck reached the goal line about 0.4 seconds after the shot." The file is 10 frames a second, hence "about". */
+export function trackFlightSay(tenths) {
+  if (tenths == null || tenths < 1) return '';
+  const t = tenths === 1 ? 'about a tenth of a second' : `about ${(tenths / 10).toFixed(1)} seconds`;
+  return `The puck reached the goal line ${t} after the shot.`;
+}
 /** Per frame to the goal line: the player nearest the puck within TRACK_REACH_FT, or null. */
 export function trackHolders(P) {
   const out = [];

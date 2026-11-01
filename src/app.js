@@ -61,7 +61,7 @@ import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG_TENTHS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
   trackStops, trackFrameAt, trackClock, trackSecs, trackClipSit, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
-  trackEntry, trackOutside } from './lib/tracked.js';
+  trackEntry, trackOutside, trackFlight, trackFlightSay } from './lib/tracked.js';
 import { GOAL_READ_MS, goalReadLines } from './lib/goal-read.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -2894,7 +2894,10 @@ function sayPlay(line){const d=$('playd');if(!d)return;
 // The distance rate under the caption. Goals only: Event mode already carries the source note there.
 function sayDist(e){const el=$('playdist');if(!el)return;
  const r=TRK.goals?goalRead(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):{say:'',quoted:false};
- $('playdistSay').textContent=r.say;el.hidden=!r.say;
+ // How long the puck took, from this goal's own tracking, ahead of the archive's rate.
+ const P=TRK.goals&&e&&e.type==='goal'?trkReady(e):null,fly=P?trackFlightSay(trackFlight(P,trackShot(P,HID))):'';
+ const say=[fly,r.say].filter(Boolean).join(' ');
+ $('playdistSay').textContent=say;el.hidden=!say;
  // A quoted band opens to its working on the methods page.
  const door=$('playdistDoor');door.hidden=!r.quoted;door.href=METHODS+'#'+anchorOf('shotDistance');}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
@@ -5542,17 +5545,19 @@ if(PREVIEW){
  heroSay(false);
  // The goal frame outlasts its siren caption (`@keyframes cap`, src/app.css; a test reads both).
  const GOAL_HOLD_MS=2600;
+ // With a sentence on the front door to read under the rink, the goal frame waits for it (Kevin).
+ const SAY_HOLD_MS=10000,HOLD=SAYS?SAY_HOLD_MS:GOAL_HOLD_MS;
  const walk=()=>{let k=START;
   const tick=()=>{
    const shown=EV[k],last=k>=WINDOW,
-    wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
+    wait=last?(GOAL>=0?HOLD:1500):dwell(shown);
    set(k,k>0?'play':'');heroSay(last&&GOAL>=0);
    if(last){k=START;}else{k++;}
    setTimeout(tick,wait);};
   tick();};
  const goals=P=>{const j=trackHoldFrame(EV,GOAL,P,START);
   const go=()=>{trkRestClear();set(j,'');heroSay(false);
-   setTimeout(()=>{trkEnd();set(GOAL,'play');heroSay(true);trkRest(GOAL,P);setTimeout(go,GOAL_HOLD_MS);},trkStart(P,TRACK_STILL_MS,true));};
+   setTimeout(()=>{trkEnd();set(GOAL,'play');heroSay(true);trkRest(GOAL,P);setTimeout(go,HOLD);},trkStart(P,TRACK_STILL_MS,true));};
   go();};
  if(REDUCED){set(WINDOW,'');heroSay(WINDOW===GOAL);if(GP)GP.then(P=>{if(P)trkRest(GOAL,P);});}
  else if(GP){set(START,'');GP.then(P=>P?goals(P):walk(),walk);}

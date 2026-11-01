@@ -10,7 +10,7 @@ import {
   trackPlan, trackRow, trackWindow, trackWho, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackRem, trackSecs, trackClipSit, trackFeet, trackGoalAhead, trackGoals,
   trackHoldFrame, trackMarkup, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
-  trackEntry, trackEntrySay, trackEntryRuled, trackOutside, PUCK_R, SKATER_R,
+  trackEntry, trackEntrySay, trackEntryRuled, trackOutside, PUCK_R, SKATER_R, trackFlight, trackFlightSay,
 } from '../src/lib/tracked.js';
 import { stints, occupants } from '../src/lib/box.js';
 import { GOAL_POST_Y, NET_X, BLUE_LINE_X, attackDirection } from '../src/lib/rink.js';
@@ -308,6 +308,19 @@ test('a clip that does not show the entry is left blank', () => {
   assert.equal(trackEntry(C, 1, ROSTER, 'LAK').j, 1);
   const late = { ...C, frames: C.frames.slice(1), k: C.k - 1 };
   assert.equal(trackEntry(late, 1, ROSTER, 'LAK'), null, 'the clip starts with the puck already across');
+});
+
+test('the shot to the goal line, in tenths of a second, from the clip itself', () => {
+  assert.equal(trackFlightSay(4), 'The puck reached the goal line about 0.4 seconds after the shot.');
+  assert.equal(trackFlightSay(12), 'The puck reached the goal line about 1.2 seconds after the shot.');
+  assert.equal(trackFlightSay(1), 'The puck reached the goal line about a tenth of a second after the shot.');
+  assert.equal(trackFlightSay(0), '');
+  assert.equal(trackFlightSay(null), '');
+  // Read off the frames: the puck's first frame past the goal line, back to the frame of the shot.
+  const S = trackShot(P, G.teams.home.id), t = trackFlight(P, S);
+  const past = P.frames.findIndex((f, j) => j > S.j && f.onIce['1'] && Math.abs(trackFeet(f.onIce['1']).x) > 89);
+  assert.equal(t, past - S.j, 'the time is not shot frame to goal-line frame');
+  assert.ok(t > 0 && t < 30, `${t} tenths from the shot to the line`);
 });
 
 test('the Panarin clip names the ruling: a LAK skater\'s centre is past the line as the puck crosses', () => {
