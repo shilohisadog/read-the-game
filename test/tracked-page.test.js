@@ -227,6 +227,19 @@ test('⭐ Goals says how long the puck took from the shot to the goal line, ahea
   assert.doesNotMatch(all.$('playdistSay').textContent, /goal line/);
 });
 
+test('⭐ Goals does not count events a viewer never sees; the event walk, which draws them, still does', async () => {
+  // The reference game's first goal says "The puck had stayed in the MIN end for 4 events in a row before it went in."
+  const all = boot(rich, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null));
+  await settle(); await settle();
+  all.at(GOALS[0].k, () => {}); await settle();
+  assert.match(all.$('playline').textContent, /stayed in the \S+ end for \d+ events in a row/, 'the fixture lost its stay, so this proves nothing');
+  const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
+  await settle(); await settle();
+  a.at(GOALS[0].k, () => {}); await settle();
+  assert.match(a.$('playline').textContent, /^A \S+ (shot )?from \d+ feet\. That puts/, 'the goal\u2019s note is gone, not just its stay');
+  assert.doesNotMatch(a.$('playline').textContent, /events in a row/);
+});
+
 test('an empty-net goal in Goals says the net was empty, not a rate', async () => {
   const game = JSON.parse(JSON.stringify(rich));
   const goal = game.events.find(e => e.type === 'goal' && e.x != null);

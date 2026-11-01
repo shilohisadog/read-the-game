@@ -31,7 +31,7 @@ import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { liveRun, playAt, plays, zoneRuns } from './lib/stretch.js';
-import { colorNotes, goalStrengths, stayRetell } from './lib/color.js';
+import { colorNotes, goalStrengths, dropStay } from './lib/color.js';
 import { goalRead } from './lib/shotdist.js';
 import { anchorOf } from './lib/anchors.js';
 import { challenges, challengeSay, reviewName, reviewSay } from './lib/challenge.js';
@@ -61,7 +61,7 @@ import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
 import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG_TENTHS, trackRow, trackPlan,
   trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
   trackStops, trackFrameAt, trackClock, trackSecs, trackClipSit, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
-  trackEntry, trackOutside, trackFlight, trackFlightSay } from './lib/tracked.js';
+  trackEntry, trackFlight, trackFlightSay } from './lib/tracked.js';
 import { GOAL_READ_MS, goalReadLines } from './lib/goal-read.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
@@ -315,30 +315,16 @@ const PLAYS=plays(G.events);
 // the archive (src/lib/color.js). Computed once; RATES may be null.
 const COLOR=colorNotes(G,CTX,RATES);
 /* WHAT A FRAME SHOWS OF ITS PLAY: the marks since the faceoff (`from`), those of
-   a live zone stretch emphasised (`zoneFrom`), and the color note for the frame.
-   The note was counted from recorded marks. When a goal's tracking has arrived
-   and the puck left the scoring end, the stretch recounts from the return. */
-function stayBack(k){
- const e=EV[k];if(!e||e.s==null)return null;
- let best=null;
- const take=idx=>{const g=EV[idx];if(!g||g.type!=='goal'||g.pt==='SO')return;
-  const P=trkReady(g);if(!P)return;
-  const at=trackOutside(P,HID);if(at==null||!(e.s>at))return;
-  const shooter=corsiTeam(g,CTX.roster);if(shooter==null)return;
-  if(!best||at>best.at)best={at,end:shooter===AID?'h':'a'};};
- if(e.type==='goal')take(k);
- const ahead=trackGoalAhead(EV,k);if(ahead>=0)take(ahead);
- return best;}
+   a live zone stretch emphasised (`zoneFrom`), and the color note for the frame. */
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);
  let line=COLOR.get(n)||'';
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP)line=soSay();
  if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX,RATES&&RATES.census&&RATES.census.reviews&&{...RATES.census.reviews,games:RATES.census.games});
+ // Goals shows no events, so a goal's count of them names nothing on screen.
+ if(TRK.goals&&cur.type==='goal')line=dropStay(line);
  if(!p)return {from:k,line};
- const left=stayBack(k);
- const run=liveRun(zoneRuns(G.events,p,n,CTX,left));
- if(left){const shooter=cur.type==='goal'?corsiTeam(cur,CTX.roster):null;
-  line=stayRetell(line,run,CTX,shooter==null?null:shooter===AID?'h':'a');}
+ const run=liveRun(zoneRuns(G.events,p,n,CTX));
  return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}
 /* ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — Kevin, watching a replay event
    by event: "I was wondering why don't we say when the penalty expires."
@@ -1020,13 +1006,6 @@ function drawEvents(i,how,PLAY){
   {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
   {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
   {place,tk,isHD}));}
-/* The zone sentence is drawn before the tracking file arrives. When the file lands on the
-   frame still showing, recount and redraw the line and the marks. A running clip owns the line. */
-function refreshStay(){
- if(TRK.run)return;
- const PLAY=playOf(i);
- drawEvents(i,RENDER_HOW,PLAY);
- sayPlay(PREVIEW?'':PLAY.line);}
 function render(i,how){
  /* ⭐⭐ A MOMENT IS A PLAY OR A JUMP — AND THE COUNTER FLASH BELOW IS DELIBERATELY
     NOT. The two conditions differ by one word and the difference is a claim about
@@ -3078,13 +3057,10 @@ function trkFrame(k,how,cur){
  if(TRK.goals&&REVIEW_STOP.has(k)){const w=$('who');w.textContent=reviewWho(REVIEW_STOP.get(k));w.className='who plain';}
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP){const w=$('who');w.textContent=SO_WHO;w.className='who plain';}
  trkNoCue();
- // The zone sentence counts from the file; redraw it when the file arrives on this frame.
- if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i===k)refreshStay();});
+ if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]);
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
-  const had=!!trkReady(cur);
   const p=trkPlan(cur);
   p.then(P=>{if(i!==k)return;
-   if(P&&!had)refreshStay();
    if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
    if(P&&REDUCED){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
    if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))

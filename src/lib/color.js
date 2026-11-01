@@ -69,24 +69,8 @@ export function stayWords(run, ctx, form) {
 }
 
 const STAY_HAD = / The puck had stayed in the \S+ end for \d+ events in a row before it went in\./;
-const STAY_HAS = /The puck has stayed in the .+? for \d+ events in a row(?:; in that time [^.]+)?\./;
-
-/**
- * The note as first written counts recorded marks. Once tracking shows the puck left the scoring end,
- * `run` is the recount from the return, and this puts that count in the sentence — or takes the
- * sentence out when the recount is under a stretch. A note that never claimed a stay is left alone.
- * `attacked` is the end the goal was scored in ('h' or 'a'); the past-tense sentence names that end only.
- */
-export function stayRetell(line, run, ctx, attacked) {
-  if (STAY_HAD.test(line)) {
-    const clause = run && run.end === attacked ? stayWords(run, ctx, 'had') : '';
-    return line.replace(STAY_HAD, clause).replace(/ {2,}/g, ' ').trim();
-  }
-  if (STAY_HAS.test(line)) {
-    return line.replace(STAY_HAS, run ? stayWords(run, ctx, 'has') : '').replace(/ {2,}/g, ' ').trim();
-  }
-  return line;
-}
+/** The goal's note without its stay: Goals shows no events, so a count of them names nothing on screen (Kevin). */
+export const dropStay = line => line.replace(STAY_HAD, '').replace(/ {2,}/g, ' ').trim();
 // Restarts the caption pill already explains; the color line adds only what it does not.
 const PILL_SAYS = new Set(['icing', 'offside']);
 

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-u3re/LdsGzWkTV9tcCTSihTzNOnTeOVRyeqh6iVqziA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-xg8yTw9QZMKxpegfTcBZwZ09DX8FgNg1btl4+HBJHQA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fCouMZteXXdOt9Zg4D7gLEkwoNuwrL9aNqz5xSzGxMs=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-xg8yTw9QZMKxpegfTcBZwZ09DX8FgNg1btl4+HBJHQA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -2066,15 +2066,14 @@ const markable = e => framed(e) && e.x != null && e.pt !== 'SO';
 const ZONE_RUN = 3;
 const zoneAtX = x => (x < -BLUE_LINE_X ? 'h' : x > BLUE_LINE_X ? 'a' : 'n');
 
-function zoneRuns(events, play, upto, ctx, left = null) {
+function zoneRuns(events, play, upto, ctx) {
   const runs = [];
   let cur = null;
   for (let n = play.from; n <= Math.min(upto, play.to); n++) {
     const e = events[n];
     if (!markable(e)) continue;
     const end = zoneAtX(e.x);
-    const broke = left && cur && cur.end === left.end && e.s > left.at && cur.s0 <= left.at;
-    if (!cur || cur.end !== end || broke) { cur = { end, from: n, marks: 0, s0: e.s, secs: 0, att: { a: 0, h: 0 }, onGoal: { a: 0, h: 0 } }; runs.push(cur); }
+    if (!cur || cur.end !== end) { cur = { end, from: n, marks: 0, s0: e.s, secs: 0, att: { a: 0, h: 0 }, onGoal: { a: 0, h: 0 } }; runs.push(cur); }
     cur.marks++;
     cur.secs = e.s - cur.s0;
     const team = corsiTeam(e, ctx.roster);
@@ -3418,18 +3417,7 @@ function stayWords(run, ctx, form) {
 }
 
 const STAY_HAD = / The puck had stayed in the \S+ end for \d+ events in a row before it went in\./;
-const STAY_HAS = /The puck has stayed in the .+? for \d+ events in a row(?:; in that time [^.]+)?\./;
-
-function stayRetell(line, run, ctx, attacked) {
-  if (STAY_HAD.test(line)) {
-    const clause = run && run.end === attacked ? stayWords(run, ctx, 'had') : '';
-    return line.replace(STAY_HAD, clause).replace(/ {2,}/g, ' ').trim();
-  }
-  if (STAY_HAS.test(line)) {
-    return line.replace(STAY_HAS, run ? stayWords(run, ctx, 'has') : '').replace(/ {2,}/g, ' ').trim();
-  }
-  return line;
-}
+const dropStay = line => line.replace(STAY_HAD, '').replace(/ {2,}/g, ' ').trim();
 const PILL_SAYS = new Set(['icing', 'offside']);
 
 function skatersOn(game, e, tid) {
@@ -4013,18 +4001,6 @@ function trackEntry(P, homeId, roster, ab) {
   return { j: hit, at, from, ids, unsure, say };
 }
 
-function trackOutside(P, homeId) {
-  if (!P || !P.e || homeId == null || P.e.s == null) return null;
-  const dir = attackDirection(P.e.own, homeId);
-  let last = null;
-  for (let j = 0; j <= P.k; j++) {
-    const ax = trackAx(P, P.frames[j] && P.frames[j].onIce && P.frames[j].onIce['1'], dir);
-    if (ax == null) continue;
-    if (ax <= BLUE_LINE_X) last = j;
-  }
-  if (last == null) return null;
-  return P.e.s - (P.frames[P.k].timeStamp - P.frames[last].timeStamp) / 10;
-}
 function trackFrameAt(P, tt) {
   let j = 0;
   while (j < P.k && P.frames[j + 1].timeStamp <= tt) j++;
@@ -5181,27 +5157,14 @@ const MODE=()=>levelOnly?'score tied, 5-on-5, regulation'
 const PBOX=stints(G.events,CTX);
 const PLAYS=plays(G.events);
 const COLOR=colorNotes(G,CTX,RATES);
-function stayBack(k){
- const e=EV[k];if(!e||e.s==null)return null;
- let best=null;
- const take=idx=>{const g=EV[idx];if(!g||g.type!=='goal'||g.pt==='SO')return;
-  const P=trkReady(g);if(!P)return;
-  const at=trackOutside(P,HID);if(at==null||!(e.s>at))return;
-  const shooter=corsiTeam(g,CTX.roster);if(shooter==null)return;
-  if(!best||at>best.at)best={at,end:shooter===AID?'h':'a'};};
- if(e.type==='goal')take(k);
- const ahead=trackGoalAhead(EV,k);if(ahead>=0)take(ahead);
- return best;}
 function playOf(k){const cur=EV[k];if(!cur)return {from:k,line:''};
  const n=EVI[k],p=playAt(PLAYS,n);
  let line=COLOR.get(n)||'';
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP)line=soSay();
  if(TRK.goals&&REVIEW_ON_GOAL.has(n))line+=(line?' ':'')+challengeSay(REVIEW_ON_GOAL.get(n),TEAMAB,{[HID]:0,[AID]:0},CTX,RATES&&RATES.census&&RATES.census.reviews&&{...RATES.census.reviews,games:RATES.census.games});
+ if(TRK.goals&&cur.type==='goal')line=dropStay(line);
  if(!p)return {from:k,line};
- const left=stayBack(k);
- const run=liveRun(zoneRuns(G.events,p,n,CTX,left));
- if(left){const shooter=cur.type==='goal'?corsiTeam(cur,CTX.roster):null;
-  line=stayRetell(line,run,CTX,shooter==null?null:shooter===AID?'h':'a');}
+ const run=liveRun(zoneRuns(G.events,p,n,CTX));
  return {from:frameOf(p.from),zoneFrom:run?frameOf(run.from):null,line};}
 const ENDED=new Map(powerPlayOver(EV,PBOX,CTX).map(k=>[EV[k.sayAt],k]));
 const ICING=new Map(icingRestarts(G.events,CTX).map(r=>[r.event,r]));
@@ -5369,11 +5332,6 @@ function drawEvents(i,how,PLAY){
   {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
   {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
   {place,tk,isHD}));}
-function refreshStay(){
- if(TRK.run)return;
- const PLAY=playOf(i);
- drawEvents(i,RENDER_HOW,PLAY);
- sayPlay(PREVIEW?'':PLAY.line);}
 function render(i,how){
  RENDER_HOW=how;
  const moment=how==='play'||how==='jump';
@@ -5994,12 +5952,10 @@ function trkFrame(k,how,cur){
  if(TRK.goals&&REVIEW_STOP.has(k)){const w=$('who');w.textContent=reviewWho(REVIEW_STOP.get(k));w.className='who plain';}
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP){const w=$('who');w.textContent=SO_WHO;w.className='who plain';}
  trkNoCue();
- if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i===k)refreshStay();});
+ if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]);
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
-  const had=!!trkReady(cur);
   const p=trkPlan(cur);
   p.then(P=>{if(i!==k)return;
-   if(P&&!had)refreshStay();
    if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
    if(P&&REDUCED){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
    if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))
