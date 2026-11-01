@@ -1,28 +1,11 @@
 /**
- * Post-goal reading hold — a fixed pause after a goal so the viewer can read
- * the board, the banner, the caption and the notes.
- *
- * Kevin, 2026-10-29: a goal frame already waited frameMs + CAPTION_BONUS once it
- * was on screen (6300 ms at the default gear), for both tracked and untracked
- * goals. That pause still scaled with the speed gear, and nothing on the ice
- * named it as reading time. He asked for a flat pause after the goal, the same
- * at every speed, with a faint countdown at centre ice. Tuned the same day:
- * 4 s → 10 s → 20 s after he watched each live; 10 s was still too short. The
- * hold is now a soft pause: the Play control reads Play, tapping it continues
- * at once, and otherwise the Replay continues when the countdown reaches 0 —
- * so readers set their own pace.
- *
- * CAPTION_BONUS stays for every other captioned frame. Goals use this instead:
- * one number, not gear-scaled, so Faster does not rush the read and Slower does
- * not pad it.
- *
- * Overlay copy (Kevin, 2026-10-29 t77u): three right-justified lines of about
- * equal length, capital R in Replay — "Tap Play to continue," / "otherwise the
- * Replay" / "continues in N seconds" (singular at 1).
+ * Post-goal reading hold: a fixed pause after a goal, the same at every speed, with a
+ * three-line countdown under centre ice. Lines of about equal length, right-justified,
+ * capital R in Replay; the first names the main button, which reads Pause during the hold.
  */
 
 /** Fixed post-goal reading pause, ms. Does not scale with the speed gear. */
-export const GOAL_READ_MS = 20000; // 2026-10-29: 10 s was still too short; 20 s plus tap-to-continue so readers set their own pace
+export const GOAL_READ_MS = 20000;
 
 /**
  * Countdown copy for the hold. Three faint lines under centre ice.
@@ -33,24 +16,10 @@ export function goalReadLines(msLeft) {
   if (!(msLeft > 0)) return null;
   const n = Math.ceil(msLeft / 1000);
   return {
-    tap: 'Tap Play to continue,',
+    tap: 'Tap Pause to stay,',
     mid: 'otherwise the Replay',
     or: n === 1
       ? 'continues in 1 second'
       : `continues in ${n} seconds`,
   };
-}
-
-/** Joined form of `goalReadLines` (newline between the three lines). */
-export function goalReadLabel(msLeft) {
-  const L = goalReadLines(msLeft);
-  return L ? `${L.tap}\n${L.mid}\n${L.or}` : '';
-}
-
-/**
- * How long a goal frame waits: the fixed read hold, plus any leftover tracking
- * still attached to this frame (same shape as `dwell`'s `base + trkExtra`).
- */
-export function goalReadDwell(trkLeft = 0) {
-  return GOAL_READ_MS + Math.max(0, trkLeft);
 }

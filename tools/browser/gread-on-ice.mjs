@@ -75,12 +75,10 @@ setTimeout(function () {
   if (rg) rg.classList.add('showanyway');
   g.removeAttribute('hidden');
   var tap = d.getElementById('greadTap'), or = d.getElementById('greadOr');
-  if (tap) tap.textContent = 'Tap Play to continue,';
+  if (tap) tap.textContent = 'Tap Pause to stay,';
   var mid = d.getElementById('greadMid');
   if (mid) mid.textContent = 'otherwise the Replay';
   if (or) or.textContent = 'continues in 3 seconds';
-  var btn = d.getElementById('greadPause');
-  if (btn) btn.textContent = 'Pause';
   void g.offsetHeight;
   var gr = g.getBoundingClientRect(), ir = ice.getBoundingClientRect(), wr = who.getBoundingClientRect();
   document.title = 'GREAD ' + Math.round(gr.top) + ' ' + Math.round(gr.right) + ' ' + Math.round(gr.bottom) + ' ' + Math.round(gr.left)

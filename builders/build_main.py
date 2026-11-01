@@ -138,7 +138,6 @@ __CSS__</style>
     <span id="greadMid" class="gread-mid"></span>
     <span id="greadOr" class="gread-or"></span>
   </p>
-  <button type="button" id="greadPause" class="gread-btn" aria-label="Pause the goal reading hold">Pause</button>
 </div></div>
   <!-- ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING. Kevin, 2026-09-07,
        looking at a giveaway: "the (vertical) distance between '#79 Hart gave the

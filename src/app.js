@@ -2564,10 +2564,7 @@ const CAPTION_BONUS=900;
 // 2026-10-29: fixed post-goal reading pause (Kevin). Same at every gear — reading does not scale.
 // GOAL_READ_MS lives in src/lib/goal-read.js so the number and the countdown copy are tested pure.
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
-/* Post-goal soft hold on the ice. `end` is performance.now()+remaining while the
-   hold runs; `frozen` is remaining ms after the overlay Pause; `for` is the goal
-   the hold belongs to. Play (main or overlay Resume) continues; overlay Pause
-   freezes; waiting auto-continues; Next/Prev/seek clear. */
+// The post-goal hold: `for` is its goal, `end` when it runs out (performance.now()).
 let GREAD=null,greadTimer=null;
 $('scrub').max=EV.length-1;
 /* THE PLAYHEAD FLOOR IS -1, AND -1 IS A FRAME. Every read of the current event
@@ -2898,75 +2895,28 @@ function sayDist(e){const el=$('playdist');if(!el)return;
  const say=TRK.goals?goalLine(e,{roster:R,homeId:HID,awayId:AID},RATES&&RATES.shotDistance):'';
  el.textContent=say;el.hidden=!say;}
 // A color note is words to read, so it earns the caption's reading time (not on the front door's loop).
-/* ⭐ POST-GOAL SOFT HOLD — Kevin, 2026-10-29. HTML overlay under centre ice: two
-   faint lines invite Play to continue early, and a real Pause button freezes the
-   hold. While the hold runs the main Play control reads Play (so "Tap Play"
-   matches the button); tapping it ends the hold at once. Overlay Pause freezes
-   the countdown; the overlay button then reads Resume and the main control still
-   reads Play — either one resumes the remaining hold. Waiting auto-continues at
-   0. Next/Prev/seek clear it. prefers-reduced-motion keeps the words with no
-   fade. Not shown on the front-door preview (its own GOAL_HOLD_MS).
-   WHAT+why: `#gread` lives in `.iceslot` with the svg (not loose in `.rinkbox`)
-   so its % top is of the ice — a rinkbox % put it on the text under the rink. */
-function greadRem(){
- if(!GREAD)return 0;
- if(GREAD.frozen!=null)return Math.max(0,GREAD.frozen);
- return Math.max(0,GREAD.end-performance.now());}
+/* POST-GOAL HOLD: a countdown under centre ice while a goal waits GOAL_READ_MS. The main
+   button reads Pause throughout; Pause stays on the goal with no limit, and Play then moves on.
+   `#gread` sits in `.iceslot` so its % top is of the ice, not of the text under it. */
+function greadRem(){return GREAD?Math.max(0,GREAD.end-performance.now()):0;}
 function greadEl(){return document.getElementById('gread');}
-function greadBtn(){return document.getElementById('greadPause');}
-/* While a hold is armed the transport is still "playing" (the dwell timer will
-   auto-continue, unless overlay-paused), but the main button must read Play so
-   "Tap Play to continue" matches what the viewer sees. */
-function greadSyncBtn(){
- if(!playing)return;
- $('play').textContent=(GREAD&&greadRem()>0)?PLAY_REST:'⏸ Pause';}
 function greadPaint(){
  const el=greadEl();if(!el)return;
- if(PREVIEW||!GREAD){el.hidden=true;el.classList.remove('gread-on');return;}
- const ms=greadRem();
- const lines=goalReadLines(ms);
+ const lines=PREVIEW||!GREAD?null:goalReadLines(greadRem());
  if(!lines){el.hidden=true;el.classList.remove('gread-on');return;}
- const tap=$('greadTap'), mid=$('greadMid'), or=$('greadOr');
- if(tap)tap.textContent=lines.tap;
- if(mid)mid.textContent=lines.mid;
- if(or)or.textContent=lines.or;
- const btn=greadBtn();
- if(btn){
-  const frozen=GREAD.frozen!=null;
-  btn.textContent=frozen?'Resume':'Pause';
-  btn.setAttribute('aria-label',frozen?'Resume the goal reading hold':'Pause the goal reading hold');}
+ $('greadTap').textContent=lines.tap;$('greadMid').textContent=lines.mid;$('greadOr').textContent=lines.or;
  el.hidden=false;
- el.classList.toggle('gread-on',ms>0&&!REDUCED&&GREAD.frozen==null);
- greadSyncBtn();}
+ el.classList.toggle('gread-on',!REDUCED);}
 function greadStopKick(){if(greadTimer!=null){clearInterval(greadTimer);greadTimer=null;}}
 function greadKick(){
  // setInterval, not rAF: the test harness runs rAF synchronously and a paint loop would recurse.
  greadStopKick();greadPaint();
- if(!GREAD||GREAD.frozen!=null||PREVIEW)return;
- if(typeof setInterval!=='function')return;
- greadTimer=setInterval(()=>{
-  if(!GREAD||GREAD.frozen!=null){greadStopKick();return;}
-  greadPaint();if(greadRem()<=0)greadClear();},200);}
-function greadClear(){
- greadStopKick();GREAD=null;const el=greadEl();if(el){el.hidden=true;el.classList.remove('gread-on');}
- greadSyncBtn();}
+ if(!GREAD||PREVIEW||typeof setInterval!=='function')return;
+ greadTimer=setInterval(()=>{if(!GREAD){greadStopKick();return;}greadPaint();if(greadRem()<=0)greadClear();},200);}
+function greadClear(){greadStopKick();GREAD=null;greadPaint();}
 function greadArm(e){
  if(PREVIEW||!e||e.type!=='goal')return;
- GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};greadKick();}
-/* Overlay Pause — freeze the countdown; replay stays on this goal until Play/Resume. */
-function greadFreeze(){
- if(!GREAD||GREAD.frozen!=null)return;
- GREAD.frozen=greadRem();GREAD.end=0;clearTimeout(timer);greadStopKick();greadPaint();}
-/* Resume a frozen hold for its remaining ms (overlay Resume or main Play). */
-function greadResume(){
- if(!GREAD||GREAD.frozen==null)return;
- const left=Math.max(0,GREAD.frozen);
- GREAD.frozen=null;GREAD.end=performance.now()+left;
- clearTimeout(timer);timer=setTimeout(step,left);greadKick();}
-/* End the hold at once and keep playing — "Tap Play to continue" while ticking. */
-function greadSkip(){
- if(!GREAD)return;
- clearTimeout(timer);greadClear();step();}
+ GREAD={for:e,end:performance.now()+GOAL_READ_MS};greadKick();}
 function dwell(e){
  // Goals passes through a frame that is not one of its stops (the opening face-off, a frame held for a
  // tracking or a file): it waits for the tracking or the file, never a frame's reading time.
@@ -3009,20 +2959,8 @@ const PLAY_REST='▶ Play';
    frame at all -- so without this the roster would appear only when the reader
    next stepped, which is the opposite of "shown while paused". */
 function stop(){playing=false;syncStep();clearTimeout(timer);greadClear();sayOnIce(EV[i]);}
-/* Soft hold: while the countdown ticks, main Play means "continue now". After an
-   overlay Pause freeze, main Play (and overlay Resume) resume the remaining hold.
-   Same handler for the ice tap. */
-function togglePlay(){
- if(GREAD&&greadRem()>0){
-  if(GREAD.frozen!=null){greadResume();return;}
-  if(playing){greadSkip();return;}}
- playing?stop():play();}
+function togglePlay(){playing?stop():play();}
 $('play').onclick=()=>togglePlay();
-if($('greadPause'))$('greadPause').onclick=ev=>{
- /* Don't let the press reach the ice (which is also a play/pause control). */
- if(ev&&ev.stopPropagation)ev.stopPropagation();
- if(!GREAD)return;
- if(GREAD.frozen!=null)greadResume();else greadFreeze();};
 /* ⭐⭐ THE TRACKED GOAL — the league's tracking of the seconds before a goal, over this
    rink (src/lib/tracked.js holds the arithmetic and the words). Kevin, 2026-10-19 → 21,
    built on the lab first. In All events, Play shows a goal's ~10 tracked seconds at the
