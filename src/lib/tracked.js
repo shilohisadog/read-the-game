@@ -238,6 +238,8 @@ export function trackLaneLine(P, j, tt, shot, homeId) {
 
 /** "Onside: the puck crossed the blue line before any LAK player did." */
 export const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
+/** When the tracking cannot show the puck went first. A clip exists only for a goal that counted, so the entry stood. */
+export const trackEntryRuled = ab => `Onside: the officials ruled ${ab}\u2019s entry onside.`;
 
 /** Feet along the attack, positive toward the net being attacked, or null when `o` has no location. */
 const trackAx = (P, o, dir) => {
@@ -247,9 +249,10 @@ const trackAx = (P, o, dir) => {
 };
 
 /**
- * The frame the puck's dot clears the attacking blue line ahead of every attacking skater, or null.
- * The caption says the puck crossed first, so a clip that does not show that is left blank.
- *   {j, at, from, ids, say} — `from` is the first frame of the approach, `ids` the attacking skaters.
+ * The frame the puck's dot clears the attacking blue line, or null when the clip does not show it.
+ * With every attacking skater behind the line the caption says the puck went first and marks them;
+ * otherwise it names the officials' ruling and marks no one.
+ *   {j, at, from, ids, say} — `from` is the first frame of the approach, `ids` the skaters marked.
  */
 export function trackEntry(P, homeId, roster, ab) {
   if (!P || !P.e || homeId == null) return null;
@@ -267,12 +270,15 @@ export function trackEntry(P, homeId, roster, ab) {
   }
   if (hit == null) return null;
   const ids = [];
+  let ahead = false;
   for (const o of Object.values(P.frames[hit].onIce || {})) {
     if (!o.playerId || Number(o.teamId) !== own) continue;
     const r = roster && roster[o.playerId];
     if (r && r.pos === 'G') continue;
     const ax = trackAx(P, o, dir);
-    if (ax == null || ax > skaterClear) return null;
+    // Further ahead than a dot's radius may not be this team's entry at all; say nothing.
+    if (ax == null || ax > skaterClear + SKATER_R) return null;
+    if (ax > skaterClear) ahead = true;
     ids.push(Number(o.playerId));
   }
   if (!ids.length) return null;
@@ -282,6 +288,7 @@ export function trackEntry(P, homeId, roster, ab) {
     if (ax == null || ax <= BLUE_LINE_X - ZONE_BAND_FT || ax > puckClear) break;
     from = j;
   }
+  if (ahead) return { j: hit, at: P.frames[hit].timeStamp, from, ids: [], say: trackEntryRuled(ab) };
   return { j: hit, at: P.frames[hit].timeStamp, from, ids, say: trackEntrySay(ab) };
 }
 

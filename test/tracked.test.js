@@ -10,7 +10,7 @@ import {
   trackPlan, trackRow, trackWindow, trackWho, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackRem, trackSecs, trackClipSit, trackFeet, trackGoalAhead, trackGoals,
   trackHoldFrame, trackMarkup, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
-  trackEntry, trackEntrySay, trackOutside, PUCK_R, SKATER_R,
+  trackEntry, trackEntrySay, trackEntryRuled, trackOutside, PUCK_R, SKATER_R,
 } from '../src/lib/tracked.js';
 import { stints, occupants } from '../src/lib/box.js';
 import { GOAL_POST_Y, NET_X, BLUE_LINE_X, attackDirection } from '../src/lib/rink.js';
@@ -274,7 +274,9 @@ test('the puck clears the blue line before the attacking skaters', () => {
     { puck: 24, sk: [sk(25.4, 11)] },
     { puck: 28, sk: [sk(25.4, 11)] },
   ]);
-  assert.equal(trackEntry(past, 1, ROSTER, 'LAK'), null, 'a centre past the line is called behind the puck');
+  const ruled = trackEntry(past, 1, ROSTER, 'LAK');
+  assert.equal(ruled.say, 'Onside: the officials ruled LAK\u2019s entry onside.', 'a centre past the line is called behind the puck');
+  assert.deepEqual(ruled.ids, [], 'a skater is marked as behind the line when one may not be');
 });
 
 test('a clip that does not show the entry is left blank', () => {
@@ -288,7 +290,7 @@ test('a clip that does not show the entry is left blank', () => {
     { puck: 10, sk: [sk(40, 11), sk(0, 12)] },
     { puck: 30, sk: [sk(40, 11), sk(4, 12)] },
   ]);
-  assert.equal(trackEntry(ahead, 1, ROSTER, 'LAK'), null, 'an attacking skater had already cleared the line');
+  assert.equal(trackEntry(ahead, 1, ROSTER, 'LAK'), null, 'an attacker well ahead of the puck may not be this team\u2019s entry');
   const C = clip([
     { puck: 10, sk: [sk(4, 11)] },
     { puck: 30, sk: [sk(14, 11)] },
@@ -299,8 +301,12 @@ test('a clip that does not show the entry is left blank', () => {
   assert.equal(trackEntry(late, 1, ROSTER, 'LAK'), null, 'the clip starts with the puck already across');
 });
 
-test('the Panarin clip says nothing: a LAK skater\'s centre is past the line as the puck crosses', () => {
-  assert.equal(trackEntry(P, G.teams.home.id, G.roster, 'LAK'), null);
+test('the Panarin clip names the ruling: a LAK skater\'s centre is past the line as the puck crosses', () => {
+  const en = trackEntry(P, G.teams.home.id, G.roster, 'LAK');
+  assert.equal(en.say, trackEntryRuled('LAK'));
+  assert.deepEqual(en.ids, []);
+  assert.doesNotMatch(trackMarkup(P, en.j, en.at, { G, AX, AY, col: {}, tags: [], entry: en, blue: { x: 75, y1: 1, y2: 84 } }), /class="tck"/,
+    'a skater is marked behind the line on a clip that cannot show it');
   // Read the crossing directly: the frame the puck's centre passes the line plus the dot's radius.
   const dir = attackDirection(GOAL.own, G.teams.home.id), ax = o => P.turn * trackFeet(o).x * dir;
   let j = -1;

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-J38oBH470geIfufRGVhn5pfk/SbnMhSKiHVXL/4oTss=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5akmiEfH5VrMCVHgIy9dAx9vWwEQM5dQi1HpBTJHqOc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-q4HCzTOS4taz8tsAp/l+8ULqcrkD28MUb1QkMi10TKw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3904,6 +3904,7 @@ function trackLaneLine(P, j, tt, shot, homeId) {
 }
 
 const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
+const trackEntryRuled = ab => `Onside: the officials ruled ${ab}\u2019s entry onside.`;
 
 const trackAx = (P, o, dir) => {
   if (!o || o.x == null || o.y == null) return null;
@@ -3925,12 +3926,14 @@ function trackEntry(P, homeId, roster, ab) {
   }
   if (hit == null) return null;
   const ids = [];
+  let ahead = false;
   for (const o of Object.values(P.frames[hit].onIce || {})) {
     if (!o.playerId || Number(o.teamId) !== own) continue;
     const r = roster && roster[o.playerId];
     if (r && r.pos === 'G') continue;
     const ax = trackAx(P, o, dir);
-    if (ax == null || ax > skaterClear) return null;
+    if (ax == null || ax > skaterClear + SKATER_R) return null;
+    if (ax > skaterClear) ahead = true;
     ids.push(Number(o.playerId));
   }
   if (!ids.length) return null;
@@ -3940,6 +3943,7 @@ function trackEntry(P, homeId, roster, ab) {
     if (ax == null || ax <= BLUE_LINE_X - ZONE_BAND_FT || ax > puckClear) break;
     from = j;
   }
+  if (ahead) return { j: hit, at: P.frames[hit].timeStamp, from, ids: [], say: trackEntryRuled(ab) };
   return { j: hit, at: P.frames[hit].timeStamp, from, ids, say: trackEntrySay(ab) };
 }
 
