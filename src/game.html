@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UGol+ppq6Uhpt/eI5MXA1kPGkD35M5NFWtiSuRaiH1Q=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-xg8yTw9QZMKxpegfTcBZwZ09DX8FgNg1btl4+HBJHQA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-u3re/LdsGzWkTV9tcCTSihTzNOnTeOVRyeqh6iVqziA=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-xg8yTw9QZMKxpegfTcBZwZ09DX8FgNg1btl4+HBJHQA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3956,12 +3956,17 @@ function trackLaneLine(P, j, tt, shot, homeId) {
 
 const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
 const COUNT = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
-function trackEntryRuled(ab, behind, unsure) {
+function entryMarks(behind, unsure) {
   const tick = behind === 1 ? ' The ticked player was behind the line.' : behind > 1 ? ' The ticked players were behind the line.' : '';
+  if (!unsure) return tick;
   const them = unsure === 1 ? 'the one marked ?' : `the ${COUNT[unsure] || unsure} marked ?`;
-  return `Onside: the officials ruled ${ab}\u2019s entry onside.${tick} Offside depends on a player\u2019s skates, `
-    + `and the tracking only follows the middle of each player, so it can\u2019t tell for ${them}.`;
+  return `${tick} Offside depends on a player’s skates, and the tracking only follows the middle of each player, `
+    + `so it can’t tell for ${them}.`;
 }
+const trackEntryRuled = (ab, behind, unsure) => `Onside: the officials ruled ${ab}’s entry onside.${entryMarks(behind, unsure)}`;
+const trackEntryCarried = (who, behind, unsure) =>
+  `Onside: ${who} crossed the blue line ahead of the puck while carrying it, which is allowed: the player with the puck may go in first.${entryMarks(behind, unsure)}`;
+const TRACK_ENTRY_CALLED = 'The puck crosses the blue line: no offside was called, and the goal counted.';
 
 const trackAx = (P, o, dir) => {
   if (!o || o.x == null || o.y == null) return null;
@@ -3982,24 +3987,30 @@ function trackEntry(P, homeId, roster, ab) {
     prev = ax;
   }
   if (hit == null) return null;
-  const ids = [], unsure = [];
+  const ids = [], unsure = [], ahead = [];
   for (const o of Object.values(P.frames[hit].onIce || {})) {
     if (!o.playerId || Number(o.teamId) !== own) continue;
     const r = roster && roster[o.playerId];
     if (r && r.pos === 'G') continue;
     const ax = trackAx(P, o, dir);
-    if (ax == null || ax > skaterClear + SKATER_R) return null;
-    (ax > skaterClear ? unsure : ids).push(Number(o.playerId));
+    if (ax == null) return null;
+    (ax > skaterClear + SKATER_R ? ahead : ax > skaterClear ? unsure : ids).push(Number(o.playerId));
   }
-  if (!ids.length && !unsure.length) return null;
+  if (!ids.length && !unsure.length && !ahead.length) return null;
+  const holder = ahead.length ? Number(trackHolders(P)[hit]) : null;
+  const carried = ahead.length === 1 && ahead[0] === holder;
   let from = hit;
   for (let j = hit - 1; j >= 0; j--) {
     const ax = axAt(j);
     if (ax == null || ax <= BLUE_LINE_X - ZONE_BAND_FT || ax > puckClear) break;
     from = j;
   }
-  const say = unsure.length ? trackEntryRuled(ab, ids.length, unsure.length) : trackEntrySay(ab);
-  return { j: hit, at: P.frames[hit].timeStamp, from, ids, unsure, say };
+  const at = P.frames[hit].timeStamp;
+  if (ahead.length && !carried) return { j: hit, at, from, ids: [], unsure: [], say: TRACK_ENTRY_CALLED };
+  const p = carried && roster && roster[holder];
+  const say = carried ? trackEntryCarried(p ? `#${p.n} ${p.nm}` : `the ${ab} player`, ids.length, unsure.length)
+    : unsure.length ? trackEntryRuled(ab, ids.length, unsure.length) : trackEntrySay(ab);
+  return { j: hit, at, from, ids, unsure, say };
 }
 
 function trackOutside(P, homeId) {

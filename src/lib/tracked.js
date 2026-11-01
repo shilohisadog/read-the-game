@@ -247,16 +247,24 @@ export function trackLaneLine(P, j, tt, shot, homeId) {
 /** "Onside: the puck crossed the blue line before any LAK player did." */
 export const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
 const COUNT = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
+/** The ticks and the ?s, said: who was behind the line, and why the tracking cannot settle the rest. */
+function entryMarks(behind, unsure) {
+  const tick = behind === 1 ? ' The ticked player was behind the line.' : behind > 1 ? ' The ticked players were behind the line.' : '';
+  if (!unsure) return tick;
+  const them = unsure === 1 ? 'the one marked ?' : `the ${COUNT[unsure] || unsure} marked ?`;
+  return `${tick} Offside depends on a player’s skates, and the tracking only follows the middle of each player, `
+    + `so it can’t tell for ${them}.`;
+}
 /**
  * When the tracking cannot show the puck went first. A clip exists only for a goal that counted, so the
  * entry stood; `behind` players are ticked, `unsure` ones marked ?.
  */
-export function trackEntryRuled(ab, behind, unsure) {
-  const tick = behind === 1 ? ' The ticked player was behind the line.' : behind > 1 ? ' The ticked players were behind the line.' : '';
-  const them = unsure === 1 ? 'the one marked ?' : `the ${COUNT[unsure] || unsure} marked ?`;
-  return `Onside: the officials ruled ${ab}\u2019s entry onside.${tick} Offside depends on a player\u2019s skates, `
-    + `and the tracking only follows the middle of each player, so it can\u2019t tell for ${them}.`;
-}
+export const trackEntryRuled = (ab, behind, unsure) => `Onside: the officials ruled ${ab}’s entry onside.${entryMarks(behind, unsure)}`;
+/** An attacker well ahead of the puck while carrying it: allowed. */
+export const trackEntryCarried = (who, behind, unsure) =>
+  `Onside: ${who} crossed the blue line ahead of the puck while carrying it, which is allowed: the player with the puck may go in first.${entryMarks(behind, unsure)}`;
+/** An attacker well ahead of the puck and not carrying it. The tracking's accuracy is not published, so this says only what is certain. */
+export const TRACK_ENTRY_CALLED = 'The puck crosses the blue line: no offside was called, and the goal counted.';
 
 /** Feet along the attack, positive toward the net being attacked, or null when `o` has no location. */
 const trackAx = (P, o, dir) => {
@@ -269,6 +277,8 @@ const trackAx = (P, o, dir) => {
  * The frame the puck's dot clears the attacking blue line, or null when the clip does not show it.
  * With every attacking skater behind the line the caption says the puck went first; with some within a
  * dot's radius past it, it names the officials' ruling and says which ones the tracking cannot settle.
+ * One further ahead is legal only carrying the puck, which it says; anyone else further ahead, it says
+ * only that no offside was called and marks no one (Kevin, 2026-11-01).
  *   {j, at, from, ids, unsure, say} — `from` is the first frame of the approach, `ids` the skaters
  *   behind the line (ticked), `unsure` those too close to call (marked ?).
  */
@@ -287,25 +297,31 @@ export function trackEntry(P, homeId, roster, ab) {
     prev = ax;
   }
   if (hit == null) return null;
-  const ids = [], unsure = [];
+  const ids = [], unsure = [], ahead = [];
   for (const o of Object.values(P.frames[hit].onIce || {})) {
     if (!o.playerId || Number(o.teamId) !== own) continue;
     const r = roster && roster[o.playerId];
     if (r && r.pos === 'G') continue;
     const ax = trackAx(P, o, dir);
-    // Further ahead than a dot's radius may not be this team's entry at all; say nothing.
-    if (ax == null || ax > skaterClear + SKATER_R) return null;
-    (ax > skaterClear ? unsure : ids).push(Number(o.playerId));
+    if (ax == null) return null;
+    // Past a dot's radius the skater is across, skates and all; only carrying the puck makes that onside.
+    (ax > skaterClear + SKATER_R ? ahead : ax > skaterClear ? unsure : ids).push(Number(o.playerId));
   }
-  if (!ids.length && !unsure.length) return null;
+  if (!ids.length && !unsure.length && !ahead.length) return null;
+  const holder = ahead.length ? Number(trackHolders(P)[hit]) : null;
+  const carried = ahead.length === 1 && ahead[0] === holder;
   let from = hit;
   for (let j = hit - 1; j >= 0; j--) {
     const ax = axAt(j);
     if (ax == null || ax <= BLUE_LINE_X - ZONE_BAND_FT || ax > puckClear) break;
     from = j;
   }
-  const say = unsure.length ? trackEntryRuled(ab, ids.length, unsure.length) : trackEntrySay(ab);
-  return { j: hit, at: P.frames[hit].timeStamp, from, ids, unsure, say };
+  const at = P.frames[hit].timeStamp;
+  if (ahead.length && !carried) return { j: hit, at, from, ids: [], unsure: [], say: TRACK_ENTRY_CALLED };
+  const p = carried && roster && roster[holder];
+  const say = carried ? trackEntryCarried(p ? `#${p.n} ${p.nm}` : `the ${ab} player`, ids.length, unsure.length)
+    : unsure.length ? trackEntryRuled(ab, ids.length, unsure.length) : trackEntrySay(ab);
+  return { j: hit, at, from, ids, unsure, say };
 }
 
 /**

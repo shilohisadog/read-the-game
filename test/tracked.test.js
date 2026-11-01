@@ -10,7 +10,7 @@ import {
   trackPlan, trackRow, trackWindow, trackWho, trackFirst,
   trackTags, trackStops, trackFrameAt, trackClock, trackRem, trackSecs, trackClipSit, trackFeet, trackGoalAhead, trackGoals,
   trackHoldFrame, trackMarkup, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
-  trackEntry, trackEntrySay, trackEntryRuled, trackOutside, PUCK_R, SKATER_R, trackFlight, trackFlightSay,
+  trackEntry, trackEntrySay, trackEntryRuled, TRACK_ENTRY_CALLED, trackOutside, PUCK_R, SKATER_R, trackFlight, trackFlightSay,
 } from '../src/lib/tracked.js';
 import { stints, occupants } from '../src/lib/box.js';
 import { GOAL_POST_Y, NET_X, BLUE_LINE_X, attackDirection } from '../src/lib/rink.js';
@@ -299,7 +299,20 @@ test('a clip that does not show the entry is left blank', () => {
     { puck: 10, sk: [sk(40, 11), sk(0, 12)] },
     { puck: 30, sk: [sk(40, 11), sk(4, 12)] },
   ]);
-  assert.equal(trackEntry(ahead, 1, ROSTER, 'LAK'), null, 'an attacker well ahead of the puck may not be this team\u2019s entry');
+  const called = trackEntry(ahead, 1, ROSTER, 'LAK');
+  assert.equal(called.say, TRACK_ENTRY_CALLED, 'an attacker well ahead without the puck');
+  assert.deepEqual([called.ids, called.unsure], [[], []], 'a skater is marked on an entry the line does not explain');
+  assert.doesNotMatch(called.say, /^Onside|missed|ahead/, 'the line claims more than that no offside was called');
+  // Carrying the puck: 5 ft past the line with the puck 2 ft behind him, a teammate behind the line, one too close to call.
+  const carried = clip([
+    { puck: 24, sk: [sk(27, 11), sk(10, 12), sk(25.5, 21, 1)] },
+    { puck: 28, sk: [sk(30, 11), sk(10, 12), sk(25.5, 21, 1)] },
+  ]);
+  const c = trackEntry(carried, 1, { ...ROSTER, 11: { pos: 'C', n: 25, nm: 'Hyry' } }, 'LAK');
+  assert.equal(c.say, 'Onside: #25 Hyry crossed the blue line ahead of the puck while carrying it, which is allowed: '
+    + 'the player with the puck may go in first. The ticked player was behind the line. Offside depends on a player\u2019s skates, '
+    + 'and the tracking only follows the middle of each player, so it can\u2019t tell for the one marked ?.');
+  assert.deepEqual([c.ids, c.unsure], [[12], [21]]);
   const C = clip([
     { puck: 10, sk: [sk(4, 11)] },
     { puck: 30, sk: [sk(14, 11)] },
