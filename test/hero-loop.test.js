@@ -162,3 +162,13 @@ test('the last frame is held longer than the goal caption it is showing', () => 
    HERE until 2026-09-17. `ha` — the attempts inside the hero loop — fed a hero
    rule about a counter the hero no longer shows; Kevin dropped the rule and the
    field went with it (docs/status.md). */
+
+test('the hero hides the held frame\u2019s marks under its tracking, as Goals does, rather than dimming them', () => {
+  /* Kevin, 2026-11-01: a faint "CBJ · Won the face-off" stayed on the hero until the goal. The hero is not in
+     Goals mode, so it got the event replay's 18% dim. Each layer Goals hides must be hidden on the hero too. */
+  const hidden = sel => new RegExp(`${sel.replace(/[.#]/g, m => '\\' + m)}[^{]*\\{display:none\\}`).test(PAGE_CSS.replace(/,\s*\n/g, ','));
+  for (const layer of ['#events', '#lines', '#puck', '#labels', '#draws', '#whistles', '#netmen']) {
+    assert.ok(hidden(`#rg.trkgoals.trk ${layer}`), `Goals no longer hides ${layer}, so this check has lost its pair`);
+    assert.ok(hidden(`#rg.preview.trk ${layer}`), `the hero only dims ${layer} under its tracking`);
+  }
+});

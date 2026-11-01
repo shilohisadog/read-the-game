@@ -2641,7 +2641,9 @@
 #rg.trk #events,#rg.trk #netmen,#rg.trk #lines,#rg.trk #puck,#rg.trk #labels,#rg.trk #draws,#rg.trk #whistles{opacity:.18;transition:opacity .4s}
 #rg.trk .evn,#rg.trk .whn,#rg.trk .zsn,#rg.trk .shotft,#rg.trkgoals .evn,#rg.trkgoals .whn,#rg.trkgoals .zsn,#rg.trkgoals .shotft{display:none}
 #rg.trk #cue,#rg.trknocue #cue,#rg.trkgoals.trk #caption{display:none}
-#rg.trkgoals.trk #events,#rg.trkgoals.trk #lines,#rg.trkgoals.trk #puck,#rg.trkgoals.trk #labels,#rg.trkgoals.trk #draws,#rg.trkgoals.trk #whistles,#rg.trkgoals.trk #netmen{display:none}
+/* The front door's hero plays its goal as Goals does: the frame held under the tracking shows nothing faint. */
+#rg.trkgoals.trk #events,#rg.trkgoals.trk #lines,#rg.trkgoals.trk #puck,#rg.trkgoals.trk #labels,#rg.trkgoals.trk #draws,#rg.trkgoals.trk #whistles,#rg.trkgoals.trk #netmen,
+#rg.preview.trk #events,#rg.preview.trk #lines,#rg.preview.trk #puck,#rg.preview.trk #labels,#rg.preview.trk #draws,#rg.preview.trk #whistles,#rg.preview.trk #netmen{display:none}
 /* Goals does not open the source note. `trkgoals` is the class trkPaint already sets for that mode. */
 #rg.trkgoals .playline{cursor:default;pointer-events:none}
 #rg.trkgoals .playline:hover{text-decoration:none}
