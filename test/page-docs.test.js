@@ -58,7 +58,7 @@ test('the front door carries the selections the pages make, and the status line'
   const f = docs()['front.json'];
   assert.deepEqual(f.teams, teamsIn(ROWS));
   assert.deepEqual(f.teams, ['BUF', 'MTL', 'PIT', 'TOR'], 'regular-season and playoff games name a team, refused or not');
-  assert.equal(f.hero.game.id, 2025010007, 'preseason with an `hl` in the loop window is the hero');
+  assert.equal(f.hero.game.id, 2025020001, 'the newest club game with an `hl` is the hero, not the Olympic one');
   assert.deepEqual(f.hero, heroOf(ROWS));
   assert.equal(f.newest.id, 2025090001, 'the newest viewable game of any kind');
   assert.deepEqual(f.calendar.held, ['2025-09', '2025-10', '2026-02']);

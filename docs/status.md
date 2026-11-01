@@ -80,8 +80,9 @@ Everything here is live on readthegame.co and was checked in a real browser; gat
 - **Challenges** (`src/lib/challenge.js`): the outcome of every review of a goal, read from the record, said on the
   first frame after it; the stoppage card names the goal as what stopped play; `census.reviews` published
   ("coaches have won 490 of 726 challenges of a goal, about 2 in 3").
-- **The hero** rolls from the text replay into its first goal as tracked (`e779d42`); **share links** carry `replay`
-  and `speed` (`08a4eee`); base rates say "Across the 4,345 games we have measured".
+- **The hero** loops its first goal as Goals plays it, at ¼, with no event walk before it (2026-11-01; the event
+  walk only when the goal has no tracking file), and is the newest club game with a first goal; **share links** carry
+  `speed` (`08a4eee`); base rates say "Across the 4,345 games we have measured".
 
 ### Open
 1. The Stoppages total can count one goal whistle twice (the challenge stoppage and the ruling stoppage after it).

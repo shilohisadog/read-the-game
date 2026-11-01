@@ -549,24 +549,21 @@ test('and with no loop anywhere it falls back to the newest, and says THAT', () 
   });
 });
 
-test('a loop inside the window beats a NEWER loop outside it', () => {
-  // The window still decides first. 2023020200 is the newest in-scope game and
-  // carries a loop of 9 plays -- a goal, but outside [3,8]; the older in-window
-  // game must win, or the window is decoration.
+test('⭐ the newest game with a first goal is the hero, however many plays in it came', () => {
+  // The hero plays that goal as tracked, so a far goal is no longer a long loop (Kevin, 2026-11-01).
+  // 2023020200 is the newest in-scope game and its first goal is 25 plays in; it beats an older 5.
   const cat = { games: CATALOG.games.map(g =>
-    g.id === 2023020100 ? { ...g, hl: 5 } : g.id === NEWEST_ID ? { ...g, hl: 9 } : g) };
+    g.id === 2023020100 ? { ...g, hl: 5 } : g.id === NEWEST_ID ? { ...g, hl: 25 } : g) };
   assert.equal(NEWEST_ID, 2023020200, 'the seed changed; this pairing needs the newest game to be 2023020200');
   const r = run({ docs: { ...ALL, 'catalog.json': cat } });
   return r.settle().then(() => {
-    assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
-      'a newer loop outside the window displaced the one inside it');
+    assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID,
+      'an older game won for having its first goal sooner');
   });
 });
 
-test('⭐ with nothing in the window, a loop OUTSIDE it beats a game with none — the hero ends on a goal', () => {
-  // Kevin, 2026-09-17: "the hero always needs to end with a goal." Until then a
-  // loop outside [3,8] was never a hero, and the front door fell back to the
-  // newest game -- which may have no goal for its loop to end on. Too short (1, 2)
+test('⭐ a first goal of any distance beats a game with none — the hero ends on a goal', () => {
+  // Kevin, 2026-09-17: "the hero always needs to end with a goal." Too short (1, 2)
   // or too long (9, 30) is still a goal; the newest game here carries no loop.
   //
   // ⚠️ AWAITED, AND THAT IS NOT A DETAIL. Written as a bare `.then()` inside the
@@ -1175,7 +1172,7 @@ test('the kicker names the tracked goal only when our own frame says it will pla
   r.post({ rtg: 'tracked', game: NEWEST_ID + 1 });
   assert.equal(r.ids.herokick.textContent, before, 'a message not from our frame, or about another game, was believed');
   r.post({ rtg: 'tracked', game: NEWEST_ID });
-  assert.match(r.ids.herokick.textContent, /up to its first goal, then that goal as the league tracked it$/);
+  assert.match(r.ids.herokick.textContent, /its first goal, as the league tracked it$/);
 });
 
 test('the hero carries no figures: the kicker, the two clubs and the button', async () => {

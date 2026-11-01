@@ -299,22 +299,22 @@ test('a game with no tracked goals carries neither', async () => {
   assert.doesNotMatch(a.copied, /replay=|speed=/);
 });
 
-test('⭐ the front door\'s hero plays the first goal as tracked, from the frame before its tracked seconds, then the goal', async () => {
+test('⭐ the front door\'s hero loops its first goal as Goals plays it: the tracking, the goal at rest, again', async () => {
   const a = boot(rich, null, '?preview=1', null, served(), MOTION);
   await settle(); await settle();
-  const first = GOALS[0];
+  const first = GOALS[0], trk = () => a.$('rg').classList.contains('trk'), rest = () => a.$('rg').classList.contains('trkrest');
   assert.ok(a.posted.some(p => p.msg.rtg === 'tracked' && p.msg.game === rich.game.id), 'the front door is not told the goal is tracked');
-  let held = null;
-  for (let n = 0; n < 120 && held == null; n++) {          // the reference game's first goal is ~73 frames in
-    a.advance(1); await settle();
-    if (a.$('rg').classList.contains('trk')) held = +a.$('scrub').value;
-  }
-  assert.ok(held != null, 'the hero never played the tracking');
-  assert.ok(held < first.k, 'the tracking is not laid over a frame before the goal');
+  assert.ok(trk(), 'the hero walks events before the tracking');
+  const held = +a.$('scrub').value;
+  assert.ok(held > 0 && held < first.k, 'the tracking is not laid over the frame before the goal');
   assert.match(a.$('who').textContent, /^Tracked · goal by/);
+  assert.ok(a.wait > 1500, 'the hero does not wait out the clip');
   a.advance(1); await settle();
   assert.equal(+a.$('scrub').value, first.k, 'the tracking does not hand over to the goal frame');
-  assert.equal(a.$('rg').classList.contains('trk'), false);
+  assert.ok(!trk() && rest(), 'the goal frame is not the tracking at rest');
+  a.advance(1); await settle();
+  assert.equal(+a.$('scrub').value, held, 'the loop does not go back to the tracking');
+  assert.ok(trk() && !rest());
 });
 
 test('a hero whose first goal has no tracking file loops as before, and says nothing to the front door', async () => {

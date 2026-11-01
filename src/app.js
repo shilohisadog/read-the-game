@@ -5574,51 +5574,39 @@ if(PREVIEW){
 
     THE LENGTH IS THEREFORE THE DATA'S, NOT A NUMBER WE PICK: the opening frame
     is the game's first and the closing frame is its first goal. Two ends, both
-    the game's. builders/build_index.py picks the most recent game whose first
-    goal is 3 to 8 plays after the faceoff, then the newest with any first goal
+    the game's. src/lib/front.js::heroOf picks the newest game with a first goal
     within derive.py's cap, and only then the newest game at all. */
  /* ⭐ AND IT ALWAYS ENDS ON THE GOAL, HOWEVER FAR THE GOAL IS. Kevin, 2026-09-17:
     "the hero always needs to end with a goal." The search was bounded by
     BUDGET_MS, so a hero whose goal is play 8 missed it whenever two frames
     before it carried a caption (4.5s against 3.6s: 8 frames can run 36s against
     a 30s budget) and the loop restarted on a hit. How long the loop runs is the
-    SELECTOR'S job now (builders/build_index.py chooses a first goal 3 to 8 plays
-    from the faceoff); the page's is only to stop on it. BUDGET_MS is left holding
+    SELECTOR'S job now (src/lib/front.js::heroOf); the page's is only to stop on it. BUDGET_MS is left holding
     the one case with no goal to stop on -- a game whose goals, if any, all came
     in the shootout, which is not a place on the ice. */
  const GOAL=EV.findIndex((e,k)=>k>=START&&e.type==='goal'&&e.pt!=='SO');
  const WINDOW=GOAL>=0?GOAL:BUDGETED;
- if(REDUCED){set(WINDOW,'');}
- else{let k=START;
-  /* THE RESTART PAUSE USED TO BE DEAD CODE. It read
-       set(k);k++;if(k>WINDOW){k=0;}
-       setTimeout(tick,k>WINDOW?900:115)
-     -- and k had already been reset to 0 by the time the ternary asked, so the
-     900 never fired once. The loop restarted at full speed, which is its own
-     small contribution to the blur. Decide the wait BEFORE moving k. */
-  /* THE LAST FRAME IS HELD LONGER WHEN IT IS A GOAL, because the goal's own
-     moment is still running: the flare is 0.7s, the net flash 1.3s, and the
-     siren caption 2.2s (`@keyframes cap`, src/app.css). Restarting at 1500 would
-     cut the caption off mid-sentence and the loop would swallow the payoff it
-     was just rebuilt to deliver. Guarded by a test that reads the duration out
-     of the stylesheet rather than restating it here. */
-  const GOAL_HOLD_MS=2600;
-  /* The goal as the league tracked it, between the frame before it and the goal frame:
-     the replay's two modes in one loop (Kevin, 2026-10-22). Same speed as the replay's
-     default. No file, or not in yet: the loop runs as it did. */
-  const GP=GOAL>=0&&typeof DOC==='function'?trkPlan(EV[GOAL]):null;
-  // The front door's headline says so only once the file is here.
-  if(GP&&window.parent!==window)GP.then(P=>{if(P)window.parent.postMessage({rtg:'tracked',game:(G.game&&G.game.id)||0},location.origin);});
-  let tracked=false;
+ /* A TRACKED FIRST GOAL IS THE WHOLE LOOP, AS GOALS PLAYS IT (Kevin, 2026-11-01): its tracked
+    seconds at the replay's speed over the frame before them, then the goal frame at rest, and
+    again. No file: the event walk to the goal. */
+ const GP=GOAL>=0&&typeof DOC==='function'?trkPlan(EV[GOAL]):null;
+ // The front door's headline says so only once the file is here.
+ if(GP&&window.parent!==window)GP.then(P=>{if(P)window.parent.postMessage({rtg:'tracked',game:(G.game&&G.game.id)||0},location.origin);});
+ // The goal frame outlasts its siren caption (`@keyframes cap`, src/app.css; a test reads both).
+ const GOAL_HOLD_MS=2600;
+ const walk=()=>{let k=START;
   const tick=()=>{
-   // From the last frame before the tracked seconds, as All events does: the plays inside them are the tracking's.
-   if(!tracked&&GP&&GP.value&&k===trackHoldFrame(EV,GOAL,GP.value,START)+1){
-    tracked=true;k=GOAL;setTimeout(tick,trkStart(GP.value,TRACK_STILL_MS,true));return;}
-   if(k===GOAL)trkEnd();
    const shown=EV[k],last=k>=WINDOW,
     wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
    set(k,k>0?'play':'');
-   if(last){k=START;tracked=false;}else{k++;}
+   if(last){k=START;}else{k++;}
    setTimeout(tick,wait);};
-  tick();}}
+  tick();};
+ const goals=P=>{const j=trackHoldFrame(EV,GOAL,P,START);
+  const go=()=>{trkRestClear();set(j,'');
+   setTimeout(()=>{trkEnd();set(GOAL,'play');trkRest(GOAL,P);setTimeout(go,GOAL_HOLD_MS);},trkStart(P,TRACK_STILL_MS,true));};
+  go();};
+ if(REDUCED){set(WINDOW,'');if(GP)GP.then(P=>{if(P)trkRest(GOAL,P);});}
+ else if(GP){set(START,'');GP.then(P=>P?goals(P):walk(),walk);}
+ else walk();}
 }

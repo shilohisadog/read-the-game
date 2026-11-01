@@ -17,22 +17,15 @@ export function teamsIn(games) {
   return Object.keys(seen).sort();
 }
 
-/** Plays from the preview's opening frame to the first goal that make a hero. */
-export const HERO_LOOP = { min: 3, max: 8 };
-
 /**
- * The front-door game: the newest viewable club game whose `hl` is in
- * HERO_LOOP, else the newest with any `hl`, else the newest viewable.
+ * The front-door game: the newest viewable club game with an `hl` (a first goal
+ * the loop can end on), else the newest viewable. The hero plays that goal as
+ * tracked, so how far into the game it came no longer matters (Kevin, 2026-11-01).
  * Preseason may be the hero (Kevin, 2026-09-21); `hl` is the real filter.
  */
 export function heroOf(games) {
   const v = (games || []).filter(g => g.v && isClubGame(typeOf(g.id)));
   v.sort((a, b) => (a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1)));
-  for (let k = v.length - 1; k >= 0; k--) {
-    const g = v[k];
-    if (typeof g.hl === 'number' && g.hl >= HERO_LOOP.min && g.hl <= HERO_LOOP.max)
-      return { game: g, toGoal: true };
-  }
   for (let k = v.length - 1; k >= 0; k--) {
     const g = v[k];
     if (typeof g.hl === 'number') return { game: g, toGoal: true };

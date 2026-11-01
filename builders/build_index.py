@@ -1212,7 +1212,7 @@ __HELPERS__
       if (!m || m.game !== g.id) return;
       // The frame found the goal's tracking file and will play it.
       if (m.rtg === 'tracked' && pick.toGoal)
-        $('herokick').textContent = when(g.d) + ' \u00b7 up to its first goal, then that goal as the league tracked it';
+        $('herokick').textContent = when(g.d) + ' \u00b7 its first goal, as the league tracked it';
     });
     $('heroframe').appendChild(f);
     /* THE RECTANGLE, over the frame rather than around it -- see `.herohit`.

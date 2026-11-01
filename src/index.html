@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t0J2/i8Wne+VlF2/BLYYK2gEK5UHDDZTr8XmrJ9PvUs=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Sb3tfhL9KDk+YTvvfYrnNG3bduqk0uWXlV00QaouJGc=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-vHz3FXb2crIPdTJTJ4xT9moflB/ZelO5ZfXJ8Y4r1Xs='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -894,7 +894,7 @@ function disputedNote(n) {
       var m = e.data;
       if (!m || m.game !== g.id) return;
       if (m.rtg === 'tracked' && pick.toGoal)
-        $('herokick').textContent = when(g.d) + ' \u00b7 up to its first goal, then that goal as the league tracked it';
+        $('herokick').textContent = when(g.d) + ' \u00b7 its first goal, as the league tracked it';
     });
     $('heroframe').appendChild(f);
     var hit = el('a', 'herohit');
