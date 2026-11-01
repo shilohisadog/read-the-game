@@ -407,7 +407,7 @@ function counted(slice){return levelOnly?tiedControl.reduce(slice,CTX)
                                         :corsi.reduce(slice,CTX);}
 function lens(k){return counted(upto(k));}
 const $=id=>document.getElementById(id);
-let PLAYK=-1;
+let PLAYK=-1,CAPK=-1;
 // The panel's details, each shown with the kind of note it explains.
 const PWX=[['pwrow',/in a row/],['pwshift',/typical shift/],['pwrun',/ of play/]];
 {const n=$('pwgames'),g=RATES&&RATES.census&&RATES.census.games;if(n&&g)n.textContent='the '+g.toLocaleString('en-US')+' games we have measured';}
@@ -1168,6 +1168,8 @@ function render(i,how){
  drawPill(cur);
  drawBoard(cur,L);
  drawLBox(i,L);
+ // A pill belongs to its frame. Goals hides it under a clip with display:none, and un-hiding restarts the animation.
+ if(CAPK!==i){CAPK=i;const c=$('caption');c.classList.remove('on');c.classList.remove('stay');}
  if(moment){
    /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
       Kevin, looking at the front door: the pill "is redundant and doesn't add
@@ -2950,11 +2952,7 @@ function greadClear(){
  greadSyncBtn();}
 function greadArm(e){
  if(PREVIEW||!e||e.type!=='goal')return;
- if(GREAD&&GREAD.for===e&&GREAD.frozen!=null){
-  /* Resume path: play() re-arms the same goal after an overlay Pause. */
-  GREAD.end=performance.now()+GREAD.frozen;GREAD.frozen=null;
- }else{GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};}
- greadKick();}
+ GREAD={for:e,end:performance.now()+GOAL_READ_MS,frozen:null};greadKick();}
 /* Overlay Pause — freeze the countdown; replay stays on this goal until Play/Resume. */
 function greadFreeze(){
  if(!GREAD||GREAD.frozen!=null)return;
@@ -2975,9 +2973,8 @@ function dwell(e){
  if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
   const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
  // A goal's reading pause is fixed (GOAL_READ_MS), not gear-scaled — Kevin, 2026-10-29.
- // Resume after overlay Pause uses the frozen remainder for this same goal.
  if(e&&e.type==='goal'){
-  const b=(GREAD&&GREAD.for===e&&GREAD.frozen!=null)?GREAD.frozen:GOAL_READ_MS;return b+trkExtra(e,b);}
+  return GOAL_READ_MS+trkExtra(e,GOAL_READ_MS);}
  const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
 // The tracked goal may hold this frame while it plays, or (Goals) choose the next one.
 function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);}
@@ -2990,7 +2987,10 @@ function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(
    screen until the NEXT render, which at 3600ms is up to three and a half
    seconds of a list that is no longer true. Neither transition produces a frame
    of its own, so both have to say so. */
-function play(){closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trkKick();}
+// Play on a goal the reader is resting on leaves it: a fresh hold there reads as Play doing nothing.
+function play(){closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);
+ if(EV[i]&&EV[i].type==='goal'&&!PREVIEW){step();trkKick();return;}
+ const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trkKick();}
 /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`

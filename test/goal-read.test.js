@@ -148,3 +148,31 @@ test('overlay Pause freezes the hold; Play then resumes it', () => {
   assert.equal(a.advance(1), 1);
   assert.ok(+a.$('scrub').value > at, 'after the resumed hold, replay continues');
 });
+
+test('⭐ Play on a goal the reader is resting on leaves it, with no fresh hold', () => {
+  const a = boot(undefined, undefined, '', null, undefined, { motion: true });
+  const k = a.timeline.findIndex(e => e && e.type === 'goal');
+  a.at(k, () => {});
+  a.$('play').click();
+  assert.ok(+a.$('scrub').value > k, 'Play held the goal the reader had already read');
+  assert.ok(a.wait < GOAL_READ_MS, `the next frame waited ${a.wait}`);
+  assert.ok(a.$('gread').hidden, 'the countdown came up on a goal Play left');
+  // Paired: a goal Play arrives at still holds.
+  const b = boot(undefined, undefined, '', null, undefined, { motion: true });
+  toGoalHold(b);
+  assert.ok(b.wait >= GOAL_READ_MS);
+});
+
+test('⭐ a frame that announces nothing does not keep the frame before it’s pill', () => {
+  const a = boot(undefined, undefined, '', null, undefined, { motion: true });
+  const cap = a.$('caption'), icing = () => cap.classList.contains('on') && /Icing/.test(cap.innerHTML);
+  a.$('play').click();
+  let n = 0;
+  while (!icing() && n++ < 800) if (!a.advance(1)) break;
+  assert.ok(icing(), 'no icing pill drawn in the reference game — this test cannot see the defect');
+  const k = +a.$('scrub').value;
+  a.advance(1);
+  assert.ok(+a.$('scrub').value > k);
+  assert.match(cap.innerHTML, /Icing/, 'the next frame said something of its own; pick a quieter one');
+  assert.ok(!cap.classList.contains('on'), 'the icing pill rode onto the frame after it');
+});
