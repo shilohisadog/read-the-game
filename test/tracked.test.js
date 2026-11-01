@@ -275,8 +275,17 @@ test('the puck clears the blue line before the attacking skaters', () => {
     { puck: 28, sk: [sk(25.4, 11)] },
   ]);
   const ruled = trackEntry(past, 1, ROSTER, 'LAK');
-  assert.equal(ruled.say, 'Onside: the officials ruled LAK\u2019s entry onside.', 'a centre past the line is called behind the puck');
-  assert.deepEqual(ruled.ids, [], 'a skater is marked as behind the line when one may not be');
+  assert.equal(ruled.say, 'Onside: the officials ruled LAK\u2019s entry onside. Offside depends on a player\u2019s skates, '
+    + 'and the tracking only follows the middle of each player, so it can\u2019t tell for the one marked ?.',
+    'a centre past the line is called behind the puck');
+  assert.deepEqual([ruled.ids, ruled.unsure], [[], [11]], 'a skater is ticked as behind the line when he may not be');
+  const mixed = clip([
+    { puck: 24, sk: [sk(25.4, 11), sk(20, 12), sk(25.9, 21, 1), sk(-80, 31)] },
+    { puck: 28, sk: [sk(25.4, 11), sk(20, 12), sk(25.9, 21, 1), sk(-80, 31)] },
+  ]);
+  const m = trackEntry(mixed, 1, ROSTER, 'LAK');
+  assert.deepEqual([m.ids, m.unsure], [[12], [11, 21]]);
+  assert.match(m.say, /\. The ticked player was behind the line\. .* for the two marked \?\.$/);
 });
 
 test('a clip that does not show the entry is left blank', () => {
@@ -303,10 +312,11 @@ test('a clip that does not show the entry is left blank', () => {
 
 test('the Panarin clip names the ruling: a LAK skater\'s centre is past the line as the puck crosses', () => {
   const en = trackEntry(P, G.teams.home.id, G.roster, 'LAK');
-  assert.equal(en.say, trackEntryRuled('LAK'));
-  assert.deepEqual(en.ids, []);
-  assert.doesNotMatch(trackMarkup(P, en.j, en.at, { G, AX, AY, col: {}, tags: [], entry: en, blue: { x: 75, y1: 1, y2: 84 } }), /class="tck"/,
-    'a skater is marked behind the line on a clip that cannot show it');
+  assert.equal(en.say, trackEntryRuled('LAK', en.ids.length, en.unsure.length));
+  assert.ok(en.unsure.length >= 1 && en.ids.length >= 1, 'the clip has players on both sides of the call');
+  const drawn = trackMarkup(P, en.j, en.at, { G, AX, AY, col: {}, tags: [], entry: en, blue: { x: 75, y1: 1, y2: 84 } });
+  assert.equal([...drawn.matchAll(/class="tck"/g)].length, en.ids.length, 'a tick for each player behind the line');
+  assert.equal([...drawn.matchAll(/class="tck unsure"/g)].length, en.unsure.length, 'a ? for each player too close to call');
   // Read the crossing directly: the frame the puck's centre passes the line plus the dot's radius.
   const dir = attackDirection(GOAL.own, G.teams.home.id), ax = o => P.turn * trackFeet(o).x * dir;
   let j = -1;

@@ -238,8 +238,17 @@ export function trackLaneLine(P, j, tt, shot, homeId) {
 
 /** "Onside: the puck crossed the blue line before any LAK player did." */
 export const trackEntrySay = ab => `Onside: the puck crossed the blue line before any ${ab} player did.`;
-/** When the tracking cannot show the puck went first. A clip exists only for a goal that counted, so the entry stood. */
-export const trackEntryRuled = ab => `Onside: the officials ruled ${ab}\u2019s entry onside.`;
+const COUNT = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
+/**
+ * When the tracking cannot show the puck went first. A clip exists only for a goal that counted, so the
+ * entry stood; `behind` players are ticked, `unsure` ones marked ?.
+ */
+export function trackEntryRuled(ab, behind, unsure) {
+  const tick = behind === 1 ? ' The ticked player was behind the line.' : behind > 1 ? ' The ticked players were behind the line.' : '';
+  const them = unsure === 1 ? 'the one marked ?' : `the ${COUNT[unsure] || unsure} marked ?`;
+  return `Onside: the officials ruled ${ab}\u2019s entry onside.${tick} Offside depends on a player\u2019s skates, `
+    + `and the tracking only follows the middle of each player, so it can\u2019t tell for ${them}.`;
+}
 
 /** Feet along the attack, positive toward the net being attacked, or null when `o` has no location. */
 const trackAx = (P, o, dir) => {
@@ -250,9 +259,10 @@ const trackAx = (P, o, dir) => {
 
 /**
  * The frame the puck's dot clears the attacking blue line, or null when the clip does not show it.
- * With every attacking skater behind the line the caption says the puck went first and marks them;
- * otherwise it names the officials' ruling and marks no one.
- *   {j, at, from, ids, say} — `from` is the first frame of the approach, `ids` the skaters marked.
+ * With every attacking skater behind the line the caption says the puck went first; with some within a
+ * dot's radius past it, it names the officials' ruling and says which ones the tracking cannot settle.
+ *   {j, at, from, ids, unsure, say} — `from` is the first frame of the approach, `ids` the skaters
+ *   behind the line (ticked), `unsure` those too close to call (marked ?).
  */
 export function trackEntry(P, homeId, roster, ab) {
   if (!P || !P.e || homeId == null) return null;
@@ -269,8 +279,7 @@ export function trackEntry(P, homeId, roster, ab) {
     prev = ax;
   }
   if (hit == null) return null;
-  const ids = [];
-  let ahead = false;
+  const ids = [], unsure = [];
   for (const o of Object.values(P.frames[hit].onIce || {})) {
     if (!o.playerId || Number(o.teamId) !== own) continue;
     const r = roster && roster[o.playerId];
@@ -278,18 +287,17 @@ export function trackEntry(P, homeId, roster, ab) {
     const ax = trackAx(P, o, dir);
     // Further ahead than a dot's radius may not be this team's entry at all; say nothing.
     if (ax == null || ax > skaterClear + SKATER_R) return null;
-    if (ax > skaterClear) ahead = true;
-    ids.push(Number(o.playerId));
+    (ax > skaterClear ? unsure : ids).push(Number(o.playerId));
   }
-  if (!ids.length) return null;
+  if (!ids.length && !unsure.length) return null;
   let from = hit;
   for (let j = hit - 1; j >= 0; j--) {
     const ax = axAt(j);
     if (ax == null || ax <= BLUE_LINE_X - ZONE_BAND_FT || ax > puckClear) break;
     from = j;
   }
-  if (ahead) return { j: hit, at: P.frames[hit].timeStamp, from, ids: [], say: trackEntryRuled(ab) };
-  return { j: hit, at: P.frames[hit].timeStamp, from, ids, say: trackEntrySay(ab) };
+  const say = unsure.length ? trackEntryRuled(ab, ids.length, unsure.length) : trackEntrySay(ab);
+  return { j: hit, at: P.frames[hit].timeStamp, from, ids, unsure, say };
 }
 
 /**
@@ -369,6 +377,8 @@ export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry
       + `<text class="tn" x="${s.x.toFixed(2)}" y="${s.y.toFixed(2)}" fill="${ink}">${ESC(o.sweaterNumber)}</text>`);
     if (entry && j === entry.j && entry.ids.includes(Number(o.playerId)))
       out.push(`<text class="tck" x="${(s.x + 2.2).toFixed(2)}" y="${(s.y - 1.5).toFixed(2)}" fill="${c}">\u2713</text>`);
+    if (entry && j === entry.j && (entry.unsure || []).includes(Number(o.playerId)))
+      out.push(`<text class="tck unsure" x="${(s.x + 2.2).toFixed(2)}" y="${(s.y - 1.5).toFixed(2)}" fill="${c}">?</text>`);
     if (Number(o.playerId) === Number(P.e.actor))
       out.push(`<text class="tsc" x="${s.x.toFixed(2)}" y="${(s.y - 2.6).toFixed(2)}" fill="${c}">${ESC(r.nm || '')}</text>`);
   }
