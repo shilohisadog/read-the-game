@@ -793,6 +793,58 @@ class Convergence(unittest.TestCase):
         self.assertEqual(latest["play-by-play"], hashlib.sha256(amended).hexdigest())
 
 
+class LateShiftCharts(unittest.TestCase):
+    """The league publishes some shift charts weeks late. A held game whose chart is the
+    empty one is asked again, shifts only, until a chart appears; then the game is refetched."""
+
+    EMPTY = b'{"data":[],"total":0}'
+    FULL = b'{"data":[{"playerId":1}],"total":1}'
+    OLD = 2026020010
+
+    def held(self, d="2026-10-09", t=2, shifts=None):
+        store = DictStore()
+        pointer = {"play-by-play": F.sha256(PBP), "boxscore": F.sha256(BOX),
+                   "shifts": F.sha256(shifts or self.EMPTY), "right-rail": F.sha256(RAIL)}
+        store.put(F.latest_key(self.OLD), json.dumps(pointer).encode())
+        store.put("catalog.json", json.dumps({"games": [{"id": self.OLD, "d": d, "t": t}]}).encode())
+        store.writes.clear()
+        return store
+
+    def run_with(self, store, shf):
+        t = transport_for({**feed_routes(shf=shf), "/v1/schedule/": (200, schedule_payload(
+            "2026-11-01", [game(2026020200)]))})
+        return F.ingest("2026-11-01", 1, t, store), t
+
+    def test_the_empty_answer_is_the_digest_we_hold(self):
+        self.assertEqual(F.EMPTY_SHIFTS, "93fd5b4feec7a9fd7bd879aabf27c59c8638cfeb001d4a78c2fc033d5b813868",
+                         "the league's empty chart, as stored for 2026020179 on 2026-11-01")
+
+    def test_a_chart_that_appears_late_is_stored_as_an_amendment(self):
+        store = self.held()
+        rep, t = self.run_with(store, self.FULL)
+        self.assertEqual((rep.late_shifts_asked, rep.late_shifts_found), (1, 1))
+        latest = json.loads(store.get(F.latest_key(self.OLD)))
+        self.assertEqual(latest["shifts"], F.sha256(self.FULL))
+        self.assertTrue(store.has(F.raw_key(self.OLD, F.sha256(PBP), "play-by-play")),
+                        "the refetched game is not whole on this runner, so derive cannot rebuild it")
+        self.assertEqual(rep.amended, 0, "a game outside the window counted as held in the window")
+        self.assertIn({"id": self.OLD, "date": "2026-10-09", "type": 2, "state": "amended"}, rep.games)
+
+    def test_still_empty_costs_one_request_and_writes_nothing(self):
+        store = self.held()
+        rep, t = self.run_with(store, self.EMPTY)
+        self.assertEqual((rep.late_shifts_asked, rep.late_shifts_found), (1, 0))
+        self.assertEqual(len([u for u in t.calls if f"gameId={self.OLD}" in u]), 1)
+        self.assertFalse([u for u in t.calls if f"/{self.OLD}/" in u], "the whole game was fetched for no change")
+        self.assertFalse([k for k in store.writes if k.startswith(f"raw/{self.OLD}/")])
+
+    def test_a_held_chart_an_old_game_and_a_preseason_game_are_not_asked(self):
+        for store in (self.held(shifts=self.FULL), self.held(d="2026-08-01"), self.held(t=1)):
+            rep, t = self.run_with(store, self.FULL)
+            self.assertEqual(rep.late_shifts_asked, 0)
+            self.assertFalse([u for u in t.calls if str(self.OLD) in u])
+
+
 class TheHaltIsForTotalIncomprehension(unittest.TestCase):
     """The rule was CORRELATION -- the same unknown state in more than one game
     halts the run. It was CHENG's, it was well argued, and it was calibrated on

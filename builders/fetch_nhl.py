@@ -251,6 +251,9 @@ class Report:
     final_in_window: int = 0
     games_in_window: int = 0  # every game the league listed, read or not
     errored: int = 0
+    # Held games outside the window asked again for a late shift chart, and how many had one.
+    late_shifts_asked: int = 0
+    late_shifts_found: int = 0
     window_days: int = 0
     errors: list = field(default_factory=list)
     unknown_states: dict = field(default_factory=dict)
@@ -287,6 +290,7 @@ class Report:
                 "pendingStates": self.pending_states,
                 "gamesInWindow": self.games_in_window,
                 "errored": self.errored, "errors": self.errors,
+                "lateShifts": {"asked": self.late_shifts_asked, "found": self.late_shifts_found},
                 "unknownStates": self.unknown_states,
                 "halted": self.halted, "haltReason": self.halt_reason}
 
@@ -362,6 +366,71 @@ def paced(transport, delay, sleep=None):
             sleep(delay)
         return r
     return t
+
+
+def _store_game(g, transport, store, rep):
+    """Fetch every feed of game `g` and store what changed: "new", "amended", "unchanged" or "errored"."""
+    gid = g["id"]
+    payloads = {}
+    for name, url_of in FEEDS.items():
+        url = url_of(gid)
+        status, body = transport(url)
+        if status != 200 or not body:
+            rep.errors.append({"game": gid, "url": url, "status": status})
+            # AN OPTIONAL FEED COSTS ITS OWN ABSENCE AND NOTHING ELSE.
+            if name not in ESSENTIAL:
+                continue
+            # No partial writes. Two of three feeds stored is a game that looks
+            # present and is not, and nothing downstream could tell.
+            return "errored"
+        payloads[name] = body
+
+    digests = {n: sha256(b) for n, b in payloads.items()}
+    prev_raw = store.get(latest_key(gid))
+    prev = json.loads(prev_raw.decode()) if prev_raw else None
+
+    if prev and all(prev.get(n) == d for n, d in digests.items()):
+        return "unchanged"
+
+    for name, body in payloads.items():
+        key = raw_key(gid, digests[name], name)
+        if not store.has(key):
+            store.put(key, body)
+    store.put(latest_key(gid), json.dumps(digests, indent=2, sort_keys=True).encode())
+    return "amended" if prev else "new"
+
+
+# The league's answer for a game whose shift chart is not published yet. It publishes some
+# charts weeks late, after the window has stopped asking (2026020010: empty at fetch, present
+# by 2026-11-01), so a held game still carrying this is asked again, shifts only, until it changes.
+EMPTY_SHIFTS = sha256(b'{"data":[],"total":0}')
+# How long after the game we keep asking. Older empties are left: some charts are never published.
+LATE_SHIFTS_DAYS = 60
+# Regular season and playoffs; preseason charts are often never published.
+LATE_SHIFTS_TYPES = {2, 3}
+
+
+def _late_shifts(end, transport, store, rep, done):
+    """Re-ask for the shift chart of each recent held game that has none; refetch the game when one appears."""
+    cat = store.get("catalog.json")
+    if not cat:
+        return
+    since = shift_date(end, -LATE_SHIFTS_DAYS)
+    for c in json.loads(cat.decode()).get("games", []):
+        gid = c.get("id")
+        if gid in done or c.get("t") not in LATE_SHIFTS_TYPES or not c.get("d") or not (since <= c["d"] <= end):
+            continue
+        prev_raw = store.get(latest_key(gid))
+        if not prev_raw or json.loads(prev_raw.decode()).get("shifts") != EMPTY_SHIFTS:
+            continue
+        rep.late_shifts_asked += 1
+        status, body = transport(FEEDS["shifts"](gid))
+        if status != 200 or not body or sha256(body) == EMPTY_SHIFTS:
+            continue
+        state = _store_game({"id": gid, "date": c["d"], "gameType": c["t"]}, transport, store, rep)
+        if state == "amended":
+            rep.late_shifts_found += 1
+            rep.games.append({"id": gid, "date": c["d"], "type": c["t"], "state": "amended"})
 
 
 def ingest(end, days, transport, store, now=None):
@@ -508,49 +577,20 @@ def ingest(end, days, transport, store, now=None):
         return rep
 
     for g in schedule_games:
-        gid = g["id"]
-        payloads, failed = {}, False
-        for name, url_of in FEEDS.items():
-            url = url_of(gid)
-            status, body = transport(url)
-            if status != 200 or not body:
-                rep.errors.append({"game": gid, "url": url, "status": status})
-                # AN OPTIONAL FEED COSTS ITS OWN ABSENCE AND NOTHING ELSE.
-                if name not in ESSENTIAL:
-                    continue
-                failed = True
-                break
-            payloads[name] = body
-        if failed:
-            # No partial writes. Two of three feeds stored is a game that looks
-            # present and is not, and nothing downstream could tell.
+        state = _store_game(g, transport, store, rep)
+        if state == "errored":
             rep.errored += 1
             continue
-
-        digests = {n: sha256(b) for n, b in payloads.items()}
-        prev_raw = store.get(latest_key(gid))
-        prev = json.loads(prev_raw.decode()) if prev_raw else None
-
-        if prev and all(prev.get(n) == d for n, d in digests.items()):
-            rep.unchanged += 1
-            rep.games.append({"id": gid, "date": g.get("date"),
-                              "type": g.get("gameType"), "state": "unchanged"})
-            continue
-
-        for name, body in payloads.items():
-            key = raw_key(gid, digests[name], name)
-            if not store.has(key):
-                store.put(key, body)
-        store.put(latest_key(gid), json.dumps(digests, indent=2, sort_keys=True).encode())
-
-        if prev:
-            rep.amended += 1
-            rep.games.append({"id": gid, "date": g.get("date"),
-                              "type": g.get("gameType"), "state": "amended"})
-        else:
+        if state == "new":
             rep.fetched += 1
-            rep.games.append({"id": gid, "date": g.get("date"),
-                              "type": g.get("gameType"), "state": "new"})
+        elif state == "amended":
+            rep.amended += 1
+        else:
+            rep.unchanged += 1
+        rep.games.append({"id": g["id"], "date": g.get("date"),
+                          "type": g.get("gameType"), "state": state})
+
+    _late_shifts(end, transport, store, rep, {g["id"] for g in schedule_games})
 
     # The index is written on EVERY completed run, including one that fetched
     # nothing. The earlier rule -- an empty night writes nothing -- existed only
