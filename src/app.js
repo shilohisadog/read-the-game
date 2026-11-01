@@ -3046,7 +3046,7 @@ function trkEnd(){
  if(TRK.run&&TRK.run.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(TRK.run.raf);
  TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');}
 /* Lay goal P over the rink; returns how long it will take, in ms. `still` holds the first
-   frame; `free` ("See it tracked") plays whether or not the replay is playing. */
+   frame; `free` ("See it tracked", reduced motion) plays whether or not the replay is playing. */
 // The attacking blue line, in the same screen positions the rink paints it.
 function entryBlue(P){
  const x=AX(BLUE_LINE_X*attackDirection(P.e.own,G.teams.home.id),P.e.per),ys=boardsY(x);
@@ -3058,9 +3058,8 @@ function trkStart(P,still,free){
  // The moment of the shot: a stop on every located goal; beyond TRACK_LANE_FT its lane is held. The light lane is markup's.
  const SHOT=trackShot(P,G.teams.home.id);
  const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P,G.teams.home.id);
- // Goals only. The same still that holds the first frame, inserted where the puck clears the blue line,
- // so dwell (via left()) waits it out and Event mode's timing stays as it was.
- const entry=TRK.goals?trackEntry(P,G.teams.home.id,G.roster,TEAMAB(P.e.own)):null;
+ // The same still that holds the first frame, inserted where the puck clears the blue line, so dwell (via left()) waits it out.
+ const entry=trackEntry(P,G.teams.home.id,G.roster,TEAMAB(P.e.own));
  const HOLD=entry?TRACK_STILL_MS:0;
  const crossAt=entry?(entry.at-t0)/10/sp*1000:0;
  const blue=entry?entryBlue(P):null;
@@ -3071,9 +3070,9 @@ function trkStart(P,still,free){
  // The strength recorded on the last event before the clip; the badge starts from it.
  const holdSit=sitAt(EV[trackHoldFrame(EV,EV.indexOf(P.e),P)]);
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,holdSit,boxAt:null,
-  // In Goals the goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
+  // The goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
   // The blue-line crossing is one, so Prev/Next can land on the check marks.
-  stops:(()=>{const s=trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>!TRK.goals||v!==tGoal);
+  stops:(()=>{const s=trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>v!==tGoal);
    return entry?[...new Set([...s,entry.at])].sort((a,b)=>a-b):s;})(),at:now10,
   left:()=>Math.max(0,clip+HOLD-played),
   seek(v){let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
@@ -3129,17 +3128,16 @@ function trkFrame(k,how,cur){
  if(TRK.goals)GOAL_STOPS.filter(n=>n>=k).slice(0,3).forEach(n=>trkPlan(EV[n]));
  if(TRK.goals&&REVIEW_STOP.has(k)){const w=$('who');w.textContent=reviewWho(REVIEW_STOP.get(k));w.className='who plain';}
  if(TRK.goals&&SO_STOP>=0&&k===SO_STOP){const w=$('who');w.textContent=SO_WHO;w.className='who plain';}
- // The next-play cue points at the next RECORDED event; where the tracking takes over,
- // that is not where it starts. Asked again when the file arrives, often during this pause.
- trkNoCue(k,g);
- if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i!==k)return;trkNoCue(k,g);refreshStay();});
+ trkNoCue();
+ // The zone sentence counts from the file; redraw it when the file arrives on this frame.
+ if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]).then(()=>{if(i===k)refreshStay();});
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
   const had=!!trkReady(cur);
   const p=trkPlan(cur);
   p.then(P=>{if(i!==k)return;
    if(P&&!had)refreshStay();
    if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
-   if(P&&(!playing||REDUCED)&&(REDUCED||!TRK.goals)){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
+   if(P&&REDUCED){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
    if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))
     sayPlay(($('playline').textContent?$('playline').textContent+' ':'')+'No tracking for this goal.');});}}
 /* GOALS: ONE GOAL, ONE STOP. The goal frame keeps its scoreboard, banner, line and highlight, and holds
@@ -3153,28 +3151,17 @@ function trkRest(k,P){
  document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
  // The banner sits at centre ice, clear of the goal moment and nearer it than the far half (Kevin).
  drawLabel(EV[k],{x:100,y:16,far:true});}
-function trkNoCue(k,g){
- const P=g>=0?trkReady(EV[g]):null,nxt=EV[k+1];
- document.getElementById('rg').classList.toggle('trknocue',!!(TRK.goals||P&&nxt&&playing&&!REDUCED&&nxt.s>=EV[g].s-P.before));}
-// "See it tracked", on a goal frame reached by stepping, or under reduced motion.
+// Goals plays from tracking, not toward the next recorded event, so there is no next-play cue.
+function trkNoCue(){document.getElementById('rg').classList.toggle('trknocue',TRK.goals);}
+// "See it tracked", on a goal frame under reduced motion.
 function trkSeeIt(){const P=EV[i]&&trkReady(EV[i]);if(P)trkStart(P,0,true);}
 // What is LEFT of a held tracking, so a resume after Pause waits for the rest of it.
 function trkExtra(e,base){
  const h=TRK.hold;
  if(h&&EV[h.i]===e)return Math.max(0,(TRK.run&&!h.wait?TRK.run.left():h.ms)-base);
  return 0;}
-/* Which frame Play goes to next. All events: the next one, unless the tracked seconds of
-   the goal ahead begin now, when this frame is held while they play. Goals: see below. */
-function trkNext(k){
- if(!TRK_ON)return k+1;
- if(TRK.goals)return trkGoalsNext(k);
- if(TRK.hold&&TRK.hold.i===k){const g=TRK.hold.g;TRK.hold=null;trkEnd();return g;}
- if(REDUCED)return k+1;
- const g=trackGoalAhead(EV,k);if(g<0)return k+1;
- const P=trkReady(EV[g]),nxt=EV[k+1];
- if(!P||!nxt||nxt.s<EV[g].s-P.before)return k+1;
- TRK.hold={i:k,g,P,ms:trkStart(P,0,false)};
- return k;}
+// Which frame Play goes to next: the event walk's next event, or Goals' next stop (below).
+function trkNext(k){return TRK_ON&&TRK.goals?trkGoalsNext(k):k+1;}
 /* Goals: hold on the frame before a goal's tracked seconds (so the board reads the score
    going in), open on the first tracked frame held still, play it, land on the goal
    frame, move on; after the last goal, the horn. A file not in yet: wait and ask again. */
@@ -3216,8 +3203,8 @@ function trkOpen(g,where){
  TRK.hold={i:j,g,P,ms:0};
  TRK.hold.ms=trkStart(P,where==='first'?TRACK_STILL_MS:0,false);
  if(where==='goal'&&TRK.run)TRK.run.seek(TRK.run.stops[TRK.run.stops.length-1]);}
-/* "Replay: All events | Goals" and "Speed: ¼ | ½ | Real time", beside Play, shown once
-   the game is known to have tracked goals. The selected one is purple, like "Replay". */
+/* "Speed: ¼ | ½ | Real time", beside Play, shown once the game is known to have tracked
+   goals, which also settles Goals or the event walk. The selected one is purple, like "Replay". */
 function trkControl(){
  if(!TRK.offered){TRK.offered=true;
   trkRows().then(rows=>{TRK.shown=rows.length>0;
@@ -3241,7 +3228,7 @@ function trkSpeed(v){
  if(v===TRK.speed)return;
  TRK.speed=v;trkUrl('speed',v===TRACK_SPEED?null:String(v));trkPaint();
  const h=TRK.hold;
- if(TRK.run&&h&&!h.wait&&playing){stop();TRK.hold={...h,ms:trkStart(h.P,TRK.goals?TRACK_STILL_MS:0,false)};play();}}
+ if(TRK.run&&h&&!h.wait&&playing){stop();TRK.hold={...h,ms:trkStart(h.P,TRACK_STILL_MS,false)};play();}}
 $('trkSpeed').hidden=true;      // until the game is known to have tracked goals
 if(TRK_ON){
  $('trkQ').onclick=()=>trkSpeed(0.25);$('trkH').onclick=()=>trkSpeed(0.5);$('trkR').onclick=()=>trkSpeed(1);}
