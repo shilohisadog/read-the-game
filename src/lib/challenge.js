@@ -58,8 +58,10 @@ export function challenges(ev, ctx) {
     for (let k = n + 1; k < ev.length && ev[k].per === e.per; k++)
       if (framed(ev[k]) && !NOT_A_TARGET.has(ev[k].type)) { target = k; break; }
     const onGoal = target == null && goal != null;
+    // Where play restarts: the face-off the outcome is said on, as the record places it.
+    const restart = !onGoal && target != null && ev[target].type === 'faceoff' ? ev[target].x : null;
     out.push({ at: n, kind, who, challenger, scorer, outcome, ruling: ruling ? ruling.rsn : null,
-      goal: goal ?? null, penalty: penalty ?? null, target: onGoal ? goal : target, onGoal });
+      goal: goal ?? null, penalty: penalty ?? null, target: onGoal ? goal : target, onGoal, restart });
   });
   return out;
 }
@@ -117,13 +119,25 @@ export function challengeSay(r, ab, score, ctx, reviews = null) {
   return `${said} ${over}, coaches have won ${reviewCount(reviews.coachWon)} of ${reviewCount(reviews.coach)} `
     + `challenges of a goal, ${shareAbout(reviews.coachWon, reviews.coach)}.`;
 }
+/* Rule 83.2: an offside face-off is taken just outside the blue line of the end that was entered. Said only
+   when the recorded face-off is at a neutral-zone dot; the extract has the home team defending -x. */
+const NEUTRAL_DOT = [15, 25];
+function offsideDot(r, ctx) {
+  const x = r.restart;
+  if (r.kind !== 'off-side' || x == null || Math.abs(x) < NEUTRAL_DOT[0] || Math.abs(x) >= NEUTRAL_DOT[1]) return '';
+  // The end the dot sits outside must be the one the offside team went into; a record that disagrees, or names no team, says nothing.
+  const end = x > 0 ? ctx.awayId : ctx.homeId;
+  if (r.scorer == null || end === r.scorer) return '';
+  return ` Because it was offside, play restarts at the face-off dot just outside the ${end === ctx.awayId ? ctx.awayAb : ctx.homeAb} end, `
+    + 'where the play went in too early.';
+}
 function challengeOutcome(r, ab, score, ctx) {
   const S = r.scorer != null ? ab(r.scorer) : '', C = r.challenger != null ? ab(r.challenger) : '';
   const lost = ` and ${C} takes a two-minute penalty for losing the challenge.`;
   const h = score[ctx.homeId], a = score[ctx.awayId];
   const tally = h === a ? `The score stays tied, ${h}–${a}.`
     : `${h > a ? ctx.homeAb : ctx.awayAb} still leads ${Math.max(h, a)}–${Math.min(h, a)}.`;
-  const cameOff = `The review determined ${FOUND[r.kind](S, r.ruling)}, so the goal came off. ${tally}`;
+  const cameOff = `The review determined ${FOUND[r.kind](S, r.ruling)}, so the goal came off.${offsideDot(r, ctx)} ${tally}`;
   if (r.who === 'league')
     return r.outcome === 'off' ? `The league reviewed a goal for ${ABOUT[r.kind]}. ${cameOff}`
       : `The league reviewed ${S}'s goal for ${ABOUT[r.kind]}. The review concluded the goal stands.`;

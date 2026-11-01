@@ -33,7 +33,14 @@ test('⭐ a goal that came off for offside: no goal event, the ruling at the sam
   assert.equal(r.scorer, HOME, 'the goal was the bench that did not challenge');
   assert.equal(centre(E, r), false);
   assert.equal(noteAt(E, 4), 'HOM scored, but AWY challenged that HOM was offside prior to the goal. '
-    + 'The review determined HOM was offside, so the goal came off. The score stays tied, 0–0.');
+    + 'The review determined HOM was offside, so the goal came off. The score stays tied, 0–0.',
+    'the dot is outside HOM\u2019s own end, which HOM did not go into: the record disagrees, so nothing is said');
+  // HOM attacks +x, so its offside face-off is at a +x neutral dot: outside the AWY end (Rule 83.2).
+  const R = [...E.slice(0, 4), fo(30, 20, { y: 22 })];
+  assert.equal(noteAt(R, 4), 'HOM scored, but AWY challenged that HOM was offside prior to the goal. '
+    + 'The review determined HOM was offside, so the goal came off. Because it was offside, play restarts at the face-off dot '
+    + 'just outside the AWY end, where the play went in too early. The score stays tied, 0–0.');
+  assert.doesNotMatch(noteAt([...E.slice(0, 4), fo(30, 69, { y: 22 })], 4), /face-off dot/, 'an end-zone dot is not where an offside restarts');
 });
 
 test('a goal that came off for goaltender interference names no ruling, and the score line names the leader', () => {
