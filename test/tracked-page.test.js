@@ -118,6 +118,22 @@ test('⭐ Goals: Play goes into the first goal\'s tracking, then lands on that g
   assert.match(a.$('labels').innerHTML, /GOAL/, 'the goal stop does not say GOAL');
 });
 
+test('⛔ Goals: Play restarts a tracking whose booked frame never came', async () => {
+  /* Kevin, 2026-11-02 (EDM at NYR): Play turned to Pause and the first frame sat still. A loop
+     whose handle says "booked" while no frame is coming is never restarted by Play. */
+  const q = [];
+  const a = boot(rich, null, '?replay=goals', null, served(), { ...MOTION, raf: fn => q.push(fn) });
+  await settle(); await settle();
+  a.$('play').click();
+  for (let n = 0; n < 6 && !a.$('rg').classList.contains('trk'); n++) { a.advance(1); await settle(); }
+  assert.ok(a.$('rg').classList.contains('trk'), 'the tracking never started');
+  a.$('play').click();                       // pause
+  q.length = 0;                              // the booked frame is lost
+  await new Promise(r => setTimeout(r, 300));
+  a.$('play').click();
+  assert.ok(q.length > 0, 'Play did not book a frame for the stalled tracking');
+});
+
 test('Goals: Prev and Next step within a goal\'s tracking, and pause there', async () => {
   const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
   await settle(); await settle();

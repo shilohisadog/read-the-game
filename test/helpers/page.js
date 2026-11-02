@@ -518,6 +518,7 @@ export function pickLayer(a, token) {
 
 // `opts.motion`: the reader has NOT asked for reduced motion. Every media query answers
 // "matches" otherwise, which is reduced motion, and the tracked goal only animates without it.
+// `opts.raf`: replaces the synchronous frame stub, for a test that holds or drops frames.
 export function boot(game, rates, search = '', store = null, doc = undefined, opts = {}) {
   const dom = fakeDom();
   /**
@@ -560,7 +561,7 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
        `setTimeout` mistake this file already records one field down. Running it
        inline means the test sees the same end state a browser reaches, minus the
        animation the fake has no viewport for. */
-    requestAnimationFrame: fn => { fn(0); return 1; },
+    requestAnimationFrame: opts.raf || (fn => { fn(0); return 1; }),
     cancelAnimationFrame: () => {},
     setTimeout: setTimeout_, clearTimeout: clearTimeout_,
     localStorage: store || { getItem: () => null, setItem: () => {} },

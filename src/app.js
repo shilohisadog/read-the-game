@@ -3028,19 +3028,26 @@ function trkStart(P,still,free){
   return j;};
  const tick=now=>{
   if(TRK.run!==run)return;
+  // Cleared before painting: a frame that throws must not leave the loop looking booked.
+  run.raf=null;
   const moving=run.free||playing,advanced=run.prev==null||now>run.prev;
   if(moving&&run.prev!=null&&now>run.prev)played+=now-run.prev;
   run.prev=now;
   const j=paint();
-  run.raf=null;
   if(j>=P.k){if(run.free&&typeof setTimeout==='function')setTimeout(()=>{if(TRK.run===run)trkEnd();},1500);return;}
   // A browser's frame time always advances; one that does not means nothing will move.
-  if(moving&&advanced)run.raf=requestAnimationFrame(tick);};
+  if(moving&&advanced)trkBook(run);};
  run.tick=tick;run.paint=paint;TRK.run=run;
- run.raf=requestAnimationFrame(tick);
+ trkBook(run);
  return still+HOLD+(P.before*1000)/sp;}
 // Restart the loop after Play, a seek or a speed change.
-function trkKick(force){const r=TRK.run;if(r&&!r.raf&&(force||playing||r.free)){r.prev=null;r.raf=requestAnimationFrame(r.tick);}}
+// A booked frame that has not come in TRK_STALL_MS is not coming: Play books another rather than wait on it.
+const TRK_STALL_MS=250;
+function trkBook(r){r.booked=performance.now();r.raf=requestAnimationFrame(r.tick);}
+function trkKick(force){const r=TRK.run;if(!r||!(force||playing||r.free))return;
+ if(r.raf&&performance.now()-r.booked<TRK_STALL_MS)return;
+ if(r.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(r.raf);
+ r.prev=null;trkBook(r);}
 /* The frame hook, at the end of every render: end a tracking the reader left, load the
    next goal's file early, and keep the controls and the ice's classes current. */
 function trkFrame(k,how,cur){
