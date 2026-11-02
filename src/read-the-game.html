@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DTm3oU6ChdY5pVE8FHdlSx4HRzURPQgN81pVOwlJLOo=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-xg8yTw9QZMKxpegfTcBZwZ09DX8FgNg1btl4+HBJHQA='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1cupMaoEONE8tvFcJY+SLsChWUER2QfYKTrEgaT77Vo=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-a+h3ZGAE9yGmg7LiBwmVzEXnYfACizjwbk5CfphNsN8='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -674,7 +674,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg.trkgoals .playwork{display:none}
 #rg #track text{pointer-events:none}
 #rg #track .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
-#rg #track .tag{font-size:2.6px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:.9px}
 #rg #track .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
 #rg #track .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
 #rg #track .onside{stroke:var(--blue);stroke-width:1.7;stroke-linecap:round;opacity:.5;pointer-events:none}
@@ -3795,9 +3794,8 @@ const TRACK_SPEEDS = [[0.25, '¼', 'at a quarter of real speed'],
 const TRACK_SPEED = 0.25; 
 const TRACK_LOOKAHEAD_S = 40;
 const TRACK_STILL_MS = 1500;
-const TRACK_TAG_TENTHS = 8;
+const TRACK_ASSIST_TENTHS = 16;
 const TRACK_SAME_SHOT = 3;
-const TRACK_TAG_EDGE = 16;
 const TRACK_LANE_FT = 20;
 const TRACK_RELEASE_FT = 30;
 const TRACK_CARRY_FT = 3.5, TRACK_TURN_DEG = 45;
@@ -3805,10 +3803,6 @@ const TRACK_REACH_FT = 5.5;
 const GOAL_LINE = 89;
 const PUCK_R = 0.6;
 const SKATER_R = 1.35;
-
-const TRACK_WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Shot missed the net',
-  'blocked-shot': 'Shot blocked', hit: 'Hit', giveaway: 'Gave the puck away',
-  takeaway: 'Took the puck away', faceoff: 'Face-off' };
 
 const trackFeet = o => ({ x: o.x / 12 - 100, y: 42.5 - o.y / 12 });
 
@@ -3848,12 +3842,6 @@ function trackHoldFrame(EV, g, P, floor = 0) {
   return Math.max(j, floor);
 }
 
-function trackWindow(P, EV) {
-  const gi = EV.indexOf(P.e);
-  return EV.slice(0, gi < 0 ? 0 : gi)
-    .filter(e => e.per === P.e.per && e.s >= P.e.s - P.before && TRACK_WORDS[e.type]);
-}
-
 const abOf = (G, tid) => (tid === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
 
 function trackWho(P, G) {
@@ -3862,14 +3850,10 @@ function trackWho(P, G) {
 }
 const trackFirst = P => `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
 
-function trackTags(P, win) {
-  const tGoal = P.frames[P.k].timeStamp;
-  return win.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10 }));
-}
-function trackStops(P, tags, shotAt = null, assists = []) {
+function trackStops(P, shotAt = null, assists = []) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
   const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= TRACK_SAME_SHOT)).map(a => a.at);
-  const mid = [...tags.map(t => t.at), shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
+  const mid = [shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
   return [...new Set([t0, ...mid, tGoal])].sort((a, b) => a - b);
 }
 
@@ -4033,7 +4017,7 @@ function trackClipSit(holdSit, secs, box, ctx) {
   return occupants(box, secs, shortId).some(o => o.sev !== 'MIS') ? holdSit : null;
 }
 
-function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry = null, blue = null }) {
+function trackMarkup(P, j, tt, { G, AX, AY, col, shot = null, entry = null, blue = null }) {
   const per = P.e.per, at = o => { const p = trackFeet(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
   const F = P.frames[j].onIce, out = [];
@@ -4060,14 +4044,6 @@ function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry = null
   if (pk) {
     const s = at(pk);
     out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${PUCK_R}"/>`);
-    for (const t of tags) {
-      if (!(tt >= t.at && tt < t.at + TRACK_TAG_TENTHS)) continue;
-      const e = t.e, q = e.x != null ? { x: AX(e.x, per), y: AY(e.y, per) } : s;
-      const anc = q.x > 200 - TRACK_TAG_EDGE ? 'end' : q.x < TRACK_TAG_EDGE ? 'start' : 'middle';
-      const lx = q.x + (anc === 'end' ? -2.2 : anc === 'start' ? 2.2 : 0);
-      const ly = anc !== 'middle' ? q.y + 0.9 : q.y > 78 ? q.y - 2.6 : q.y + 4;
-      out.push(`<text class="tag" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" text-anchor="${anc}">${ESC(TRACK_WORDS[e.type] || '')}</text>`);
-    }
   }
   return out.join('');
 }
@@ -5805,7 +5781,7 @@ function namesActor(e){return !!e&&e.type==='goal'&&!!place(e);}
 function whoTag(p){return `<span class="num">#${ESC(p.n)}</span> ${ESC(p.nm)}`;}
 let onIceOn=false;
 function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
- if(!e||playing||PREVIEW||e.s==null){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
+ if(!e||playing||PREVIEW||TRK.goals||e.s==null){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
  const on=onIce(G,e);
  const tot=on.away.skaters.length+on.home.skaters.length;
  if(!tot){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
@@ -5900,7 +5876,7 @@ function entryBlue(P){
  return {x,y1:ys[0],y2:ys[1]};}
 function trkStart(P,still,free){
  trkEnd();
- const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
+ const t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
  const SHOT=trackShot(P,G.teams.home.id);
  const WHO=trackWho(P,G),FIRST=trackFirst(P),AST=trackAssists(P,G.teams.home.id);
@@ -5914,16 +5890,16 @@ function trkStart(P,still,free){
  const clip=(tGoal-t0)/10*1000/sp;
  const holdSit=sitAt(EV[trackHoldFrame(EV,EV.indexOf(P.e),P)]);
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,holdSit,boxAt:null,
-  stops:(()=>{const s=trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>v!==tGoal);
+  stops:(()=>{const s=trackStops(P,SHOT&&SHOT.at,AST).filter(v=>v!==tGoal);
    return entry?[...new Set([...s,entry.at])].sort((a,b)=>a-b):s;})(),at:now10,
   left:()=>Math.max(0,clip+HOLD-played),
   seek(v){let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
-  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT,entry,blue}));
+  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,shot:SHOT,entry,blue}));
   document.getElementById('rg').classList.add('trk');
   const say=played<0?FIRST:entry&&j===entry.j?entry.say:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
-  const upTo=a=>Math.min(a.at+TRACK_TAG_TENTHS*2,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
+  const upTo=a=>Math.min(a.at+TRACK_ASSIST_TENTHS,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
   const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
   const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
   $('clk').textContent=trackClock(P,j);
@@ -5973,7 +5949,7 @@ function trkRestClear(){if(!TRK.rest)return;TRK.rest=null;if(!TRK.run)put($('tra
 function trkRest(k,P){
  if(i!==k||TRK.run)return;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},tG=P.frames[P.k].timeStamp;
- put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,tags:trackTags(P,trackWindow(P,EV)),shot:trackShot(P,G.teams.home.id)}));
+ put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,shot:trackShot(P,G.teams.home.id)}));
  document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
  drawLabel(EV[k],{x:100,y:16,far:true});}
 function trkNoCue(){document.getElementById('rg').classList.toggle('trknocue',TRK.goals);}

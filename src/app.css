@@ -2650,7 +2650,6 @@
 #rg.trkgoals .playwork{display:none}
 #rg #track text{pointer-events:none}
 #rg #track .tn{font-size:1.5px;font-weight:800;text-anchor:middle;dominant-baseline:central}
-#rg #track .tag{font-size:2.6px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:.9px}
 #rg #track .tsc{font-size:2.4px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:.8px;text-anchor:middle}
 #rg #track .tpk{fill:#0e1216;stroke:#fff;stroke-width:.3}
 /* The attacking blue line while the puck approaches it. The pulse is the approach; reduced motion already stops every animation, and the stroke stays still. */

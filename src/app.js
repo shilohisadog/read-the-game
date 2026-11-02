@@ -58,8 +58,8 @@ import { faceoffs } from './lib/layers/faceoffs.js';
 import { periodLabel } from './lib/period.js';
 import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, nameOf, readableInk } from './lib/teams.js';
-import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_TAG_TENTHS, trackRow, trackPlan,
-  trackGoals, trackGoalAhead, trackHoldFrame, trackWindow, trackWho, trackFirst, trackTags,
+import { TRACK_SPEEDS, TRACK_SPEED, TRACK_LOOKAHEAD_S, TRACK_STILL_MS, TRACK_ASSIST_TENTHS, trackRow, trackPlan,
+  trackGoals, trackGoalAhead, trackHoldFrame, trackWho, trackFirst,
   trackStops, trackFrameAt, trackClock, trackSecs, trackClipSit, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay,
   trackEntry, trackFlight, trackFlightSay } from './lib/tracked.js';
 import { GOAL_READ_MS, goalReadLines } from './lib/goal-read.js';
@@ -2764,7 +2764,8 @@ function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
     into a box sized for a rink. The gate's own probe came back `HERO -Infinity`
     and the run went red; nothing in 1,200 unit tests could see it, because a
     fake document has no layout. */
- if(!e||playing||PREVIEW||e.s==null){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
+ // Goals draws every player on the ice with their number, so the list is the event walk's only.
+ if(!e||playing||PREVIEW||TRK.goals||e.s==null){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
  const on=onIce(G,e);
  const tot=on.away.skaters.length+on.home.skaters.length;
  /* NOTHING RATHER THAN A WRONG LIST: 3 of 87 published extracts carry no shifts.
@@ -2981,7 +2982,7 @@ function entryBlue(P){
  return {x,y1:ys[0],y2:ys[1]};}
 function trkStart(P,still,free){
  trkEnd();
- const win=trackWindow(P,EV),tags=trackTags(P,win),t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
+ const t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
  // The moment of the shot: a stop on every located goal; beyond TRACK_LANE_FT its lane is held. The light lane is markup's.
  const SHOT=trackShot(P,G.teams.home.id);
@@ -3000,18 +3001,18 @@ function trkStart(P,still,free){
  const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,holdSit,boxAt:null,
   // The goal line is the goal frame's own stop (one goal, one stop), so it is not one here.
   // The blue-line crossing is one, so Prev/Next can land on the check marks.
-  stops:(()=>{const s=trackStops(P,tags,SHOT&&SHOT.at,AST).filter(v=>v!==tGoal);
+  stops:(()=>{const s=trackStops(P,SHOT&&SHOT.at,AST).filter(v=>v!==tGoal);
    return entry?[...new Set([...s,entry.at])].sort((a,b)=>a-b):s;})(),at:now10,
   left:()=>Math.max(0,clip+HOLD-played),
   seek(v){let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
  // One frame of the tracking, and the words and clock that go with it.
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
-  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,tags,shot:SHOT,entry,blue}));
+  put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,shot:SHOT,entry,blue}));
   document.getElementById('rg').classList.add('trk');
   const say=played<0?FIRST:entry&&j===entry.j?entry.say:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
-  // At an assist the name line says who made it and the league's credit, as long as a label stays up or to the next stop.
-  const upTo=a=>Math.min(a.at+TRACK_TAG_TENTHS*2,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
+  // At an assist the name line says who made it and the league's credit, for a moment or to the next stop.
+  const upTo=a=>Math.min(a.at+TRACK_ASSIST_TENTHS,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
   const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
   const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
   $('clk').textContent=trackClock(P,j);
@@ -3072,7 +3073,7 @@ function trkRestClear(){if(!TRK.rest)return;TRK.rest=null;if(!TRK.run)put($('tra
 function trkRest(k,P){
  if(i!==k||TRK.run)return;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},tG=P.frames[P.k].timeStamp;
- put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,tags:trackTags(P,trackWindow(P,EV)),shot:trackShot(P,G.teams.home.id)}));
+ put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,shot:trackShot(P,G.teams.home.id)}));
  document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
  // The banner sits at centre ice, clear of the goal moment and nearer it than the far half (Kevin).
  drawLabel(EV[k],{x:100,y:16,far:true});}

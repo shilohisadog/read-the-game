@@ -59,6 +59,16 @@ test('⭐ a game with tracked goals is Goals only: a plain visit, a link to a mo
   assert.ok((await goals('?replay=all')).on, 'replay=all still opens the event walk');
 });
 
+test('⛔ Goals offers no "Who\'s on the ice": the tracking draws everyone; the event walk keeps it', async () => {
+  const at = TL[40], q = `?at=${at.per}-${at.rem}`;
+  const g = boot(rich, null, q, null, served(), MOTION); await settle(); await settle();
+  assert.ok(g.$('rg').classList.contains('trkgoals'));
+  assert.equal(g.$('onIceBtn').hidden, true, 'Goals still offers the on-ice list');
+  const w = boot(rich, null, q, null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null), MOTION);
+  await settle(); await settle();
+  assert.equal(w.$('onIceBtn').hidden, false, 'the event walk lost its on-ice list');
+});
+
 test('a link that carries a layer opens a tracked game in Goals with every layer off', async () => {
   const at = TL[40];
   const a = boot(rich, null, `?at=${at.per}-${at.rem}&layer=whistle`, null, served(), MOTION);

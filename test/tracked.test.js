@@ -7,9 +7,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  trackPlan, trackRow, trackWindow, trackWho, trackFirst,
-  trackTags, trackStops, trackFrameAt, trackClock, trackRem, trackSecs, trackClipSit, trackFeet, trackGoalAhead, trackGoals,
-  trackHoldFrame, trackMarkup, TRACK_TAG_TENTHS, TRACK_TAG_EDGE, trackShot, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
+  trackPlan, trackRow, trackWho, trackFirst,
+  trackStops, trackFrameAt, trackClock, trackRem, trackSecs, trackClipSit, trackFeet, trackGoalAhead, trackGoals,
+  trackHoldFrame, trackMarkup, trackShot, trackLaneLine, trackAssists, trackAssistSay, trackHolders, TRACK_REACH_FT, TRACK_LANE_FT, TRACK_RELEASE_FT, TRACK_CARRY_FT, TRACK_SAME_SHOT,
   trackEntry, trackEntrySay, trackEntryRuled, TRACK_ENTRY_CALLED, PUCK_R, SKATER_R, trackFlight, trackFlightSay,
 } from '../src/lib/tracked.js';
 import { stints, occupants } from '../src/lib/box.js';
@@ -43,10 +43,10 @@ test('⭐ the tracking and the league\'s record put the same player in the same 
      location is the league's play-by-play, written down independently. At the hit's
      moment the hitter (#14 Laferriere) must stand where the league recorded the hit.
      MUTATION: flip `turn`, or the file's y (`42.5 - y/12`), and he is 20+ feet away. */
-  const win = trackWindow(P, EV), hit = win.find(e => e.type === 'hit');
+  const hit = EV.find(e => e.type === 'hit' && e.per === GOAL.per && e.s >= GOAL.s - P.before && e.s < GOAL.s);
   assert.ok(hit, 'the fixture lost its hit');
-  const tag = trackTags(P, win).find(t => t.e === hit);
-  const o = Object.values(P.frames[trackFrameAt(P, tag.at)].onIce).find(x => x.playerId === hit.actor);
+  const at = P.frames[P.k].timeStamp - (GOAL.s - hit.s) * 10;
+  const o = Object.values(P.frames[trackFrameAt(P, at)].onIce).find(x => x.playerId === hit.actor);
   const f = trackFeet(o), d = Math.hypot(P.turn * f.x - hit.x, P.turn * f.y - hit.y);
   assert.ok(d < 6, `the hitter is ${d.toFixed(1)} ft from where the league recorded the hit`);
 });
@@ -56,9 +56,13 @@ test('the name line and the held first frame', () => {
   assert.equal(trackFirst(P), '10 seconds before the goal. The black dot is the puck.');
 });
 
-test('the stops are the first frame, each recorded event, and the goal line', () => {
-  const tags = trackTags(P, trackWindow(P, EV)), stops = trackStops(P, tags);
-  assert.deepEqual(stops, [P.frames[0].timeStamp, tags[0].at, P.frames[P.k].timeStamp]);
+test('⛔ the stops are the first frame and the goal line: no recorded event is one, nor drawn', () => {
+  /* Goals mode says what it shows; a recorded event in the clip had no sentence, and its game-clock
+     time misplaced it whenever a whistle fell inside the clip (CBJ at DAL, 2026-10-31). */
+  assert.deepEqual(trackStops(P), [P.frames[0].timeStamp, P.frames[P.k].timeStamp]);
+  const col = { [G.teams.home.id]: '#C8102E', [G.teams.away.id]: '#111111' };
+  for (let j = 0; j <= P.k; j++)
+    assert.doesNotMatch(trackMarkup(P, j, P.frames[j].timeStamp, { G, AX, AY, col }), /class="tag"|>Hit</);
   assert.equal(trackClock(P, P.k), '00:02', 'at the goal line the clock reads the goal\'s own');
   assert.equal(trackClock(P, 0), '00:11');
   assert.equal(trackFrameAt(P, 9e15), P.k, 'never past the goal line');
@@ -75,23 +79,15 @@ test('the goal ahead is in the same stretch of play, and the frame held is befor
   assert.ok(EV[j].s < GOAL.s - P.before && EV[j + 1].s >= GOAL.s - P.before);
 });
 
-test('the frame draws twelve skaters and the puck, the visitor in white, the label inside the boards', () => {
+test('the frame draws twelve skaters and the puck, the visitor in white', () => {
   const col = { [G.teams.home.id]: '#C8102E', [G.teams.away.id]: '#111111' };
-  const tags = trackTags(P, trackWindow(P, EV)), at = tags[0].at;
-  const svg = trackMarkup(P, trackFrameAt(P, at), at, { G, AX, AY, col, tags });
+  const at = P.frames[P.k].timeStamp - 30;
+  const svg = trackMarkup(P, trackFrameAt(P, at), at, { G, AX, AY, col });
   const dots = svg.match(/<circle cx/g) || [];
   assert.ok(dots.length >= 10 && dots.length <= 13, `${dots.length} players`);
   assert.match(svg, /class="tpk"/, 'no puck');
   assert.match(svg, /fill="#fff" stroke="#111111"/, 'the visitor is not in white');
   assert.match(svg, /fill="#C8102E"/, 'the host is not in its colour');
-  const tag = /<text class="tag" x="([\d.]+)"[^>]*text-anchor="(\w+)">Hit</.exec(svg);
-  assert.ok(tag, 'the hit is not labelled at its moment');
-  // Behind the WSH net, which is at the LEFT boards in this orientation: anchored at its
-  // start, so the word runs into the ice; and it stays at the hit (x = 100 - 97 = 3).
-  assert.equal(tag[2], 'start');
-  assert.ok(+tag[1] < TRACK_TAG_EDGE && +tag[1] > 3, `the label is at x=${tag[1]}, not beside the hit`);
-  const later = trackMarkup(P, trackFrameAt(P, at + TRACK_TAG_TENTHS), at + TRACK_TAG_TENTHS, { G, AX, AY, col, tags });
-  assert.doesNotMatch(later, />Hit</, 'the label outlasts its moment');
 });
 
 test('⭐ the shot\'s lane opens where the puck leaves the stick, the release nearest the spot the league recorded', () => {
@@ -121,9 +117,8 @@ test('every located goal has a shot stop; the lane is held beyond 20 feet; the r
   const g15 = { ...GOAL, x: -75, y: -5 }, a = shotOf(g15);
   assert.ok(a.S && a.S.lane === false && a.S.ft === 15);
   assert.equal(a.S.j, nearestTo(a.P2, g15));
-  const tags = trackTags(a.P2, trackWindow(a.P2, EV));
-  assert.ok(trackStops(a.P2, tags, a.S.at).includes(a.S.at), 'the shot is not a stop');
-  assert.doesNotMatch(trackMarkup(a.P2, a.P2.k, a.P2.frames[a.P2.k].timeStamp, { G, AX, AY, col: {}, tags, shot: a.S }), /class="tlane"/);
+  assert.ok(trackStops(a.P2, a.S.at).includes(a.S.at), 'the shot is not a stop');
+  assert.doesNotMatch(trackMarkup(a.P2, a.P2.k, a.P2.frames[a.P2.k].timeStamp, { G, AX, AY, col: {}, shot: a.S }), /class="tlane"/);
   // 29 ft: the lane is held, and the moment is still the frame nearest the recorded spot.
   const g29 = { ...GOAL, x: -62, y: -10 }, b = shotOf(g29);
   assert.ok(b.S.lane, 'no lane at 29 feet');
@@ -134,8 +129,8 @@ test('every located goal has a shot stop; the lane is held beyond 20 feet; the r
 });
 
 test('the lane follows the puck, faint, while it is in the scoring team\'s end beyond 30 feet; at the shot it freezes', () => {
-  const S = trackShot(P, G.teams.home.id), tags = trackTags(P, trackWindow(P, EV));
-  const col = { 15: '#c8102e', 26: '#111111' }, opt = { G, AX, AY, col, tags, shot: S };
+  const S = trackShot(P, G.teams.home.id);
+  const col = { 15: '#c8102e', 26: '#111111' }, opt = { G, AX, AY, col, shot: S };
   const mk = j => trackMarkup(P, j, P.frames[j].timeStamp, opt);
   const live = m => (m.match(/class="tlane live" points="([^"]+)"/) || [])[1];
   const held = m => (m.match(/class="tlane" points="([^"]+)"/) || [])[1];
@@ -158,7 +153,7 @@ test('the lane follows the puck, faint, while it is in the scoring team\'s end b
   assert.equal(held(late), held(at), 'the held lane changed shape on the way to the goal line');
   assert.equal(live(at), undefined, 'two lanes at once');
   assert.ok(at.indexOf('tlane') < at.indexOf('<circle'), 'the lane is drawn over the players');
-  assert.ok(trackStops(P, tags, S.at).includes(S.at), 'the shot is not a stop');
+  assert.ok(trackStops(P, S.at).includes(S.at), 'the shot is not a stop');
 });
 
 test('the note under the rink reads the triangle that is drawn, and is empty when none is', () => {
@@ -166,7 +161,7 @@ test('the note under the rink reads the triangle that is drawn, and is empty whe
   assert.equal(trackLaneLine(P, S.j, tt(S.j), S, home), 'Anyone inside the shaded triangle was between the shot and the net.');
   let live = 0, none = 0;
   for (let j = 0; j < S.j; j++) {
-    const line = trackLaneLine(P, j, tt(j), S, home), drawn = trackMarkup(P, j, tt(j), { G, AX: x => x, AY: y => y, col: {}, tags: [], shot: S });
+    const line = trackLaneLine(P, j, tt(j), S, home), drawn = trackMarkup(P, j, tt(j), { G, AX: x => x, AY: y => y, col: {}, shot: S });
     assert.equal(!!line, /tlane/.test(drawn), `frame ${j}: the line and the drawing disagree`);
     if (line) { live++; assert.match(line, /light triangle/); } else none++;
   }
@@ -202,7 +197,7 @@ test('⭐ the assists come from the league\'s record; the tracking says when the
 
 test('the assists are Prev/Next stops, between the first frame and the shot', () => {
   const A = trackAssists(TP), S = trackShot(TP, TG.teams.home.id);
-  const stops = trackStops(TP, [], S && S.at, A);
+  const stops = trackStops(TP, S && S.at, A);
   for (const a of A) assert.ok(stops.includes(a.at), `no stop at the ${a.rank === 1 ? 'primary' : 'secondary'} assist`);
   assert.ok(A.every(a => a.at < S.at), 'an assist after the shot');
 });
@@ -217,7 +212,7 @@ test('an assist that is the shot itself is the shot\'s stop, not a second one', 
     `the primary touch is ${Math.abs(a1.at - S.at)} tenths from the release`);
   assert.equal(a1.shot, false, 'a touch well before the release is not the shot');
   assert.match(trackAssistSay(a1, TG), /^#88 Necas passes · the league credits him with the primary assist$/);
-  assert.ok(trackStops(tip, [], S.at, A).includes(a1.at), 'a pass before the shot lost its stop');
+  assert.ok(trackStops(tip, S.at, A).includes(a1.at), 'a pass before the shot lost its stop');
   // Move that frame onto the release. Copy it so the fixture's own timestamps stay put.
   const frames = tip.frames.map((f, i) => i === a1.j ? { ...f, timeStamp: S.at - 2 } : f);
   const close = trackPlan(frames, { ...TGOAL, st: 'tip-in' });
@@ -226,7 +221,7 @@ test('an assist that is the shot itself is the shot\'s stop, not a second one', 
   assert.ok(Math.abs(c1.at - shotAt) <= TRACK_SAME_SHOT, 'the moved touch is not inside the release window');
   assert.equal(c1.shot, true, 'a tip within three tenths of the release is not his shot');
   assert.match(trackAssistSay(c1, TG), /^#88 Necas shoots · the league credits him with the primary assist$/);
-  assert.ok(!trackStops(close, [], shotAt, C).includes(c1.at), 'the shot and the assist are two stops');
+  assert.ok(!trackStops(close, shotAt, C).includes(c1.at), 'the shot and the assist are two stops');
 });
 
 test('an unassisted goal has no assists, and a recorded assist the tracking never sees is left out', () => {
@@ -340,7 +335,7 @@ test('the Panarin clip names the ruling: a LAK skater\'s centre is past the line
   const en = trackEntry(P, G.teams.home.id, G.roster, 'LAK');
   assert.equal(en.say, trackEntryRuled('LAK', en.ids.length, en.unsure.length));
   assert.ok(en.unsure.length >= 1 && en.ids.length >= 1, 'the clip has players on both sides of the call');
-  const drawn = trackMarkup(P, en.j, en.at, { G, AX, AY, col: {}, tags: [], entry: en, blue: { x: 75, y1: 1, y2: 84 } });
+  const drawn = trackMarkup(P, en.j, en.at, { G, AX, AY, col: {}, entry: en, blue: { x: 75, y1: 1, y2: 84 } });
   assert.equal([...drawn.matchAll(/class="tck"/g)].length, en.ids.length, 'a tick for each player behind the line');
   assert.equal([...drawn.matchAll(/class="tck unsure"/g)].length, en.unsure.length, 'a ? for each player too close to call');
   // Read the crossing directly: the frame the puck's centre passes the line plus the dot's radius.
@@ -367,13 +362,13 @@ test('the entry frame marks the attacking skaters and the line; the approach mar
   const g = { teams: { home: { id: 1, ab: 'LAK' }, away: { id: 2, ab: 'WSH' } }, roster: ROSTER };
   const en = trackEntry(C, 1, ROSTER, 'LAK');
   assert.deepEqual(en.ids, [11, 12], 'the goaltender is marked, or a skater is missed');
-  const opt = { G: g, AX, AY, col: {}, tags: [], entry: en, blue: { x: 75, y1: 1, y2: 84 } };
+  const opt = { G: g, AX, AY, col: {}, entry: en, blue: { x: 75, y1: 1, y2: 84 } };
   const at = trackMarkup(C, en.j, en.at, opt);
   assert.equal([...at.matchAll(/class="tck"/g)].length, en.ids.length);
   assert.match(at, /class="onside"/);
   assert.doesNotMatch(trackMarkup(C, en.from, C.frames[en.from].timeStamp, opt), /class="tck"/);
   assert.match(trackMarkup(C, en.from, C.frames[en.from].timeStamp, opt), /class="onside approach"/);
-  assert.doesNotMatch(trackMarkup(C, en.j, en.at, { G: g, AX, AY, col: {}, tags: [] }), /class="tck"|class="onside/);
+  assert.doesNotMatch(trackMarkup(C, en.j, en.at, { G: g, AX, AY, col: {} }), /class="tck"|class="onside/);
 });
 
 test('trackSecs matches the goal\'s own s at the goal line, and counts back with the clock', () => {

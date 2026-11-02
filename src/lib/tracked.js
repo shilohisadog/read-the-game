@@ -27,12 +27,10 @@ export const TRACK_SPEED = 0.25;           // Kevin: a novice needs time to take
 export const TRACK_LOOKAHEAD_S = 40;
 /** Goals mode opens each goal on its first tracked frame, held still this long. */
 export const TRACK_STILL_MS = 1500;
-/** An event's label stays up this much GAME time (tenths): Kevin, half of 1.5 s. */
-export const TRACK_TAG_TENTHS = 8;
+/** An assist's name line stays up this much GAME time (tenths). */
+export const TRACK_ASSIST_TENTHS = 16;
 /** A tip and the shot are the same touch when they fall within this many tenths. */
 export const TRACK_SAME_SHOT = 3;
-/** Half the longest label's width, in rink feet: nearer the boards, it runs away from them. */
-export const TRACK_TAG_EDGE = 16;
 /* Beyond this many feet from the net the lane is drawn: light while it follows the puck, held from the shot
    on. OUR choice and a visual one (Kevin, 2026-10-26): closer in the triangle shrinks to a stub over the crease. */
 export const TRACK_LANE_FT = 20;
@@ -53,11 +51,6 @@ const GOAL_LINE = 89;
 export const PUCK_R = 0.6;
 /** Radius of a skater dot, as drawn. */
 export const SKATER_R = 1.35;
-
-/** Each recorded event's label on the ice, in plain English. */
-export const TRACK_WORDS = { 'shot-on-goal': 'Shot on goal', 'missed-shot': 'Shot missed the net',
-  'blocked-shot': 'Shot blocked', hit: 'Hit', giveaway: 'Gave the puck away',
-  takeaway: 'Took the puck away', faceoff: 'Face-off' };
 
 /** A tracked point in league feet. */
 export const trackFeet = o => ({ x: o.x / 12 - 100, y: 42.5 - o.y / 12 });
@@ -107,13 +100,6 @@ export function trackHoldFrame(EV, g, P, floor = 0) {
   return Math.max(j, floor);
 }
 
-/** The league's recorded events in the tracked seconds before the goal, oldest first. */
-export function trackWindow(P, EV) {
-  const gi = EV.indexOf(P.e);
-  return EV.slice(0, gi < 0 ? 0 : gi)
-    .filter(e => e.per === P.e.per && e.s >= P.e.s - P.before && TRACK_WORDS[e.type]);
-}
-
 const abOf = (G, tid) => (tid === G.teams.home.id ? G.teams.home.ab : G.teams.away.ab);
 
 /** The name line: "Tracked · goal by #9 Kempe (LAK)". */
@@ -124,17 +110,12 @@ export function trackWho(P, G) {
 /** The line while the first frame is held still. */
 export const trackFirst = P => `${Math.round(P.before)} seconds before the goal. The black dot is the puck.`;
 
-/** Each recorded event's moment in the file's time (tenths). */
-export function trackTags(P, win) {
-  const tGoal = P.frames[P.k].timeStamp;
-  return win.map(e => ({ e, at: tGoal - (P.e.s - e.s) * 10 }));
-}
-/** The stops Prev/Next move between: the first frame, each recorded event, the shot (`shotAt`), each assist, the goal line. */
-export function trackStops(P, tags, shotAt = null, assists = []) {
+/** The stops Prev/Next move between: the first frame, the shot (`shotAt`), each assist, the goal line. */
+export function trackStops(P, shotAt = null, assists = []) {
   const t0 = P.frames[0].timeStamp, tGoal = P.frames[P.k].timeStamp;
   // An assist that is the shot itself (a tip at the release, a rebound) is the shot's stop.
   const passes = assists.filter(a => !(a.shot && shotAt != null && Math.abs(a.at - shotAt) <= TRACK_SAME_SHOT)).map(a => a.at);
-  const mid = [...tags.map(t => t.at), shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
+  const mid = [shotAt, ...passes].filter(v => v != null && v > t0 && v < tGoal);
   return [...new Set([t0, ...mid, tGoal])].sort((a, b) => a - b);
 }
 
@@ -362,7 +343,7 @@ export function trackClipSit(holdSit, secs, box, ctx) {
  * and the label of any recorded event within its moment at `tt`. `col` maps a team
  * id to its colour; AX/AY are the replay's own placement.
  */
-export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry = null, blue = null }) {
+export function trackMarkup(P, j, tt, { G, AX, AY, col, shot = null, entry = null, blue = null }) {
   const per = P.e.per, at = o => { const p = trackFeet(o); return { x: AX(P.turn * p.x, per), y: AY(P.turn * p.y, per) }; };
   const stars = new Set([P.e.actor, P.e.a1, P.e.a2].filter(Boolean).map(Number));
   const F = P.frames[j].onIce, out = [];
@@ -392,15 +373,6 @@ export function trackMarkup(P, j, tt, { G, AX, AY, col, tags, shot = null, entry
   if (pk) {
     const s = at(pk);
     out.push(`<circle class="tpk" cx="${s.x.toFixed(2)}" cy="${s.y.toFixed(2)}" r="${PUCK_R}"/>`);
-    for (const t of tags) {
-      if (!(tt >= t.at && tt < t.at + TRACK_TAG_TENTHS)) continue;
-      // At the spot the league recorded (the puck when it recorded none), running away from the nearest boards.
-      const e = t.e, q = e.x != null ? { x: AX(e.x, per), y: AY(e.y, per) } : s;
-      const anc = q.x > 200 - TRACK_TAG_EDGE ? 'end' : q.x < TRACK_TAG_EDGE ? 'start' : 'middle';
-      const lx = q.x + (anc === 'end' ? -2.2 : anc === 'start' ? 2.2 : 0);
-      const ly = anc !== 'middle' ? q.y + 0.9 : q.y > 78 ? q.y - 2.6 : q.y + 4;
-      out.push(`<text class="tag" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" text-anchor="${anc}">${ESC(TRACK_WORDS[e.type] || '')}</text>`);
-    }
   }
   return out.join('');
 }
