@@ -2955,8 +2955,8 @@ const PB={
   playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=null;sayOnIce(EV[i]);
   const r=pbClip();
   if(r)r.go();
-  // Play on a goal the reader is resting on leaves it: a fresh hold there reads as Play doing nothing.
-  else if(EV[i]&&EV[i].type==='goal'&&!PREVIEW)pbGo('next');
+  // Play on a stop the reader is resting on leaves it: a goal, or in Goals a review or shootout stop.
+  else if(EV[i]&&!PREVIEW&&(EV[i].type==='goal'||TRK.goals&&GOAL_STOPS.includes(i)))pbGo('next');
   else wait(EV[i]);},
  pause(){playing=false;syncStep();clearTimeout(timer);timer=null;greadClear();TRK.load=null;
   const r=pbClip();if(r)r.hold();sayOnIce(EV[i]);},

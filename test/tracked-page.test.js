@@ -474,8 +474,9 @@ test('⭐ Goals: a game settled by a shootout stops on its first attempt and say
   assert.equal(a.$('who').textContent, "The shootout's first attempt · overtime ended without a goal");
   assert.equal(a.$('playline').textContent, 'Overtime ended without a goal, so a shootout decided the game. '
     + 'CAR won the shootout 1–0, and the team that wins a shootout is credited with one goal on the final score.');
-  a.$('play').click(); a.advance(1); await settle();
-  assert.equal(+a.$('scrub').value, tl.length - 1, 'Play did not go from the shootout to the horn');
+  // Play leaves a stop the reader rests on at once; the old check fired the timer first, so it could not see a wait.
+  a.$('play').click(); await settle();
+  assert.equal(+a.$('scrub').value, tl.length - 1, `Play held the shootout stop for ${a.wait} ms before the horn`);
   const all = boot(game, null, '', null, name => Promise.resolve(name.endsWith('goals.json') ? [] : null));
   await settle(); await settle();
   all.at(so, () => {}); await settle();

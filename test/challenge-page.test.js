@@ -52,6 +52,15 @@ test('⭐ Goals: a goal that came off is a stop of its own, between the goals ar
   assert.deepEqual(seen.slice(0, want.length), want, 'the stops are not the goals plus the goal that came off');
 });
 
+test('⛔ Play on the stop for a goal that came off moves on at once, as it does from a goal', async () => {
+  // Kevin, 2026-11-03 (CBJ at DAL): Play on the review's face-off waited a frame's reading time, about 6 s.
+  const a = boot(G, null, '?replay=goals', null, served);
+  await settle(); await settle();
+  a.at(OFF, () => {}); await settle();
+  a.$('play').click(); await settle();
+  assert.notEqual(+a.$('scrub').value, OFF, `Play held the review stop for ${a.wait} ms`);
+});
+
 test('on that stop the name line says it, and the line under the rink says how', async () => {
   const a = boot(G, null, '?replay=goals', null, served);
   await settle(); await settle();
