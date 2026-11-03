@@ -728,7 +728,7 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
     'the share lost its unit again');
   assert.match(html, /fmt\(s\.value\)/, 'the value beside the bar is no longer spelled by the row');
   assert.match(html, /endFmt\(lo\)/, 'the axis lost its unit again');
-  assert.match(html, /trackFor\(\{ range: r\.range, fmt: dec, tick: 'typical skater' \}/,
+  assert.match(html, /trackFor\(\{ range: r\.range, fmt: dec, tick: 'median player' \}/,
     'the player row no longer overrides the share spelling, so its rates read as percentages');
   /* ⭐⭐ AND THE PICTURE SAYS WHAT IT IS — IN THE PICTURE. Nothing in it has a
      length any more: the mark is a POSITION, because the axis starts at the
@@ -752,7 +752,7 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
     + 'what the dark mark is — and the sentence that used to say it is gone');
   assert.match(html, /var tickSays = row\.tick \|\| 'league'/,
     'a row that does not name its tick must still fall back to the league');
-  assert.match(html, /tick: 'typical skater'/,
+  assert.match(html, /tick: 'median player'/,
     'the player row no longer names its tick, so its median skater reads as a league figure');
   assert.match(html, /tag\.style\.left = lx/,
     'the league label is drawn but not placed at the tick it names');

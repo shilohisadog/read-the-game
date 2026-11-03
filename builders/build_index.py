@@ -4693,7 +4693,7 @@ __HELPERS__
     var head = el('div', 'pvmh');
     head.appendChild(el('p', 'pvlab', r.label));
     head.appendChild(el('span', 'pvref', r.range
-      ? 'a typical skater ' + dec(r.range.median)
+      ? 'the median player ' + dec(r.range.median)
       : 'no skater range yet'));
     box.appendChild(head);
     box.appendChild(el('p', 'pvsays', r.says));
@@ -4715,7 +4715,7 @@ __HELPERS__
                value: v ? v.value : null,
                league: r.range ? r.range.median : null, trust: trust };
     });
-    var track = trackFor({ range: r.range, fmt: dec, tick: 'typical skater' }, sides);
+    var track = trackFor({ range: r.range, fmt: dec, tick: 'median player' }, sides);
     if (track) box.appendChild(track.node);
 
     /* THE COUNTS THAT MADE THE RATE, said once with both players on the line —
@@ -4786,7 +4786,7 @@ __HELPERS__
   }
 
   /* A RATE, NOT A SHARE. Two decimals because the gap between a leading scorer
-     and a typical skater is tenths, and one decimal rounds several of the four
+     and the median player is tenths, and one decimal rounds several of the four
      figures into each other. */
   function dec(v) { return v == null ? '\u2014' : v.toFixed(2); }
 

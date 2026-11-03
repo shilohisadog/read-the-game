@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pGbsQxjYiVUyakDQL8WlpZ0+wdgXsJmnzwjnmBW6r0U=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-Y7oHoVW73P4zvv339V7ZRbH+n4UXvr87s+sjxyJZWIs=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-q8hSmNrpyxMyiG0z69EqlloxyLM0IXNV8mV+eRcNg4A=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-Y7oHoVW73P4zvv339V7ZRbH+n4UXvr87s+sjxyJZWIs=' 'sha256-/UUl6nA2ffY0WZsNUW5ompU4C0GnzDQ2yPH8CTnwK/4='; connect-src 'self' https://data.readthegame.co; img-src https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1586,7 +1586,7 @@ function formatDate(iso) {
     var head = el('div', 'pvmh');
     head.appendChild(el('p', 'pvlab', r.label));
     head.appendChild(el('span', 'pvref', r.range
-      ? 'a typical skater ' + dec(r.range.median)
+      ? 'the median player ' + dec(r.range.median)
       : 'no skater range yet'));
     box.appendChild(head);
     box.appendChild(el('p', 'pvsays', r.says));
@@ -1599,7 +1599,7 @@ function formatDate(iso) {
                value: v ? v.value : null,
                league: r.range ? r.range.median : null, trust: trust };
     });
-    var track = trackFor({ range: r.range, fmt: dec, tick: 'typical skater' }, sides);
+    var track = trackFor({ range: r.range, fmt: dec, tick: 'median player' }, sides);
     if (track) box.appendChild(track.node);
 
     var foot = [];

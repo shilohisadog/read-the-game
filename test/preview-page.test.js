@@ -1251,7 +1251,7 @@ test('⛔ a player rate is spelled as a RATE, and its tick is not called the lea
      right defect and the right prose is a check that will be weakened later. */
   const ticks = walk(block).filter(x => hasCls(x, 'pvlg')).map(x => x.textContent);
   assert.ok(ticks.length >= 4, `only ${ticks.length} tick labels in the block`);
-  assert.deepEqual([...new Set(ticks)], ['typical skater'],
+  assert.deepEqual([...new Set(ticks)], ['median player'],
     'a player row\u2019s tick is the median skater and must not be called the league');
 });
 
