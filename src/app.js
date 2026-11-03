@@ -3062,21 +3062,23 @@ function trkStart(P,still,free){
   // Cleared before painting: a frame that throws must not leave the loop looking booked.
   run.raf=null;
   const moving=run.free||playing,advanced=run.prev==null||now>run.prev;
+  run.same=advanced?0:(run.same||0)+1;
   if(moving&&run.prev!=null&&now>run.prev)played+=now-run.prev;
   run.prev=now;
   const j=paint();
   run.drawn=(run.drawn||0)+1;run.drew=performance.now();
   if(TRACE&&(run.drawn===1||!(moving&&advanced)||j>=P.k))trc('tick',{n:run.drawn,j,k:P.k,moving,advanced,now:Math.round(now)});
   if(j>=P.k){if(run.free&&typeof setTimeout==='function')setTimeout(()=>{if(TRK.run===run)trkEnd();},1500);return;}
-  // A browser's frame time always advances; one that does not means nothing will move.
-  if(moving&&advanced)trkBook(run);};
+  // Chrome can hand two frames the same time, so a repeat books on; only a clock frozen for TRK_SAME frames stops.
+  if(moving&&run.same<TRK_SAME)trkBook(run);};
  run.tick=tick;run.paint=paint;TRK.run=run;
  trkBook(run);trc('trkStart',{g:run.g,still,free});
  return still+HOLD+(P.before*1000)/sp;}
 // Restart the loop after Play, a seek or a speed change.
 // A booked frame that has not come in TRK_STALL_MS is not coming: Play books another rather than wait on it.
-const TRK_STALL_MS=250;
-function trkBook(r){r.booked=performance.now();r.raf=requestAnimationFrame(r.tick);}
+const TRK_STALL_MS=250,TRK_SAME=8;
+// Only the newest booking runs, so a loop restarted over a pending frame never runs twice.
+function trkBook(r){const tok={};r.tok=tok;r.booked=performance.now();r.raf=requestAnimationFrame(now=>{if(r.tok===tok)r.tick(now);});}
 function trkKick(force){const r=TRK.run;trc('kick',{force:!!force,booked:!!(r&&r.raf)});if(!r||!(force||playing||r.free))return;
  if(r.raf&&performance.now()-r.booked<TRK_STALL_MS)return;
  if(r.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(r.raf);
