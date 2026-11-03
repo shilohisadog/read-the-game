@@ -224,6 +224,36 @@ const TRK_PLAIN=!LINK.at&&!LINK.summary;
 const TRK={rows:null,plans:new Map(),run:null,hold:null,offered:false,
   goals:TRK_ON&&TRK_PLAIN,
   speed:TRACK_SPEEDS.some(x=>x[0]===Number(TRK_Q.get('speed')))?Number(TRK_Q.get('speed')):TRACK_SPEED};
+/* THE TRACE (`&trace=1`): the replay's last 400 state changes, for a freeze no probe reproduces.
+   Off unless asked, and then `trc` does nothing. A watchdog logs STALL when a playing replay stops moving. */
+const TRACE=TRK_Q.get('trace')==='1'&&typeof performance!=='undefined'?[]:null,T0=TRACE?performance.now():0;
+let trcSet=0,trcStalled=false;
+function trcState(){try{const r=TRK.run,h=TRK.hold;
+ return {i,playing,hold:h?{i:h.i,g:h.g,wait:!!h.wait,ms:Math.round(h.ms||0)}:null,
+  run:r?{g:r.g,raf:!!r.raf,free:!!r.free,at:Math.round(r.at()),drawn:r.drawn||0,
+   since:r.drew?Math.round(performance.now()-r.drew):null}:null,
+  rest:!!TRK.rest,vis:document.visibilityState};}catch(e){return {err:String(e)};}}
+function trc(what,data){if(!TRACE)return;
+ TRACE.push({t:Math.round(performance.now()-T0),what,...(data||{}),s:trcState()});
+ if(TRACE.length>400)TRACE.shift();
+ const b=document.getElementById('trcBtn');if(b)b.textContent='Trace · '+TRACE.length+(trcStalled?' · STALL':'')+' · Copy';}
+if(TRACE){
+ const b=document.createElement('button');b.id='trcBtn';b.type='button';
+ b.style.cssText='position:fixed;right:8px;bottom:8px;z-index:9999;font:12px monospace;padding:6px 10px;background:#111;color:#fff;border:0;border-radius:6px';
+ b.onclick=()=>{const t=JSON.stringify({ua:navigator.userAgent,url:location.href,trace:TRACE});
+  const done=()=>{b.textContent='Copied '+TRACE.length;};
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(done,()=>{
+   const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;inset:10%;z-index:9999';
+   document.body.appendChild(x);x.select();});};
+ document.body.appendChild(b);
+ addEventListener('error',e=>trc('ERROR',{msg:String(e.message),at:e.lineno+':'+e.colno}));
+ addEventListener('unhandledrejection',e=>trc('REJECT',{msg:String(e.reason&&e.reason.stack||e.reason)}));
+ document.addEventListener('visibilitychange',()=>trc('visibility'));
+ setInterval(()=>{const r=TRK.run,now=performance.now();
+  const still=playing&&r&&!r.free&&(r.drew?now-r.drew:now-(r.booked||now))>1000;
+  const idle=playing&&!r&&now-trcSet>45000;
+  if((still||idle)&&!trcStalled){trcStalled=true;trc('STALL',{why:still?'tracking not drawing':'no frame change in 45 s'});}
+  if(!still&&!idle)trcStalled=false;},500);}
 /* WHETHER THIS IS A FIRST VISIT — a fact the page has never had, and the reason
    230 words of teaching copy were either permanent furniture or absent.
    Kevin: "what they don't know, they have no idea what it means... they need to
@@ -2558,7 +2588,7 @@ $('scrub').max=EV.length-1;
    'Pre-game' and `renderWork` already writes ', pre-game' -- so index -1 draws
    the rink, both goaltenders, a 0-0 board and two empty boxes. All of that was
    written and unreachable until this clamp stopped stopping at zero. */
-function set(v,how){if(how!=='play')greadClear();i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
+function set(v,how){trc('set',{v,how});if(TRACE)trcSet=performance.now();if(how!=='play')greadClear();i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
 /* THE ENDS ARE STATED BY THE CONTROL, not discovered by pressing it. `set`
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
@@ -2918,7 +2948,7 @@ function dwell(e){
   return GOAL_READ_MS+trkExtra(e,GOAL_READ_MS);}
  const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
 // The tracked goal may hold this frame while it plays, or (Goals) choose the next one.
-function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);}
+function step(){trc('step');if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trc('timer',{ms:Math.round(wait)});}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
    the pre-game frame for a full dwell would answer that with 1.8 seconds of empty
    ice. The opening frame is an orientation, not a countdown -- so Play leaves it
@@ -2929,9 +2959,9 @@ function step(){if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(
    seconds of a list that is no longer true. Neither transition produces a frame
    of its own, so both have to say so. */
 // Play on a goal the reader is resting on leaves it: a fresh hold there reads as Play doing nothing.
-function play(){closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);
+function play(){trc('play');closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);
  if(EV[i]&&EV[i].type==='goal'&&!PREVIEW){step();trkKick();return;}
- const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trkKick();}
+ const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trc('timer',{ms:Math.round(wait)});trkKick();}
 /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
@@ -2949,7 +2979,7 @@ const PLAY_REST='▶ Play';
    runs on the next frame when playback starts, but pausing produces no new
    frame at all -- so without this the roster would appear only when the reader
    next stepped, which is the opposite of "shown while paused". */
-function stop(){playing=false;syncStep();clearTimeout(timer);greadClear();sayOnIce(EV[i]);}
+function stop(){trc('stop');playing=false;syncStep();clearTimeout(timer);greadClear();sayOnIce(EV[i]);}
 function togglePlay(){playing?stop():play();}
 $('play').onclick=()=>togglePlay();
 /* ⭐⭐ THE TRACKED GOAL — the league's tracking of the seconds before a goal, over this
@@ -2968,10 +2998,11 @@ function trkPlan(e){
  if(!e||e.type!=='goal'){const p=Promise.resolve(null);p.value=null;p.done=true;TRK.plans.set(e,p);return p;}
  const p=trkRows().then(rows=>{const row=trackRow(rows,e);return row?trkGet('track/'+G.game.id+'/ev'+row.ev+'.json'):null;})
   .then(frames=>trackPlan(frames,e));
- p.then(v=>{p.value=v;p.done=true;});
+ p.then(v=>{p.value=v;p.done=true;trc('plan',{g:EV.indexOf(e),ok:!!v});});
  TRK.plans.set(e,p);return p;}
 const trkReady=e=>{const p=TRK.plans.get(e);return p&&p.value?p.value:null;};
 function trkEnd(){
+ if(TRK.run)trc('trkEnd',{g:TRK.run.g});
  if(TRK.run&&TRK.run.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(TRK.run.raf);
  TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');}
 /* Lay goal P over the rink; returns how long it will take, in ms. `still` holds the first
@@ -3004,7 +3035,7 @@ function trkStart(P,still,free){
   stops:(()=>{const s=trackStops(P,SHOT&&SHOT.at,AST).filter(v=>v!==tGoal);
    return entry?[...new Set([...s,entry.at])].sort((a,b)=>a-b):s;})(),at:now10,
   left:()=>Math.max(0,clip+HOLD-played),
-  seek(v){let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
+  seek(v){trc('seek',{v});let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
  // One frame of the tracking, and the words and clock that go with it.
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
@@ -3027,24 +3058,26 @@ function trkStart(P,still,free){
   }
   return j;};
  const tick=now=>{
-  if(TRK.run!==run)return;
+  if(TRK.run!==run){trc('staleTick',{g:run.g});return;}
   // Cleared before painting: a frame that throws must not leave the loop looking booked.
   run.raf=null;
   const moving=run.free||playing,advanced=run.prev==null||now>run.prev;
   if(moving&&run.prev!=null&&now>run.prev)played+=now-run.prev;
   run.prev=now;
   const j=paint();
+  run.drawn=(run.drawn||0)+1;run.drew=performance.now();
+  if(TRACE&&(run.drawn===1||!(moving&&advanced)||j>=P.k))trc('tick',{n:run.drawn,j,k:P.k,moving,advanced,now:Math.round(now)});
   if(j>=P.k){if(run.free&&typeof setTimeout==='function')setTimeout(()=>{if(TRK.run===run)trkEnd();},1500);return;}
   // A browser's frame time always advances; one that does not means nothing will move.
   if(moving&&advanced)trkBook(run);};
  run.tick=tick;run.paint=paint;TRK.run=run;
- trkBook(run);
+ trkBook(run);trc('trkStart',{g:run.g,still,free});
  return still+HOLD+(P.before*1000)/sp;}
 // Restart the loop after Play, a seek or a speed change.
 // A booked frame that has not come in TRK_STALL_MS is not coming: Play books another rather than wait on it.
 const TRK_STALL_MS=250;
 function trkBook(r){r.booked=performance.now();r.raf=requestAnimationFrame(r.tick);}
-function trkKick(force){const r=TRK.run;if(!r||!(force||playing||r.free))return;
+function trkKick(force){const r=TRK.run;trc('kick',{force:!!force,booked:!!(r&&r.raf)});if(!r||!(force||playing||r.free))return;
  if(r.raf&&performance.now()-r.booked<TRK_STALL_MS)return;
  if(r.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(r.raf);
  r.prev=null;trkBook(r);}
@@ -3054,7 +3087,7 @@ function trkFrame(k,how,cur){
  if(!TRK_ON)return;
  trkRestClear();
  trkControl();
- if(TRK.run&&!(TRK.hold&&k===TRK.hold.i&&how==='play'))trkEnd();
+ if(TRK.run&&!(TRK.hold&&k===TRK.hold.i&&how==='play')){trc('frameEnds',{k,how});trkEnd();}
  // A tracking that carries on over this frame paints over what the render just wrote.
  if(TRK.run)TRK.run.paint();
  if(TRK.hold&&k!==TRK.hold.i)TRK.hold=null;
@@ -3099,7 +3132,8 @@ function trkNext(k){return TRK_ON&&TRK.goals?trkGoalsNext(k):k+1;}
    going in), open on the first tracked frame held still, play it, land on the goal
    frame, move on; after the last goal, the horn. A file not in yet: wait and ask again. */
 const TRK_WAIT_MS=400;
-function trkGoalsNext(k){
+function trkGoalsNext(k){const r=trkGoalsNext_(k);trc('goalsNext',{k,r});return r;}
+function trkGoalsNext_(k){
  const h=TRK.hold;
  if(h&&h.i===k){TRK.hold=null;if(!h.wait){trkEnd();return h.g;}}
  const g=GOAL_STOPS.find(n=>n>k);
@@ -3115,7 +3149,7 @@ function trkGoalsNext(k){
    and pause there; past the goal line, to the goal's own frame; from there, to the next
    goal's first frame. Prev retraces it: a first frame goes back to the previous goal's
    frame, and a goal's frame goes back into its tracking. */
-function trkStep(dir){
+function trkStep(dir){trc('trkStep',{dir});
  if(playing)stop();
  const r=TRK.run;
  if(r){const now=r.at(),k=dir>0?r.stops.find(v=>v>now+0.5):[...r.stops].reverse().find(v=>v<now-0.5);
@@ -3126,7 +3160,7 @@ function trkStep(dir){
  if(!r&&EV[i]&&EV[i].type==='goal'&&gs.includes(i)){trkOpen(i,'goal');return;}
  const g=[...gs].reverse().find(n=>n<here);
  if(g!=null){TRK.hold=null;trkEnd();set(g,'jump');}}
-function trkOpen(g,where){
+function trkOpen(g,where){trc('trkOpen',{g,where,done:!!trkPlan(EV[g]).done});
  const p=trkPlan(EV[g]);
  if(!p.done){const at=i;p.then(()=>{if(i===at)trkOpen(g,where);});return;}
  const P=p.value;
@@ -3760,7 +3794,7 @@ $('events').addEventListener('click',ev=>{const k=markAt(ev);
    and carries a clip on nine of 268, so a handler that stopped the event
    unconditionally would have made the words on the ice a dead zone for the whole
    game except the goals. */
-function openClip(k){
+function openClip(k){trc('clip',{k});
  const b=$('clipbox');if(!b||b.hidden)return false;
  if(k!=null&&k!==i)set(k,'jump');
  if(b.hidden)return false;                 // the jump may have left the goal
