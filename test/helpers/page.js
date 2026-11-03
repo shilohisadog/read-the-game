@@ -307,6 +307,9 @@ export function fakeDom() {
     '#rg .cc.h .lb': [el()],
   };
   const document = {
+    // The tab's visibility, which the replay pauses on (boot's hide/show fire it).
+    visibilityState: 'visible', _on: {},
+    addEventListener(t, fn) { (this._on[t] = this._on[t] || []).push(fn); },
     // `document.body` is part of the document this bundle runs in -- preview
     // hides the shared chrome through a class on it -- so the fake models it
     // rather than the app defending against its absence.
@@ -428,8 +431,12 @@ export function bundle(globals, src = SCRIPT, give = 'boot') {
                  // Added 2026-09-08 with the goal highlight: `openClip` defers
                  // its scroll past layout, and a name the bundle reads but this
                  // list omits is a ReferenceError at the first press.
-                 'requestAnimationFrame'];
-  return new Function(...names, src + `\nreturn ${give};`)(...names.map(n => globals[n]));
+                 'requestAnimationFrame',
+                 // The replay's clock (docs/replay-playback.md); a harness without one gets the real one.
+                 'performance', 'cancelAnimationFrame', 'setInterval', 'clearInterval'];
+  const given = { performance: globalThis.performance, setInterval: globalThis.setInterval,
+                  clearInterval: globalThis.clearInterval, ...globals };
+  return new Function(...names, src + `\nreturn ${give};`)(...names.map(n => given[n]));
 }
 
 /**
@@ -518,7 +525,7 @@ export function pickLayer(a, token) {
 
 // `opts.motion`: the reader has NOT asked for reduced motion. Every media query answers
 // "matches" otherwise, which is reduced motion, and the tracked goal only animates without it.
-// `opts.raf`: replaces the synchronous frame stub, for a test that holds or drops frames.
+// `opts.raf`: replaces the frame stub, for a test that holds or drops frames.
 export function boot(game, rates, search = '', store = null, doc = undefined, opts = {}) {
   const dom = fakeDom();
   /**
@@ -532,6 +539,22 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
    * cancels it, so a queue would let a cancelled frame fire later.
    */
   let pending = null, pendingMs = null;
+  /* THE PAGE'S CLOCK IS THIS ONE. `advance` moves it by the wait it fires, and frames move it by
+     FRAME_MS, so the goal pause, a clip's position and a file's deadline all read harness time. */
+  let T = 0;
+  const FRAME_MS = 250;
+  const perf = { now: () => T };
+  /* FRAMES: the first two levels run at once, as a browser reaches them before the test looks (openClip
+     defers two frames); a frame booked deeper waits in `frames` for the test to deliver, because a
+     playing clip books one from every frame and would otherwise never return. */
+  let frames = [], depth = 0, rafId = 0;
+  const raf = fn => {
+    const id = ++rafId;
+    if (depth >= 2) { frames.push({ id, fn }); return id; }
+    depth++; try { fn(T); } finally { depth--; }
+    return id;
+  };
+  const deliver = () => { const fs = frames; frames = []; for (const f of fs) raf(f.fn); return fs.length; };
   const setTimeout_ = (fn, ms) => { pending = fn; pendingMs = ms; return 1; };
   const clearTimeout_ = () => { pending = null; pendingMs = null; };
   // `location` is part of the environment this bundle runs in — the preview loop
@@ -561,8 +584,11 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
        `setTimeout` mistake this file already records one field down. Running it
        inline means the test sees the same end state a browser reaches, minus the
        animation the fake has no viewport for. */
-    requestAnimationFrame: opts.raf || (fn => { fn(0); return 1; }),
-    cancelAnimationFrame: () => {},
+    requestAnimationFrame: opts.raf || raf,
+    cancelAnimationFrame: id => { frames = frames.filter(f => f.id !== id); },
+    performance: perf,
+    // The goal pause's countdown redraw; harness time does not pass by itself, so it never fires.
+    setInterval: () => 1, clearInterval: () => {},
     setTimeout: setTimeout_, clearTimeout: clearTimeout_,
     localStorage: store || { getItem: () => null, setItem: () => {} },
     /* `pathname` too: the share control builds an absolute URL from it, and a
@@ -575,7 +601,8 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
   // this harness can only ever see the "no comparison shown" branch, which is
   // how a test for the drawn rate first went red against a page structurally
   // incapable of having one.
-  if (game || rates || doc) b(game || rich, rates, doc);
+  // The bundle has already booted its own game; its timer and frames are not this boot's.
+  if (game || rates || doc) { pending = null; pendingMs = null; frames = []; b(game || rich, rates, doc); }
   const scrub = dom.$('scrub');
   dom.posted = posted;
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
@@ -627,11 +654,28 @@ export function boot(game, rates, search = '', store = null, doc = undefined, op
      */
     /** How long the pending timer asked to wait, in ms (null with none pending). */
     get wait() { return pending ? pendingMs : null; },
+    /* One step is the next thing the replay does by itself: the pending timer fires (the clock moves by
+       its wait), or, with none, a playing clip's frames run until it hands over to a timer. */
     advance(n) {
       let moved = 0;
-      for (let k = 0; k < n; k++) { if (!pending) break; const f = pending; pending = null; f(); moved++; }
+      for (let k = 0; k < n; k++) {
+        if (pending) { const f = pending; T += pendingMs || 0; pending = null; f(); moved++; continue; }
+        if (!frames.length) break;
+        for (let m = 0; m < 4000 && frames.length && !pending; m++) { T += FRAME_MS; deliver(); }
+        moved++;
+      }
       return moved;
     },
+    /** Let `ms` of time pass with the page's frames delivered, and no timer fired. */
+    run(ms) { const end = T + ms; while (T < end) { T = Math.min(end, T + FRAME_MS); deliver(); } },
+    /** Let `ms` pass with no frame delivered: a browser that stopped drawing. */
+    later(ms) { T += ms; },
+    /** Frames booked and not yet delivered. */
+    get queued() { return frames.length; },
+    get clock() { return T; },
+    /** The tab hidden or shown, as the browser tells the page. */
+    hide() { dom.document.visibilityState = 'hidden'; (dom.document._on.visibilitychange || []).forEach(f => f()); },
+    show() { dom.document.visibilityState = 'visible'; (dom.document._on.visibilitychange || []).forEach(f => f()); },
     /**
      * Every frame in the game, for claims that need COVERAGE rather than a
      * sample — "the far goal line, at both ends" cannot be checked by a walk

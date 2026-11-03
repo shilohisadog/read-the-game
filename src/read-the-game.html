@@ -36,7 +36,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VmJmvFy0tLZz0yn+6Q6AlRlcALtrYXN1MFOHQIcTgi8=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-a+h3ZGAE9yGmg7LiBwmVzEXnYfACizjwbk5CfphNsN8='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-oVhsndHgqWM7GvorkR+Qpoi2unqc0nhfglaDUksRnlI=' https://static.cloudflareinsights.com; style-src 'sha256-BpjVIe3bY8EMq65z+x3L7MoZfMMlZvLjYl+RmmodwdE=' 'sha256-a+h3ZGAE9yGmg7LiBwmVzEXnYfACizjwbk5CfphNsN8='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -5100,20 +5100,19 @@ let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const TRK_ON=!PREVIEW&&typeof DOC==='function';
 const TRK_Q=new URLSearchParams(location.search);
 const TRK_PLAIN=!LINK.at&&!LINK.summary;
-const TRK={rows:null,plans:new Map(),run:null,hold:null,offered:false,
+const NOW=()=>performance.now();
+const TRK={rows:null,plans:new Map(),run:null,load:null,gaveUp:-1,broken:new Set(),offered:false,
   goals:TRK_ON&&TRK_PLAIN,
   speed:TRACK_SPEEDS.some(x=>x[0]===Number(TRK_Q.get('speed')))?Number(TRK_Q.get('speed')):TRACK_SPEED};
 const TRACE=TRK_Q.get('trace')==='1'&&typeof performance!=='undefined'?[]:null,T0=TRACE?performance.now():0;
-let trcSet=0,trcStalled=false;
-function trcState(){try{const r=TRK.run,h=TRK.hold;
- return {i,playing,hold:h?{i:h.i,g:h.g,wait:!!h.wait,ms:Math.round(h.ms||0)}:null,
-  run:r?{g:r.g,raf:!!r.raf,free:!!r.free,at:Math.round(r.at()),drawn:r.drawn||0,
-   since:r.drew?Math.round(performance.now()-r.drew):null}:null,
+function trcState(){try{const r=TRK.run;
+ return {i,playing,timer:timer!=null,load:TRK.load&&TRK.load.g,
+  run:r?{g:r.g,raf:!!r.raf,free:!!r.free,moving:r.moving(),at:Math.round(r.at()),drawn:r.drawn||0}:null,
   rest:!!TRK.rest,vis:document.visibilityState};}catch(e){return {err:String(e)};}}
 function trc(what,data){if(!TRACE)return;
  TRACE.push({t:Math.round(performance.now()-T0),what,...(data||{}),s:trcState()});
  if(TRACE.length>400)TRACE.shift();
- const b=document.getElementById('trcBtn');if(b)b.textContent='Trace · '+TRACE.length+(trcStalled?' · STALL':'')+' · Copy';}
+ const b=document.getElementById('trcBtn');if(b)b.textContent='Trace · '+TRACE.length+' · Copy';}
 if(TRACE){
  const b=document.createElement('button');b.id='trcBtn';b.type='button';
  b.style.cssText='position:fixed;right:8px;bottom:8px;z-index:9999;font:12px monospace;padding:6px 10px;background:#111;color:#fff;border:0;border-radius:6px';
@@ -5125,12 +5124,7 @@ if(TRACE){
  document.body.appendChild(b);
  addEventListener('error',e=>trc('ERROR',{msg:String(e.message),at:e.lineno+':'+e.colno}));
  addEventListener('unhandledrejection',e=>trc('REJECT',{msg:String(e.reason&&e.reason.stack||e.reason)}));
- document.addEventListener('visibilitychange',()=>trc('visibility'));
- setInterval(()=>{const r=TRK.run,now=performance.now();
-  const still=playing&&r&&!r.free&&(r.drew?now-r.drew:now-(r.booked||now))>1000;
-  const idle=playing&&!r&&now-trcSet>45000;
-  if((still||idle)&&!trcStalled){trcStalled=true;trc('STALL',{why:still?'tracking not drawing':'no frame change in 45 s'});}
-  if(!still&&!idle)trcStalled=false;},500);}
+}
 const NEWCOMER_DAYS=3;
 let visits=1;
 const NEWCOMER=(()=>{try{
@@ -5774,7 +5768,7 @@ const CAPTION_BONUS=900;
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
 let GREAD=null,greadTimer=null;
 $('scrub').max=EV.length-1;
-function set(v,how){trc('set',{v,how});if(TRACE)trcSet=performance.now();if(how!=='play')greadClear();i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
+function set(v,how){trc('set',{v,how});if(how!=='play')greadClear();i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
 function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;
  if(!playing)$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;}
 function drawGoalTicks(){
@@ -5854,7 +5848,7 @@ function sayDist(e){const el=$('playdist');if(!el)return;
  const say=[fly,r.say].filter(Boolean).join(' ');
  $('playdistSay').textContent=say;el.hidden=!say;
  const door=$('playdistDoor');door.hidden=!r.quoted;door.href=METHODS+'#'+anchorOf('shotDistance');}
-function greadRem(){return GREAD?Math.max(0,GREAD.end-performance.now()):0;}
+function greadRem(){return GREAD?Math.max(0,GREAD.end-NOW()):0;}
 function greadEl(){return document.getElementById('gread');}
 function greadPaint(){
  const el=greadEl();if(!el)return;
@@ -5869,21 +5863,51 @@ function greadKick(){
  if(!GREAD||PREVIEW||typeof setInterval!=='function')return;
  greadTimer=setInterval(()=>{if(!GREAD){greadStopKick();return;}greadPaint();if(greadRem()<=0)greadClear();},200);}
 function greadClear(){greadStopKick();GREAD=null;greadPaint();}
-function greadArm(e){
- if(PREVIEW||!e||e.type!=='goal')return;
- GREAD={for:e,end:performance.now()+GOAL_READ_MS};greadKick();}
+
 function dwell(e){
- if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e))){
-  const h=TRK.hold;return h&&EV[h.i]===e?trkExtra(e,0):TRK_WAIT_MS;}
- if(e&&e.type==='goal'){
-  return GOAL_READ_MS+trkExtra(e,GOAL_READ_MS);}
- const b=captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;return b+trkExtra(e,b);}
-function step(){trc('step');if(i>=EV.length-1){greadClear();stop();return;}greadClear();set(trkNext(i),'play');const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trc('timer',{ms:Math.round(wait)});}
-function play(){trc('play');closeLesson();if(i>=EV.length-1||i<0){greadClear();set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);
- if(EV[i]&&EV[i].type==='goal'&&!PREVIEW){step();trkKick();return;}
- const wait=dwell(EV[i]);greadArm(EV[i]);timer=setTimeout(step,wait);trc('timer',{ms:Math.round(wait)});trkKick();}
+ if(TRK_ON&&TRK.goals&&TRK.shown&&!REDUCED&&!GOAL_STOPS.includes(EV.indexOf(e)))return TRK_WAIT_MS;
+ if(e&&e.type==='goal')return GOAL_READ_MS;
+ return captioned(e)||(!PREVIEW&&playOf(i).line)?frameMs+CAPTION_BONUS:frameMs;}
+const TRK_WAIT_MS=400,TRK_LOAD_MS=8000;
+let timerEnd=0,pbHidden=null;
+function arm(ms){if(!playing)return;clearTimeout(timer);timerEnd=NOW()+ms;timer=setTimeout(step,ms);trc('timer',{ms:Math.round(ms)});}
+function holdGoal(e,ms){if(!playing)return;GREAD={for:e,end:NOW()+ms};greadKick();arm(ms);}
+function wait(e){if(e&&e.type==='goal'&&!PREVIEW)holdGoal(e,GOAL_READ_MS);else arm(dwell(e));}
+const pbClip=()=>TRK.run&&!TRK.run.free?TRK.run:null;
+const PB={
+ play(){closeLesson();pbHidden=null;if(i>=EV.length-1||i<0){greadClear();set(0,'play');}
+  playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=null;sayOnIce(EV[i]);
+  const r=pbClip();
+  if(r)r.go();
+  else if(EV[i]&&EV[i].type==='goal'&&!PREVIEW)pbGo('next');
+  else wait(EV[i]);},
+ pause(){playing=false;syncStep();clearTimeout(timer);timer=null;greadClear();TRK.load=null;
+  const r=pbClip();if(r)r.hold();sayOnIce(EV[i]);},
+ next(){clearTimeout(timer);timer=null;greadClear();
+  if(i>=EV.length-1){pbGo('pause');return;}
+  if(TRK_ON&&TRK.goals)goalsNext();else{set(i+1,'play');wait(EV[i]);}},
+ clipDone(){const g=TRK.run.g;trkEnd();set(g,'play');wait(EV[g]);},
+ speed(){const r=pbClip();if(!r)return;
+  const at=r.at(),on=r.moving();r.hold();const n=trkStart(r.P,0,false);n.seek(at);if(on)n.go();},
+ step(dir){trkStep(dir);},
+ hide(){if(!playing)return;
+  const goal=!!GREAD,rem=Math.max(0,(goal?GREAD.end:timerEnd)-NOW());
+  pbGo('pause');pbHidden={goal,rem};},
+ show(){const h=pbHidden;if(!h||playing)return;pbHidden=null;
+  playing=true;$('play').textContent='⏸ Pause';sayOnIce(EV[i]);
+  const r=pbClip();
+  if(r)r.go();else if(h.goal&&EV[i]&&EV[i].type==='goal')holdGoal(EV[i],h.rem);else arm(h.rem);}};
+function pbGo(act,arg){trc(act,arg==null?null:{arg});PB[act](arg);pbCheck(act);}
+function pbCheck(act){if(!TRACE)return;
+ const r=pbClip(),loop=!!(r&&r.raf),tm=timer!=null,bad=[];
+ if(playing&&(loop?1:0)+(tm?1:0)!==1)bad.push('playing needs one driver');
+ if(!playing&&(loop||tm))bad.push('paused with a driver');
+ if(!!TRK.run!==document.getElementById('rg').classList.contains('trk'))bad.push('the ice and TRK.run disagree');
+ if(bad.length)trc('RULE',{act,bad});}
+function step(){pbGo('next');}
+function play(){pbGo('play');}
 const PLAY_REST='▶ Play';
-function stop(){trc('stop');playing=false;syncStep();clearTimeout(timer);greadClear();sayOnIce(EV[i]);}
+function stop(){pbGo('pause');}
 function togglePlay(){playing?stop():play();}
 $('play').onclick=()=>togglePlay();
 function trkGet(name){return Promise.resolve().then(()=>DOC(name)).catch(()=>null);}
@@ -5893,17 +5917,19 @@ function trkPlan(e){
  if(!e||e.type!=='goal'){const p=Promise.resolve(null);p.value=null;p.done=true;TRK.plans.set(e,p);return p;}
  const p=trkRows().then(rows=>{const row=trackRow(rows,e);return row?trkGet('track/'+G.game.id+'/ev'+row.ev+'.json'):null;})
   .then(frames=>trackPlan(frames,e));
+ p.asked=NOW();
  p.then(v=>{p.value=v;p.done=true;trc('plan',{g:EV.indexOf(e),ok:!!v});});
  TRK.plans.set(e,p);return p;}
+const trkLate=p=>!p.done&&NOW()-p.asked>TRK_LOAD_MS;
 const trkReady=e=>{const p=TRK.plans.get(e);return p&&p.value?p.value:null;};
 function trkEnd(){
  if(TRK.run)trc('trkEnd',{g:TRK.run.g});
- if(TRK.run&&TRK.run.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(TRK.run.raf);
+ if(TRK.run)TRK.run.hold();
  TRK.run=null;put($('track'),'');document.getElementById('rg').classList.remove('trk');}
 function entryBlue(P){
  const x=AX(BLUE_LINE_X*attackDirection(P.e.own,G.teams.home.id),P.e.per),ys=boardsY(x);
  return {x,y1:ys[0],y2:ys[1]};}
-function trkStart(P,still,free){
+function trkStart(P,still,free,done){
  trkEnd();
  const t0=P.frames[0].timeStamp,tGoal=P.frames[P.k].timeStamp;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},sp=TRK.speed;
@@ -5913,21 +5939,24 @@ function trkStart(P,still,free){
  const HOLD=entry?TRACK_STILL_MS:0;
  const crossAt=entry?(entry.at-t0)/10/sp*1000:0;
  const blue=entry?entryBlue(P):null;
- let played=-still;
- const fileMs=()=>{const p=Math.max(0,played);if(!entry||p<=crossAt)return p;return p<crossAt+HOLD?crossAt:p-HOLD;};
+ let base=-still,from=null;
+ const played=()=>from==null?base:base+(NOW()-from);
+ const fileMs=()=>{const p=Math.max(0,played());if(!entry||p<=crossAt)return p;return p<crossAt+HOLD?crossAt:p-HOLD;};
  const now10=()=>t0+fileMs()/1000*sp*10;
- const clip=(tGoal-t0)/10*1000/sp;
  const holdSit=sitAt(EV[trackHoldFrame(EV,EV.indexOf(P.e),P)]);
- const run={P,g:EV.indexOf(P.e),raf:null,prev:null,free,holdSit,boxAt:null,
+ const run={P,g:EV.indexOf(P.e),j:i,raf:null,free,holdSit,boxAt:null,
   stops:(()=>{const s=trackStops(P,SHOT&&SHOT.at,AST).filter(v=>v!==tGoal);
    return entry?[...new Set([...s,entry.at])].sort((a,b)=>a-b):s;})(),at:now10,
-  left:()=>Math.max(0,clip+HOLD-played),
-  seek(v){trc('seek',{v});let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;played=p;run.prev=null;if(run.paint)run.paint();trkKick(true);}};
+  moving:()=>from!=null,
+  go(){if(from==null)from=NOW();trkBook(run);},
+  hold(){if(from!=null){base=played();from=null;}run.tok=null;
+   if(run.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(run.raf);run.raf=null;},
+  seek(v){trc('seek',{v});let p=(v-t0)/10/sp*1000;if(entry&&p>crossAt)p+=HOLD;base=p;if(from!=null)from=NOW();draw();}};
  const paint=()=>{
   const tt=now10(),j=trackFrameAt(P,tt);
   put($('track'),trackMarkup(P,j,tt,{G,AX,AY,col,shot:SHOT,entry,blue}));
   document.getElementById('rg').classList.add('trk');
-  const say=played<0?FIRST:entry&&j===entry.j?entry.say:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
+  const say=played()<0?FIRST:entry&&j===entry.j?entry.say:trackLaneLine(P,j,tt,SHOT,G.teams.home.id);if($('playline').textContent!==say)sayPlay(say);
   const upTo=a=>Math.min(a.at+TRACK_ASSIST_TENTHS,(run.stops.find(v=>v>a.at+0.5)??Infinity)-0.5);
   const as=[...AST].reverse().find(a=>tt>=a.at-0.5&&tt<upTo(a)),wl=as?trackAssistSay(as,G):WHO;
   const w=$('who');if(w.textContent!==wl){w.textContent=wl;w.className='who plain';}
@@ -5939,34 +5968,32 @@ function trkStart(P,still,free){
    drawPill({sit:trackClipSit(run.holdSit,secs,PBOX,CTX)});
   }
   return j;};
- const tick=now=>{
+ const draw=()=>{try{return paint();}
+  catch(err){run.bad=(run.bad||0)+1;trc('paintError',{n:run.bad,msg:String(err&&err.message||err)});
+   if(run.bad>=TRK_BAD)TRK.broken.add(P);return -1;}};
+ const end=()=>{if(!free){pbGo('clipDone');return;}
+  if(done)done();else if(typeof setTimeout==='function')setTimeout(()=>{if(TRK.run===run)trkEnd();},1500);};
+ const tick=()=>{
   if(TRK.run!==run){trc('staleTick',{g:run.g});return;}
   run.raf=null;
-  const moving=run.free||playing,advanced=run.prev==null||now>run.prev;
-  run.same=advanced?0:(run.same||0)+1;
-  if(moving&&run.prev!=null&&now>run.prev)played+=now-run.prev;
-  run.prev=now;
-  const j=paint();
-  run.drawn=(run.drawn||0)+1;run.drew=performance.now();
-  if(TRACE&&(run.drawn===1||!(moving&&advanced)||j>=P.k))trc('tick',{n:run.drawn,j,k:P.k,moving,advanced,now:Math.round(now)});
-  if(j>=P.k){if(run.free&&typeof setTimeout==='function')setTimeout(()=>{if(TRK.run===run)trkEnd();},1500);return;}
-  if(moving&&run.same<TRK_SAME)trkBook(run);};
+  const j=draw();run.drawn=(run.drawn||0)+1;
+  if(trace1(run))trc('tick',{n:run.drawn,j,k:P.k});
+  if(j>=P.k||TRK.broken.has(P)){trc('clipEnds',{j,broken:TRK.broken.has(P)});end();return;}
+  if(from!=null)trkBook(run);};
  run.tick=tick;run.paint=paint;TRK.run=run;
- trkBook(run);trc('trkStart',{g:run.g,still,free});
- return still+HOLD+(P.before*1000)/sp;}
-const TRK_STALL_MS=250,TRK_SAME=8;
-function trkBook(r){const tok={};r.tok=tok;r.booked=performance.now();r.raf=requestAnimationFrame(now=>{if(r.tok===tok)r.tick(now);});}
-function trkKick(force){const r=TRK.run;trc('kick',{force:!!force,booked:!!(r&&r.raf)});if(!r||!(force||playing||r.free))return;
- if(r.raf&&performance.now()-r.booked<TRK_STALL_MS)return;
- if(r.raf&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(r.raf);
- r.prev=null;trkBook(r);}
+ trc('trkStart',{g:run.g,still,free});
+ draw();if(free)run.go();
+ return run;}
+const trace1=r=>TRACE&&r.drawn===1;
+const TRK_BAD=3;
+function trkBook(r){const tok={};r.tok=tok;const id=requestAnimationFrame(()=>{if(r.tok===tok)r.tick();});if(r.tok===tok)r.raf=id;}
 function trkFrame(k,how,cur){
  if(!TRK_ON)return;
  trkRestClear();
  trkControl();
- if(TRK.run&&!(TRK.hold&&k===TRK.hold.i&&how==='play')){trc('frameEnds',{k,how});trkEnd();}
+ if(TRK.run&&!(k===TRK.run.j&&how==='play')){trc('frameEnds',{k,how});const was=pbClip();trkEnd();if(was&&playing&&timer==null)wait(EV[k]);}
+ if(TRK.gaveUp!==k)TRK.gaveUp=-1;
  if(TRK.run)TRK.run.paint();
- if(TRK.hold&&k!==TRK.hold.i)TRK.hold=null;
  const g=trackGoalAhead(EV,k);
  if(g>=0)trkPlan(EV[g]);
  for(let n=k+1;n<EV.length&&EV[n].s-(cur?cur.s:0)<=TRACK_LOOKAHEAD_S;n++)if(EV[n].type==='goal'){trkPlan(EV[n]);break;}
@@ -5977,60 +6004,52 @@ function trkFrame(k,how,cur){
  if(g>=0&&!trkReady(EV[g]))trkPlan(EV[g]);
  if(cur&&cur.type==='goal'&&cur.pt!=='SO'){
   const p=trkPlan(cur);
-  p.then(P=>{if(i!==k)return;
+  if(TRK.gaveUp===k)trkNone('No tracking for this goal.');
+  p.then(P=>{if(i!==k||TRK.gaveUp===k)return;
+   if(P&&TRK.broken.has(P)){if(TRK.goals)trkNone('The tracking could not be drawn.');return;}
    if(P&&TRK.goals&&!TRK.run)trkRest(k,P);
    if(P&&REDUCED){const w=$('who');if(!/wtrk/.test(w.innerHTML))w.innerHTML+='<button type="button" class="wtrk">▶ See it tracked</button>';}
-   if(!P&&TRK.goals&&!/No tracking/.test($('playline').textContent))
-    sayPlay(($('playline').textContent?$('playline').textContent+' ':'')+'No tracking for this goal.');});}}
+   if(!P&&TRK.goals)trkNone('No tracking for this goal.');});}}
+function trkNone(why){const t=$('playline').textContent;if(!t.includes(why))sayPlay((t?t+' ':'')+why);}
 function trkRestClear(){if(!TRK.rest)return;TRK.rest=null;if(!TRK.run)put($('track'),'');document.getElementById('rg').classList.remove('trkrest');}
 function trkRest(k,P){
- if(i!==k||TRK.run)return;
+ if(i!==k||TRK.run||TRK.broken.has(P))return;
  const col={[G.teams.home.id]:HOMECOL,[G.teams.away.id]:AWAYCOL},tG=P.frames[P.k].timeStamp;
  put($('track'),trackMarkup(P,P.k,tG,{G,AX,AY,col,shot:trackShot(P,G.teams.home.id)}));
  document.getElementById('rg').classList.add('trkrest');TRK.rest={k};
  drawLabel(EV[k],{x:100,y:16,far:true});}
 function trkNoCue(){document.getElementById('rg').classList.toggle('trknocue',TRK.goals);}
 function trkSeeIt(){const P=EV[i]&&trkReady(EV[i]);if(P)trkStart(P,0,true);}
-function trkExtra(e,base){
- const h=TRK.hold;
- if(h&&EV[h.i]===e)return Math.max(0,(TRK.run&&!h.wait?TRK.run.left():h.ms)-base);
- return 0;}
-function trkNext(k){return TRK_ON&&TRK.goals?trkGoalsNext(k):k+1;}
-const TRK_WAIT_MS=400;
-function trkGoalsNext(k){const r=trkGoalsNext_(k);trc('goalsNext',{k,r});return r;}
-function trkGoalsNext_(k){
- const h=TRK.hold;
- if(h&&h.i===k){TRK.hold=null;if(!h.wait){trkEnd();return h.g;}}
- const g=GOAL_STOPS.find(n=>n>k);
- if(g==null)return EV.length-1;
+function goalsNext(){
+ const k=i,g=GOAL_STOPS.find(n=>n>k);TRK.load=null;
+ if(g==null){set(EV.length-1,'play');wait(EV[i]);return;}
  const p=trkPlan(EV[g]);
- if(!p.done&&!REDUCED){TRK.hold={i:k,g,ms:TRK_WAIT_MS,wait:true};return k;}
- const P=p.value;
- if(!P||REDUCED)return g;
- const j=trackHoldFrame(EV,g,P,k);
- TRK.hold={i:j,g,P,ms:trkStart(P,TRACK_STILL_MS,false)};
- return j;}
+ if(REDUCED){set(g,'play');wait(EV[g]);return;}
+ if(!p.done&&!trkLate(p)){TRK.load={g};set(k,'play');arm(TRK_WAIT_MS);return;}
+ const P=p.done?p.value:null;
+ if(!P){if(!p.done)TRK.gaveUp=g;set(g,'play');wait(EV[g]);return;}
+ set(trackHoldFrame(EV,g,P,k),'play');
+ const r=trkStart(P,TRACK_STILL_MS,false);if(playing)r.go();}
 function trkStep(dir){trc('trkStep',{dir});
  if(playing)stop();
  const r=TRK.run;
  if(r){const now=r.at(),k=dir>0?r.stops.find(v=>v>now+0.5):[...r.stops].reverse().find(v=>v<now-0.5);
   if(k!=null){r.seek(k);return;}
-  if(dir>0&&r.g>=0){const g=r.g;TRK.hold=null;trkEnd();set(g,'jump');return;}}
+  if(dir>0&&r.g>=0){const g=r.g;trkEnd();set(g,'jump');return;}}
  const gs=GOAL_STOPS,here=r&&r.g>=0?r.g:i;
  if(dir>0){const g=gs.find(n=>n>here);if(g!=null)trkOpen(g,'first');return;}
  if(!r&&EV[i]&&EV[i].type==='goal'&&gs.includes(i)){trkOpen(i,'goal');return;}
  const g=[...gs].reverse().find(n=>n<here);
- if(g!=null){TRK.hold=null;trkEnd();set(g,'jump');}}
+ if(g!=null){trkEnd();set(g,'jump');}}
 function trkOpen(g,where){trc('trkOpen',{g,where,done:!!trkPlan(EV[g]).done});
  const p=trkPlan(EV[g]);
+ if(!p.done&&trkLate(p)){stop();TRK.gaveUp=g;set(g,'jump');return;}
  if(!p.done){const at=i;p.then(()=>{if(i===at)trkOpen(g,where);});return;}
  const P=p.value;
  if(!P){stop();set(g,'jump');return;}
- const j=trackHoldFrame(EV,g,P,0);
- stop();set(j,'jump');
- TRK.hold={i:j,g,P,ms:0};
- TRK.hold.ms=trkStart(P,where==='first'?TRACK_STILL_MS:0,false);
- if(where==='goal'&&TRK.run)TRK.run.seek(TRK.run.stops[TRK.run.stops.length-1]);}
+ stop();set(trackHoldFrame(EV,g,P,0),'jump');
+ const r=trkStart(P,where==='first'?TRACK_STILL_MS:0,false);
+ if(where==='goal')r.seek(r.stops[r.stops.length-1]);}
 function trkControl(){
  if(!TRK.offered){TRK.offered=true;
   trkRows().then(rows=>{TRK.shown=rows.length>0;
@@ -6047,12 +6066,13 @@ function trkUrl(k,v){if(typeof history==='undefined')return;
  history.replaceState(history.state,'',u);}
 function trkGoalsOn(){
  if(playing)stop();
- TRK.hold=null;trkEnd();layersOff();TRK.goals=true;trkPaint();drawNewcomer();set(i,RENDER_HOW);}
+ trkEnd();layersOff();TRK.goals=true;trkPaint();drawNewcomer();set(i,RENDER_HOW);}
 function trkSpeed(v){
  if(v===TRK.speed)return;
  TRK.speed=v;trkUrl('speed',v===TRACK_SPEED?null:String(v));trkPaint();
- const h=TRK.hold;
- if(TRK.run&&h&&!h.wait&&playing){stop();TRK.hold={...h,ms:trkStart(h.P,TRACK_STILL_MS,false)};play();}}
+ pbGo('speed',v);}
+if(!PREVIEW&&typeof document.addEventListener==='function')
+ document.addEventListener('visibilitychange',()=>pbGo(document.visibilityState==='hidden'?'hide':'show'));
 $('trkSpeed').hidden=true; 
 if(TRK_ON){
  $('trkQ').onclick=()=>trkSpeed(0.25);$('trkH').onclick=()=>trkSpeed(0.5);$('trkR').onclick=()=>trkSpeed(1);}
@@ -6075,7 +6095,7 @@ if(!PREVIEW){
    const r=ice.getBoundingClientRect();
    const back=r.width>0&&ev.clientX<r.left+r.width/2;
    stop();set((preI==null?i:preI)+(back?DBL_BACK:DBL_FWD),'jump');});}}
-function jump(d){if(TRK.goals){trkStep(d);return;}stop();set(i+d,'jump');}
+function jump(d){if(TRK.goals){pbGo('step',d);return;}stop();set(i+d,'jump');}
 $('back').addEventListener('click',()=>jump(-1));
 $('fwd').addEventListener('click',()=>jump(1));
 let gesturing=false,reported=0;
@@ -6085,7 +6105,7 @@ $('scrub').onkeydown=gestureBegan;
 $('scrub').oninput=e=>{stop();
  if(gesturing&&++reported===1)return;
  set(+e.target.value,'');};
-$('scrub').onchange=e=>{gesturing=false;set(+e.target.value,'jump');};
+$('scrub').onchange=e=>{gesturing=false;stop();set(+e.target.value,'jump');};
 function setGear(g){gear=Math.max(0,Math.min(PACE.length-1,g));frameMs=PACE[gear];
  $('slower').disabled=gear===0;$('faster').disabled=gear===PACE.length-1;}
 $('slower').onclick=()=>setGear(gear-1);
@@ -6689,9 +6709,9 @@ if(PREVIEW){
    setTimeout(tick,wait);};
   tick();};
  const goals=P=>{const j=trackHoldFrame(EV,GOAL,P,START);
-  const go=()=>{trkRestClear();set(j,'');heroSay(false);
-   setTimeout(()=>{trkEnd();set(GOAL,'play');heroSay(true);trkRest(GOAL,P);setTimeout(go,HOLD);},trkStart(P,TRACK_STILL_MS,true));};
-  go();};
+  const loop=()=>{trkRestClear();set(j,'');heroSay(false);
+   trkStart(P,TRACK_STILL_MS,true,()=>{trkEnd();set(GOAL,'play');heroSay(true);trkRest(GOAL,P);setTimeout(loop,HOLD);});};
+  loop();};
  if(REDUCED){set(WINDOW,'');heroSay(WINDOW===GOAL);if(GP)GP.then(P=>{if(P)trkRest(GOAL,P);});}
  else if(GP){set(START,'');GP.then(P=>P?goals(P):walk(),walk);}
  else walk();}

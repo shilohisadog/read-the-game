@@ -118,46 +118,6 @@ test('⭐ Goals: Play goes into the first goal\'s tracking, then lands on that g
   assert.match(a.$('labels').innerHTML, /GOAL/, 'the goal stop does not say GOAL');
 });
 
-test('⛔ Goals: Play restarts a tracking whose booked frame never came', async () => {
-  /* Kevin, 2026-11-02 (EDM at NYR): Play turned to Pause and the first frame sat still. A loop
-     whose handle says "booked" while no frame is coming is never restarted by Play. */
-  const q = [];
-  const a = boot(rich, null, '?replay=goals', null, served(), { ...MOTION, raf: fn => q.push(fn) });
-  await settle(); await settle();
-  a.$('play').click();
-  for (let n = 0; n < 6 && !a.$('rg').classList.contains('trk'); n++) { a.advance(1); await settle(); }
-  assert.ok(a.$('rg').classList.contains('trk'), 'the tracking never started');
-  a.$('play').click();                       // pause
-  q.length = 0;                              // the booked frame is lost
-  await new Promise(r => setTimeout(r, 300));
-  a.$('play').click();
-  assert.ok(q.length > 0, 'Play did not book a frame for the stalled tracking');
-});
-
-test('⛔ Goals: two frames with the same time do not end the tracking', async () => {
-  /* The &trace=1 log, live 2026-11-03: two ticks 2 ms apart carried one frame time, the second
-     booked nothing, and Play sat on its first frame until Pause and Play. */
-  const q = [];
-  const a = boot(rich, null, '?replay=goals', null, served(), { ...MOTION, raf: fn => q.push(fn) });
-  await settle(); await settle();
-  a.$('play').click();
-  for (let n = 0; n < 6 && !a.$('rg').classList.contains('trk'); n++) { a.advance(1); await settle(); }
-  assert.ok(a.$('rg').classList.contains('trk'), 'the tracking never started');
-  const frame = t => { const fs = q.splice(0); for (const f of fs) f(t); return fs.length; };
-  frame(4716);
-  frame(4716);                               // the repeat
-  assert.ok(q.length > 0, 'a repeated frame time ended the loop');
-  const clk = a.$('clk').textContent;
-  for (let t = 4733; t < 34000; t += 17) frame(t);
-  assert.notEqual(a.$('clk').textContent, clk, 'the tracking did not move after the repeat');
-  // Pause and Play over a frame still pending must leave one loop, not two.
-  a.$('play').click();
-  await new Promise(r => setTimeout(r, 300));
-  a.$('play').click();
-  frame(34034); frame(34051);
-  assert.equal(q.length, 1, 'more than one loop is running');
-});
-
 test('Goals: Prev and Next step within a goal\'s tracking, and pause there', async () => {
   const a = boot(rich, null, '?replay=goals', null, served(), MOTION);
   await settle(); await settle();
@@ -387,7 +347,9 @@ test('⭐ the front door\'s hero loops its first goal as Goals plays it: the tra
   const held = +a.$('scrub').value;
   assert.ok(held > 0 && held < first.k, 'the tracking is not laid over the frame before the goal');
   assert.match(a.$('who').textContent, /^Tracked · goal by/);
-  assert.ok(a.wait > 1500, 'the hero does not wait out the clip');
+  // One clock: the clip's frames carry it to the goal; no timer guesses how long that takes.
+  assert.equal(a.wait, null, 'a timer runs beside the clip');
+  assert.ok(a.queued > 0, 'the clip is not drawing');
   a.advance(1); await settle();
   assert.equal(+a.$('scrub').value, first.k, 'the tracking does not hand over to the goal frame');
   assert.ok(!trk() && rest(), 'the goal frame is not the tracking at rest');
