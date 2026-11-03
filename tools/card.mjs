@@ -80,7 +80,7 @@ export const HREF = `${SITE}/card.png`;
    that goes stale — `test/card.test.js` holds it to the picture. */
 export const ALT = 'One end of an NHL rink: a goaltender in his net, a faceoff at the '
   + 'end-zone dot, and the slot shaded in front of the net — the one region this site '
-  + 'paints on the ice. Beside it: NHL games, replayed event by event.';
+  + 'paints on the ice. Beside it: NHL games, replayed.';
 
 /**
  * The card, as SVG. Pure: no browser, no filesystem, so a test can read it.
@@ -144,8 +144,7 @@ export function cardSvg() {
     + `<text x="70" y="214" font-size="64" font-weight="800" fill="#0f1a23" letter-spacing="-1">Game</text>`
     + `<text x="72" y="268" font-size="30" font-weight="500" fill="#5b6d7a">hockey, made legible</text>`
     // What the site is, for a stranger: a replay of events, not of video.
-    + `<text x="72" y="330" font-size="26" font-weight="600" fill="#0f1a23">NHL games, replayed</text>`
-    + `<text x="72" y="364" font-size="26" font-weight="600" fill="#0f1a23">event by event.</text>`
+    + `<text x="72" y="330" font-size="26" font-weight="600" fill="#0f1a23">NHL games, replayed.</text>`
     + `<text x="72" y="480" font-size="24" font-weight="600" fill="#5b6d7a">Nothing modelled,</text>`
     + `<text x="72" y="512" font-size="24" font-weight="600" fill="#5b6d7a">nothing invented.</text>`
     + `<text x="72" y="574" font-size="27" font-weight="700" fill="#3a5a9c">readthegame.co</text>`

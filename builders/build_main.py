@@ -1143,7 +1143,7 @@ def _csp(html):
 # ⚠️ STATIC, AND IT HAS TO BE: one built page serves every game in the archive,
 # so the title cannot name the clubs. "An NHL game" is what is true of all of
 # them.
-TITLE = "An NHL game, replayed event by event — Read the Game"
+TITLE = "An NHL game, replayed — Read the Game"
 DESC = ("An NHL game replayed so a new fan can see what the numbers are made of. "
         "Nothing modelled, nothing invented.")
 

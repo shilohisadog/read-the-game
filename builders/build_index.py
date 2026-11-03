@@ -1721,7 +1721,7 @@ __HELPERS__
 # this project has twice re-proposed something already declined because the
 # decline was written somewhere nobody looked (docs/status.md §E once, a code
 # comment above `const PACE` the other time).
-SAYS = ("Every NHL game since 2023, replayed event by event. "
+SAYS = ("Every NHL game since 2023, replayed. "
         "<span class=\"by\">We made it for people who like hockey and were "
         "never shown how to read it.</span>")
 

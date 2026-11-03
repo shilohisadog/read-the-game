@@ -187,6 +187,5 @@ test('⭐ the card shows hockey: a net, a goaltender and a faceoff, and says wha
   const kinds = [...svg.matchAll(/class="cardfig (\w+)"/g)].map(m => m[1]).sort();
   assert.deepEqual(kinds, ['goalie', 'mascot', 'mascot', 'official'],
     'the card no longer shows a goaltender, two skaters and an official');
-  assert.match(svg, />NHL games, replayed</);
-  assert.match(svg, />event by event\.</);
+  assert.match(svg, />NHL games, replayed\.</);
 });
