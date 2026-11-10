@@ -864,3 +864,27 @@ test('⛔⛔⛔ every document the measure step WRITES is published by some work
     `measure.mjs writes ${missing.join(', ')} and no workflow uploads it — the `
     + 'document is built, committed to nothing, and 404s for every reader');
 });
+
+test('⛔⛔ derive never takes a game\'s pointer from the cache, and checks every extract against the bucket before publishing', () => {
+  /* `aws s3 sync` skips a same-sized download unless the local copy is newer, so
+     a cached `latest.json` survived every amendment and the weekly published
+     extracts built from superseded raw (2026-10-15 → 2026-11-10).
+     MUTATION: drop the `find … latest.json -delete`, move it below the sync, or
+     move the check below the publish, and this fires. */
+  const { text, steps } = yamlSteps('derive.yml');
+  const pull = find(steps, /^pull the raw archive$/, 'derive.yml', 'pull');
+  const body = text.slice(pull.at, text.indexOf('\n      - name:', pull.at + 1));
+  const del = body.search(/find ingest\/raw -name latest\.json -delete/);
+  assert.ok(del >= 0, 'derive.yml: the pull keeps cached pointers');
+  assert.ok(del < body.search(/^\s*if aws s3 sync /m),
+    'derive.yml: the pointers are deleted after the sync, so the stale ones were already kept');
+
+  const derive = find(steps, /^derive everything$/, 'derive.yml', 'derive');
+  const check = find(steps, /^every extract was built from its game's current raw$/, 'derive.yml', 'pointer check');
+  const sync = find(steps, /^sync the extracts, then the index$/, 'derive.yml', 'sync');
+  assert.ok(derive.i < check.i && check.i < sync.i,
+    'derive.yml: the pointer check must run after derive and before the sync');
+  const cbody = text.slice(check.at, text.indexOf('\n      - name:', check.at + 1));
+  assert.match(cbody, /tools\/extracts_current\.py bucket-pointers ingest\/extract/,
+    'derive.yml: the check must compare against pointers fetched fresh, not ingest/raw');
+});
