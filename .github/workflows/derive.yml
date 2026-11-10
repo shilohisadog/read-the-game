@@ -90,8 +90,10 @@ jobs:
       # Egress from R2 is free and both ends are in the cloud, so this is
       # minutes. It is the whole archive on purpose: a partial pull would
       # publish a partial answer.
-      # The raw files are content-addressed and never change once stored, so the
+      # The raw blobs are content-addressed and never change once stored, so the
       # previous run's copy is restored and the sync below fetches only what is new.
+      # ⛔ EXCEPT `raw/{game}/latest.json`, which an amendment rewrites. The pull
+      # step deletes every cached pointer before it syncs; see the comment there.
       - name: the raw archive as the last run left it
         uses: actions/cache@v5
         with:
@@ -126,6 +128,16 @@ jobs:
           # whole sync is the backstop, and it is cheap because sync is
           # INCREMENTAL -- a second pass re-fetches only what the first missed.
           aws configure set default.s3.max_concurrent_requests 4
+          # ⛔⛔ THE POINTERS ARE NEVER TAKEN FROM THE CACHE. On a download,
+          # `aws s3 sync` skips a file of the same size unless the LOCAL copy is
+          # newer, and an amended pointer is the same size (same feeds, fixed-
+          # length digests). From 2026-10-15 to 2026-11-10 the weekly derived
+          # amended games from superseded raw and published 36-94 stale extracts
+          # a week; `measures_fresh.py` caught it and the file was refreshed past
+          # it (f0788f4, 0040744). Deleting them costs ~4,900 files of a few hundred bytes.
+          if [ -d ingest/raw ]; then
+            find ingest/raw -name latest.json -delete
+          fi
           ok=
           for attempt in 1 2 3; do
             if aws s3 sync "s3://${BUCKET}/" ingest/ \
@@ -181,6 +193,23 @@ jobs:
             echo "  derive: published, and a label needs a name (exit 2)"
           fi
           exit 0
+
+      # ⭐ AGAINST THE BUCKET'S POINTERS, fetched into an empty directory, not
+      # against `ingest/raw` — that is the copy derive just read, so comparing
+      # with it could never fail. Before the sync, so a stale extract never
+      # reaches a reader. MUTATION: drop the pointer delete in the pull step and
+      # any game amended since the cache was saved fails here.
+      - name: every extract was built from its game's current raw
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          rm -rf bucket-pointers && mkdir bucket-pointers
+          aws s3 sync "s3://${BUCKET}/raw/" bucket-pointers/raw/ \
+            --exclude '*' --include '*/latest.json' \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress > /dev/null
+          python3 tools/extracts_current.py bucket-pointers ingest/extract
 
       # MEASURE AFTER DERIVE, over the extracts derive just wrote. This ranks the
       # whole archive and produces the number that decides what a novice sees
