@@ -35,9 +35,19 @@ state.
 
 Older build-list entries, newest first: [docs/status-archive.md](status-archive.md).
 
-## ⏭ 0.00 PICK UP HERE — 2026-10-26
+## ⏭ 0.00 PICK UP HERE — 2026-10-31
 
 Everything here is live on readthegame.co and was checked in a real browser; gates, deploy and derive green.
+
+### How work is done now (2026-10-31)
+Kevin is moving hands-on coding to the Cursor IDE to cut usage. The assistant stays on reviews, merges and deploy checks.
+- **Plan first:** say the concept and plan in plain words, and Kevin approves before any code.
+- **Shipping:** branch → PR → CI (`npm run gates` on Node 20 and 22) → read the diff → squash-merge. `deploy.yml` ships on any `src/` or `functions/` change.
+- **After any edit to `src/app.js` or `src/app.css`, run `npm run build`.** `builders/build_main.py` inlines both into `src/game.html` and `src/read-the-game.html`, and `build:check` fails on a stale page. A comment edit can also stale the tiers block in `docs/architecture.md` (`node tools/tiers.mjs`).
+- **Batch visual tweaks:** prototype on a branch, review screenshots, merge once. The 2026-10-29 goal hold took nine merged rounds; two or three would have done.
+- **Copy rule:** never "Watch" for our replay, because it implies video. Say "Read" or "Replay". "Watch" is only for the NHL highlight link.
+- **Reasoning stays with the code:** comments say WHAT plus a one-line why. The fuller reasoning, decisions and limits go in the file header, this file, and the topic doc (for example `docs/event-timing.md` §12 for the goal hold).
+- **Deploy gate added 2026-10-29:** `tools/browser/gread-on-ice.mjs` fails the deploy if the post-goal overlay leaves the ice (1024 and 844×390). It caught the first version of #19, and #20 fixed it.
 
 ### Live now
 - **2026-11-01** (Kevin, CBJ at DAL): a goal taken off for offside now says why the face-off is where it is: "Because it was offside, play restarts at the face-off dot just outside the DAL end, where the play went in too early." (Rule 83.2). Said only when the recorded face-off is at a neutral-zone dot on the side of the end the offside team entered; a league review that names no team stays silent. This season: 11 of 14.
@@ -55,7 +65,7 @@ Everything here is live on readthegame.co and was checked in a real browser; gat
   no date said Tonight. The held date is now a day that is not today (`test/calendar-page.test.js`).
 - **2026-10-29 / 11-01** (Kevin): after a goal Play reaches, the replay holds a fixed 20 s (`GOAL_READ_MS`) at every speed, with a three-line countdown under centre ice ("Tap Pause to stay," / "otherwise the Replay" / "continues in N seconds"). One control: the main button reads Pause throughout; Pause stays on the goal with no limit, Play then moves on, and Play on a goal the reader is resting on moves on at once.
 - **2026-10-29**: tracked goals now count the penalty box down on the clip clock; a power play ends on screen when its penalty does (first logic change to CC's design: box.js stays a non-strength model; the badge only drops a recorded power play, never adds one).
-- **2026-10-29**: the summary card no longer opens with the attempts verdict; the per-team counts below already show attempts.
+- **2026-10-29**: the summary card no longer opens with the attempts verdict; the per-team counts below already show attempts. Its heading reads "Every event count in the whole game" (#9).
 - **2026-10-29**: the build list was split into status.md + status-archive.md, and the README now matches the layer picker. `terrain-3d.html` and its builder were removed, and the `lab` branch was deleted.
 - **2026-10-28** (Kevin): in Goals, a clip whose tracking shows the puck's dot clearing the attacking blue line ahead of that team's skaters holds on that frame (the same still as the opening frame). The line glows faintly on the way in. Each attacking skater gets a check, and the caption says the puck crossed before any of that team did. A clip that does not show the entry shows nothing. Event mode is unchanged. Reduced motion keeps the caption and leaves the line still.
 - **2026-10-28** (Kevin, option B): in Goals, a located goal says how often shots from that distance go in, in 5-foot bands (`shotDistance` in `measures.json`). Blocked shots and empty nets are left out, every situation is counted, and a band under 30 attempts is not quoted. An empty-net goal says the net was empty instead of a rate. Event mode does not show the line.
@@ -124,4 +134,8 @@ Everything here is live on readthegame.co and was checked in a real browser; gat
 15. A site-level home for the source disclosure that opens under each event in Event mode ("Each note comes from
     the league's record…"). It describes the site, not the event, so Goals replay does not open it; Event mode
     still does (Kevin, 2026-10-28).
-
+16. **DECIDE — the hero doorway** (prototype, branch `proto-hero-door`, not merged). The hero's button changes from
+    "Read the whole game →" to "▶ Replay every goal from this game", and the button and frame open `replay=goals`.
+    Gates pass. Other wordings: "Read this game, goal by goal →", "Replay the goals →". Why not add replay detail
+    to the hero itself: the 30 s loop from the opening faceoff rarely reaches a goal, the frame is ~390×273 on a
+    phone, and it has no transport (docs/site-purpose.md §5). Not yet seen in a real browser.
